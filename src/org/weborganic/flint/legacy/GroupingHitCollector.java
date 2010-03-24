@@ -28,7 +28,7 @@ import org.apache.lucene.search.TopDocsCollector;
  * @author Christophe Lauret (Weborganic)
  * 
  * @version 15 October 2009
- * deprecated
+ * @deprecated
  */
 public class GroupingHitCollector extends TopDocsCollector {
 
