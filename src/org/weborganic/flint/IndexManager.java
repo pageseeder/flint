@@ -124,12 +124,24 @@ public class IndexManager implements Runnable {
     this.errorsForIndex = new ConcurrentHashMap<String, List<IndexJob>>();
     // register default XML factory
     this.translatorFactories = new ConcurrentHashMap<String, ContentTranslatorFactory>();
-    registerTranslatorFactory(FlintTranslatorFactory.XML_MIME_TYPE, new FlintTranslatorFactory());
+    registerTranslatorFactory(new FlintTranslatorFactory());
     this.lastActivity = System.currentTimeMillis();
   }
 
   // public external methods
   // ----------------------------------------------------------------------------------------------
+  
+  /**
+   * Register a new factory with the all the MIME types supported by the factory.
+   * If there was already a factory registered for a MIME type, it is overwritten.
+   * 
+   * @param factory  the factory to register
+   */
+  public void registerTranslatorFactory(ContentTranslatorFactory factory) {
+    List<String> mtypes = factory.getMimeTypesSupported();
+    for (String mimeType : mtypes)
+      registerTranslatorFactory(mimeType, factory);
+  }
   
   /**
    * Register a new factory with the given MIME type.
@@ -259,6 +271,60 @@ public class IndexManager implements Runnable {
       jobs.addAll(errors);
     return jobs;
   }
+
+  /**
+   * Returns the list of jobs that had an error for the requester provided and removes them from the manager.
+   * 
+   * <p>The list will never be <code>null</code>.
+   * 
+   * @param r the Requester
+   * @return the list of jobs with an error (never <code>null</code>)
+   */
+  public List<IndexJob> removeErrorJobs(Requester r) {
+    if (r == null) return removeErrorJobs();
+    List<IndexJob> jobs = new ArrayList<IndexJob>();
+    for (String id : this.errorsForIndex.keySet()) {
+      List<IndexJob> errors = this.errorsForIndex.get(id);
+      for (IndexJob job : errors) {
+        if (job.isForRequester(r)) {
+          jobs.add(job);
+          errors.remove(job);
+        }
+      }
+      this.errorsForIndex.put(id, errors);
+    }
+    return jobs;
+  }
+
+  /**
+   * Returns the list of jobs that had an error for the index provided and removes them from the manager.
+   * 
+   * <p>The list will never be <code>null</code>.
+   * 
+   * @param i the index
+   * @return the list of jobs with an error (never null)
+   */
+  public List<IndexJob> removeErrorJobs(Index i) {
+    if (i == null) return removeErrorJobs();
+    List<IndexJob> jobs = this.errorsForIndex.remove(i.getIndexID());
+    if (jobs == null) return Collections.emptyList();
+    return jobs;
+  }
+
+  /**
+   * Returns the list of jobs that had an error and removes them from the manager.
+   * 
+   * <p>The list will never be <code>null</code>.
+   * 
+   * @return the list of jobs with an error (never <code>null</code>)
+   */
+  public List<IndexJob> removeErrorJobs() {
+    List<IndexJob> jobs = new ArrayList<IndexJob>();
+    for (String id : this.errorsForIndex.keySet())
+      jobs.addAll(this.errorsForIndex.remove(id));
+    return jobs;
+  }
+
 
   /**
    * Run a search on the given Index.
