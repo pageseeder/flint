@@ -1,0 +1,21 @@
+<?xml version="1.0"?>
+<!--
+  Ivy configuration for PageSeeder Core module.
+-->
+<ivy-module version="2.0">
+  <info organisation="weborganic" module="wo-flint">
+    <license name="Proprietary"/>
+    <description homepage="http://team.pageseeder.com"/>
+  </info>
+  <configurations defaultconfmapping="core->default;runtime->runtime(default)">
+     <conf name="core" transitive="false" visibility="private" description="Always required"/>
+     <conf name="default" extends="core" transitive="false" description="Needed for compilation only"/>
+     <conf name="runtime" extends="core" transitive="true" description="Everything needed to run this module" />
+  </configurations>
+  <dependencies>
+    <dependency org="weborganic" name="wo-diffx"             rev="latest.milestone"   conf="core"/>
+    <dependency org="apache"     name="lucene-misc"          rev="3.0.1"               conf="core"/>
+    <dependency org="apache"     name="lucene-core"          rev="3.0.1"               conf="core"/>
+    <dependency org="apache"     name="log4j"                rev="1.2.15"             conf="core"/>
+  </dependencies>
+</ivy-module>
