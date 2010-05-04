@@ -6,6 +6,7 @@
  */
 package org.weborganic.flint;
 
+
 /**
  * A Job Requester.
  * 

@@ -11,16 +11,21 @@ import org.weborganic.flint.content.ContentTranslator;
  * @author Jean-Baptiste Reure
  * @version 10 March 2010
  */
-public class FlintXMLTranslator implements ContentTranslator {
+public class SourceForwarder implements ContentTranslator {
+  
+  private final String mimeType;
+  
   /**
-   * private constructor, only the factory can create a new translator
+   * Forwards data for one mime type only, will return in any other case
    */
-  protected FlintXMLTranslator() {
+  public SourceForwarder(String mType) {
+    if (mType == null) throw new IllegalArgumentException("MIME Type cannot be null");
+    this.mimeType = mType;
   }
   
   public Reader translate(Content content) {
     if (content.isDeleted()) return null;
-    if (!FlintTranslatorFactory.XML_MIME_TYPE.equals(content.getMimeType())) return null;
+    if (!this.mimeType.equals(content.getMimeType())) return null;
     return new InputStreamReader(content.getSource());
   }
 

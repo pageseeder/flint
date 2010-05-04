@@ -116,7 +116,7 @@ public class IndexConfig {
    */
   public Map<String, String> getParameters(ContentType type, String mimeType, String configId) {
     Map<String, String> params = this.parameters.get(new ContentDefinition(type, mimeType, configId));
-    if (params == null) return Collections.EMPTY_MAP;
+    if (params == null) return Collections.emptyMap();
     return Collections.unmodifiableMap(params);
   }
 
@@ -168,7 +168,7 @@ public class IndexConfig {
       LOGGER.debug("Adding templates for "+def.toString());
       this.scripts.put(def, loadTemplates(xsltScript));
     } catch (Exception e) {
-      LOGGER.debug("Failed to load XSLT script: "+e.getMessage(), e);
+      LOGGER.debug("Failed to load XSLT script "+xsltScript+": "+e.getMessage(), e);
       throw new IllegalArgumentException("Invalid XSLT script "+xsltScript+": "+e.getMessage());
     }
   }
@@ -189,6 +189,8 @@ public class IndexConfig {
     TransformerFactory factory = TransformerFactory.newInstance();
     return factory.newTemplates(new StreamSource(new File(path)));
   }
+  
+  
   
   private final class ContentDefinition {
     private final ContentType ctype;

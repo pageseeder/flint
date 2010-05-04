@@ -481,7 +481,7 @@ public final class FieldBuilder {
   private static String toDateField(String value, DateFormat format, Resolution resolution) {
     try {
       Date date = format.parse(value.toString());
-      return DateTools.dateToString(date, resolution);
+      return DateTools.timeToString(date.getTime(), resolution);
     } catch (Exception ex) {
       LOGGER.warn("Ignoring unparsable date '"+value+"', format="+format+", resolution="+resolution, ex);
       throw new IllegalArgumentException("Unparseable date field!", ex);

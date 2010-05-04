@@ -9,11 +9,8 @@ package org.weborganic.flint.content;
 /**
  * The different Content Types supported by Flint.
  * 
- * <p>Currently, only Document is supported.
- * 
  * @author Jean-Baptiste Reure
  * @version 26 February 2010
  */
-public enum ContentType {
-  DOCUMENT
+public interface ContentType {
 }

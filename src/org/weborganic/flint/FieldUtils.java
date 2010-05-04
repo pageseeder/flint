@@ -17,13 +17,9 @@ import java.util.regex.Pattern;
 
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.queryParser.QueryParser;
-import org.apache.lucene.search.BooleanClause;
-import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.PhraseQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermQuery;
-import org.weborganic.flint.legacy.LegacyLuceneVersion;
 
 /**
  * A set of utility methods for dealing with search fields.
@@ -131,32 +127,32 @@ public final class FieldUtils {
     return words;
   }
 
-  /**
-   * Parses the given value for the specified field using the query parser and the 
-   * <code>StandardAnalyzer</code>. 
-   * 
-   * @param field The field for this query.
-   * @param value The value to parse.
-   * 
-   * @return The corresponding query or <code>null</code>.
-   * @deprecated 
-   */
-  public static Query parse(String field, String value) {
-    try {
-      QueryParser parser = new QueryParser(LegacyLuceneVersion.VERSION, field, new StandardAnalyzer(LegacyLuceneVersion.VERSION));
-      parser.setDefaultOperator(QueryParser.AND_OPERATOR);
-
-      // Escape before parsing
-      String escapedValue = QueryParser.escape(value);
-      Query query = parser.parse(escapedValue);
-      // check whether the query is empty
-      if ("".equals(query.toString())) return null;
-      return query;
-    } catch (Exception ex) {
-// TODO      LOGGER.info("The query '"+value+"'+ for field '"+field+"' could not be parsed.", ex);
-      return null;
-    }
-  }
+//  /**
+//   * Parses the given value for the specified field using the query parser and the 
+//   * <code>StandardAnalyzer</code>. 
+//   * 
+//   * @param field The field for this query.
+//   * @param value The value to parse.
+//   * 
+//   * @return The corresponding query or <code>null</code>.
+//   * @deprecated 
+//   */
+//  public static Query parse(String field, String value) {
+//    try {
+//      QueryParser parser = new QueryParser(LegacyLuceneVersion.VERSION, field, new StandardAnalyzer(LegacyLuceneVersion.VERSION));
+//      parser.setDefaultOperator(QueryParser.AND_OPERATOR);
+//
+//      // Escape before parsing
+//      String escapedValue = QueryParser.escape(value);
+//      Query query = parser.parse(escapedValue);
+//      // check whether the query is empty
+//      if ("".equals(query.toString())) return null;
+//      return query;
+//    } catch (Exception ex) {
+//// TODO      LOGGER.info("The query '"+value+"'+ for field '"+field+"' could not be parsed.", ex);
+//      return null;
+//    }
+//  }
 
   /**
    * Generates a query instances for the given field and for the specified value.
@@ -252,37 +248,37 @@ public final class FieldUtils {
     return Collections.unmodifiableSet(STOP_WORDS);
   }
 
-  /**
-   * Add to a <code>BooleanQuery</code> for <code>fieldName</code>, which 
-   * searches for the terms (original and cleaned) given.
-   * Adds <code>term</code> as a query, if original and uncleaned versions are 
-   * the same or <code>cleanedTerm</code> is null, otherwise creates a boolean 
-   * query of the original and cleaned versions of the term. 
-   * 
-   * @param fieldName The field in the index to query
-   * @param boolQuery The boolean query to be added to
-   * @param term The original term to search for
-   * @param cleanedTerm The cleaned up term to search for. <code>null</code> if
-   *        term is not cleaned
-   */
-  public static void addTermToQuery(String fieldName, BooleanQuery boolQuery, 
-      String term, String cleanedTerm) {
-
-    if ((term).equals(cleanedTerm) || (cleanedTerm == null)) { // term same as cleaned term
-      Query termQ = FieldUtils.toTermOrPhrase(fieldName, term);
-      if (termQ != null && !"".equals(termQ.toString())) {
-        boolQuery.add(termQ , BooleanClause.Occur.SHOULD);
-      }
-    } else { // term is different to cleaned term - search for both
-
-      // Boolean query - check cleaned and uncleaned term of user query
-      BooleanQuery termBoolQ = new BooleanQuery();
-      termBoolQ.add(FieldUtils.parse(fieldName, cleanedTerm), BooleanClause.Occur.SHOULD);
-      termBoolQ.add(FieldUtils.parse(fieldName, term), BooleanClause.Occur.SHOULD);
-      if (termBoolQ != null && !"".equals(termBoolQ.toString())) {
-        boolQuery.add(termBoolQ , BooleanClause.Occur.SHOULD);
-      }
-    }
-  }
+//  /**
+//   * Add to a <code>BooleanQuery</code> for <code>fieldName</code>, which 
+//   * searches for the terms (original and cleaned) given.
+//   * Adds <code>term</code> as a query, if original and uncleaned versions are 
+//   * the same or <code>cleanedTerm</code> is null, otherwise creates a boolean 
+//   * query of the original and cleaned versions of the term. 
+//   * 
+//   * @param fieldName The field in the index to query
+//   * @param boolQuery The boolean query to be added to
+//   * @param term The original term to search for
+//   * @param cleanedTerm The cleaned up term to search for. <code>null</code> if
+//   *        term is not cleaned
+//   */
+//  public static void addTermToQuery(String fieldName, BooleanQuery boolQuery, 
+//      String term, String cleanedTerm) {
+//
+//    if ((term).equals(cleanedTerm) || (cleanedTerm == null)) { // term same as cleaned term
+//      Query termQ = FieldUtils.toTermOrPhrase(fieldName, term);
+//      if (termQ != null && !"".equals(termQ.toString())) {
+//        boolQuery.add(termQ , BooleanClause.Occur.SHOULD);
+//      }
+//    } else { // term is different to cleaned term - search for both
+//
+//      // Boolean query - check cleaned and uncleaned term of user query
+//      BooleanQuery termBoolQ = new BooleanQuery();
+//      termBoolQ.add(FieldUtils.parse(fieldName, cleanedTerm), BooleanClause.Occur.SHOULD);
+//      termBoolQ.add(FieldUtils.parse(fieldName, term), BooleanClause.Occur.SHOULD);
+//      if (termBoolQ != null && !"".equals(termBoolQ.toString())) {
+//        boolQuery.add(termBoolQ , BooleanClause.Occur.SHOULD);
+//      }
+//    }
+//  }
 
 }

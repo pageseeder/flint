@@ -11,7 +11,6 @@ import java.util.Map;
 
 import org.weborganic.flint.IndexManager.Priority;
 import org.weborganic.flint.content.ContentId;
-import org.weborganic.flint.content.ContentType;
 
 /**
  * A job to run by the IndexManager. Jobs can be of three types: add, update or delete.
@@ -20,11 +19,6 @@ import org.weborganic.flint.content.ContentType;
  * @version 26 February 2010
  */
 public class IndexJob implements Comparable<IndexJob> {
-
-  /**
-   * The Content Type.
-   */
-  private final ContentType contentType;
 
   /**
    * The Content ID.
@@ -62,11 +56,6 @@ public class IndexJob implements Comparable<IndexJob> {
   private boolean finished = false;
 
   /**
-   * Error message.
-   */
-  private String errorMessage = null;
-
-  /**
    * The job's ID, generated in the constructor.
    */
   private final String jobId;
@@ -82,15 +71,15 @@ public class IndexJob implements Comparable<IndexJob> {
    * @param r       the job's requester
    * @param thetype the job's type
    */
-  private IndexJob(ContentType t, ContentId id, IndexConfig conf, Index i, Priority p, Requester r, Map<String, String> params) {
-    this.contentType = t;
+  @SuppressWarnings("unchecked")
+  private IndexJob(ContentId id, IndexConfig conf, Index i, Priority p, Requester r, Map<String, String> params) {
     this.contentID = id;
     this.config = conf;
     this.priority = p;
     this.requester = r;
     this.index = i;
-    this.parameters = params == null ? Collections.EMPTY_MAP : params;
-    this.jobId = System.currentTimeMillis() + "-" + t.toString() + "-" + id.toString() + "-" + conf.hashCode() + "-"
+    this.parameters = params == null ? (Map<String, String>) Collections.EMPTY_MAP : params;
+    this.jobId = System.currentTimeMillis() + "-" + id.toString() + "-" + conf.hashCode() + "-"
         + i.getIndexID() + "-" + r.getRequesterID() + "-" + p.toString();
   }
 
@@ -110,15 +99,6 @@ public class IndexJob implements Comparable<IndexJob> {
    */
   public ContentId getContentID() {
     return this.contentID;
-  }
-
-  /**
-   * Return the Content Type used to retrieve the content and the config.
-   * 
-   * @return the Content Type.
-   */
-  public ContentType getContentType() {
-    return this.contentType;
   }
 
   /**
@@ -205,40 +185,12 @@ public class IndexJob implements Comparable<IndexJob> {
   }
 
   /**
-   * Return <code>true</code> if this job had an error
-   * 
-   * @return <code>true</code> if this job had an error
-   */
-  public boolean hasError() {
-    return this.errorMessage != null;
-  }
-
-  /**
-   * Return the error message if there was an error, null otherwise.
-   * 
-   * @return the error message if there was an error, null otherwise.
-   */
-  public String getErrorMessage() {
-    return this.errorMessage;
-  }
-
-  /**
-   * Set the error message on this job
-   * 
-   * @param error the error message
-   */
-  public void setError(String error) {
-    this.errorMessage = error;
-  }
-
-  /**
    * Useful when debugging and logging
    */
   @Override
   public String toString() {
-    return "[IndexJob - contentid:" + this.contentID + " contenttype:" + this.contentType + " priority:"
-        + this.priority + " index:" + this.index + " finished:" + this.finished
-        + " error:" + this.errorMessage + "]";
+    return "[IndexJob - contentid:" + this.contentID + " priority:"
+        + this.priority + " index:" + this.index + " finished:" + this.finished + "]";
   }
 
   /**
@@ -253,8 +205,8 @@ public class IndexJob implements Comparable<IndexJob> {
    * 
    * @return the new job
    */
-  public static IndexJob newJob(ContentType t, ContentId id, IndexConfig config, Index i, Priority p, Requester r, Map<String, String> params) {
-    return new IndexJob(t, id, config, i, p, r, params);
+  public static IndexJob newJob(ContentId id, IndexConfig config, Index i, Priority p, Requester r, Map<String, String> params) {
+    return new IndexJob(id, config, i, p, r, params);
   }
 
 }

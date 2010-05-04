@@ -20,11 +20,10 @@ public interface ContentFetcher {
   /**
    * Load the Content.
    * 
-   * @param t   the ContentType
    * @param id  the ContentID
    * 
    * @return the source where the Content is read from
    */
-  public Content getContent(ContentType t, ContentId id);
+  public Content getContent(ContentId id);
 
 }

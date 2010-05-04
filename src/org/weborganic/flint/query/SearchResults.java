@@ -8,8 +8,13 @@
 package org.weborganic.flint.query;
 
 import java.io.IOException;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.TimeZone;
 
 import org.apache.log4j.Logger;
+import org.apache.lucene.document.DateTools;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Fieldable;
 import org.apache.lucene.index.CorruptIndexException;
@@ -56,6 +61,8 @@ public final class SearchResults implements XMLWritable {
   
   private final IndexIO indexIO;
   private boolean terminated = false;
+  
+  private int timezoneOffset;
 
 
   /**
@@ -123,6 +130,11 @@ public final class SearchResults implements XMLWritable {
       else this.paging = paging;
 	    this.searcher = search;
 	    this.indexIO = io;
+	    // default timezone is the server's
+	    TimeZone tz = TimeZone.getDefault();
+      this.timezoneOffset = tz.getRawOffset();
+      // take daylight savings into account
+      if (tz.inDaylightTime(new Date())) this.timezoneOffset += 3600000;
   }
   
   /**
@@ -133,6 +145,11 @@ public final class SearchResults implements XMLWritable {
    */
   public boolean isEmpty() {
     return (this.scoredocs != null && this.scoredocs.length == 0) || this.scoredocs == null;
+  }
+  
+  public void setTimeZone(int timezoneInMinutes) {
+    // value is in minutes
+    this.timezoneOffset = timezoneInMinutes * 60000;
   }
 
   /**
@@ -182,6 +199,20 @@ public final class SearchResults implements XMLWritable {
       // display the value of each field
       for (Fieldable f : doc.getFields()) {
         String value = f.stringValue();
+        if (f.name().contains("date")) {
+          try {
+            Date date = new Date(DateTools.stringToTime(value));
+            DateFormat dateformat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssZ");
+            TimeZone tz = TimeZone.getDefault();
+            if (tz.inDaylightTime(date)) tz.setRawOffset(this.timezoneOffset - 3600000);
+            else tz.setRawOffset(this.timezoneOffset);
+            dateformat.setTimeZone(tz);
+            value = dateformat.format(date);
+          } catch (Exception e) {
+            // oh well, the field is probably not a date then, we'll keep going with the index value
+            LOGGER.error("Failed to format date field", e);
+          }
+        }
         // unnecessary to return the full value of long fields
         if (value.length() < MAX_FIELD_VALUE_LENGTH) {
           xml.openElement("field");

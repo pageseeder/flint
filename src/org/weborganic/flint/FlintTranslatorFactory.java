@@ -17,9 +17,18 @@ import org.weborganic.flint.content.ContentTranslatorFactory;
    * MIME type supported
    */
   protected static String XML_MIME_TYPE = "text/xml";
+  /**
+   * The translator for folders: a source forwarder
+   */
+  private final ContentTranslator xmlTranslator;
+  
+  public FlintTranslatorFactory() {
+    this.xmlTranslator = new SourceForwarder(XML_MIME_TYPE);
+  }
 
   public ContentTranslator createTranslator(String mimeType) {
-    return new FlintXMLTranslator();
+    if (XML_MIME_TYPE.equals(mimeType)) return this.xmlTranslator;
+    return null;
   }
   
   public List<String> getMimeTypesSupported() {

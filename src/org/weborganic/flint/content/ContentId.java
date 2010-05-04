@@ -22,5 +22,11 @@ public interface ContentId {
    * @return a String representation of this ID
    */
   public String getID();
+  /**
+   * Load the Content Type attached ot this ID
+   * 
+   * @return the Content Type attached ot this ID
+   */
+  public ContentType getContentType();
 
 }
