@@ -30,6 +30,7 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.LockObtainFailedException;
 import org.apache.lucene.util.Version;
@@ -276,7 +277,9 @@ public class IndexManager implements Runnable {
         }
         this.logger.debug("Performing search [" + lquery.rewrite(searcher.getIndexReader()).toString()
             + "] on index " + index.toString());
-        TopDocs docs = searcher.search(lquery, null, 10, query.getSort());
+        Sort sort = query.getSort();
+        if (sort == null) sort = Sort.INDEXORDER;
+        TopDocs docs = searcher.search(lquery, null, 10, sort);
         return new SearchResults(docs.scoreDocs, paging, io, searcher);
       } catch (IOException e) {
         try {
@@ -487,14 +490,14 @@ public class IndexManager implements Runnable {
       try {
         io = new IndexIO(index);
       } catch (CorruptIndexException e) {
-        this.logger.error("Failed getting a Searcher to perform a query because the Index is corrupted", e);
-        throw new IndexException("Failed getting a Searcher to perform a query because the Index is corrupted", e);
+        this.logger.error("Failed creating an Index I/O object because the Index is corrupted", e);
+        throw new IndexException("Failed creating an Index I/O object because the Index is corrupted", e);
       } catch (LockObtainFailedException e) {
-        this.logger.error("Failed getting a lock on the Index to perform a query", e);
-        throw new IndexException("Failed getting a lock on the Index to perform a query", e);
+        this.logger.error("Failed getting a lock on the Index to create an Index I/O object", e);
+        throw new IndexException("Failed getting a lock on the Index to create an Index I/O object", e);
       } catch (IOException e) {
-        this.logger.error("Failed getting a searcher to perform a query on the Index because of an I/O problem", e);
-        throw new IndexException("Failed getting a searcher to perform a query on the Index because of an I/O problem", e);
+        this.logger.error("Failed creating an Index I/O object because of an I/O problem", e);
+        throw new IndexException("Failed creating an Index I/O object because of an I/O problem", e);
       }
       this.indexes.put(index.getIndexID(), io);
     }
