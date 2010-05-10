@@ -3,3 +3,7 @@ syntax: regexp
 ^doc$
 syntax: regexp
 ^release$
+syntax: regexp
+^ivy\.properties$
+syntax: regexp
+^local\.properties$
