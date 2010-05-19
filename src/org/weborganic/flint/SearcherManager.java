@@ -43,41 +43,13 @@ public class SearcherManager {
   private IndexSearcher currentSearcher;
 
   /**
-   * The writer used to retrieve the reader.
-   */
-  private final IndexWriter writer;
-
-  /**
    * Create a new SEarcherManager using the given writer
    * 
    * @param thewriter the IndexWriter used to load the real-time reader.
    * @throws IOException
    */
   public SearcherManager(IndexWriter thewriter) throws IOException {
-    this.writer = thewriter;
-    this.currentSearcher = new IndexSearcher(this.writer.getReader());
-    warm(this.currentSearcher);
-    this.writer.setMergedSegmentWarmer(new IndexWriter.IndexReaderWarmer() {
-      public void warm(IndexReader reader) throws IOException {
-        SearcherManager.this.warm(new IndexSearcher(reader));
-      }
-    });
-  }
-
-  /**
-   * Warm the reader before it is used.
-   * 
-   * <p>This is done to pre-load certain fields in the cache.
-   * 
-   * <p>These fields are keywords (one per document) and used for sorting
-   * 
-   * @param searcher
-   * @throws IOException
-   */
-  public void warm(IndexSearcher searcher) throws IOException {
-    // FIXME: does nothing...
-    // XXX: typo????  
-  // FieldCache.DEFAULT.getStrings(searcher.getIndexReader(), IndexManager.CONTENT_ID_FIELD);
+    this.currentSearcher = new IndexSearcher(thewriter.getReader());
   }
 
   // ------------------ Index re-opening methods -----------------------------
@@ -92,9 +64,8 @@ public class SearcherManager {
    */
   private synchronized void startReopen() throws InterruptedException {
     LOGGER.debug("Starting open");
-    while (this.reopening) {
+    while (this.reopening)
       wait();
-    }
     this.reopening = true;
   }
 
@@ -116,14 +87,11 @@ public class SearcherManager {
   public void maybeReopen() throws InterruptedException, IOException {
     startReopen();
     try {
-      IndexSearcher searcher = get();
+      final IndexSearcher searcher = get();
       try {
         IndexReader newReader = this.currentSearcher.getIndexReader().reopen();
         if (newReader != this.currentSearcher.getIndexReader()) {
           IndexSearcher newSearcher = new IndexSearcher(newReader);
-          if (this.writer == null) {
-            warm(newSearcher);
-          }
           swapSearcher(newSearcher);
         }
       } finally {
@@ -152,6 +120,7 @@ public class SearcherManager {
    * Return the current IndexSearcher. Important: call release() when finished with the searcher.
    * 
    * @return the current IndexSearcher
+   * @throws InterruptedException 
    */
   public synchronized IndexSearcher get() {
     LOGGER.debug("Getting searcher " + this.currentSearcher.hashCode());
@@ -168,5 +137,8 @@ public class SearcherManager {
   public synchronized void release(IndexSearcher searcher) throws IOException {
     LOGGER.debug("Releasing searcher " + searcher.hashCode());
     searcher.getIndexReader().decRef();
+    // check if we should close an old one
+    if (this.currentSearcher != searcher && searcher.getIndexReader().getRefCount() == 0)
+      searcher.close();
   }
 }

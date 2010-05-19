@@ -157,7 +157,6 @@ final class IndexDocumentHandler_2_0 extends DefaultHandler implements IndexDocu
   private void startDocumentElement(Attributes atts) {
     LOGGER.debug("Parsing new index document");
     this._document = new Document();
-//    this._document.add(new Field(IndexManager.CONTENT_ID_FIELD, this.contentID, Store.YES, Index.NOT_ANALYZED));
   }
 
   /**
@@ -165,7 +164,7 @@ final class IndexDocumentHandler_2_0 extends DefaultHandler implements IndexDocu
    */
   private void endDocumentElement() {
     LOGGER.debug("Storing document");
-    if (this._document.getFields().size() == 1) {
+    if (this._document.getFields().isEmpty()) {
       LOGGER.warn("This document is empty - will not be stored");
     } else {
       this.documents.add(this._document);

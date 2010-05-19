@@ -9,7 +9,6 @@ package org.weborganic.flint;
 import java.util.Collections;
 import java.util.Map;
 
-import org.weborganic.flint.IndexManager.Priority;
 import org.weborganic.flint.content.ContentId;
 
 /**
@@ -19,6 +18,11 @@ import org.weborganic.flint.content.ContentId;
  * @version 26 February 2010
  */
 public class IndexJob implements Comparable<IndexJob> {
+  
+  /**
+   * A list of priorities for IndexJobs
+   */
+  public enum Priority {HIGH, LOW};
 
   /**
    * The Content ID.
@@ -165,7 +169,7 @@ public class IndexJob implements Comparable<IndexJob> {
    * <p>Used to order the jobs by priority in the waiting queue.
    */
   public int compareTo(IndexJob other) {
-    return this.priority == other.priority? 0 : this.priority == Priority.HIGH? 1 : -1;
+    return this.priority == other.priority? 0 : this.priority == Priority.HIGH ? -1 : 1;
   }
 
   /**

@@ -15,6 +15,7 @@ import org.apache.lucene.queryParser.ParseException;
 import org.apache.lucene.queryParser.QueryParser;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Sort;
+import org.apache.lucene.search.SortField;
 import org.weborganic.flint.IndexManager;
 
 import com.topologi.diffx.xml.XMLWriter;
@@ -43,6 +44,14 @@ public final class PredicateSearchQuery implements SearchQuery {
    * The sort order.
    */
   private final Sort _sort;
+  /**
+   * Creates new predicate search query.
+   * 
+   * @param predicate The predicate for this query.
+   */
+  public PredicateSearchQuery(String predicate, String sortField) {
+    this(predicate, sortField == null ? Sort.INDEXORDER : new Sort(new SortField(sortField, SortField.STRING)));
+  }
 
   /**
    * Creates new predicate search query.

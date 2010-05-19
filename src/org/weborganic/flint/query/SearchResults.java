@@ -62,6 +62,8 @@ public final class SearchResults implements XMLWritable {
   private final IndexIO indexIO;
   private boolean terminated = false;
   
+  private final int totalNbOfResults;
+  
   private int timezoneOffset;
 
 
@@ -75,7 +77,7 @@ public final class SearchResults implements XMLWritable {
    * @throws IndexException if the documents could not be retrieved from the Index
    */
   public SearchResults(ScoreDoc[] hits, SearchPaging paging, IndexSearcher searcher) throws IOException, IndexException {
-    this(hits, null, paging, null, searcher);
+    this(hits, null, hits.length, paging, null, searcher);
   }
   /**
    * Creates a new SearchResults (legacy constructor).
@@ -87,7 +89,7 @@ public final class SearchResults implements XMLWritable {
    * @throws IndexException if the documents could not be retrieved from the Index
    */
   public SearchResults(TopFieldDocs fielddocs, SearchPaging paging, IndexSearcher searcher) throws IOException, IndexException {
-    this(fielddocs.scoreDocs, fielddocs.fields, paging, null, searcher);
+    this(fielddocs.scoreDocs, fielddocs.fields, fielddocs.totalHits, paging, null, searcher);
   }
   /**
    * Creates a new SearchResults.
@@ -99,7 +101,7 @@ public final class SearchResults implements XMLWritable {
    * @throws IndexException if the documents could not be retrieved from the Index
    */
   public SearchResults(TopFieldDocs fielddocs, SearchPaging paging, IndexIO io, IndexSearcher searcher) throws IOException, IndexException {
-    this(fielddocs.scoreDocs, fielddocs.fields, paging, io, searcher);
+    this(fielddocs.scoreDocs, fielddocs.fields, fielddocs.totalHits, paging, io, searcher);
   }
   /**
    * Creates a new SearchResults.
@@ -110,8 +112,8 @@ public final class SearchResults implements XMLWritable {
    * @param searcher  The Lucene searcher.
    * @throws IndexException if the documents could not be retrieved from the Index
    */
-  public SearchResults(ScoreDoc[] hits, SearchPaging paging, IndexIO io, IndexSearcher searcher) throws IndexException {
-    this(hits, null, paging, io, searcher);
+  public SearchResults(ScoreDoc[] hits, int totalHits, SearchPaging paging, IndexIO io, IndexSearcher searcher) throws IndexException {
+    this(hits, null, totalHits, paging, io, searcher);
   }
   /**
    * Creates a new SearchResults.
@@ -123,18 +125,23 @@ public final class SearchResults implements XMLWritable {
    * @param searcher  The Lucene searcher.
    * @throws IndexException if the documents could not be retrieved from the Index
    */
-  private SearchResults(ScoreDoc[] hits, SortField[] sortf, SearchPaging paging, IndexIO io, IndexSearcher search) throws IndexException {
+  private SearchResults(ScoreDoc[] hits, SortField[] sortf, int totalResults, SearchPaging paging, IndexIO io, IndexSearcher search) throws IndexException {
 	    this.scoredocs = hits;
 	    this.sortfields = sortf;
       if (paging == null) this.paging = new SearchPaging();
       else this.paging = paging;
 	    this.searcher = search;
 	    this.indexIO = io;
+	    this.totalNbOfResults = totalResults;
 	    // default timezone is the server's
 	    TimeZone tz = TimeZone.getDefault();
       this.timezoneOffset = tz.getRawOffset();
       // take daylight savings into account
       if (tz.inDaylightTime(new Date())) this.timezoneOffset += 3600000;
+  }
+  
+  public int getTotalNbOfResults() {
+    return this.totalNbOfResults;
   }
   
   /**
@@ -144,7 +151,7 @@ public final class SearchResults implements XMLWritable {
    *         <code>false</code> if there is more than one hit.
    */
   public boolean isEmpty() {
-    return (this.scoredocs != null && this.scoredocs.length == 0) || this.scoredocs == null;
+    return this.totalNbOfResults > 0;
   }
   
   public void setTimeZone(int timezoneInMinutes) {
@@ -163,7 +170,7 @@ public final class SearchResults implements XMLWritable {
     xml.openElement("search-results", true);
     
     // check whether it's equally distribute mode, if yes then calculate num of hits for each page
-    int length = this.scoredocs.length;
+    int length = this.totalNbOfResults;
     int hitsperpage = (this.paging.checkEqDist()) ? ((int)Math.ceil((double)length/(double)this.paging.getTotalPage())) : this.paging.getHitsPerPage();
     int firsthit = hitsperpage * (this.paging.getPage() - 1) + 1;
     int lasthit = Math.min(length, firsthit + hitsperpage - 1);
@@ -191,6 +198,7 @@ public final class SearchResults implements XMLWritable {
     xml.openElement("documents", true);
 
     // iterate over the hits
+    DateFormat dateformat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssZ");
     for (int i = firsthit - 1; i < lasthit; i++) {
       xml.openElement("document", true);
       String score = Float.toString(this.scoredocs[i].score);
@@ -201,8 +209,7 @@ public final class SearchResults implements XMLWritable {
         String value = f.stringValue();
         if (f.name().contains("date")) {
           try {
-            Date date = new Date(DateTools.stringToTime(value));
-            DateFormat dateformat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssZ");
+            Date date = DateTools.stringToDate(value);
             TimeZone tz = TimeZone.getDefault();
             if (tz.inDaylightTime(date)) tz.setRawOffset(this.timezoneOffset - 3600000);
             else tz.setRawOffset(this.timezoneOffset);

@@ -13,13 +13,13 @@ import java.io.StringWriter;
 import java.io.Writer;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.PriorityBlockingQueue;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.ThreadFactory;
 
 import javax.xml.transform.Templates;
 import javax.xml.transform.Transformer;
@@ -34,6 +34,7 @@ import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.LockObtainFailedException;
 import org.apache.lucene.util.Version;
+import org.weborganic.flint.IndexJob.Priority;
 import org.weborganic.flint.content.Content;
 import org.weborganic.flint.content.ContentFetcher;
 import org.weborganic.flint.content.ContentId;
@@ -54,9 +55,11 @@ import com.sun.istack.internal.NotNull;
 /**
  * Main class from Flint, applications should create one instance of this class.
  * 
- * - To register IndexConfigs, use the methods registerIndexConfig() and getConfig(). - To add/modify/delete content
- * from an Index, use the methods addToIndex(), updateIndex() and deleteFromIndex() - To search an Index, use the
- * methods query() - to load an Index's statuses, use the method getStatus()
+ * - To start and stop the Indexing thread, use the methods start() and stop().
+ * - To register IndexConfigs, use the methods registerIndexConfig() and getConfig().
+ * - To add/modify/delete content from an Index, use the method index()
+ * - To search an Index, use the methods query()
+ * - to load an Index's statuses, use the method getStatus()
  * 
  * @author Jean-Baptiste Reure
  * @version 26 February 2010
@@ -64,16 +67,6 @@ import com.sun.istack.internal.NotNull;
 public class IndexManager implements Runnable {
   
   public final static Version LUCENE_VERSION = Version.LUCENE_30;
-
-  /**
-   * A list of priorities for IndexJobs
-   */
-  public enum Priority {HIGH, LOW};
-
-  /**
-   * this.logger.
-   */
-  private final Logger logger;
 
   /**
    * Inactive time before indexes get optimised
@@ -86,6 +79,11 @@ public class IndexManager implements Runnable {
   private static final long INDEX_JOB_POLL_DELAY = 1 * 1000; // 1 second
 
   /**
+   * this.logger.
+   */
+  private final Logger logger;
+
+  /**
    * The fetcher used to retrieve content to index
    */
   private final ContentFetcher fetcher;
@@ -93,7 +91,7 @@ public class IndexManager implements Runnable {
   /**
    * The IndexJob queue
    */
-  private final PriorityBlockingQueue<IndexJob> indexQueue;
+  private final IndexJobQueue indexQueue;
 
   /**
    * List of Indexes
@@ -111,6 +109,16 @@ public class IndexManager implements Runnable {
   private long lastActivity;
 
   /**
+   * Priority of the thread, default to NORM_PRIORITY (5)
+   */
+  private int threadPriority = Thread.NORM_PRIORITY;
+  
+  /**
+   * The thread manager
+   */
+  private ExecutorService threadPool = null;
+
+  /**
    * Simple Constructor
    * 
    * @param cf the Content Fetcher used to retrieve the content to index.
@@ -118,7 +126,7 @@ public class IndexManager implements Runnable {
   public IndexManager(ContentFetcher cf, Logger log) {
     this.fetcher = cf;
     this.logger = log;
-    this.indexQueue = new PriorityBlockingQueue<IndexJob>();
+    this.indexQueue = new IndexJobQueue(INDEX_JOB_POLL_DELAY);
     this.indexes = new ConcurrentHashMap<String, IndexIO>();
     // register default XML factory
     this.translatorFactories = new ConcurrentHashMap<String, ContentTranslatorFactory>();
@@ -128,6 +136,14 @@ public class IndexManager implements Runnable {
 
   // public external methods
   // ----------------------------------------------------------------------------------------------
+  /**
+   * Set the priority of the thread (this has no effect if called after the method start() is called)
+   * 
+   * @param priority the priority of the Indexing Thread (from 1 to 10, default is 5)
+   */
+  public void setThreadPriority(int priority) {
+    this.threadPriority = priority;
+  }
   
   /**
    * Register a new factory with the all the MIME types supported by the factory.
@@ -162,13 +178,12 @@ public class IndexManager implements Runnable {
    * @param config   the Config to use
    * @param r        the Requester calling this method (used for logging)
    * @param p        the Priority of this job
-   * @param params   the dynamic XSLt parameters
+   * @param params   the dynamic XSLT parameters
    */
   public void index(ContentId id, Index i, IndexConfig config, Requester r, Priority p, Map<String, String> params) {
-    this.logger.indexDebug(r, i, "Adding Index Job for index " + i.toString());
-    this.indexQueue.put(IndexJob.newJob(id, config, i, p, r, params));
+    IndexJob job = IndexJob.newJob(id, config, i, p, r, params);
+    this.indexQueue.addJob(job);
   }
-
 
   /**
    * Returns the list of waiting jobs for the Requester provided.
@@ -182,12 +197,7 @@ public class IndexManager implements Runnable {
    * @return the list of jobs waiting (never <code>null</code>)
    */
   public List<IndexJob> getStatus(Requester r) {
-    if (r == null) return getStatus();
-    List<IndexJob> jobs = new ArrayList<IndexJob>();
-    for (IndexJob job : this.indexQueue) {
-      if (job.isForRequester(r)) jobs.add(job);
-    }
-    return jobs;
+    return this.indexQueue.getJobsForRequester(r);
   }
 
   /**
@@ -202,12 +212,7 @@ public class IndexManager implements Runnable {
    * @return the list of jobs waiting (never <code>null</code>)
    */
   public List<IndexJob> getStatus(Index i) {
-    if (i == null) return getStatus();
-    List<IndexJob> jobs = new ArrayList<IndexJob>();
-    for (IndexJob job : this.indexQueue) {
-      if (job.isForIndex(i)) jobs.add(job);
-    }
-    return jobs;
+    return this.indexQueue.getJobsForIndex(i);
   }
 
   /**
@@ -221,7 +226,7 @@ public class IndexManager implements Runnable {
    * @return the list of jobs waiting (never <code>null</code>)
    */
   public List<IndexJob> getStatus() {
-    return new ArrayList<IndexJob>(this.indexQueue);
+    return this.indexQueue.getAllJobs();
   }
 
   /**
@@ -275,12 +280,11 @@ public class IndexManager implements Runnable {
           this.logger.error("Failed performing a query on the Index because the query is null", null);
           throw new IndexException("Failed performing a query on the Index because the query is null", new NullPointerException("Null query"));
         }
-        this.logger.debug("Performing search [" + lquery.rewrite(searcher.getIndexReader()).toString()
-            + "] on index " + index.toString());
+        this.logger.debug("Performing search [" + lquery.rewrite(searcher.getIndexReader()).toString() + "] on index " + index.toString());
         Sort sort = query.getSort();
         if (sort == null) sort = Sort.INDEXORDER;
-        TopDocs docs = searcher.search(lquery, null, 10, sort);
-        return new SearchResults(docs.scoreDocs, paging, io, searcher);
+        TopDocs docs = searcher.search(lquery, null, paging.getHitsPerPage() * paging.getPage(), sort);
+        return new SearchResults(docs.scoreDocs, docs.totalHits, paging, io, searcher);
       } catch (IOException e) {
         try {
           io.releaseSearcher(searcher);
@@ -356,12 +360,35 @@ public class IndexManager implements Runnable {
    * Start the Manager by launching the thread.
    */
   public void start() {
-    // start an index worker thread
-    ExecutorService threadPool = Executors.newCachedThreadPool();
-    threadPool.execute(this);
+    // only start once...
+    if (this.threadPool != null) return;
+    // create the worker thread pool
+    this.threadPool = Executors.newCachedThreadPool(new ThreadFactory() {
+      @Override
+      public Thread newThread(Runnable r) {
+        Thread t = new Thread(r, "Indexing Thread with priority of "+IndexManager.this.threadPriority);
+        t.setPriority(IndexManager.this.threadPriority);
+        return t;
+      }
+    });
+    this.threadPool.execute(this);
   }
-  
-
+  /**
+   * Kills the thread and close all the indexes.
+   */
+  public void stop() {
+    // stop the thread
+    this.threadPool.shutdown();
+    // close all indexes
+    for (Iterator<String> ids = this.indexes.keySet().iterator(); ids.hasNext();) {
+      String id = ids.next();
+      try {
+        this.indexes.get(id).stop();
+      } catch (IndexException ex) {
+        this.logger.error("Failed to close Index "+id+": " + ex.getMessage(), ex);
+      }
+    }
+  }
   /**
    * The thread's main method
    */
@@ -369,7 +396,7 @@ public class IndexManager implements Runnable {
     IndexJob nextJob = null;
     while (true) {
       try {
-        nextJob = this.indexQueue.poll(INDEX_JOB_POLL_DELAY, TimeUnit.MILLISECONDS);
+        nextJob = this.indexQueue.nextJob();
       } catch (InterruptedException e) {
         // the thread was shutdown, let's die then
         return;
@@ -483,21 +510,21 @@ public class IndexManager implements Runnable {
    * @return
    * @throws IndexException
    */
-  private synchronized IndexIO getIndexIO(Index index) throws IndexException {
+  private IndexIO getIndexIO(Index index) throws IndexException {
     IndexIO io = this.indexes.get(index.getIndexID());
     if (io == null) {
       this.logger.debug("Creating a new IndexIO for " + index.toString());
       try {
         io = new IndexIO(index);
       } catch (CorruptIndexException e) {
-        this.logger.error("Failed creating an Index I/O object because the Index is corrupted", e);
-        throw new IndexException("Failed creating an Index I/O object because the Index is corrupted", e);
+        this.logger.error("Failed creating an Index I/O object for " + index.toString() + " because the Index is corrupted", e);
+        throw new IndexException("Failed creating an Index I/O object for " + index.toString() + " because the Index is corrupted", e);
       } catch (LockObtainFailedException e) {
-        this.logger.error("Failed getting a lock on the Index to create an Index I/O object", e);
-        throw new IndexException("Failed getting a lock on the Index to create an Index I/O object", e);
+        this.logger.error("Failed getting a lock on the Index to create an Index I/O object for " + index.toString(), e);
+        throw new IndexException("Failed getting a lock on the Index to create an Index I/O object for " + index.toString(), e);
       } catch (IOException e) {
-        this.logger.error("Failed creating an Index I/O object because of an I/O problem", e);
-        throw new IndexException("Failed creating an Index I/O object because of an I/O problem", e);
+        this.logger.error("Failed creating an Index I/O object for " + index.toString() + " because of an I/O problem", e);
+        throw new IndexException("Failed creating an Index I/O object for " + index.toString() + " because of an I/O problem", e);
       }
       this.indexes.put(index.getIndexID(), io);
     }
@@ -506,10 +533,7 @@ public class IndexManager implements Runnable {
 
   private void checkForCommit() {
     // loop through the indexes and check which one needs committing
-    List<IndexIO> ios;
-    synchronized (this.indexes) {
-      ios = new ArrayList<IndexIO>(this.indexes.values());
-    }
+    List<IndexIO> ios = new ArrayList<IndexIO>(this.indexes.values());
     for (IndexIO io : ios) {
       try {
         io.maybeCommit();
@@ -517,13 +541,11 @@ public class IndexManager implements Runnable {
         this.logger.error("Failed to perform commit", e);
       }
       // make sure there's no job waiting
-      if (this.indexQueue.size() > 0) return;
+      if (!this.indexQueue.isEmpty()) return;
     }
     // ok optimise now?
     if ((System.currentTimeMillis() - lastActivity) > INACTIVE_OPTIMISE_TIME) {
-      synchronized (this.indexes) {
-        ios = new ArrayList<IndexIO>(this.indexes.values());
-      }
+      ios = new ArrayList<IndexIO>(this.indexes.values());
       // loop through the indexes and optimise
       for (IndexIO io : ios) {
         try {
@@ -532,7 +554,7 @@ public class IndexManager implements Runnable {
           this.logger.error("Failed to perform optimise", e);
         }
         // make sure there's no job waiting
-        if (this.indexQueue.size() > 0) return;
+        if (!this.indexQueue.isEmpty()) return;
       }
     }
   }

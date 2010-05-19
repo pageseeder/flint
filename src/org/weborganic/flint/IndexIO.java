@@ -29,7 +29,7 @@ public class IndexIO {
   private static final Logger LOGGER = Logger.getLogger(IndexIO.class);
 
   private static enum STATE {
-    CLEAN, NEEDS_COMMIT, NEEDS_OPTIMISE
+    CLEAN, NEEDS_REOPEN, NEEDS_COMMIT, NEEDS_OPTIMISE
   };
 
   private final IndexWriter writer;
@@ -43,6 +43,19 @@ public class IndexIO {
     this.writer.setMergeScheduler(new ConcurrentMergeScheduler());
     this.writer.setMergePolicy(new BalancedSegmentMergePolicy(this.writer));
     this.searcherManager = new SearcherManager(this.writer);
+  }
+
+  private void maybeReopen() {
+    if (this.state != STATE.NEEDS_REOPEN) return;
+    try {
+      LOGGER.debug("Reopen searcher");
+      this.searcherManager.maybeReopen();
+      this.state = STATE.NEEDS_COMMIT;
+    } catch (InterruptedException e) {
+      LOGGER.error("Failed to reopen the Index Searcher because the thread has been interrupted", e);
+    } catch (IOException e) {
+      LOGGER.error("Failed to reopen Index Searcher because of an I/O error", e);
+    }
   }
 
   public void maybeCommit() throws IndexException {
@@ -83,19 +96,11 @@ public class IndexIO {
     try {
       if (rule.useTerm()) writer.deleteDocuments(rule.toTerm());
       else writer.deleteDocuments(rule.toQuery());
-      this.state = STATE.NEEDS_COMMIT;
+      this.state = STATE.NEEDS_REOPEN;
     } catch (CorruptIndexException e) {
       throw new IndexException("Failed to delete document from Index because it is corrupted", e);
     } catch (IOException e) {
       throw new IndexException("Failed to delete document from Index because of an I/O error", e);
-    }
-    try {
-      LOGGER.debug("Reopen searcher");
-      this.searcherManager.maybeReopen();
-    } catch (InterruptedException e) {
-      LOGGER.error("Failed to reopen the Index Searcher because the thread has been interrupted", e);
-    } catch (IOException e) {
-      LOGGER.error("Failed to reopen Index Searcher because of an I/O error", e);
     }
     return true;
   }
@@ -109,29 +114,37 @@ public class IndexIO {
       }
       for (Document doc : documents)
         writer.addDocument(doc);
-      this.state = STATE.NEEDS_COMMIT;
+      this.state = STATE.NEEDS_REOPEN;
     } catch (CorruptIndexException e) {
       throw new IndexException("Failed to update document in Index because it is corrupted", e);
     } catch (IOException e) {
       throw new IndexException("Failed to update document in Index because of an I/O error", e);
     }
-    try {
-      LOGGER.debug("Reopen searcher");
-      this.searcherManager.maybeReopen();
-    } catch (InterruptedException e) {
-      LOGGER.error("Failed to reopen the Index Searcher because the thread has been interrupted", e);
-    } catch (IOException e) {
-      LOGGER.error("Failed to reopen Index Searcher because of an I/O error", e);
-    }
     return true;
   }
 
   public IndexSearcher bookSearcher() throws IOException {
+    // check for reopening
+    maybeReopen();
     return this.searcherManager.get();
   }
 
   public void releaseSearcher(IndexSearcher searcher) throws IOException {
     this.searcherManager.release(searcher);
+  }
+  /**
+   * Closes the writer on this index
+   * 
+   * @throws IndexException
+   */
+  public void stop() throws IndexException {
+    try {
+      this.writer.close();
+    } catch (CorruptIndexException e) {
+      throw new IndexException("Failed to close Index because it is corrupted", e);
+    } catch (IOException e) {
+      throw new IndexException("Failed to close Index because of an I/O error", e);
+    }
   }
 
 }
