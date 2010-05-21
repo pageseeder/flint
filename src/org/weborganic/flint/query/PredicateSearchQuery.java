@@ -44,6 +44,11 @@ public final class PredicateSearchQuery implements SearchQuery {
    * The sort order.
    */
   private final Sort _sort;
+  
+  /**
+   * A flag to specify if wildcard ('*' or '?') is allowed as the first character of the predicate
+   */
+  private boolean allowWildCardStart = false;
   /**
    * Creates new predicate search query.
    * 
@@ -97,7 +102,15 @@ public final class PredicateSearchQuery implements SearchQuery {
 
   // getters and setters
   // --------------------------------------------------------------------------------------------
-
+  /**
+   * Whether or not a wildcard ('*' or '?') is allowed as the first character of the predicate.
+   * 
+   * @param allowWildCardStart true if wildcard should be allowed, false otherwise
+   */
+  public void setAllowWildCardStart(boolean allowWildCardStart) {
+    this.allowWildCardStart = allowWildCardStart;
+  }
+  
   /**
    * Returns null.
    * 
@@ -131,6 +144,7 @@ public final class PredicateSearchQuery implements SearchQuery {
       return null;
     try {
       QueryParser parser = new QueryParser(IndexManager.LUCENE_VERSION, getField(), this._analyser);
+      parser.setAllowLeadingWildcard(this.allowWildCardStart);
       return parser.parse(this._predicate);
     } catch (ParseException ex) {
       return null;
