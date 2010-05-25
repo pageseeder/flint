@@ -28,6 +28,7 @@ import javax.xml.transform.stream.StreamSource;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.CorruptIndexException;
+import org.apache.lucene.index.IndexReader.FieldOption;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Sort;
@@ -49,8 +50,6 @@ import org.weborganic.flint.query.SearchQuery;
 import org.weborganic.flint.query.SearchResults;
 import org.weborganic.flint.util.FlintEntityResolver;
 import org.xml.sax.InputSource;
-
-import com.sun.istack.internal.NotNull;
 
 /**
  * Main class from Flint, applications should create one instance of this class.
@@ -230,6 +229,44 @@ public class IndexManager implements Runnable {
   }
 
   /**
+   * Load the existing field names form the given Index.
+   * 
+   * @param index the Index to laod the field names from
+   * @return the search results
+   * @throws IndexException if any error occurred while performing the search
+   */
+  public Iterator<String> fieldNames(Index index) throws IndexException {
+    IndexIO io = null;
+    IndexSearcher searcher = null;
+    try {
+      io = getIndexIO(index);
+      searcher = io.bookSearcher();
+    } catch (CorruptIndexException e) {
+      this.logger.error("Failed getting a Searcher to perform a query because the Index is corrupted", e);
+      throw new IndexException("Failed getting a Searcher to perform a query because the Index is corrupted", e);
+    } catch (LockObtainFailedException e) {
+      this.logger.error("Failed getting a lock on the Index to perform a query", e);
+      throw new IndexException("Failed getting a lock on the Index to perform a query", e);
+    } catch (IOException e) {
+      this.logger.error("Failed getting a searcher to perform a query on the Index because of an I/O problem", e);
+      throw new IndexException("Failed getting a searcher to perform a query on the Index because of an I/O problem", e);
+    }
+    if (searcher != null) {
+      try {
+        this.logger.debug("Loading field names from index " + index.toString());
+        return searcher.getIndexReader().getFieldNames(FieldOption.INDEXED).iterator();
+      } finally {
+        try {
+          io.releaseSearcher(searcher);
+        } catch (IOException ioe) {
+          this.logger.error("Failed releasing a Searcher after performing a query on the Index because of an I/O problem", ioe);
+        }
+      }
+    }
+    return null;
+  }
+
+  /**
    * Run a search on the given Index.
    * 
    * @param index the Index to run the search on
@@ -308,8 +345,7 @@ public class IndexManager implements Runnable {
    * @param out     the Writer to write the result to
    * @throws IndexException if anything went wrong
    */
-  public void translateContent(@NotNull ContentType type, @NotNull IndexConfig config,
-      @NotNull Content content, Map<String, String> params, @NotNull Writer out) throws IndexException {
+  public void translateContent(ContentType type, IndexConfig config, Content content, Map<String, String> params, Writer out) throws IndexException {
     String mimetype = content.getMimeType();
     // no MIME type found
     if (mimetype == null)
@@ -336,8 +372,10 @@ public class IndexManager implements Runnable {
     try {
       // prepare transformer
       Transformer t = templates.newTransformer();
-      t.setOutputProperty("doctype-public", FlintEntityResolver.PUBLIC_ID_PREFIX + "Index Documents 2.0//EN");
-      t.setOutputProperty("doctype-system", "");
+      if (t.getOutputProperty("doctype-public") == null) {
+        t.setOutputProperty("doctype-public", FlintEntityResolver.PUBLIC_ID_PREFIX + "Index Documents Compatibility//EN");
+        t.setOutputProperty("doctype-system", "http://weborganic.org/schema/flint/index-documents-compatibility.dtd");
+      }
       // retrieve parameters
       Map<String, String> parameters = config.getParameters(type, mimetype, content.getConfigID());
       if (parameters != null && params != null) {
