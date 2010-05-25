@@ -12,8 +12,10 @@ import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.TimeZone;
+import java.util.zip.DataFormatException;
 
 import org.apache.log4j.Logger;
+import org.apache.lucene.document.CompressionTools;
 import org.apache.lucene.document.DateTools;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Fieldable;
@@ -207,8 +209,18 @@ public final class SearchResults implements XMLWritable {
       // display the value of each field
       for (Fieldable f : doc.getFields()) {
         String value = f.stringValue();
-        if (f.name().contains("date")) {
+        // is it a compressed field?
+        if (value == null && f.getBinaryLength() > 0)
           try {
+            value = CompressionTools.decompressString(f.getBinaryValue());
+          } catch (DataFormatException e) {
+            // oh well, the field is probably not a date then, we'll keep going with the index value
+            LOGGER.error("Failed to decompress field value", e);
+            continue;
+          }
+        if (f.name().contains("date")) {
+          if (value == null || "0".equals(value)) value = "";
+          if (!"".equals(value)) try {
             Date date = DateTools.stringToDate(value);
             TimeZone tz = TimeZone.getDefault();
             if (tz.inDaylightTime(date)) tz.setRawOffset(this.timezoneOffset - 3600000);
