@@ -25,7 +25,7 @@ import org.xml.sax.helpers.DefaultHandler;
  * @author Christophe Lauret
  * @version 2 March 2010
  */
-final class IndexDocumentHandler_1_0 extends DefaultHandler implements IndexDocumentHandler {
+final class IndexDocumentHandlerCompatibility extends DefaultHandler implements IndexDocumentHandler {
 
   /**
    * Use the GMT time zone.
@@ -35,7 +35,7 @@ final class IndexDocumentHandler_1_0 extends DefaultHandler implements IndexDocu
   /**
    * The logger for this class.
    */
-  private static final Logger LOGGER = Logger.getLogger(IndexDocumentHandler_1_0.class);
+  private static final Logger LOGGER = Logger.getLogger(IndexDocumentHandlerCompatibility.class);
 
   // class attributes
   // -------------------------------------------------------------------------------------------
@@ -61,12 +61,17 @@ final class IndexDocumentHandler_1_0 extends DefaultHandler implements IndexDocu
   /**
    * Flag to indicate whether a field is being processed (affects the behaviour of characters())
    */
-  private boolean _isField;
+  private boolean _isField = false;
+
+  /**
+   * Flag to indicate whether a field is being processed (affects the behaviour of characters())
+   */
+  private boolean _isCSV = false;
 
   /**
    * Flag to indicate that the current field should be compressed (may result in two fields).
    */
-  private boolean _isCompressed;
+  private boolean _isCompressed = false;
 
   /**
    * The field builder. 
@@ -97,7 +102,7 @@ final class IndexDocumentHandler_1_0 extends DefaultHandler implements IndexDocu
    * <p>Initialise this handler.
    */
   public void startDocument() {
-    LOGGER.debug("Start processing iXML documents (version 1.0)");
+    LOGGER.debug("Start processing iXML documents (compatibility version)");
     this.documents = new ArrayList<Document>();
   }
 
@@ -114,7 +119,7 @@ final class IndexDocumentHandler_1_0 extends DefaultHandler implements IndexDocu
   public void startElement(String uri, String localName, String qName, Attributes attributes) {
     if ("field".equals(qName)) {
       startFieldElement(attributes);
-    } else if ("document".equals(qName)) {
+    } else if ("document".equals(qName) || "fragment".equals(qName)) {
       startDocumentElement(attributes);
     }
   }
@@ -125,7 +130,7 @@ final class IndexDocumentHandler_1_0 extends DefaultHandler implements IndexDocu
   public void endElement(String uri, String localName, String qName) {
     if ("field".equals(qName)) {
       endFieldElement();
-    } else if ("document".equals(qName)) {
+    } else if ("document".equals(qName) || "fragment".equals(qName)) {
       endDocumentElement();
     }
   }
@@ -185,14 +190,16 @@ final class IndexDocumentHandler_1_0 extends DefaultHandler implements IndexDocu
    */
   private void startFieldElement(Attributes atts) {
     this.builder.name(atts.getValue("name"));
-    this.builder.index(toFieldIndex(atts.getValue("index")));
-    // handle compression    
-    if ("compress".equals(atts.getValue("store"))) {
+    String ftype = atts.getValue("type");
+    this.builder.index(ftype == null ? FieldBuilder.toFieldIndex(atts.getValue("index")) : fieldTypeToIndex(ftype));
+    // handle compression
+    String store = ftype == null ? atts.getValue("store") : fieldTypeToStore(ftype);
+    if ("compress".equals(store)) {
       this._isCompressed = true;
       this.builder.store(Store.NO);
     } else {
       this._isCompressed = false;
-      this.builder.store(atts.getValue("store"));
+      this.builder.store(store);
     }
     // Optional attributes
     this.builder.termVector(atts.getValue("term-vector"));
@@ -200,9 +207,35 @@ final class IndexDocumentHandler_1_0 extends DefaultHandler implements IndexDocu
     // Date handling
     this.builder.dateFormat(toDateFormat(atts.getValue("date-format")));
     this.builder.resolution(atts.getValue("date-resolution"));
+    // other attributes are ignored
     // Set attributes ready for recording content
     this._value   = new StringBuilder();
     this._isField = true;
+    this._isCSV = "true".equals(atts.getValue("comma-separated"));
+  }
+  
+  private static String fieldTypeToStore(String type) {
+    if (type == null)                            return null;
+    else if ("".equals(type))                    return "yes";
+    else if ("keyword".equalsIgnoreCase(type))   return "yes";
+    else if ("unindexed".equalsIgnoreCase(type)) return "yes";
+    else if ("text".equalsIgnoreCase(type))      return "compress";
+    else if ("stored".equalsIgnoreCase(type))    return "compress";
+    else if ("unstored".equalsIgnoreCase(type))  return "no";
+    else if ("system".equalsIgnoreCase(type))    return "no";
+    else return "yes";
+  }
+  
+  private static Field.Index fieldTypeToIndex(String type) {
+    if (type == null)                            return null;
+    else if ("".equals(type))                    return Field.Index.ANALYZED;
+    else if ("keyword".equalsIgnoreCase(type))   return Field.Index.ANALYZED;
+    else if ("unindexed".equalsIgnoreCase(type)) return Field.Index.NO;
+    else if ("text".equalsIgnoreCase(type))      return Field.Index.ANALYZED_NO_NORMS;
+    else if ("stored".equalsIgnoreCase(type))    return Field.Index.ANALYZED_NO_NORMS;
+    else if ("unstored".equalsIgnoreCase(type))  return Field.Index.ANALYZED_NO_NORMS;
+    else if ("system".equalsIgnoreCase(type))    return Field.Index.NOT_ANALYZED;
+    else return Field.Index.ANALYZED;
   }
 
   /**
@@ -211,21 +244,16 @@ final class IndexDocumentHandler_1_0 extends DefaultHandler implements IndexDocu
   private void endFieldElement() {
     try {
       // construct the field
-      this.builder.value(this._value.toString());
-
-      // compressed field
-      if (this._isCompressed) {
-        if (this.builder.index() == Index.NO) {
-          this._document.add(this.builder.buildCompressed());
-        } else {
-          this._document.add(this.builder.build());
-          this._document.add(this.builder.buildCompressed());
+      if (this._isCSV) {
+        String[] values = this._value.toString().split(",");
+        for (int i = 0; i < values.length; i++) {
+          if (values[i].length() > 0)
+            addFieldToDocument(values[i]);
         }
-
-      // uncompressed fields.
-      } else  {
-        this._document.add(this.builder.build());
-      }
+        // add it with all the values but not stored
+        this.builder.store(Store.NO);
+        addFieldToDocument(this._value.toString());
+      } else addFieldToDocument(this._value.toString());
 
     } catch (IllegalStateException ex) {
       LOGGER.warn("Unable to create field: "+this.builder.name(), ex);
@@ -234,6 +262,22 @@ final class IndexDocumentHandler_1_0 extends DefaultHandler implements IndexDocu
     }
     // reset the class attributes involved in this field
     resetField();
+  }
+  
+  private void addFieldToDocument(String value) {
+    this.builder.value(value);
+    // compressed field
+    if (this._isCompressed) {
+      if (this.builder.index() == Index.NO) {
+        this._document.add(this.builder.buildCompressed());
+      } else {
+        this._document.add(this.builder.build());
+        this._document.add(this.builder.buildCompressed());
+      }
+    // uncompressed fields.
+    } else  {
+      this._document.add(this.builder.build());
+    }
   }
 
   /**
@@ -283,24 +327,6 @@ final class IndexDocumentHandler_1_0 extends DefaultHandler implements IndexDocu
     this._isField = false;
     this.builder.reset();
     this._value = null;
-  }
-
-  /**
-   * Return the field index values handling legacy Lucene 2 values.
-   * 
-   * @param index The field index value.
-   * @return the Lucene 3 field index values corresponding to the specified string.
-   */
-  private Field.Index toFieldIndex(String index) {
-    if (index == null) return null;
-    // Lucene 2 values
-    if ("tokenised".equals(index)) return Field.Index.ANALYZED;
-    if ("un-tokenised".equals(index)) return Field.Index.NOT_ANALYZED;
-    if ("tokenized".equals(index)) return Field.Index.ANALYZED;
-    if ("un-tokenized".equals(index)) return Field.Index.NOT_ANALYZED;
-    if ("no-norms".equals(index)) return Field.Index.NOT_ANALYZED_NO_NORMS;
-    // Accept Lucene 3 values
-    return FieldBuilder.toFieldIndex(index);
   }
 
 }

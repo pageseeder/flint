@@ -484,7 +484,8 @@ public final class FieldBuilder {
       return DateTools.timeToString(date.getTime(), resolution);
     } catch (Exception ex) {
       LOGGER.warn("Ignoring unparsable date '"+value+"', format="+format+", resolution="+resolution, ex);
-      throw new IllegalArgumentException("Unparseable date field!", ex);
+      //throw new IllegalArgumentException("Unparseable date field!", ex);
+      return "";
     }
   }
 

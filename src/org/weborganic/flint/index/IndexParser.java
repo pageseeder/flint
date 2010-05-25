@@ -185,20 +185,23 @@ public final class IndexParser {
     public void startElement(String uri, String localName, String qName, Attributes atts) throws SAXException {
       if ("documents".equals(qName) || "documents".equals(localName)) {
         String version = atts.getValue("version");
-
         // Version 2.0
         if ("2.0".equals(version)) {
           this._handler = new IndexDocumentHandler_2_0();
-
         // Assume version 1.0
         } else {
           this._handler = new IndexDocumentHandler_1_0();
         }
-
         // Start processing the document with the new handler
         this._handler.startDocument();
         this._handler.startElement(uri, localName, qName, atts);
-
+        // Reassign the content handler
+        this._reader.setContentHandler(this._handler);
+      } else if ("root".equals(qName) || "root".equals(localName)) {
+        this._handler = new IndexDocumentHandlerCompatibility();
+        // Start processing the document with the new handler
+        this._handler.startDocument();
+        this._handler.startElement(uri, localName, qName, atts);
         // Reassign the content handler
         this._reader.setContentHandler(this._handler);
       }
