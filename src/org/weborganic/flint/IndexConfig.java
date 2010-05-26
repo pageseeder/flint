@@ -7,7 +7,6 @@
 package org.weborganic.flint;
 
 import java.io.File;
-import java.io.IOException;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
@@ -52,21 +51,22 @@ public class IndexConfig {
   /**
    * Add a list of parameters for the given Content definition.
    * 
-   * @param type the ContentType
-   * @param mimeType the Content's Mime Type
-   * @param params the list of parameters
+   * @param type     the ContentType
+   * @param mimeType the Content's MIME Type
+   * @param params   the list of parameters
    */
   public void addParameters(ContentType type, String mimeType, Map<String, String> params) {
+    // FIXME: Infinite loop?
     addParameters(type, mimeType, params);
   }
 
   /**
    * Add a list of parameters for the given Content definition.
    * 
-   * @param type the ContentType
-   * @param mimeType the Content's Mime Type
-   * @param configId the config ID, can be null
-   * @param params the list of parameters
+   * @param type     the ContentType
+   * @param mimeType the Content's MIME Type
+   * @param configId the config ID, can be <code>null</code>
+   * @param params   the list of parameters
    */
   public void addParameters(ContentType type, String mimeType, String configId, Map<String, String> params) {
     ContentDefinition def = new ContentDefinition(type, mimeType, configId);
@@ -77,9 +77,9 @@ public class IndexConfig {
   /**
    * Add a single parameter for the given Content definition.
    * 
-   * @param type the ContentType
-   * @param mimeType the Content's Mime Type
-   * @param paramname the parameter's name
+   * @param type       the ContentType
+   * @param mimeType   the Content's MIME Type
+   * @param paramname  the parameter's name
    * @param paramvalue the parameter's value
    */
   public void addParameter(ContentType type, String mimeType, String paramname, String paramvalue) {
@@ -89,10 +89,10 @@ public class IndexConfig {
   /**
    * Add a single parameter for the given Content definition.
    * 
-   * @param type the ContentType
-   * @param mimeType the Content's Mime Type
-   * @param configId the config ID, can be null
-   * @param paramname the parameter's name
+   * @param type       the ContentType
+   * @param mimeType   the Content's MIME Type
+   * @param configId   the config ID, can be <code>null</code>
+   * @param paramname  the parameter's name
    * @param paramvalue the parameter's value
    */
   public void addParameter(ContentType type, String mimeType, String configId, String paramname, String paramvalue) {
@@ -105,10 +105,10 @@ public class IndexConfig {
   }
 
   /**
-   * Return a list of parameters for the given Content definition.
+   * Return a list of parameters for the given content definition.
    * 
-   * @param type the ContentType
-   * @param mimeType the Content's Mime Type
+   * @param type     the ContentType
+   * @param mimeType the Content's MIME Type
    * @return the list of parameters for the given Content definition (never null).
    */
   public Map<String, String> getParameters(ContentType type, String mimeType) {
@@ -116,12 +116,12 @@ public class IndexConfig {
   }
 
   /**
-   * Return a list of parameters for the given Content definition.
+   * Return a list of parameters for the given content definition.
    * 
-   * @param type the ContentType
-   * @param mimeType the Content's Mime Type
-   * @param configId the config ID, can be null
-   * @return the list of parameters for the given Content definition (never null).
+   * @param type     the ContentType
+   * @param mimeType the Content's MIME Type
+   * @param configId the config ID, can be <code>null</code>
+   * @return the list of parameters for the given Content definition (never <code>null</code>).
    */
   public Map<String, String> getParameters(ContentType type, String mimeType, String configId) {
     Map<String, String> params = this.parameters.get(new ContentDefinition(type, mimeType, configId));
@@ -130,22 +130,22 @@ public class IndexConfig {
   }
 
   /**
-   * Return the compiled XSLT script, null if not found.
+   * Return the compiled XSLT script, <code>null</code> if not found.
    * 
-   * @param type the ContentType
-   * @param mimeType the Content's Mime Type
-   * @return the compiled XSLT script, null if not found.
+   * @param type     the ContentType
+   * @param mimeType the Content's MIME Type
+   * @return the compiled XSLT script, <code>null</code> if not found.
    */
   public Templates getTemplates(ContentType type, String mimeType) {
     return getTemplates(type, mimeType, null);
   }
 
   /**
-   * Return the compiled XSLT script, null if not found.
+   * Return the compiled XSLT script, <code>null</code> if not found.
    * 
-   * @param type the ContentType
+   * @param type     the ContentType
    * @param mimeType the Content's Mime Type
-   * @param configId the config ID, can be null
+   * @param configId the config ID, can be <code>null</code>
    * @return the compiled XSLT script, null if not found.
    */
   public Templates getTemplates(ContentType type, String mimeType, String configId) {
@@ -157,23 +157,25 @@ public class IndexConfig {
   /**
    * Add an XSLT script for the given Content definition.
    * 
-   * @param type the ContentType
-   * @param mimeType the Content's Mime Type
+   * @param type     the ContentType
+   * @param mimeType the Content's MIME Type
    * @param xsltScript the full path to the XSLT script
    */
   public void addTemplates(ContentType type, String mimeType, String xsltScript) {
+    // TODO: use File or URI instead of String for XSLT script?
     addTemplates(type, mimeType, null, xsltScript);
   }
 
   /**
    * Add an XSLT script for the given Content definition.
    * 
-   * @param type the ContentType
+   * @param type     the ContentType
    * @param mimeType the Content's MIME Type
-   * @param configId the config ID, can be null
+   * @param configId the config ID, can be <code>null</code>
    * @param xsltScript the full path to the XSLT script
    */
   public void addTemplates(ContentType type, String mimeType, String configId, String xsltScript) {
+    // TODO: use File or URI instead of String for XSLT script?
     try {
       ContentDefinition def = new ContentDefinition(type, mimeType, configId);
       LOGGER.debug("Adding templates for " + def.toString());
@@ -189,9 +191,9 @@ public class IndexConfig {
    * the cache for later use.
    * 
    * @param path Path of stylesheet
+   * @return the compiled templates
    * 
-   * @exception TransformerException if problem parsing stylesheet
-   * @exception IOException if problem reading response
+   * @throws TransformerException if problem parsing stylesheet
    */
   private static Templates loadTemplates(String path) throws TransformerException {
     TransformerFactory factory = TransformerFactory.newInstance();

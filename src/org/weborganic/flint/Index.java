@@ -10,7 +10,6 @@ package org.weborganic.flint;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.store.Directory;
 
-
 /**
  * An interface to represents a unique index repository.
  * 
@@ -24,20 +23,20 @@ public interface Index {
    * 
    * @return The Index ID.
    */
-  public String getIndexID();
+  String getIndexID();
 
   /**
-   * Return the Index Directory object
+   * Return the Index Directory object.
    * 
    * @return The Index Directory object
    */
-  public Directory getIndexDirectory();
+  Directory getIndexDirectory();
 
   /**
-   * Return the Lucene Analyzer
+   * Return the Lucene Analyzer.
    * 
    * @return the Lucene Analyzer used in this index
    */
-  public Analyzer getAnalyzer();
+  Analyzer getAnalyzer();
 
 }

@@ -9,8 +9,8 @@ package org.weborganic.flint.content;
 
 /**
  * This class provides a way for the IndexManager to fetch the content to add to the index.
- * Content is identified by its ContentID and its ContentType
  * 
+ * <p>Content is identified by its ContentID and its ContentType.
  * 
  * @author Jean-Baptiste Reure
  * @version 1 March 2010
@@ -24,6 +24,6 @@ public interface ContentFetcher {
    * 
    * @return the source where the Content is read from
    */
-  public Content getContent(ContentId id);
+  Content getContent(ContentId id);
 
 }

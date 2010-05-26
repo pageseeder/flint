@@ -54,18 +54,23 @@ import org.xml.sax.InputSource;
 /**
  * Main class from Flint, applications should create one instance of this class.
  * 
- * - To start and stop the Indexing thread, use the methods start() and stop().
- * - To register IndexConfigs, use the methods registerIndexConfig() and getConfig().
- * - To add/modify/delete content from an Index, use the method index()
- * - To search an Index, use the methods query()
- * - to load an Index's statuses, use the method getStatus()
+ * <ul>
+ *   <li>To start and stop the indexing thread, use the methods {@link #start()} and {@link #stop()}.</li>
+ *   <li>To register IndexConfigs, use the methods registerIndexConfig() and getConfig().</li>
+ *   <li>To add/modify/delete content from an Index, use the method {@link #index(ContentId, Index, IndexConfig, Requester, Priority, Map)}</li>
+ *   <li>To search an Index, use the methods {@link IndexManager#query()}</li>
+ *   <li>to load an Index's statuses, use the method {@link #getStatus()}</li>
+ * </ul>
  * 
  * @author Jean-Baptiste Reure
  * @version 26 February 2010
  */
 public class IndexManager implements Runnable {
-  
-  public final static Version LUCENE_VERSION = Version.LUCENE_30;
+
+  /**
+   * The lucene version with which this manager is compatible.
+   */
+  public static final Version LUCENE_VERSION = Version.LUCENE_30;
 
   /**
    * Inactive time before indexes get optimised
@@ -78,7 +83,7 @@ public class IndexManager implements Runnable {
   private static final long INDEX_JOB_POLL_DELAY = 1 * 1000; // 1 second
 
   /**
-   * this.logger.
+   * This logger.
    */
   private final Logger logger;
 
@@ -111,14 +116,14 @@ public class IndexManager implements Runnable {
    * Priority of the thread, default to NORM_PRIORITY (5)
    */
   private int threadPriority = Thread.NORM_PRIORITY;
-  
+
   /**
    * The thread manager
    */
   private ExecutorService threadPool = null;
 
   /**
-   * Simple Constructor
+   * Simple Constructor.
    * 
    * @param cf the Content Fetcher used to retrieve the content to index.
    */
@@ -135,6 +140,7 @@ public class IndexManager implements Runnable {
 
   // public external methods
   // ----------------------------------------------------------------------------------------------
+
   /**
    * Set the priority of the thread (this has no effect if called after the method start() is called)
    * 
@@ -143,23 +149,26 @@ public class IndexManager implements Runnable {
   public void setThreadPriority(int priority) {
     this.threadPriority = priority;
   }
-  
+
   /**
    * Register a new factory with the all the MIME types supported by the factory.
-   * If there was already a factory registered for a MIME type, it is overwritten.
+   * 
+   * <p>If there was already a factory registered for a MIME type, it is overwritten.
    * 
    * @param factory  the factory to register
    */
   public void registerTranslatorFactory(ContentTranslatorFactory factory) {
     List<String> mtypes = factory.getMimeTypesSupported();
-    for (String mimeType : mtypes)
+    for (String mimeType : mtypes) {
       registerTranslatorFactory(mimeType, factory);
+    }
   }
-  
+
   /**
    * Register a new factory with the given MIME type.
-   * If there was already a factory registered for this MIME type, it is overwritten.
-   * The factory object must support the MIME type provided
+   * 
+   * <p>If there was already a factory registered for this MIME type, it is overwritten.
+   * <p>The factory object must support the MIME type provided
    * 
    * @param mimeType the MIME type
    * @param factory  the factory to register
@@ -171,7 +180,6 @@ public class IndexManager implements Runnable {
   /**
    * Add a new update job to the indexing queue.
    * 
-   * @param ct       the Type of the Content
    * @param id       the ID of the Content
    * @param i        the Index to add the Content to
    * @param config   the Config to use

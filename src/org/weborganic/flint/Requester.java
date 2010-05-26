@@ -20,6 +20,6 @@ public interface Requester {
    * 
    * @return the ID for this requester.
    */
-  public String getRequesterID();
+  String getRequesterID();
 
 }

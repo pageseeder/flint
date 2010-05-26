@@ -15,7 +15,7 @@ import org.weborganic.flint.IndexException;
 public interface ContentTranslator {
 
   /**
-   * Translate the content provided into an XML Source ready to be transformed by Flint
+   * Translate the content provided into an XML Source ready to be transformed by Flint.
    * 
    * @param content the content to translate
    * 
@@ -23,6 +23,6 @@ public interface ContentTranslator {
    * 
    * @throws IndexException Should any error occur during the translation.
    */
-  public Reader translate(Content content) throws IndexException;
+  Reader translate(Content content) throws IndexException;
 
 }

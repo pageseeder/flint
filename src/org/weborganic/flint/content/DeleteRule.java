@@ -7,7 +7,8 @@ import org.weborganic.flint.query.SearchQuery;
 /**
  * Defines the rules used to delete Content from an Index.
  * 
- * <p>A term can be used (defined by field name and field value) or a Lucene query (defined by a <code>SearchQuery</code>).
+ * <p>A term can be used (defined by field name and field value) or a Lucene query 
+ * (defined by a <code>SearchQuery</code>).
  * 
  * @author Jean-Baptiste Reure
  * 

@@ -13,11 +13,11 @@ import java.util.List;
 public interface ContentTranslatorFactory {
 
   /**
-   * Return the list of MIME Types supported
+   * Return the list of MIME Types supported this factory.
    * 
    * @return the list of MIME Types supported
    */
-  public List<String> getMimeTypesSupported();
+  List<String> getMimeTypesSupported();
 
   /**
    * Return an instance of <code>ContentTranslator</code> used to translate Content with the MIME 
@@ -25,8 +25,8 @@ public interface ContentTranslatorFactory {
    * 
    * @param mimeType the MIME Type of the Content
    * 
-   * @return a <code>ContentTranslator</code> object
+   * @return a <code>ContentTranslator</code> instance.
    */
-  public ContentTranslator createTranslator(String mimeType);
+  ContentTranslator createTranslator(String mimeType);
 
 }

@@ -3,62 +3,82 @@ package org.weborganic.flint.log;
 import org.weborganic.flint.Index;
 import org.weborganic.flint.Requester;
 
+/**
+ * A listener for indexing job in order to report on the event.
+ * 
+ * @author Jean-Baptiste Reure
+ * @version 26 May 2010
+ */
 public interface Logger {
+
   /**
-   * To log an information message
+   * To log an information message.
    * 
    * @param info the information message
    */
-  public void info(String info);
-  
+  void info(String info);
+
   /**
-   * To log a warning message
+   * To log a warning message.
    * 
    * @param warning the warning message
    */
-  public void warn(String warning);
-  
+  void warn(String warning);
+
   /**
-   * To log a debug message
+   * To log a debug message.
    * 
    * @param debug the debug message
    */
-  public void debug(String debug);
-  
+  void debug(String debug);
+
   /**
-   * When an error occurred
+   * When an error occurred.
    * 
    * @param error the error message
    * @param throwable the exception
    */
-  public void error(String error, Throwable throwable);
-  
+  void error(String error, Throwable throwable);
+
   /**
-   * To log an information message attached to an indexing job
+   * To log an information message attached to an indexing job.
    * 
-   * @param info the information message
+   * @param requester the requester
+   * @param index     the index concerned
+   * @param message   the information message
    */
-  public void indexInfo(Requester r, Index i, String info);
-  
+  void indexInfo(Requester requester, Index index, String message);
+  // XXX Why not just name this method info()?
+
   /**
-   * To log a warning message attached to an indexing job
+   * To log a warning message attached to an indexing job.
    * 
-   * @param warning the warning message
+   * @param requester the requester
+   * @param index     the index concerned
+   * @param message   the warning message
    */
-  public void indexWarn(Requester r, Index i, String warning);
-  
+  void indexWarn(Requester requester, Index index, String message);
+  // XXX Why not just name this method warn()?
+
   /**
-   * To log a debug message attached to an indexing job
+   * To log a debug message attached to an indexing job.
    * 
-   * @param debug the debug message
+   * @param requester the requester
+   * @param index     the index concerned
+   * @param message   the warning message
    */
-  public void indexDebug(Requester r, Index i, String debug);
-  
+  void indexDebug(Requester requester, Index index, String message);
+  // XXX Why not just name this method debug()?
+
   /**
-   * When an error occurred during to an indexing job
+   * When an error occurred during to an indexing job.
    * 
-   * @param error the error message
+   * @param requester the requester
+   * @param index     the index concerned
+   * @param message   the error message
    * @param throwable the exception
    */
-  public void indexError(Requester r, Index i, String error, Throwable throwable);
+  void indexError(Requester requester, Index index, String message, Throwable throwable);
+  // XXX Why not just name this method error()?
+
 }

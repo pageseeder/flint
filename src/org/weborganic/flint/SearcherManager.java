@@ -14,10 +14,9 @@ import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.search.IndexSearcher;
 
 /**
- * Manager for searches
+ * Manager for searches.
  * 
- * Usage:
- * 
+ * <p>Usage:
  * <pre>
  * IndexSearcher searcher = searcherManager.get();
  * try {
@@ -43,10 +42,10 @@ public class SearcherManager {
   private IndexSearcher currentSearcher;
 
   /**
-   * Create a new SEarcherManager using the given writer
+   * Create a new SearcherManager using the given writer.
    * 
    * @param thewriter the IndexWriter used to load the real-time reader.
-   * @throws IOException
+   * @throws IOException If thrown while trying to get the reader.
    */
   public SearcherManager(IndexWriter thewriter) throws IOException {
     this.currentSearcher = new IndexSearcher(thewriter.getReader());

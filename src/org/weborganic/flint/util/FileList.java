@@ -13,6 +13,8 @@ import java.io.IOException;
 /**
  * An interface to define list of files.
  *
+ * @deprecated This class designed before Java 5 generics
+ *
  * @author  Christophe Lauret (Weborganic)
  * @version 9 August 2004
  */

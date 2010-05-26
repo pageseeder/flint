@@ -17,6 +17,8 @@ import org.apache.log4j.Logger;
  *
  * <p>The crawler is a convenience class, given a directory it can produce the corresponding
  * <code>FileList</code>.
+ * 
+ * @deprecated Use the <code>FileCollector</code> instead
  *
  * @author  Christophe Lauret (Weborganic)
  * @version 8 September 2009

@@ -17,9 +17,9 @@ import org.weborganic.flint.content.ContentTranslatorFactory;
 public class FlintTranslatorFactory implements ContentTranslatorFactory {
 
   /**
-   * MIME type supported
+   * MIME type supported.
    */
-  protected static String XML_MIME_TYPE = "text/xml";
+  protected static final String XML_MIME_TYPE = "text/xml";
   // XXX the correct MIME for XML is be 'application/xml'
 
   /**

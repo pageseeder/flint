@@ -119,6 +119,7 @@ public final class FlintEntityResolver implements EntityResolver {
    * 
    * @param systemId The system ID
    * @return The corresponding resource or <code>null</code>;
+   * @throws SAXException Wrap any IO or malformed URL exception.
    */
   private InputStream toInputStream(String systemId) throws SAXException {
     // Try to use the system ID then

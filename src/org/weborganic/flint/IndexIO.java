@@ -132,10 +132,11 @@ public class IndexIO {
   public void releaseSearcher(IndexSearcher searcher) throws IOException {
     this.searcherManager.release(searcher);
   }
+
   /**
-   * Closes the writer on this index
+   * Closes the writer on this index.
    * 
-   * @throws IndexException
+   * @throws IndexException Wrapping an {@link CorruptIndexException} or an {@link IOException}.
    */
   public void stop() throws IndexException {
     try {

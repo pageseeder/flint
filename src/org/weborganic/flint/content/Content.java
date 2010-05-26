@@ -16,41 +16,44 @@ import java.io.InputStream;
  * @version 1 March 2010
  */
 public interface Content {
-  
+
   /**
-   * Load the content as a stream, ready to be translated.
+   * Returns the content as a stream, ready to be translated.
+   * 
+   * <p>Implementations should buffer large content.
    * 
    * @return the stream where the Content is read from
    */
-  public InputStream getSource();
-  
+  InputStream getSource();
+
   /**
-   * Load the MimeType for the content
+   * Load the MimeType for the content.
    * 
    * @return a String representation of the MIME type.
    */
-  public String getMimeType();
+  String getMimeType();
 
   /**
    * Return true if the content should be deleted from the index.
    * 
    * @return true if the content should be deleted from the index, false otherwise.
    */
-  public boolean isDeleted();
-  
+  boolean isDeleted();
+
   /**
    * Return the config ID to use when transforming the content, null if no ID needed.
    * 
    * @return the config ID to use when transforming the content, null if no ID needed.
    */
-  public String getConfigID();
-  
+  String getConfigID();
+
   /**
-   * Return the rule used to delete the previous content.
-   * This is used for updating a document or a simple delete job.
+   * Returns the rule used to delete the previous content.
+   * 
+   * <p>This is used for updating a document or a simple delete job.
    * 
    * @return a <code>DeleteRule</code> object
    */
-  public DeleteRule getDeleteRule();
+  DeleteRule getDeleteRule();
 
 }

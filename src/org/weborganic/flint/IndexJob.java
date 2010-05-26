@@ -18,11 +18,16 @@ import org.weborganic.flint.content.ContentId;
  * @version 26 February 2010
  */
 public class IndexJob implements Comparable<IndexJob> {
-  
+
   /**
-   * A list of priorities for IndexJobs
+   * A list of priorities for IndexJobs.
    */
-  public enum Priority {HIGH, LOW};
+  public enum Priority {
+    /** High priority job (always processed before LOW). */
+    HIGH,
+    /** Low priority job (always processed after LOW). */
+    LOW
+  };
 
   /**
    * The Content ID.
@@ -43,7 +48,7 @@ public class IndexJob implements Comparable<IndexJob> {
    * Index to run the job on.
    */
   private final Index index;
-  
+
   /**
    * Dynamic XSLT parameters
    */
@@ -67,22 +72,23 @@ public class IndexJob implements Comparable<IndexJob> {
   /**
    * Private constructor, to build a job, use one of the static methods newAddJob(), newUpdateJob() or newDeleteJob().
    * 
-   * @param t       The Content Type
    * @param id      The Content ID
    * @param conf    The Config
    * @param i       The Index
    * @param p       The job's priority
    * @param r       the job's requester
-   * @param thetype the job's type
    */
-  @SuppressWarnings("unchecked")
   private IndexJob(ContentId id, IndexConfig conf, Index i, Priority p, Requester r, Map<String, String> params) {
     this.contentID = id;
     this.config = conf;
     this.priority = p;
     this.requester = r;
     this.index = i;
-    this.parameters = params == null ? (Map<String, String>) Collections.EMPTY_MAP : params;
+    if (params != null) {
+      this.parameters = params;
+    } else {
+      this.parameters = Collections.emptyMap();
+    }
     this.jobId = System.currentTimeMillis() + "-" + id.toString() + "-" + conf.hashCode() + "-"
         + i.getIndexID() + "-" + r.getRequesterID() + "-" + p.toString();
   }
@@ -106,7 +112,7 @@ public class IndexJob implements Comparable<IndexJob> {
   }
 
   /**
-   * Return the config
+   * Return the config.
    * 
    * @return the config
    */
@@ -131,9 +137,9 @@ public class IndexJob implements Comparable<IndexJob> {
   public Requester getRequester() {
     return this.requester;
   }
-  
+
   /**
-   * Return the dynamic XSLT parameters for this job (unmodifiable list, never null)
+   * Return the dynamic XSLT parameters for this job (unmodifiable list, never <code>null</code>).
    * 
    * @return the dynamic XSLT parameters for this job
    */
@@ -189,7 +195,7 @@ public class IndexJob implements Comparable<IndexJob> {
   }
 
   /**
-   * Useful when debugging and logging
+   * Useful when debugging and logging.
    */
   @Override
   public String toString() {
@@ -200,7 +206,6 @@ public class IndexJob implements Comparable<IndexJob> {
   /**
    * Used to build a new job.
    * 
-   * @param t      The Content Type
    * @param id     The Content ID
    * @param confID The Config ID (can be <code>null</code>)
    * @param i      The Index

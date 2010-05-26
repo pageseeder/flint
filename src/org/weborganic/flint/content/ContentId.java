@@ -15,18 +15,20 @@ package org.weborganic.flint.content;
  * @version 26 February 2010
  */
 public interface ContentId {
-  
+
   /**
-   * Turn this ID in a String (must be unique)
+   * Turn this ID in a String (must be unique).
    * 
    * @return a String representation of this ID
    */
-  public String getID();
+  String getID();
+  // XXX: unique? within the index??
+
   /**
-   * Load the Content Type attached ot this ID
+   * Load the Content Type attached to this ID.
    * 
-   * @return the Content Type attached ot this ID
+   * @return the Content Type attached to this ID.
    */
-  public ContentType getContentType();
+  ContentType getContentType();
 
 }

@@ -14,13 +14,14 @@ import org.weborganic.flint.Requester;
 public final class SilentLogger implements Logger {
 
   /**
-   * sole instnace.
+   * Sole instance.
    */
   private static final SilentLogger SINGLETON = new SilentLogger();
 
   /**
+   * Returns the singleton instance.
    * 
-   * @return
+   * @return the singleton instance
    */
   public static SilentLogger getInstance() {
     return SINGLETON;
@@ -29,8 +30,9 @@ public final class SilentLogger implements Logger {
   /**
    * Singleton instance.
    */
-  private SilentLogger(){}
-  
+  private SilentLogger() {
+  }
+
   /**
    * {@inheritDoc}
    */

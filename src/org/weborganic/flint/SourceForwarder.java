@@ -12,17 +12,19 @@ import org.weborganic.flint.content.ContentTranslator;
  * @version 10 March 2010
  */
 public class SourceForwarder implements ContentTranslator {
-  
+
   private final String mimeType;
-  
+
   /**
-   * Forwards data for one mime type only, will return in any other case
+   * Forwards data for one MIME type only, will return in any other case.
+   * 
+   * @param type 
    */
-  public SourceForwarder(String mType) {
-    if (mType == null) throw new IllegalArgumentException("MIME Type cannot be null");
-    this.mimeType = mType;
+  public SourceForwarder(String type) {
+    if (type == null) throw new IllegalArgumentException("MIME Type cannot be null");
+    this.mimeType = type;
   }
-  
+
   public Reader translate(Content content) {
     if (content.isDeleted()) return null;
     if (!this.mimeType.equals(content.getMimeType())) return null;
