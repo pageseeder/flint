@@ -402,7 +402,7 @@ public class IndexManager implements Runnable {
     if (this.threadPool != null) return;
     // create the worker thread pool
     this.threadPool = Executors.newCachedThreadPool(new ThreadFactory() {
-      @Override
+      /** {@inheritDoc} */
       public Thread newThread(Runnable r) {
         Thread t = new Thread(r, "Indexing Thread with priority of "+IndexManager.this.threadPriority);
         t.setPriority(IndexManager.this.threadPriority);
