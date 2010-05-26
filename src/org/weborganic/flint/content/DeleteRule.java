@@ -6,40 +6,46 @@ import org.weborganic.flint.query.SearchQuery;
 
 /**
  * Defines the rules used to delete Content from an Index.
- * A term can be used (defined by field name and field value) or a Lucene query (defined by a <code>SearchQuery</code>).
+ * 
+ * <p>A term can be used (defined by field name and field value) or a Lucene query (defined by a <code>SearchQuery</code>).
  * 
  * @author Jean-Baptiste Reure
  * 
  * @version 10 March 2010
- *
  */
 public class DeleteRule {
+
   /**
    * The Term used to delete
    */
   private final Term term;
+
   /**
    * A Lucene query used to delete
    */
   private final Query query;
+
   /**
    * Build a rule based on a term
    * 
-   * @param fieldname  the name of the field
+   * @param fieldname the name of the field
    * @param fieldvalue the value of the field
    */
   public DeleteRule(String fieldname, String fieldvalue) {
     this.term = new Term(fieldname, fieldvalue);
     this.query = null;
   }
+
   /**
    * Build a rule based on a Lucene query
+   * 
    * @param predicate
    */
   public DeleteRule(SearchQuery query) {
     this.query = query.toQuery();
     this.term = null;
   }
+
   /**
    * Return the Term used for deleting
    * 
@@ -48,6 +54,7 @@ public class DeleteRule {
   public Term toTerm() {
     return this.term;
   }
+
   /**
    * Return the Query used for deleting
    * 
@@ -56,12 +63,15 @@ public class DeleteRule {
   public Query toQuery() {
     return this.query;
   }
+
   /**
-   * Return true if a Term defines the rule, false if a query does
+   * Indicates whether the delete rule is defined by an index Term.
    * 
-   * @return true if a Term defines the rule, false if a query does
+   * @return <code>true</code> if a Term defines the rule;
+   *         <code>false</code> if a query does
    */
   public boolean useTerm() {
     return this.query == null;
   }
+
 }

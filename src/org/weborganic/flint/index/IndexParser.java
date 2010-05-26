@@ -31,26 +31,26 @@ import org.xml.sax.helpers.DefaultHandler;
  *
  * <p>For example:
  *
- * <pre>
- * &lt;document&gt;
- *   &lt;field name="modified" store="yes" index="yes" parse-date-as="MMM dd, yy" resolution="day"&gt;Jan 12, 02&lt;/field&gt;
- *   &lt;field name="path"     store="yes" index="no" &gt;C:\documents\00023.xml&lt;/field&gt;
- *   &lt;field name="webpath"  store="yes" index="no" &gt;/documents/doc-23.xml&lt;/field&gt;
- *   &lt;field name="text" store="compress" index="tokenised" &gt;
+ * <pre>{@code
+ * <document>
+ *   <field name="modified" store="yes" index="yes" parse-date-as="MMM dd, yy" resolution="day">Jan 12, 02</field>
+ *   <field name="path"     store="yes" index="no" >C:\documents\00023.xml</field>
+ *   <field name="webpath"  store="yes" index="no" >/documents/doc-23.xml</field>
+ *   <field name="text" store="compress" index="tokenised" >
  *     Truly to speak, and with no addition, 
  *     We go to gain a little patch of ground 
  *     That hath in it no profit but the name. 
  *     To pay five ducats, five, I would not farm it; 
  *     Nor will it yield to Norway or the Pole 
  *     A ranker rate, should it be sold in fee.
- *   &lt;/field&gt;
- * &lt;/document&gt;
- * </pre>
+ *   </field>
+ * </document>
+ * }</pre>
  * 
  * @see <a href="http://www.weborganic.org/code/flint/schema/index-documents-1.0.dtd">Index Documents 1.0 Schema</a>
  * @see <a href="http://www.weborganic.org/code/flint/schema/index-documents-2.0.dtd">Index Documents 2.0 Schema</a>
  *
- * @author  Christophe Lauret (WebOrganic)
+ * @author Christophe Lauret (Weborganic)
  *
  * @version 1 March 2010
  */

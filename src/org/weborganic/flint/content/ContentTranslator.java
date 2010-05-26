@@ -11,15 +11,18 @@ import org.weborganic.flint.IndexException;
  * @author Jean-Baptiste Reure
  *
  * @version 9 March 2010
- *
  */
 public interface ContentTranslator {
+
   /**
    * Translate the content provided into an XML Source ready to be transformed by Flint
    * 
    * @param content the content to translate
    * 
    * @return the translation as a Reader
+   * 
+   * @throws IndexException Should any error occur during the translation.
    */
   public Reader translate(Content content) throws IndexException;
+
 }
