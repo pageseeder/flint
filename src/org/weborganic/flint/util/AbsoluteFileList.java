@@ -25,6 +25,8 @@ import java.util.List;
  *
  * <p>This list is synchronized.
  *
+ * @deprecated This is a pre-Java5 class, use the <code>FileCollector</code> instead.
+ *
  * @author  Christophe Lauret (Weborganic)
  * @version 9 August 2004
  */
