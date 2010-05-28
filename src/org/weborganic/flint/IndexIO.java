@@ -90,6 +90,20 @@ public class IndexIO {
     }
   }
 
+  public boolean clearIndex() throws IndexException {
+    LOGGER.debug("Clearing Index");
+    // add documents to index
+    try {
+      writer.deleteAll();
+      this.state = STATE.NEEDS_REOPEN;
+    } catch (CorruptIndexException e) {
+      throw new IndexException("Failed to clear Index because it is corrupted", e);
+    } catch (IOException e) {
+      throw new IndexException("Failed to clear Index because of an I/O error", e);
+    }
+    return true;
+  }
+
   public boolean deleteDocuments(DeleteRule rule) throws IndexException {
     LOGGER.debug("Deleting a document");
     // add documents to index

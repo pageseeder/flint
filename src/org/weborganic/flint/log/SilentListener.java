@@ -1,7 +1,6 @@
 package org.weborganic.flint.log;
 
-import org.weborganic.flint.Index;
-import org.weborganic.flint.Requester;
+import org.weborganic.flint.IndexJob;
 
 /**
  * A logger implementation that remains silent.
@@ -11,26 +10,26 @@ import org.weborganic.flint.Requester;
  * @author Christophe Lauret
  * @version 26 May 2010
  */
-public final class SilentLogger implements Logger {
+public final class SilentListener implements FlintListener {
 
   /**
    * Sole instance.
    */
-  private static final SilentLogger SINGLETON = new SilentLogger();
+  private static final SilentListener SINGLETON = new SilentListener();
 
   /**
    * Returns the singleton instance.
    * 
    * @return the singleton instance
    */
-  public static SilentLogger getInstance() {
+  public static SilentListener getInstance() {
     return SINGLETON;
   }
 
   /**
    * Singleton instance.
    */
-  private SilentLogger() {
+  private SilentListener() {
   }
 
   /**
@@ -48,25 +47,25 @@ public final class SilentLogger implements Logger {
   /**
    * {@inheritDoc}
    */
-  public void indexDebug(Requester r, Index i, String debug) {
+  public void debug(IndexJob job, String debug) {
   }
 
   /**
    * {@inheritDoc}
    */
-  public void indexError(Requester r, Index i, String error, Throwable throwable) {
+  public void error(IndexJob job, String error, Throwable throwable) {
   }
 
   /**
    * {@inheritDoc}
    */
-  public void indexInfo(Requester r, Index i, String info) {
+  public void info(IndexJob job, String info) {
   }
 
   /**
    * {@inheritDoc}
    */
-  public void indexWarn(Requester r, Index i, String warning) {
+  public void warn(IndexJob job, String warning) {
   }
 
   /**
@@ -81,4 +80,16 @@ public final class SilentLogger implements Logger {
   public void warn(String warning) {
   }
 
+  /**
+   * {@inheritDoc}
+   */
+  public void finishJob(IndexJob job) {
+  }
+
+  /**
+   * {@inheritDoc}
+   */
+  public void startJob(IndexJob job) {
+  }
+  
 }

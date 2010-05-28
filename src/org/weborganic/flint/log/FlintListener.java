@@ -1,7 +1,6 @@
 package org.weborganic.flint.log;
 
-import org.weborganic.flint.Index;
-import org.weborganic.flint.Requester;
+import org.weborganic.flint.IndexJob;
 
 /**
  * A listener for indexing job in order to report on the event.
@@ -9,7 +8,7 @@ import org.weborganic.flint.Requester;
  * @author Jean-Baptiste Reure
  * @version 26 May 2010
  */
-public interface Logger {
+public interface FlintListener {
 
   /**
    * To log an information message.
@@ -43,42 +42,48 @@ public interface Logger {
   /**
    * To log an information message attached to an indexing job.
    * 
-   * @param requester the requester
-   * @param index     the index concerned
+   * @param job       the job concerned
    * @param message   the information message
    */
-  void indexInfo(Requester requester, Index index, String message);
-  // XXX Why not just name this method info()?
+  void info(IndexJob job, String message);
 
   /**
    * To log a warning message attached to an indexing job.
    * 
-   * @param requester the requester
-   * @param index     the index concerned
+   * @param job       the job concerned
    * @param message   the warning message
    */
-  void indexWarn(Requester requester, Index index, String message);
-  // XXX Why not just name this method warn()?
+  void warn(IndexJob job, String message);
 
   /**
    * To log a debug message attached to an indexing job.
    * 
-   * @param requester the requester
-   * @param index     the index concerned
+   * @param job       the job concerned
    * @param message   the warning message
    */
-  void indexDebug(Requester requester, Index index, String message);
-  // XXX Why not just name this method debug()?
+  void debug(IndexJob job, String message);
 
   /**
    * When an error occurred during to an indexing job.
    * 
-   * @param requester the requester
-   * @param index     the index concerned
+   * @param job       the job concerned
    * @param message   the error message
    * @param throwable the exception
    */
-  void indexError(Requester requester, Index index, String message, Throwable throwable);
-  // XXX Why not just name this method error()?
+  void error(IndexJob job, String message, Throwable throwable);
 
+  /**
+   * When an indexing job is started.
+   * 
+   * @param job the job that just started
+   */
+  void startJob(IndexJob job);
+
+  /**
+   * When an indexing job was completed.
+   * 
+   * @param job the job completed
+   */
+  void finishJob(IndexJob job);
+  
 }

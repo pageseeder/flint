@@ -8,6 +8,8 @@ package org.weborganic.flint.content;
 
 import java.io.InputStream;
 
+import org.weborganic.flint.IndexException;
+
 /**
  * This class provides a way for the IndexManager to fetch the content to add to the index.
  * Content is identified by its ContentID and its ContentType.
@@ -23,22 +25,28 @@ public interface Content {
    * <p>Implementations should buffer large content.
    * 
    * @return the stream where the Content is read from
+   * 
+   * @throws IndexException Should any error occur when retrieving the source.
    */
-  InputStream getSource();
+  InputStream getSource() throws IndexException;
 
   /**
    * Load the MimeType for the content.
    * 
    * @return a String representation of the MIME type.
+   * 
+   * @throws IndexException Should any error occur when retrieving the value.
    */
-  String getMimeType();
+  String getMimeType() throws IndexException;
 
   /**
    * Return true if the content should be deleted from the index.
    * 
    * @return true if the content should be deleted from the index, false otherwise.
+   * 
+   * @throws IndexException Should any error occur when retrieving the value.
    */
-  boolean isDeleted();
+  boolean isDeleted() throws IndexException;
 
   /**
    * Return the config ID to use when transforming the content, null if no ID needed.

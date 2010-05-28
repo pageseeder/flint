@@ -10,6 +10,7 @@ import java.util.Collections;
 import java.util.Map;
 
 import org.weborganic.flint.content.ContentId;
+import org.weborganic.flint.content.ContentType;
 
 /**
  * A job to run by the IndexManager. Jobs can be of three types: add, update or delete.
@@ -19,13 +20,18 @@ import org.weborganic.flint.content.ContentId;
  */
 public class IndexJob implements Comparable<IndexJob> {
 
+  private final static ContentType CLEAR_CONTENT = new ContentType() {public String toString() {return "CLEAR";}};
+  private final static ContentId CLEAR_CONTENT_ID = new ContentId() {
+    public ContentType getContentType() {return CLEAR_CONTENT;}
+    public String getID() {return "Clear Index";}
+  };
   /**
    * A list of priorities for IndexJobs.
    */
   public enum Priority {
     /** High priority job (always processed before LOW). */
     HIGH,
-    /** Low priority job (always processed after LOW). */
+    /** Low priority job (always processed after HIGH). */
     LOW
   };
 
@@ -84,12 +90,9 @@ public class IndexJob implements Comparable<IndexJob> {
     this.priority = p;
     this.requester = r;
     this.index = i;
-    if (params != null) {
-      this.parameters = params;
-    } else {
-      this.parameters = Collections.emptyMap();
-    }
-    this.jobId = System.currentTimeMillis() + "-" + id.toString() + "-" + conf.hashCode() + "-"
+    if (params != null) this.parameters = params;
+    else this.parameters = Collections.emptyMap();
+    this.jobId = System.currentTimeMillis() + "-" + id.toString() + "-" + (conf == null ? "" : conf.hashCode()) + "-"
         + i.getIndexID() + "-" + r.getRequesterID() + "-" + p.toString();
   }
 
@@ -166,7 +169,7 @@ public class IndexJob implements Comparable<IndexJob> {
    *         <code>false</code> otherwise.
    */
   public boolean isForIndex(Index ind) {
-    return this.index.getIndexID().equals(ind.getIndexID());
+    return this.index != null && this.index.getIndexID().equals(ind.getIndexID());
   }
 
   /**
@@ -202,6 +205,10 @@ public class IndexJob implements Comparable<IndexJob> {
     return "[IndexJob - contentid:" + this.contentID + " priority:"
         + this.priority + " index:" + this.index + " finished:" + this.finished + "]";
   }
+  
+  public boolean isClearJob() {
+    return this.getContentID().equals(CLEAR_CONTENT_ID);
+  }
 
   /**
    * Used to build a new job.
@@ -217,5 +224,22 @@ public class IndexJob implements Comparable<IndexJob> {
   public static IndexJob newJob(ContentId id, IndexConfig config, Index i, Priority p, Requester r, Map<String, String> params) {
     return new IndexJob(id, config, i, p, r, params);
   }
+
+  /**
+   * Used to build a new job.
+   * 
+   * @param id     The Content ID
+   * @param confID The Config ID (can be <code>null</code>)
+   * @param i      The Index
+   * @param p      The job's priority
+   * @param r      The job's requester
+   * 
+   * @return the new job
+   */
+  public static IndexJob newClearJob(Index i, Priority p, Requester r) {
+    return new IndexJob(CLEAR_CONTENT_ID, null, i, p, r, null);
+  }
+  
+  
 
 }

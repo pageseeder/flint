@@ -7,6 +7,7 @@
 package org.weborganic.flint;
 
 import java.io.File;
+import java.net.URI;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
@@ -161,8 +162,7 @@ public class IndexConfig {
    * @param mimeType the Content's MIME Type
    * @param xsltScript the full path to the XSLT script
    */
-  public void addTemplates(ContentType type, String mimeType, String xsltScript) {
-    // TODO: use File or URI instead of String for XSLT script?
+  public void addTemplates(ContentType type, String mimeType, URI xsltScript) {
     addTemplates(type, mimeType, null, xsltScript);
   }
 
@@ -174,8 +174,7 @@ public class IndexConfig {
    * @param configId the config ID, can be <code>null</code>
    * @param xsltScript the full path to the XSLT script
    */
-  public void addTemplates(ContentType type, String mimeType, String configId, String xsltScript) {
-    // TODO: use File or URI instead of String for XSLT script?
+  public void addTemplates(ContentType type, String mimeType, String configId, URI xsltScript) {
     try {
       ContentDefinition def = new ContentDefinition(type, mimeType, configId);
       LOGGER.debug("Adding templates for " + def.toString());
@@ -195,7 +194,7 @@ public class IndexConfig {
    * 
    * @throws TransformerException if problem parsing stylesheet
    */
-  private static Templates loadTemplates(String path) throws TransformerException {
+  private static Templates loadTemplates(URI path) throws TransformerException {
     TransformerFactory factory = TransformerFactory.newInstance();
     return factory.newTemplates(new StreamSource(new File(path)));
   }

@@ -2,8 +2,7 @@ package org.weborganic.flint.log;
 
 import java.io.PrintStream;
 
-import org.weborganic.flint.Index;
-import org.weborganic.flint.Requester;
+import org.weborganic.flint.IndexJob;
 
 /**
  * A logger implementation that reports events to a <code>PrintStream</code>. 
@@ -22,7 +21,7 @@ import org.weborganic.flint.Requester;
  * @author Christophe Lauret
  * @version 27 May 2010
  */
-public final class PrintStreamLogger implements Logger {
+public final class PrintStreamListener implements FlintListener {
 
   /**
    * Sole instance.
@@ -34,7 +33,7 @@ public final class PrintStreamLogger implements Logger {
    * 
    * @param stream Where the logger should print.
    */
-  public PrintStreamLogger(PrintStream stream) {
+  public PrintStreamListener(PrintStream stream) {
     this._stream = stream;
   }
 
@@ -71,46 +70,44 @@ public final class PrintStreamLogger implements Logger {
   /**
    * {@inheritDoc}
    */
-  public void indexDebug(Requester r, Index i, String message) {
-    this._stream.println("[ERROR] "+message+" "+toString(r, i));
+  public void debug(IndexJob job, String message) {
+    this._stream.println("[ERROR] "+message+" "+job.toString());
   }
 
   /**
    * {@inheritDoc}
    */
-  public void indexInfo(Requester r, Index i, String message) {
-    this._stream.println("[INFO ] "+message+" "+toString(r, i));
+  public void info(IndexJob job, String message) {
+    this._stream.println("[INFO ] "+message+" "+job.toString());
   }
 
   /**
    * {@inheritDoc}
    */
-  public void indexWarn(Requester r, Index i, String message) {
-    this._stream.println("[WARN ] "+message+" "+toString(r, i));
+  public void warn(IndexJob job, String message) {
+    this._stream.println("[WARN ] "+message+" "+job.toString());
   }
 
   /**
    * {@inheritDoc}
    */
-  public void indexError(Requester r, Index i, String message, Throwable throwable) {
-    this._stream.println("[ERROR] "+message+" "+toString(r, i));
+  public void error(IndexJob job, String message, Throwable throwable) {
+    this._stream.println("[ERROR] "+message+" "+job.toString());
     if (throwable != null)
       throwable.printStackTrace(this._stream);
   }
 
-  // Private helpers -----------------------------------------------------------------------------
+  /**
+   * {@inheritDoc}
+   */
+  public void finishJob(IndexJob job) {
+    this._stream.println("[JOB END] "+job.toString());
+  }
 
   /**
-   * Returns the requester and index as a string handling cases when either of them is 
-   * <code>null</code>.
-   * 
-   * @param requester The requester (may be <code>null</code>).
-   * @param index     The index (may be <code>null</code>).
-   * 
-   * @return The string as <code>"(requester=<i>RequesterID</i>, index=<i>IndexID</i>)"</code>
+   * {@inheritDoc}
    */
-  private String toString(Requester requester, Index index) {
-    return "(requester="+(requester != null? requester.getRequesterID(): "null")
-             +", index="+(index != null? index.getIndexID(): "null")+")";
+  public void startJob(IndexJob job) {
+    this._stream.println("[JOB START] "+job.toString());
   }
 }

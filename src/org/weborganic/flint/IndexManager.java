@@ -44,7 +44,8 @@ import org.weborganic.flint.content.ContentTranslatorFactory;
 import org.weborganic.flint.content.ContentType;
 import org.weborganic.flint.index.IndexParser;
 import org.weborganic.flint.index.IndexParserFactory;
-import org.weborganic.flint.log.Logger;
+import org.weborganic.flint.log.FlintListener;
+import org.weborganic.flint.log.SilentListener;
 import org.weborganic.flint.query.SearchPaging;
 import org.weborganic.flint.query.SearchQuery;
 import org.weborganic.flint.query.SearchResults;
@@ -85,7 +86,7 @@ public class IndexManager implements Runnable {
   /**
    * This logger.
    */
-  private final Logger logger;
+  private final FlintListener listener;
 
   /**
    * The fetcher used to retrieve content to index
@@ -123,13 +124,23 @@ public class IndexManager implements Runnable {
   private ExecutorService threadPool = null;
 
   /**
-   * Simple Constructor.
+   * Simple constructor which will use a SilentListener.
    * 
    * @param cf the Content Fetcher used to retrieve the content to index.
    */
-  public IndexManager(ContentFetcher cf, Logger log) {
+  public IndexManager(ContentFetcher cf) {
+    this(cf, SilentListener.getInstance());
+  }
+
+  /**
+   * Simple Constructor.
+   * 
+   * @param cf       the Content Fetcher used to retrieve the content to index.
+   * @param listener an object used to record events
+   */
+  public IndexManager(ContentFetcher cf, FlintListener listener) {
     this.fetcher = cf;
-    this.logger = log;
+    this.listener = listener;
     this.indexQueue = new IndexJobQueue(INDEX_JOB_POLL_DELAY);
     this.indexes = new ConcurrentHashMap<String, IndexIO>();
     // register default XML factory
@@ -193,6 +204,21 @@ public class IndexManager implements Runnable {
   }
 
   /**
+   * Add a new update job to the indexing queue.
+   * 
+   * @param ct       the Type of the Content
+   * @param id       the ID of the Content
+   * @param i        the Index to add the Content to
+   * @param config   the Config to use
+   * @param r        the Requester calling this method (used for logging)
+   * @param p        the Priority of this job
+   * @param params   the dynamic XSLT parameters
+   */
+  public void clear(Index i, Requester r, Priority p) {
+    this.indexQueue.addJob(IndexJob.newClearJob(i, p, r));
+  }
+
+  /**
    * Returns the list of waiting jobs for the Requester provided.
    * 
    * <p>Note that by the time each job is checked, they might have run already so the method 
@@ -250,24 +276,24 @@ public class IndexManager implements Runnable {
       io = getIndexIO(index);
       searcher = io.bookSearcher();
     } catch (CorruptIndexException e) {
-      this.logger.error("Failed getting a Searcher to perform a query because the Index is corrupted", e);
+      this.listener.error("Failed getting a Searcher to perform a query because the Index is corrupted", e);
       throw new IndexException("Failed getting a Searcher to perform a query because the Index is corrupted", e);
     } catch (LockObtainFailedException e) {
-      this.logger.error("Failed getting a lock on the Index to perform a query", e);
+      this.listener.error("Failed getting a lock on the Index to perform a query", e);
       throw new IndexException("Failed getting a lock on the Index to perform a query", e);
     } catch (IOException e) {
-      this.logger.error("Failed getting a searcher to perform a query on the Index because of an I/O problem", e);
+      this.listener.error("Failed getting a searcher to perform a query on the Index because of an I/O problem", e);
       throw new IndexException("Failed getting a searcher to perform a query on the Index because of an I/O problem", e);
     }
     if (searcher != null) {
       try {
-        this.logger.debug("Loading field names from index " + index.toString());
+        this.listener.debug("Loading field names from index " + index.toString());
         return searcher.getIndexReader().getFieldNames(FieldOption.INDEXED).iterator();
       } finally {
         try {
           io.releaseSearcher(searcher);
         } catch (IOException ioe) {
-          this.logger.error("Failed releasing a Searcher after performing a query on the Index because of an I/O problem", ioe);
+          this.listener.error("Failed releasing a Searcher after performing a query on the Index because of an I/O problem", ioe);
         }
       }
     }
@@ -304,13 +330,13 @@ public class IndexManager implements Runnable {
       io = getIndexIO(index);
       searcher = io.bookSearcher();
     } catch (CorruptIndexException e) {
-      this.logger.error("Failed getting a Searcher to perform a query because the Index is corrupted", e);
+      this.listener.error("Failed getting a Searcher to perform a query because the Index is corrupted", e);
       throw new IndexException("Failed getting a Searcher to perform a query because the Index is corrupted", e);
     } catch (LockObtainFailedException e) {
-      this.logger.error("Failed getting a lock on the Index to perform a query", e);
+      this.listener.error("Failed getting a lock on the Index to perform a query", e);
       throw new IndexException("Failed getting a lock on the Index to perform a query", e);
     } catch (IOException e) {
-      this.logger.error("Failed getting a searcher to perform a query on the Index because of an I/O problem", e);
+      this.listener.error("Failed getting a searcher to perform a query on the Index because of an I/O problem", e);
       throw new IndexException("Failed getting a searcher to perform a query on the Index because of an I/O problem", e);
     }
     if (searcher != null) {
@@ -320,12 +346,12 @@ public class IndexManager implements Runnable {
           try {
             io.releaseSearcher(searcher);
           } catch (IOException ioe) {
-            this.logger.error("Failed releasing a Searcher after performing a query on the Index because of an I/O problem", ioe);
+            this.listener.error("Failed releasing a Searcher after performing a query on the Index because of an I/O problem", ioe);
           }
-          this.logger.error("Failed performing a query on the Index because the query is null", null);
+          this.listener.error("Failed performing a query on the Index because the query is null", null);
           throw new IndexException("Failed performing a query on the Index because the query is null", new NullPointerException("Null query"));
         }
-        this.logger.debug("Performing search [" + lquery.rewrite(searcher.getIndexReader()).toString() + "] on index " + index.toString());
+        this.listener.debug("Performing search [" + lquery.rewrite(searcher.getIndexReader()).toString() + "] on index " + index.toString());
         Sort sort = query.getSort();
         if (sort == null) sort = Sort.INDEXORDER;
         TopDocs docs = searcher.search(lquery, null, paging.getHitsPerPage() * paging.getPage(), sort);
@@ -334,9 +360,9 @@ public class IndexManager implements Runnable {
         try {
           io.releaseSearcher(searcher);
         } catch (IOException ioe) {
-          this.logger.error("Failed releasing a Searcher after performing a query on the Index because of an I/O problem", ioe);
+          this.listener.error("Failed releasing a Searcher after performing a query on the Index because of an I/O problem", ioe);
         }
-        this.logger.error("Failed performing a query on the Index because of an I/O problem", e);
+        this.listener.error("Failed performing a query on the Index because of an I/O problem", e);
         throw new IndexException("Failed performing a query on the Index because of an I/O problem", e);
       }
     }
@@ -431,7 +457,7 @@ public class IndexManager implements Runnable {
       try {
         this.indexes.get(id).stop();
       } catch (IndexException ex) {
-        this.logger.error("Failed to close Index "+id+": " + ex.getMessage(), ex);
+        this.listener.error("Failed to close Index "+id+": " + ex.getMessage(), ex);
       }
     }
   }
@@ -449,38 +475,47 @@ public class IndexManager implements Runnable {
       }
       if (nextJob != null) {
         try {
-          this.logger.indexDebug(nextJob.getRequester(), nextJob.getIndex(), "Found Job To Run: " + nextJob.toString());
+          this.listener.startJob(nextJob);
           // ok launch the job then
           // load the IO for this job
           IndexIO io;
           try {
             io = getIndexIO(nextJob.getIndex());
           } catch (Exception ex) {
-            this.logger.indexError(nextJob.getRequester(), nextJob.getIndex(), "Failed to retrieve Index: " + ex.getMessage(), ex);
+            this.listener.error(nextJob, "Failed to retrieve Index: " + ex.getMessage(), ex);
             continue;
           }
-          // retrieve content
-          Content content;
-          try {
-            content = this.fetcher.getContent(nextJob.getContentID());
-          } catch (Exception ex) {
-            this.logger.indexError(nextJob.getRequester(), nextJob.getIndex(),
-                "Failed to retrieve Source content with Content ID " + nextJob.getContentID(), ex);
-            continue;
-          }
-          if (content == null) {
-            this.logger.indexError(nextJob.getRequester(), nextJob.getIndex(),
-                "Failed to retrieve Source content with Content ID " + nextJob.getContentID(), null);
+          if (nextJob.isClearJob()) {
+            try {
+              io.clearIndex();
+            } catch (Exception ex) {
+              this.listener.error(nextJob, "Failed to clear index", ex);
+            } finally {
+              nextJob.finish();
+              this.listener.finishJob(nextJob);
+            }
           } else {
-            // check if we should delete the document
-            if (content.isDeleted()) {
-              deleteJob(nextJob, content, io);
+            // retrieve content
+            Content content;
+            try {
+              content = this.fetcher.getContent(nextJob.getContentID());
+            } catch (Exception ex) {
+              this.listener.error(nextJob, "Failed to retrieve Source content", ex);
+              continue;
+            }
+            if (content == null) {
+              this.listener.error(nextJob, "Failed to retrieve Source content", null);
             } else {
-              updateJob(nextJob, content, io);
+              // check if we should delete the document
+              if (content.isDeleted()) {
+                deleteJob(nextJob, content, io);
+              } else {
+                updateJob(nextJob, content, io);
+              }
             }
           }
         } catch (Throwable ex) {
-          this.logger.indexError(nextJob.getRequester(), nextJob.getIndex(), "Unkown error while running job: " + ex.getMessage(), ex);
+          this.listener.error(nextJob, "Unkown error: " + ex.getMessage(), ex);
         } finally {
           this.lastActivity = System.currentTimeMillis();
         }
@@ -488,6 +523,8 @@ public class IndexManager implements Runnable {
         // no jobs available, optimise if not needed
         checkForCommit();
       }
+      // clear the job
+      nextJob = null;
     }
   };
 
@@ -507,7 +544,7 @@ public class IndexManager implements Runnable {
       try {
         translateContent(job.getContentID().getContentType(), job.getConfig(), content, job.getParameters(), xsltResult);
       } catch (IndexException e) {
-        this.logger.indexError(job.getRequester(), job.getIndex(), e.getMessage(), e);
+        this.listener.error(job, e.getMessage(), e);
         return;
       }
       // build Lucene documents
@@ -516,18 +553,19 @@ public class IndexManager implements Runnable {
         IndexParser parser = IndexParserFactory.getInstance();
         documents = parser.process(new InputSource(new StringReader(xsltResult.toString())));
       } catch (Exception ex) {
-        this.logger.indexError(job.getRequester(), job.getIndex(), "Failed to create Lucene Documents from Index XML", ex);
+        this.listener.error(job, "Failed to create Lucene Documents from Index XML", ex);
         return;
         }
       try {
         // add docs to index index
         io.updateDocuments(content.getDeleteRule(), documents);
       } catch (Exception ex) {
-        this.logger.indexError(job.getRequester(), job.getIndex(), "Failed to add Lucene Documents to Index", ex);
+        this.listener.error(job, "Failed to add Lucene Documents to Index", ex);
         return;
       }
     } finally {
       job.finish();
+      this.listener.finishJob(job);
     }
   }
 
@@ -542,10 +580,11 @@ public class IndexManager implements Runnable {
       // delete docs from index
       io.deleteDocuments(content.getDeleteRule());
     } catch (Exception ex) {
-      this.logger.indexError(job.getRequester(), job.getIndex(), "Failed to delete Lucene Documents from Index", ex);
+      this.listener.error(job, "Failed to delete Lucene Documents from Index", ex);
       return;
     } finally {
       job.finish();
+      this.listener.finishJob(job);
     }
   };
 
@@ -559,17 +598,17 @@ public class IndexManager implements Runnable {
   private IndexIO getIndexIO(Index index) throws IndexException {
     IndexIO io = this.indexes.get(index.getIndexID());
     if (io == null) {
-      this.logger.debug("Creating a new IndexIO for " + index.toString());
+      this.listener.debug("Creating a new IndexIO for " + index.toString());
       try {
         io = new IndexIO(index);
       } catch (CorruptIndexException e) {
-        this.logger.error("Failed creating an Index I/O object for " + index.toString() + " because the Index is corrupted", e);
+        this.listener.error("Failed creating an Index I/O object for " + index.toString() + " because the Index is corrupted", e);
         throw new IndexException("Failed creating an Index I/O object for " + index.toString() + " because the Index is corrupted", e);
       } catch (LockObtainFailedException e) {
-        this.logger.error("Failed getting a lock on the Index to create an Index I/O object for " + index.toString(), e);
+        this.listener.error("Failed getting a lock on the Index to create an Index I/O object for " + index.toString(), e);
         throw new IndexException("Failed getting a lock on the Index to create an Index I/O object for " + index.toString(), e);
       } catch (IOException e) {
-        this.logger.error("Failed creating an Index I/O object for " + index.toString() + " because of an I/O problem", e);
+        this.listener.error("Failed creating an Index I/O object for " + index.toString() + " because of an I/O problem", e);
         throw new IndexException("Failed creating an Index I/O object for " + index.toString() + " because of an I/O problem", e);
       }
       this.indexes.put(index.getIndexID(), io);
@@ -584,7 +623,7 @@ public class IndexManager implements Runnable {
       try {
         io.maybeCommit();
       } catch (IndexException e) {
-        this.logger.error("Failed to perform commit", e);
+        this.listener.error("Failed to perform commit", e);
       }
       // make sure there's no job waiting
       if (!this.indexQueue.isEmpty()) return;
@@ -597,7 +636,7 @@ public class IndexManager implements Runnable {
         try {
           io.maybeOptimise();
         } catch (IndexException e) {
-          this.logger.error("Failed to perform optimise", e);
+          this.listener.error("Failed to perform optimise", e);
         }
         // make sure there's no job waiting
         if (!this.indexQueue.isEmpty()) return;

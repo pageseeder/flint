@@ -1,5 +1,6 @@
 package org.weborganic.flint;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
@@ -17,40 +18,49 @@ import org.weborganic.flint.content.ContentTranslatorFactory;
 public class FlintTranslatorFactory implements ContentTranslatorFactory {
 
   /**
-   * MIME type supported.
+   * XML MIME types supported.
    */
-  protected static final String XML_MIME_TYPE = "text/xml";
-  // XXX the correct MIME for XML is be 'application/xml'
-
+  protected static final List<String> XML_MIME_TYPES = new ArrayList<String>();
+  static {
+    XML_MIME_TYPES.add("text/xml");
+    XML_MIME_TYPES.add("application/xml");
+    XML_MIME_TYPES.add("application/xhtml+xml");
+  }
   /**
-   * The translator for folders: a source forwarder
+   * The translator for xml files: a source forwarder
    */
   private final ContentTranslator xmlTranslator;
 
   /**
-   * Creates a new factory for {@value XML_MIME_TYPE}. 
+   * <p>Creates a new factory for {@value XML_MIME_TYPES}.</p>
+   * <p>See XML MIME Types at 
+   * @link <a href="https://www3.tools.ietf.org/html/rfc3023">XML Media Types</a>
+   * </p>
+   * <p> And XHTML Media Types at
+   * @link <a href="http://www.w3.org/TR/xhtml-media-types/">XHTML Media Types</a>
+   * </p>
    */
   public FlintTranslatorFactory() {
-    this.xmlTranslator = new SourceForwarder(XML_MIME_TYPE);
+    this.xmlTranslator = new SourceForwarder(XML_MIME_TYPES);
   }
 
   /**
-   * Only creates a translator if the specified MIME type matches {@value XML_MIME_TYPE}.
+   * Only creates a translator if the specified MIME type matches one of {@value XML_MIME_TYPES}.
    * 
    * {@inheritDoc}
    */
   public ContentTranslator createTranslator(String mimeType) {
-    if (XML_MIME_TYPE.equals(mimeType)) return this.xmlTranslator;
+    if (XML_MIME_TYPES.contains(mimeType)) return this.xmlTranslator;
     return null;
   }
 
   /**
-   * Returns a singleton list containing the {@value XML_MIME_TYPE}.
+   * Returns a list containing the {@value XML_MIME_TYPES}.
    * 
    * {@inheritDoc}
    */
   public List<String> getMimeTypesSupported() {
-    return Collections.singletonList(XML_MIME_TYPE);
+    return Collections.unmodifiableList(XML_MIME_TYPES);
   }
 
 }
