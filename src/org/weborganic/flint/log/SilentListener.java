@@ -10,7 +10,7 @@ import org.weborganic.flint.IndexJob;
  * @author Christophe Lauret
  * @version 26 May 2010
  */
-public final class SilentListener implements FlintListener {
+public class SilentListener implements FlintListener {
 
   /**
    * Sole instance.
@@ -90,6 +90,55 @@ public final class SilentListener implements FlintListener {
    * {@inheritDoc}
    */
   public void startJob(IndexJob job) {
+  }
+
+  /**
+   * {@inheritDoc}
+   */
+  public void debug(IndexJob job, String message, Throwable throwable) {
+  }
+
+  /**
+   * {@inheritDoc}
+   */
+  public void debug(String debug, Throwable throwable) {
+  }
+
+  /**
+   * {@inheritDoc}
+   */
+  public void error(IndexJob job, String message) {    
+  }
+
+  /**
+   * {@inheritDoc}
+   */
+  public void error(String error) {
+    
+  }
+
+  /**
+   * {@inheritDoc}
+   */
+  public void info(IndexJob job, String message, Throwable throwable) {
+  }
+
+  /**
+   * {@inheritDoc}
+   */
+  public void info(String info, Throwable throwable) {
+  }
+
+  /**
+   * {@inheritDoc}
+   */
+  public void warn(IndexJob job, String message, Throwable throwable) {
+  }
+
+  /**
+   * {@inheritDoc}
+   */
+  public void warn(String warning, Throwable throwable) {
   }
   
 }

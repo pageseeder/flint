@@ -50,6 +50,7 @@ import org.weborganic.flint.query.SearchPaging;
 import org.weborganic.flint.query.SearchQuery;
 import org.weborganic.flint.query.SearchResults;
 import org.weborganic.flint.util.FlintEntityResolver;
+import org.weborganic.flint.util.FlintErrorListener;
 import org.xml.sax.InputSource;
 
 /**
@@ -406,6 +407,7 @@ public class IndexManager implements Runnable {
     try {
       // prepare transformer
       Transformer t = templates.newTransformer();
+      t.setErrorListener(new FlintErrorListener(this.listener));
       if (t.getOutputProperty("doctype-public") == null) {
         t.setOutputProperty("doctype-public", FlintEntityResolver.PUBLIC_ID_PREFIX + "Index Documents Compatibility//EN");
         t.setOutputProperty("doctype-system", "http://weborganic.org/schema/flint/index-documents-compatibility.dtd");
@@ -474,8 +476,8 @@ public class IndexManager implements Runnable {
         return;
       }
       if (nextJob != null) {
+        this.listener.startJob(nextJob);
         try {
-          this.listener.startJob(nextJob);
           // ok launch the job then
           // load the IO for this job
           IndexIO io;
@@ -490,9 +492,6 @@ public class IndexManager implements Runnable {
               io.clearIndex();
             } catch (Exception ex) {
               this.listener.error(nextJob, "Failed to clear index", ex);
-            } finally {
-              nextJob.finish();
-              this.listener.finishJob(nextJob);
             }
           } else {
             // retrieve content
@@ -517,6 +516,8 @@ public class IndexManager implements Runnable {
         } catch (Throwable ex) {
           this.listener.error(nextJob, "Unkown error: " + ex.getMessage(), ex);
         } finally {
+          nextJob.finish();
+          this.listener.finishJob(nextJob);
           this.lastActivity = System.currentTimeMillis();
         }
       } else {
@@ -538,34 +539,29 @@ public class IndexManager implements Runnable {
    */
   private void updateJob(IndexJob job, Content content, IndexIO io) {
     if (job == null || io == null || content == null) return;
+    // translate content
+    StringWriter xsltResult = new StringWriter();
     try {
-      // translate content
-      StringWriter xsltResult = new StringWriter();
-      try {
-        translateContent(job.getContentID().getContentType(), job.getConfig(), content, job.getParameters(), xsltResult);
-      } catch (IndexException e) {
-        this.listener.error(job, e.getMessage(), e);
-        return;
+      translateContent(job.getContentID().getContentType(), job.getConfig(), content, job.getParameters(), xsltResult);
+    } catch (IndexException e) {
+      this.listener.error(job, e.getMessage(), e);
+      return;
+    }
+    // build Lucene documents
+    List<Document> documents;
+    try {
+      IndexParser parser = IndexParserFactory.getInstance();
+      documents = parser.process(new InputSource(new StringReader(xsltResult.toString())));
+    } catch (Exception ex) {
+      this.listener.error(job, "Failed to create Lucene Documents from Index XML", ex);
+      return;
       }
-      // build Lucene documents
-      List<Document> documents;
-      try {
-        IndexParser parser = IndexParserFactory.getInstance();
-        documents = parser.process(new InputSource(new StringReader(xsltResult.toString())));
-      } catch (Exception ex) {
-        this.listener.error(job, "Failed to create Lucene Documents from Index XML", ex);
-        return;
-        }
-      try {
-        // add docs to index index
-        io.updateDocuments(content.getDeleteRule(), documents);
-      } catch (Exception ex) {
-        this.listener.error(job, "Failed to add Lucene Documents to Index", ex);
-        return;
-      }
-    } finally {
-      job.finish();
-      this.listener.finishJob(job);
+    try {
+      // add docs to index index
+      io.updateDocuments(content.getDeleteRule(), documents);
+    } catch (Exception ex) {
+      this.listener.error(job, "Failed to add Lucene Documents to Index", ex);
+      return;
     }
   }
 
@@ -582,9 +578,6 @@ public class IndexManager implements Runnable {
     } catch (Exception ex) {
       this.listener.error(job, "Failed to delete Lucene Documents from Index", ex);
       return;
-    } finally {
-      job.finish();
-      this.listener.finishJob(job);
     }
   };
 
