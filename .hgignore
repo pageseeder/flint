@@ -7,3 +7,5 @@ syntax: regexp
 ^ivy\.properties$
 syntax: regexp
 ^local\.properties$
+syntax: regexp
+^lib$
