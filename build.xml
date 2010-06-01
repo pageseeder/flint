@@ -76,6 +76,7 @@
   <!-- generate the documentation -->
   <target name="javadoc" depends="compile" description="generate the java documentation">
     <mkdir dir="${dir.doc}"/>
+    <ivy:findrevision organisation="weborganic" module="${name.short}" revision="latest.milestone"/>
     <javadoc destdir="${dir.doc}" access="public" 
                                   use="true" 
                                   notree="false" 
@@ -87,7 +88,7 @@
                                   nodeprecated="false" 
                                   sourcepath="${dir.src}"
                                   stylesheetfile="${dir.resource}/javadoc.css"
-                                  doctitle="${name.display} ${version} API">
+                                  doctitle="${name.display} ${ivy.revision} API">
       <classpath>
         <pathelement location="${dir.bin}"/>
         <fileset dir="${dir.lib}">
