@@ -204,7 +204,7 @@ public final class SearchResults implements XMLWritable {
    */
   public void toXML(XMLWriter xml) throws IOException {
     xml.openElement("search-results", true);
-
+    if (this.indexIO != null) xml.attribute("index", this.indexIO.indexID());
     // Check whether it's equally distribute mode, if yes then calculate num of hits for each page
     int length = this.totalNbOfResults;
     int hitsperpage = (this.paging.checkEqDist())? ((int)Math.ceil((double)length / (double)this.paging.getTotalPage()))

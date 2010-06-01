@@ -37,12 +37,19 @@ public class IndexIO {
   private final SearcherManager searcherManager;
 
   private IndexIO.STATE state = STATE.CLEAN;
+  
+  private final String indexID;
 
   public IndexIO(Index index) throws CorruptIndexException, LockObtainFailedException, IOException {
+    this.indexID = index.getIndexID();
     this.writer = new IndexWriter(index.getIndexDirectory(), index.getAnalyzer(), IndexWriter.MaxFieldLength.LIMITED);
     this.writer.setMergeScheduler(new ConcurrentMergeScheduler());
     this.writer.setMergePolicy(new BalancedSegmentMergePolicy(this.writer));
     this.searcherManager = new SearcherManager(this.writer);
+  }
+  
+  public String indexID() {
+    return this.indexID;
   }
 
   private void maybeReopen() {

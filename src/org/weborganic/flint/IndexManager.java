@@ -32,7 +32,7 @@ import org.apache.lucene.index.IndexReader.FieldOption;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Sort;
-import org.apache.lucene.search.TopDocs;
+import org.apache.lucene.search.TopFieldCollector;
 import org.apache.lucene.store.LockObtainFailedException;
 import org.apache.lucene.util.Version;
 import org.weborganic.flint.IndexJob.Priority;
@@ -355,8 +355,10 @@ public class IndexManager implements Runnable {
         this.listener.debug("Performing search [" + lquery.rewrite(searcher.getIndexReader()).toString() + "] on index " + index.toString());
         Sort sort = query.getSort();
         if (sort == null) sort = Sort.INDEXORDER;
-        TopDocs docs = searcher.search(lquery, null, paging.getHitsPerPage() * paging.getPage(), sort);
-        return new SearchResults(docs.scoreDocs, docs.totalHits, paging, io, searcher);
+        // load the scores
+        TopFieldCollector tfc = TopFieldCollector.create(sort, paging.getHitsPerPage() * paging.getPage(), true, true, false, true);
+        searcher.search(lquery, tfc);
+        return new SearchResults(tfc.topDocs().scoreDocs, tfc.getTotalHits(), paging, io, searcher);
       } catch (IOException e) {
         try {
           io.releaseSearcher(searcher);
