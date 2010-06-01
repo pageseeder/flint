@@ -45,7 +45,7 @@ import org.weborganic.flint.content.ContentType;
 import org.weborganic.flint.index.IndexParser;
 import org.weborganic.flint.index.IndexParserFactory;
 import org.weborganic.flint.log.FlintListener;
-import org.weborganic.flint.log.SilentListener;
+import org.weborganic.flint.log.NoOpListener;
 import org.weborganic.flint.query.SearchPaging;
 import org.weborganic.flint.query.SearchQuery;
 import org.weborganic.flint.query.SearchResults;
@@ -130,7 +130,7 @@ public class IndexManager implements Runnable {
    * @param cf the Content Fetcher used to retrieve the content to index.
    */
   public IndexManager(ContentFetcher cf) {
-    this(cf, SilentListener.getInstance());
+    this(cf, NoOpListener.getInstance());
   }
 
   /**
@@ -383,50 +383,7 @@ public class IndexManager implements Runnable {
    * @throws IndexException if anything went wrong
    */
   public void translateContent(ContentType type, IndexConfig config, Content content, Map<String, String> params, Writer out) throws IndexException {
-    String mimetype = content.getMimeType();
-    // no MIME type found
-    if (mimetype == null)
-      throw new IndexException("MIME Type not found", null);
-    ContentTranslatorFactory factory = this.translatorFactories.get(mimetype);
-    // no factory found
-    if (factory == null)
-      throw new IndexException("MIME Type "+mimetype+" is not supported, no ContentTranslatorFactory found", null);
-    // ok translate now
-    ContentTranslator translator = factory.createTranslator(mimetype);
-    Reader source;
-    try {
-      source = translator.translate(content);
-    } catch (IndexException ex) {
-      throw new IndexException("Failed to translate Source content", ex);
-    }
-    if (source == null)
-      throw new IndexException("Failed to translate Content", null);
-    // retrieve XSLT script
-    Templates templates = config.getTemplates(type, mimetype, content.getConfigID());
-    if (templates == null)
-      throw new IndexException("Failed to load XSLT script for Content", null);
-    // run XSLT script
-    try {
-      // prepare transformer
-      Transformer t = templates.newTransformer();
-      t.setErrorListener(new FlintErrorListener(this.listener));
-      if (t.getOutputProperty("doctype-public") == null) {
-        t.setOutputProperty("doctype-public", FlintEntityResolver.PUBLIC_ID_PREFIX + "Index Documents Compatibility//EN");
-        t.setOutputProperty("doctype-system", "http://weborganic.org/schema/flint/index-documents-compatibility.dtd");
-      }
-      // retrieve parameters
-      Map<String, String> parameters = config.getParameters(type, mimetype, content.getConfigID());
-      if (parameters != null && params != null) {
-        parameters = new HashMap<String, String>(parameters);
-        parameters.putAll(params);
-      }
-      if (parameters != null) for (String paramName : parameters.keySet())
-        t.setParameter(paramName, parameters.get(paramName));
-      // run transform
-      t.transform(new StreamSource(source), new StreamResult(out));
-    } catch (Exception ex) {
-      throw new IndexException("Failed to create Index XML from Source content", ex);
-    }
+    translateContent(null, type, config, content, params, out);
   }
 
   // thread related methods
@@ -544,7 +501,7 @@ public class IndexManager implements Runnable {
     // translate content
     StringWriter xsltResult = new StringWriter();
     try {
-      translateContent(job.getContentID().getContentType(), job.getConfig(), content, job.getParameters(), xsltResult);
+      translateContent(new FlintErrorListener(this.listener, job), job.getContentID().getContentType(), job.getConfig(), content, job.getParameters(), xsltResult);
     } catch (IndexException e) {
       this.listener.error(job, e.getMessage(), e);
       return;
@@ -581,7 +538,64 @@ public class IndexManager implements Runnable {
       this.listener.error(job, "Failed to delete Lucene Documents from Index", ex);
       return;
     }
-  };
+  }
+  /**
+   * Translate the provided content into Flint Index XML
+   * 
+   * @param errorListener   a listener for the XSLT transformation errors
+   * @param type            the type of the content
+   * @param config          the config used to retrieve the XSLT templates
+   * @param content         the content
+   * @param params          list of parameters to add to the XSLT templates
+   * @param out             where the result should be written to
+   * @throws IndexException if anything went wrong
+   */
+  public void translateContent(FlintErrorListener errorListener, ContentType type, IndexConfig config, Content content, Map<String, String> params, Writer out) throws IndexException {
+    String mimetype = content.getMimeType();
+    // no MIME type found
+    if (mimetype == null)
+      throw new IndexException("MIME Type not found", null);
+    ContentTranslatorFactory factory = this.translatorFactories.get(mimetype);
+    // no factory found
+    if (factory == null)
+      throw new IndexException("MIME Type "+mimetype+" is not supported, no ContentTranslatorFactory found", null);
+    // ok translate now
+    ContentTranslator translator = factory.createTranslator(mimetype);
+    Reader source;
+    try {
+      source = translator.translate(content);
+    } catch (IndexException ex) {
+      throw new IndexException("Failed to translate Source content", ex);
+    }
+    if (source == null)
+      throw new IndexException("Failed to translate Content", null);
+    // retrieve XSLT script
+    Templates templates = config.getTemplates(type, mimetype, content.getConfigID());
+    if (templates == null)
+      throw new IndexException("Failed to load XSLT script for Content", null);
+    // run XSLT script
+    try {
+      // prepare transformer
+      Transformer t = templates.newTransformer();
+      if (errorListener != null) t.setErrorListener(errorListener);
+      if (t.getOutputProperty("doctype-public") == null) {
+        t.setOutputProperty("doctype-public", FlintEntityResolver.PUBLIC_ID_PREFIX + "Index Documents Compatibility//EN");
+        t.setOutputProperty("doctype-system", "http://weborganic.org/schema/flint/index-documents-compatibility.dtd");
+      }
+      // retrieve parameters
+      Map<String, String> parameters = config.getParameters(type, mimetype, content.getConfigID());
+      if (parameters != null && params != null) {
+        parameters = new HashMap<String, String>(parameters);
+        parameters.putAll(params);
+      }
+      if (parameters != null) for (String paramName : parameters.keySet())
+        t.setParameter(paramName, parameters.get(paramName));
+      // run transform
+      t.transform(new StreamSource(source), new StreamResult(out));
+    } catch (Exception ex) {
+      throw new IndexException("Failed to create Index XML from Source content", ex);
+    }
+  }
 
   /**
    * Retrieve an IndexIO, creates it if non existent

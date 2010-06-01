@@ -3,6 +3,7 @@ package org.weborganic.flint.util;
 import javax.xml.transform.ErrorListener;
 import javax.xml.transform.TransformerException;
 
+import org.weborganic.flint.IndexJob;
 import org.weborganic.flint.log.FlintListener;
 
 /**
@@ -17,29 +18,44 @@ public class FlintErrorListener implements ErrorListener {
    */
   private final FlintListener listener;
   /**
+   * The Job the errors belong to
+   */
+  private final IndexJob job;
+  /**
    * Create a new listener
    * 
    * @param listener the listener to log messages to
+   * @param job      the Job the errors belong to
    */
-  public FlintErrorListener(FlintListener listener) {
+  public FlintErrorListener(FlintListener listener, IndexJob job) {
     this.listener = listener;
+    this.job = job;
   }
   /**
    * {@inheritDoc}
    */
   public void error(TransformerException te) throws TransformerException {
-    this.listener.error("ERROR: "+te.getMessageAndLocation(), te);
+    if (job != null)
+      this.listener.error(job, "ERROR: "+te.getMessageAndLocation());
+    else
+      this.listener.error("ERROR: "+te.getMessageAndLocation());
   }
   /**
    * {@inheritDoc}
    */
   public void fatalError(TransformerException te) throws TransformerException {
-    this.listener.error("FATAL: "+te.getMessageAndLocation(), te);
+    if (job != null)
+      this.listener.error(job, "FATAL: "+te.getMessageAndLocation());
+    else
+      this.listener.error("FATAL: "+te.getMessageAndLocation());
   }
   /**
    * {@inheritDoc}
    */
   public void warning(TransformerException te) throws TransformerException {
-    this.listener.warn("WARNING: "+te.getMessageAndLocation(), te);
+    if (job != null)
+      this.listener.warn(job, "WARNING: "+te.getMessageAndLocation());
+    else
+      this.listener.warn("WARNING: "+te.getMessageAndLocation());
   }
 }
