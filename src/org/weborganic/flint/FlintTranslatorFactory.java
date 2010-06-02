@@ -41,7 +41,7 @@ public class FlintTranslatorFactory implements ContentTranslatorFactory {
    * </p>
    */
   public FlintTranslatorFactory() {
-    this.xmlTranslator = new SourceForwarder(XML_MIME_TYPES);
+    this.xmlTranslator = new SourceForwarder(XML_MIME_TYPES, "UTF-8");
   }
 
   /**
