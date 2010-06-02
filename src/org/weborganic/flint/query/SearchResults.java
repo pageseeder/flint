@@ -83,6 +83,8 @@ public final class SearchResults implements XMLWritable {
   private final int totalNbOfResults;
 
   private int timezoneOffset;
+  
+  private final SearchQuery query;
 
   /**
    * Creates a new SearchResults (legacy constructor).
@@ -94,7 +96,7 @@ public final class SearchResults implements XMLWritable {
    * @throws IndexException if the documents could not be retrieved from the Index
    */
   public SearchResults(ScoreDoc[] hits, SearchPaging paging, IndexSearcher searcher) throws IOException, IndexException {
-    this(hits, null, hits.length, paging, null, searcher);
+    this(null, hits, null, hits.length, paging, null, searcher);
   }
 
   /**
@@ -108,7 +110,7 @@ public final class SearchResults implements XMLWritable {
    */
   public SearchResults(TopFieldDocs fielddocs, SearchPaging paging, IndexSearcher searcher) throws IOException,
       IndexException {
-    this(fielddocs.scoreDocs, fielddocs.fields, fielddocs.totalHits, paging, null, searcher);
+    this(null, fielddocs.scoreDocs, fielddocs.fields, fielddocs.totalHits, paging, null, searcher);
   }
 
   /**
@@ -120,9 +122,9 @@ public final class SearchResults implements XMLWritable {
    * @param searcher The Lucene searcher.
    * @throws IndexException if the documents could not be retrieved from the Index
    */
-  public SearchResults(TopFieldDocs fielddocs, SearchPaging paging, IndexIO io, IndexSearcher searcher)
+  public SearchResults(SearchQuery query, TopFieldDocs fielddocs, SearchPaging paging, IndexIO io, IndexSearcher searcher)
       throws IOException, IndexException {
-    this(fielddocs.scoreDocs, fielddocs.fields, fielddocs.totalHits, paging, io, searcher);
+    this(query, fielddocs.scoreDocs, fielddocs.fields, fielddocs.totalHits, paging, io, searcher);
   }
 
   /**
@@ -134,9 +136,9 @@ public final class SearchResults implements XMLWritable {
    * @param searcher The Lucene searcher.
    * @throws IndexException if the documents could not be retrieved from the Index
    */
-  public SearchResults(ScoreDoc[] hits, int totalHits, SearchPaging paging, IndexIO io, IndexSearcher searcher)
+  public SearchResults(SearchQuery query, ScoreDoc[] hits, int totalHits, SearchPaging paging, IndexIO io, IndexSearcher searcher)
       throws IndexException {
-    this(hits, null, totalHits, paging, io, searcher);
+    this(query, hits, null, totalHits, paging, io, searcher);
   }
 
   /**
@@ -149,8 +151,9 @@ public final class SearchResults implements XMLWritable {
    * @param searcher The Lucene searcher.
    * @throws IndexException if the documents could not be retrieved from the Index
    */
-  private SearchResults(ScoreDoc[] hits, SortField[] sortf, int totalResults, SearchPaging paging, IndexIO io,
+  private SearchResults(SearchQuery query, ScoreDoc[] hits, SortField[] sortf, int totalResults, SearchPaging paging, IndexIO io,
       IndexSearcher search) throws IndexException {
+    this.query = query;
     this.scoredocs = hits;
     this.sortfields = sortf;
     if (paging == null)
@@ -212,6 +215,15 @@ public final class SearchResults implements XMLWritable {
     int firsthit = hitsperpage * (this.paging.getPage() - 1) + 1;
     int lasthit = Math.min(length, firsthit + hitsperpage - 1);
 
+    // include query
+    if (this.query != null) {
+      xml.openElement("query");
+      xml.openElement("flint");
+      this.query.toXML(xml);
+      xml.closeElement();
+      xml.element("lucene", this.query.toQuery().toString());
+      xml.closeElement();
+    }
     // Display some metadata on the search
     xml.openElement("metadata", true);
     xml.openElement("hits", true);
@@ -273,6 +285,7 @@ public final class SearchResults implements XMLWritable {
         if (value.length() < MAX_FIELD_VALUE_LENGTH) {
           xml.openElement("field");
           xml.attribute("name", f.name());
+          xml.attribute("tokenized", f.isTokenized()+"");
           xml.writeText(value);
           xml.closeElement();
         }
