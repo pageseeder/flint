@@ -28,6 +28,7 @@ import javax.xml.transform.stream.StreamSource;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.CorruptIndexException;
+import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexReader.FieldOption;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
@@ -358,7 +359,7 @@ public class IndexManager implements Runnable {
         // load the scores
         TopFieldCollector tfc = TopFieldCollector.create(sort, paging.getHitsPerPage() * paging.getPage(), true, true, false, true);
         searcher.search(lquery, tfc);
-        return new SearchResults(tfc.topDocs().scoreDocs, tfc.getTotalHits(), paging, io, searcher);
+        return new SearchResults(query, tfc.topDocs().scoreDocs, tfc.getTotalHits(), paging, io, searcher);
       } catch (IOException e) {
         try {
           io.releaseSearcher(searcher);
@@ -370,6 +371,45 @@ public class IndexManager implements Runnable {
       }
     }
     return null;
+  }
+  /**
+   * Book a near real-time Reader on the Index provided.
+   * <p>IMPORTANT: the reader should not be closed, it should be used in the following way to ensure it is closed properly:</p>
+   * <code>
+   *    IndexReader reader = manager.bookIndexReader(index);
+   *    try {
+   *      ...
+   *    } finally {
+   *      manager.releaseIndexReader(index, reader);
+   *    }
+   * </code>
+   * 
+   * @param index the index that the Index Reader will point to.
+   * @return the Index Reader to read from the index
+   * @throws IndexException
+   */
+  public IndexReader bookIndexReader(Index index) throws IndexException {
+    try {
+      return getIndexIO(index).bookReader();
+    } catch (IOException e) {
+      this.listener.error("Failed getting a reader on the Index because of an I/O problem", e);
+      throw new IndexException("Failed getting a reader on the Index because of an I/O problem", e);
+    }
+  }
+  /**
+   * Release an Index Reader after it's been used.
+   * @see IndexManager#bookIndexReader(Index)
+   * @param index
+   * @param reader
+   * @throws IndexException
+   */
+  public void releaseIndexReader(Index index, IndexReader reader) throws IndexException {
+    try {
+      getIndexIO(index).releaseReader(reader);
+    } catch (IOException e) {
+      this.listener.error("Failed to release a reader because of an I/O problem", e);
+      throw new IndexException("Failed to release a reader because of an I/O problem", e);
+    }
   }
 
   /**

@@ -121,7 +121,7 @@ public class SearcherManager {
    * @return the current IndexSearcher
    * @throws InterruptedException 
    */
-  public synchronized IndexSearcher get() {
+  protected synchronized IndexSearcher get() {
     LOGGER.debug("Getting searcher " + this.currentSearcher.hashCode());
     this.currentSearcher.getIndexReader().incRef();
     return this.currentSearcher;
@@ -133,11 +133,39 @@ public class SearcherManager {
    * @param searcher
    * @throws IOException
    */
-  public synchronized void release(IndexSearcher searcher) throws IOException {
+  protected synchronized void release(IndexSearcher searcher) throws IOException {
     LOGGER.debug("Releasing searcher " + searcher.hashCode());
     searcher.getIndexReader().decRef();
     // check if we should close an old one
     if (this.currentSearcher != searcher && searcher.getIndexReader().getRefCount() == 0)
       searcher.close();
+  }
+
+  /**
+   * Return the current IndexReader. Important: call releaseReader() when finished with the Index Reader.
+   * 
+   * @return the current IndexReader
+   * .
+   * @throws InterruptedException 
+   */
+  protected synchronized IndexReader getReader() {
+    LOGGER.debug("Getting reader " + this.currentSearcher.getIndexReader().hashCode());
+    this.currentSearcher.getIndexReader().incRef();
+    return this.currentSearcher.getIndexReader();
+  }
+
+  /**
+   * Release the given reader.
+   * 
+   * @param reader the reader to release
+   * 
+   * @throws IOException
+   */
+  protected synchronized void releaseReader(IndexReader reader) throws IOException {
+    LOGGER.debug("Releasing reader " + reader.hashCode());
+    reader.decRef();
+    // check if we should close an old one
+    if (this.currentSearcher.getIndexReader() != reader && reader.getRefCount() == 0)
+      reader.close();
   }
 }

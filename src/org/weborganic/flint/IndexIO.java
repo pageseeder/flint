@@ -14,6 +14,7 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.index.BalancedSegmentMergePolicy;
 import org.apache.lucene.index.ConcurrentMergeScheduler;
 import org.apache.lucene.index.CorruptIndexException;
+import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.store.LockObtainFailedException;
@@ -152,6 +153,16 @@ public class IndexIO {
 
   public void releaseSearcher(IndexSearcher searcher) throws IOException {
     this.searcherManager.release(searcher);
+  }
+
+  protected IndexReader bookReader() throws IOException {
+    // check for reopening
+    maybeReopen();
+    return this.searcherManager.getReader();
+  }
+
+  protected void releaseReader(IndexReader reader) throws IOException {
+    this.searcherManager.releaseReader(reader);
   }
 
   /**
