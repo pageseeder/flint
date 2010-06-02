@@ -76,6 +76,11 @@ public class IndexJob implements Comparable<IndexJob> {
   private final String jobId;
 
   /**
+   * Internal flag to know if the job succeeded.
+   */
+  private boolean success = false;
+
+  /**
    * Private constructor, to build a job, use one of the static methods newAddJob(), newUpdateJob() or newDeleteJob().
    * 
    * @param id      The Content ID
@@ -196,6 +201,24 @@ public class IndexJob implements Comparable<IndexJob> {
   public boolean isFinished() {
     return this.finished;
   }
+  
+  /**
+   * Set the final status of this job
+   * 
+   * @param success true if the job succeeded
+   */
+  public void setSuccess(boolean success) {
+    this.success = success;
+  }
+  /**
+   * Check whether this job was completed successfully or not
+   * 
+   * @return true if the job was successful
+   */
+  public boolean wasSuccessful() {
+    return this.success;
+  }
+
 
   /**
    * Useful when debugging and logging.
@@ -203,7 +226,7 @@ public class IndexJob implements Comparable<IndexJob> {
   @Override
   public String toString() {
     return "[IndexJob - contentid:" + this.contentID + " priority:"
-        + this.priority + " index:" + this.index + " finished:" + this.finished + "]";
+        + this.priority + " index:" + this.index + " finished:" + this.finished + " success:" + this.success + "]";
   }
   
   public boolean isClearJob() {

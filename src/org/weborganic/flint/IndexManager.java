@@ -448,7 +448,7 @@ public class IndexManager implements Runnable {
           }
           if (nextJob.isClearJob()) {
             try {
-              io.clearIndex();
+              nextJob.setSuccess(io.clearIndex());
             } catch (Exception ex) {
               this.listener.error(nextJob, "Failed to clear index", ex);
             }
@@ -465,11 +465,10 @@ public class IndexManager implements Runnable {
               this.listener.error(nextJob, "Failed to retrieve Source content", null);
             } else {
               // check if we should delete the document
-              if (content.isDeleted()) {
-                deleteJob(nextJob, content, io);
-              } else {
-                updateJob(nextJob, content, io);
-              }
+              if (content.isDeleted())
+                nextJob.setSuccess(deleteJob(nextJob, content, io));
+              else
+                nextJob.setSuccess(updateJob(nextJob, content, io));
             }
           }
         } catch (Throwable ex) {
@@ -495,16 +494,18 @@ public class IndexManager implements Runnable {
    * Add or update a document in an index
    * 
    * @param job
+   * 
+   * @return true if the job was successful
    */
-  private void updateJob(IndexJob job, Content content, IndexIO io) {
-    if (job == null || io == null || content == null) return;
+  private boolean updateJob(IndexJob job, Content content, IndexIO io) {
+    if (job == null || io == null || content == null) return false;
     // translate content
     StringWriter xsltResult = new StringWriter();
     try {
       translateContent(new FlintErrorListener(this.listener, job), job.getContentID().getContentType(), job.getConfig(), content, job.getParameters(), xsltResult);
     } catch (IndexException e) {
       this.listener.error(job, e.getMessage(), e);
-      return;
+      return false;
     }
     // build Lucene documents
     List<Document> documents;
@@ -513,31 +514,35 @@ public class IndexManager implements Runnable {
       documents = parser.process(new InputSource(new StringReader(xsltResult.toString())));
     } catch (Exception ex) {
       this.listener.error(job, "Failed to create Lucene Documents from Index XML", ex);
-      return;
+      return false;
       }
     try {
       // add docs to index index
       io.updateDocuments(content.getDeleteRule(), documents);
     } catch (Exception ex) {
       this.listener.error(job, "Failed to add Lucene Documents to Index", ex);
-      return;
+      return false;
     }
+    return true;
   }
 
   /**
    * Delete a doc from an index
    * 
    * @param job
+   * 
+   * @return true if the job was successful
    */
-  private void deleteJob(IndexJob job, Content content, IndexIO io) {
-    if (job == null || io == null) return;
+  private boolean deleteJob(IndexJob job, Content content, IndexIO io) {
+    if (job == null || io == null) return false;
     try {
       // delete docs from index
       io.deleteDocuments(content.getDeleteRule());
     } catch (Exception ex) {
       this.listener.error(job, "Failed to delete Lucene Documents from Index", ex);
-      return;
+      return false;
     }
+    return true;
   }
   /**
    * Translate the provided content into Flint Index XML
