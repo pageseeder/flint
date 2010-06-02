@@ -53,9 +53,20 @@ public final class PredicateSearchQuery implements SearchQuery {
    * Creates new predicate search query.
    * 
    * @param predicate The predicate for this query.
+   * @param sortField The field name to use to order the results.
    */
   public PredicateSearchQuery(String predicate, String sortField) {
     this(predicate, sortField == null ? Sort.INDEXORDER : new Sort(new SortField(sortField, SortField.STRING)));
+  }
+  /**
+   * Creates new predicate search query.
+   * 
+   * @param predicate The predicate for this query.
+   * @param analyzer  The analyzer to use for the query, should be the same as the one used to write the Index.
+   * @param sortField The field name to use to order the results.
+   */
+  public PredicateSearchQuery(String predicate, Analyzer analyzer, String sortField) {
+    this(predicate, analyzer, sortField == null ? Sort.INDEXORDER : new Sort(new SortField(sortField, SortField.STRING)));
   }
 
   /**
