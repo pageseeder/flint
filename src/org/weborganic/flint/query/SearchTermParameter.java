@@ -11,7 +11,7 @@ import java.io.IOException;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.Query;
-import org.weborganic.flint.FieldUtils;
+import org.weborganic.flint.util.FieldUtils;
 
 import com.topologi.diffx.xml.XMLWriter;
 

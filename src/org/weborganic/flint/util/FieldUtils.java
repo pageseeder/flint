@@ -5,7 +5,7 @@
  * A copy of this licence can also be found at 
  *   http://www.opensource.org/licenses/artistic-license-2.0.php
  */
-package org.weborganic.flint;
+package org.weborganic.flint.util;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -23,13 +23,11 @@ import org.apache.lucene.search.TermQuery;
 
 /**
  * A set of utility methods for dealing with search fields.
- * 
+ *
  * @author Tu Tak Tran (Allette Systems)
  * @author Christophe Lauret (Weborganic)
  * 
  * @version 8 October 2009
- * 
- * @deprecated  {@link org.weborganic.flint.util.FieldUtils}
  */
 public final class FieldUtils {
 

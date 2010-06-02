@@ -24,12 +24,11 @@ import org.apache.lucene.store.FSDirectory;
 /**
  * Implementation of Index, uses a File object to build a Lucene index.
  * 
- * <p>Some fields can be defined as keywords in this index.
- * 
- * <p>Keywords are specific because they are tokenized as a single token that is turned lower case.
- * 
  * @author Jean-Baptiste Reure
  * @version 26 February 2010
+ * 
+ * @deprecated {@link org.weborganic.flint.index.DirectoryIndex}
+ * 
  */
 public class KeywordsIndex implements Index {
 
