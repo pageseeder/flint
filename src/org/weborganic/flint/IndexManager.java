@@ -613,7 +613,7 @@ public class IndexManager implements Runnable {
       throw new IndexException("Failed to translate Source content", ex);
     }
     if (source == null)
-      throw new IndexException("Failed to translate Content", null);
+      throw new IndexException("Failed to translate Content as the Translator returned a null result", null);
     // retrieve XSLT script
     Templates templates = config.getTemplates(type, mimetype, content.getConfigID());
     if (templates == null)
