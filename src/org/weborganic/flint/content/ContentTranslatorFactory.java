@@ -1,6 +1,6 @@
 package org.weborganic.flint.content;
 
-import java.util.List;
+import java.util.Collection;
 
 /**
  * A Factory to create <code>org.weborganic.flint.content.ContentTranslator</code> objects used to
@@ -17,7 +17,7 @@ public interface ContentTranslatorFactory {
    * 
    * @return the list of MIME Types supported
    */
-  List<String> getMimeTypesSupported();
+  Collection<String> getMimeTypesSupported();
 
   /**
    * Return an instance of <code>ContentTranslator</code> used to translate Content with the MIME 

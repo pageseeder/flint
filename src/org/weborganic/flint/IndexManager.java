@@ -12,6 +12,7 @@ import java.io.StringReader;
 import java.io.StringWriter;
 import java.io.Writer;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -124,6 +125,11 @@ public class IndexManager implements Runnable {
    * The thread manager
    */
   private ExecutorService threadPool = null;
+  
+  /**
+   * A default Translator, used when no Factory matches a certain MIME Type
+   */
+  private ContentTranslator defaultTranslator = null;
 
   /**
    * Simple constructor which will use a SilentListener.
@@ -155,6 +161,15 @@ public class IndexManager implements Runnable {
   // ----------------------------------------------------------------------------------------------
 
   /**
+   * Set the default Translator to use when no facotry matches a certain MIME Type (null by default)
+   * 
+   * @param defaultTranslator the translator
+   */
+  public void setDefaultTranslator(ContentTranslator defaultTranslator) {
+    this.defaultTranslator = defaultTranslator;
+  }
+  
+  /**
    * Set the priority of the thread (this has no effect if called after the method start() is called)
    * 
    * @param priority the priority of the Indexing Thread (from 1 to 10, default is 5)
@@ -171,7 +186,7 @@ public class IndexManager implements Runnable {
    * @param factory  the factory to register
    */
   public void registerTranslatorFactory(ContentTranslatorFactory factory) {
-    List<String> mtypes = factory.getMimeTypesSupported();
+    Collection<String> mtypes = factory.getMimeTypesSupported();
     for (String mimeType : mtypes) {
       registerTranslatorFactory(mimeType, factory);
     }
@@ -599,25 +614,28 @@ public class IndexManager implements Runnable {
     String mimetype = content.getMimeType();
     // no MIME type found
     if (mimetype == null)
-      throw new IndexException("MIME Type not found", null);
+      throw new IndexException("MIME Type not found.", null);
     ContentTranslatorFactory factory = this.translatorFactories.get(mimetype);
     // no factory found
-    if (factory == null)
-      throw new IndexException("MIME Type "+mimetype+" is not supported, no ContentTranslatorFactory found", null);
+    if (factory == null && this.defaultTranslator == null)
+      throw new IndexException("MIME Type "+mimetype+" is not supported, no Translator Factory was found and no default Translator was specified.", null);
+    // load translator
+    ContentTranslator translator = factory == null ? this.defaultTranslator : factory.createTranslator(mimetype);
+    if (translator == null)
+      throw new IndexException("No translator was found for MIME Type "+mimetype+".", null);
     // ok translate now
-    ContentTranslator translator = factory.createTranslator(mimetype);
-    Reader source;
+    Reader source = null;
     try {
       source = translator.translate(content);
     } catch (IndexException ex) {
-      throw new IndexException("Failed to translate Source content", ex);
+      throw new IndexException("Failed to translate Source content.", ex);
     }
     if (source == null)
-      throw new IndexException("Failed to translate Content as the Translator returned a null result", null);
+      throw new IndexException("Failed to translate Content as the Translator returned a null result.", null);
     // retrieve XSLT script
     Templates templates = config.getTemplates(type, mimetype, content.getConfigID());
     if (templates == null)
-      throw new IndexException("Failed to load XSLT script for Content", null);
+      throw new IndexException("Failed to load XSLT script for Content.", null);
     // run XSLT script
     try {
       // prepare transformer
@@ -638,7 +656,7 @@ public class IndexManager implements Runnable {
       // run transform
       t.transform(new StreamSource(source), new StreamResult(out));
     } catch (Exception ex) {
-      throw new IndexException("Failed to create Index XML from Source content", ex);
+      throw new IndexException("Failed to create Index XML from Source content.", ex);
     }
   }
 
