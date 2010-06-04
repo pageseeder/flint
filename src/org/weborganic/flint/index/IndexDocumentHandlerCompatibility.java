@@ -219,8 +219,8 @@ final class IndexDocumentHandlerCompatibility extends DefaultHandler implements 
     else if ("".equals(type))                    return "yes";
     else if ("keyword".equalsIgnoreCase(type))   return "yes";
     else if ("unindexed".equalsIgnoreCase(type)) return "yes";
-    else if ("text".equalsIgnoreCase(type))      return "compress";
-    else if ("stored".equalsIgnoreCase(type))    return "compress";
+    else if ("text".equalsIgnoreCase(type))      return "yes";
+    else if ("stored".equalsIgnoreCase(type))    return "yes";
     else if ("unstored".equalsIgnoreCase(type))  return "no";
     else if ("system".equalsIgnoreCase(type))    return "no";
     else return "yes";
