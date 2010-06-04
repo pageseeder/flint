@@ -285,7 +285,6 @@ public final class SearchResults implements XMLWritable {
         if (value.length() < MAX_FIELD_VALUE_LENGTH) {
           xml.openElement("field");
           xml.attribute("name", f.name());
-          xml.attribute("tokenized", f.isTokenized()+"");
           xml.writeText(value);
           xml.closeElement();
         }
