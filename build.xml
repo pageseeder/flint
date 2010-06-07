@@ -95,7 +95,10 @@
           <include name="**/*.jar"/>
         </fileset>
       </classpath>
+      <link href="http://www.slf4j.org/apidocs/" />
       <link href="http://java.sun.com/javase/6/docs/api/" />
+      <link href="http://lucene.apache.org/java/3_0_1/api/all/"/>
+      <link href="http://www.weborganic.org/apidoc/diffx/core/"/>
     </javadoc>
   </target>
 
