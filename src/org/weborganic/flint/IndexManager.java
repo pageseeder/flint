@@ -161,7 +161,7 @@ public class IndexManager implements Runnable {
   // ----------------------------------------------------------------------------------------------
 
   /**
-   * Set the default Translator to use when no facotry matches a certain MIME Type (null by default)
+   * Set the default Translator to use when no factory matches a certain MIME Type (null by default)
    * 
    * @param defaultTranslator the translator
    */
