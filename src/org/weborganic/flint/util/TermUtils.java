@@ -30,7 +30,7 @@ public final class TermUtils {
    * 
    * @return The corresponding list of fuzzy terms.
    */
-  public List<Term> getFuzzyTerms(IndexReader reader, Term term) throws IOException {
+  public static List<Term> getFuzzyTerms(IndexReader reader, Term term) throws IOException {
     List<Term> terms = new ArrayList<Term>();
     loadFuzzyTerms(reader, terms, term);
     return terms;
@@ -46,7 +46,7 @@ public final class TermUtils {
    * 
    * @return The corresponding list of prefix terms.
    */
-  public List<Term> getPrefixTerms(IndexReader reader, Term term) throws IOException {
+  public static List<Term> getPrefixTerms(IndexReader reader, Term term) throws IOException {
     List<Term> terms = new ArrayList<Term>();
     loadPrefixTerms(reader, terms, term);
     return terms;
@@ -59,7 +59,7 @@ public final class TermUtils {
    * @param terms  The list of terms to load.
    * @param term   The term to use.
    */
-  public void loadFuzzyTerms(IndexReader reader, List<Term> terms, Term term) throws IOException {
+  public static void loadFuzzyTerms(IndexReader reader, List<Term> terms, Term term) throws IOException {
     FuzzyTermEnum e = new FuzzyTermEnum(reader, term);
     do {
       Term t = e.term();
@@ -75,7 +75,7 @@ public final class TermUtils {
    * @param terms  The list of terms to load.
    * @param term   The term to use.
    */
-  public void loadPrefixTerms(IndexReader reader, List<Term> terms, Term term) throws IOException {
+  public static void loadPrefixTerms(IndexReader reader, List<Term> terms, Term term) throws IOException {
     PrefixTermEnum e = new PrefixTermEnum(reader, term);
     do {
       Term t = e.term();
