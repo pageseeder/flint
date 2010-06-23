@@ -2,6 +2,7 @@ package org.weborganic.flint.util;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 
 import org.apache.lucene.index.IndexReader;
@@ -12,15 +13,32 @@ import org.apache.lucene.search.PrefixTermEnum;
 /**
  * A collection of utility methods to manipulate and extract terms.
  * 
- * @deprecated Use {@link Terms} instead
- * 
  * @author Christophe Lauret
  * @version 23 June 2010
  */
-public final class TermUtils {
+public final class Terms {
+
+  /**
+   * Compares terms using their text value instead of their field value.
+   */
+  private final static Comparator<Term> TEXT_COMPARATOR = new Comparator<Term>()  {
+    /** {@inheritDoc} */
+    public int compare(Term t1, Term t2) {
+      return t1.text().compareTo(t2.text());
+    }
+  };
 
   /** Utility class. */
-  private TermUtils() {}
+  private Terms() {}
+
+  /**
+   * Returns a comparator to order terms using their text value.
+   * 
+   * @return a comparator to order terms using their text value.
+   */
+  public static Comparator<Term> textComparator() {
+    return TEXT_COMPARATOR;
+  }
 
   /**
    * Returns the list of fuzzy terms given a term and using the specified index reader.
@@ -32,9 +50,9 @@ public final class TermUtils {
    * 
    * @return The corresponding list of fuzzy terms.
    */
-  public static List<Term> getFuzzyTerms(IndexReader reader, Term term) throws IOException {
+  public static List<Term> fuzzy(IndexReader reader, Term term) throws IOException {
     List<Term> terms = new ArrayList<Term>();
-    loadFuzzyTerms(reader, terms, term);
+    fuzzy(reader, terms, term);
     return terms;
   }
 
@@ -48,9 +66,9 @@ public final class TermUtils {
    * 
    * @return The corresponding list of prefix terms.
    */
-  public static List<Term> getPrefixTerms(IndexReader reader, Term term) throws IOException {
+  public static List<Term> prefix(IndexReader reader, Term term) throws IOException {
     List<Term> terms = new ArrayList<Term>();
-    loadPrefixTerms(reader, terms, term);
+    prefix(reader, terms, term);
     return terms;
   }
 
@@ -61,7 +79,7 @@ public final class TermUtils {
    * @param terms  The list of terms to load.
    * @param term   The term to use.
    */
-  public static void loadFuzzyTerms(IndexReader reader, List<Term> terms, Term term) throws IOException {
+  public static void fuzzy(IndexReader reader, List<Term> terms, Term term) throws IOException {
     FuzzyTermEnum e = new FuzzyTermEnum(reader, term);
     do {
       Term t = e.term();
@@ -77,7 +95,7 @@ public final class TermUtils {
    * @param terms  The list of terms to load.
    * @param term   The term to use.
    */
-  public static void loadPrefixTerms(IndexReader reader, List<Term> terms, Term term) throws IOException {
+  public static void prefix(IndexReader reader, List<Term> terms, Term term) throws IOException {
     PrefixTermEnum e = new PrefixTermEnum(reader, term);
     do {
       Term t = e.term();
