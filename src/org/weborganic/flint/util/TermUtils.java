@@ -17,7 +17,7 @@ import org.apache.lucene.search.PrefixTermEnum;
  * @author Christophe Lauret
  * @version 23 June 2010
  */
-public final class TermUtils {
+@Deprecated public final class TermUtils {
 
   /** Utility class. */
   private TermUtils() {}

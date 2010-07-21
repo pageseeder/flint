@@ -41,6 +41,26 @@ public final class Terms {
   }
 
   /**
+   * Returns the list of terms based on the given list of fields and texts.
+   * 
+   * <p>The number of the terms returns is (number of fields) x (number of texts).
+   * 
+   * @param fields The list of fields.  
+   * @param texts  The list of texts. 
+   * 
+   * @return The corresponding list of terms.
+   */
+  public static List<Term> terms(List<String> fields, List<String> texts) throws IOException {
+    List<Term> terms = new ArrayList<Term>();
+    for (String field : fields) {
+      for (String text : texts) {
+        terms.add(new Term(field, text));
+      }
+    }
+    return terms;
+  }
+
+  /**
    * Returns the list of fuzzy terms given a term and using the specified index reader.
    * 
    * @see #loadPrefixTerms(IndexReader, List, Term)
