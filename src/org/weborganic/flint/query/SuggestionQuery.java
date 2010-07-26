@@ -29,7 +29,7 @@ public final class SuggestionQuery implements SearchQuery {
   private final List<Term> _terms;
 
   /**
-   * The condition that all the suggested results must meet.  
+   * The condition that all the suggested results must meet.
    */
   private final Query _condition;
 
@@ -39,7 +39,7 @@ public final class SuggestionQuery implements SearchQuery {
   private BooleanQuery query = null;
 
   /**
-   * Create a new auto-suggest query for the specified list of terms with no condition
+   * Create a new auto-suggest query for the specified list of terms with no condition.
    * 
    * @param terms     The list of terms that should be matched.
    */
@@ -86,7 +86,29 @@ public final class SuggestionQuery implements SearchQuery {
   }
 
   /**
-   * Return this query as XML.
+   * Prints this query as XML on the specified XML writer.
+   * 
+   * <p>XML:
+   * <pre>{@code
+   *  <suggestion-query>
+   *    <terms>
+   *      <term field="[field]" text="[text]"/>
+   *      <term field="[field]" text="[text]"/>
+   *      <term field="[field]" text="[text]"/>
+   *      ...
+   *    </terms>
+   *    <condition>
+   *     <!-- Condition as a Lucene Query -->
+   *     ...
+   *    </condition>
+   *  </suggestion-query>
+   * }</pre>
+   * 
+   * @see Query#toString()
+   * 
+   * @param xml The XML writer to use.
+   * 
+   * @throws IOException If thrown by 
    */
   public void toXML(XMLWriter xml) throws IOException {
     xml.openElement("suggestion-query");
@@ -149,3 +171,4 @@ public final class SuggestionQuery implements SearchQuery {
   }
 
 };
+

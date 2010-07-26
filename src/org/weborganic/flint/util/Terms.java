@@ -21,7 +21,7 @@ public final class Terms {
   /**
    * Compares terms using their text value instead of their field value.
    */
-  private final static Comparator<Term> TEXT_COMPARATOR = new Comparator<Term>()  {
+  private static final Comparator<Term> TEXT_COMPARATOR = new Comparator<Term>()  {
     /** {@inheritDoc} */
     public int compare(Term t1, Term t2) {
       return t1.text().compareTo(t2.text());
@@ -29,7 +29,8 @@ public final class Terms {
   };
 
   /** Utility class. */
-  private Terms() {}
+  private Terms() {
+  }
 
   /**
    * Returns a comparator to order terms using their text value.
@@ -45,12 +46,12 @@ public final class Terms {
    * 
    * <p>The number of the terms returns is (number of fields) x (number of texts).
    * 
-   * @param fields The list of fields.  
+   * @param fields The list of fields.
    * @param texts  The list of texts. 
    * 
    * @return The corresponding list of terms.
    */
-  public static List<Term> terms(List<String> fields, List<String> texts) throws IOException {
+  public static List<Term> terms(List<String> fields, List<String> texts) {
     List<Term> terms = new ArrayList<Term>();
     for (String field : fields) {
       for (String text : texts) {
@@ -65,10 +66,12 @@ public final class Terms {
    * 
    * @see #loadPrefixTerms(IndexReader, List, Term)
    * 
-   * @param reader Index reader to use.  
+   * @param reader Index reader to use.
    * @param term   The term to use.
    * 
    * @return The corresponding list of fuzzy terms.
+   * 
+   * @throws IOException If an error is thrown by the fuzzy term enumeration.
    */
   public static List<Term> fuzzy(IndexReader reader, Term term) throws IOException {
     List<Term> terms = new ArrayList<Term>();
@@ -81,10 +84,12 @@ public final class Terms {
    * 
    * @see #loadPrefixTerms(IndexReader, List, Term)
    * 
-   * @param reader Index reader to use.  
+   * @param reader Index reader to use.
    * @param term   The term to use.
    * 
    * @return The corresponding list of prefix terms.
+   * 
+   * @throws IOException If an error is thrown by the prefix term enumeration.
    */
   public static List<Term> prefix(IndexReader reader, Term term) throws IOException {
     List<Term> terms = new ArrayList<Term>();
@@ -95,9 +100,11 @@ public final class Terms {
   /**
    * Loads all the fuzzy terms in the list of terms given the reader.
    * 
-   * @param reader Index reader to use.  
+   * @param reader Index reader to use.
    * @param terms  The list of terms to load.
    * @param term   The term to use.
+   * 
+   * @throws IOException If an error is thrown by the fuzzy term enumeration.
    */
   public static void fuzzy(IndexReader reader, List<Term> terms, Term term) throws IOException {
     FuzzyTermEnum e = new FuzzyTermEnum(reader, term);
@@ -111,9 +118,11 @@ public final class Terms {
   /**
    * Loads all the prefix terms in the list of terms given the reader.
    * 
-   * @param reader Index reader to use.  
+   * @param reader Index reader to use.
    * @param terms  The list of terms to load.
    * @param term   The term to use.
+   * 
+   * @throws IOException If an error is thrown by the prefix term enumeration. 
    */
   public static void prefix(IndexReader reader, List<Term> terms, Term term) throws IOException {
     PrefixTermEnum e = new PrefixTermEnum(reader, term);

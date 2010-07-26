@@ -12,7 +12,7 @@ import org.apache.lucene.index.Term;
  * @author Christophe Lauret
  * @version 21 July 2010
  */
-public class TermFrequencyList {
+public final class TermFrequencyList {
 
   /**
    * The maximum size of the list of terms. 
@@ -31,6 +31,8 @@ public class TermFrequencyList {
 
   /**
    * Creates a new term frequency list.
+   * 
+   * @param max The maximum number of terms in this list.
    */
   public TermFrequencyList(int max) {
     this._maxSize = max;
@@ -38,9 +40,10 @@ public class TermFrequencyList {
   }
 
   /**
+   * Adds a new terms and frequency.
    * 
-   * @param term
-   * @param frequency
+   * @param term      The term to add.
+   * @param frequency The document frequency for the specified term.
    */
   public void add(Term term, int frequency) {
     if (frequency >= this.minFrequency) {
@@ -53,11 +56,12 @@ public class TermFrequencyList {
   }
 
   /**
-   * Returns
-   *  
-   * @return
+   * Returns This list as a list of terms
+   *
+   * @return 
    */
   public List<Term> asTermList() {
     return null; 
   }
+
 }
