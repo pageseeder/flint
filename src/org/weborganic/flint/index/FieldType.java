@@ -72,12 +72,12 @@ public final class FieldType {
   public static final FieldType UNSTORED = new FieldType("unstored");
 
   /**
-   * Specific PageSeeder field which is not added to the index
+   * Specific PageSeeder field which is not added to the index.
    */
   public static final FieldType SYSTEM = new FieldType("system");
 
   /**
-   * The string name of the FieldType
+   * The string name of the FieldType.
    */
   public final String type;
 
@@ -91,7 +91,7 @@ public final class FieldType {
   }
 
   /**
-   * Parse a type of field and return the correponding constant.
+   * Parse a type of field and return the corresponding constant.
    *
    * <p>This method returns:
    * <ul>
@@ -111,9 +111,9 @@ public final class FieldType {
     else if ("keyword".equalsIgnoreCase(name))   return KEYWORD;
     else if ("unindexed".equalsIgnoreCase(name)) return UNINDEXED;
     else if ("text".equalsIgnoreCase(name))      return TEXT;
-    else if ("stored".equalsIgnoreCase(name))      return TEXT;
+    else if ("stored".equalsIgnoreCase(name))    return TEXT;
     else if ("unstored".equalsIgnoreCase(name))  return UNSTORED;
-    else if ("system".equalsIgnoreCase(name))  return SYSTEM;
+    else if ("system".equalsIgnoreCase(name))    return SYSTEM;
     else return KEYWORD;
   }
 

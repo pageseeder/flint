@@ -213,7 +213,7 @@ final class IndexDocumentHandlerCompatibility extends DefaultHandler implements 
     this._isField = true;
     this._isCSV = "true".equals(atts.getValue("comma-separated"));
   }
-  
+
   private static String fieldTypeToStore(String type) {
     if (type == null)                            return null;
     else if ("".equals(type))                    return "yes";
@@ -225,7 +225,7 @@ final class IndexDocumentHandlerCompatibility extends DefaultHandler implements 
     else if ("system".equalsIgnoreCase(type))    return "no";
     else return "yes";
   }
-  
+
   private static Field.Index fieldTypeToIndex(String type) {
     if (type == null)                            return null;
     else if ("".equals(type))                    return Field.Index.ANALYZED;

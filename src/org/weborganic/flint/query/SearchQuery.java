@@ -47,7 +47,7 @@ public interface SearchQuery extends SearchParameter {
    * Indicates whether the search query is empty.
    * 
    * <p>A search query is considered empty when it does not contain any parameter that would
-   * yield meaningful results with an index search.  
+   * yield meaningful results with an index search.
    * 
    * @return <code>true</code> if the search query is empty;
    *         <code>false</code> otherwise.
@@ -57,7 +57,7 @@ public interface SearchQuery extends SearchParameter {
   /**
    * Returns the Lucene query instance corresponding to this object.
    * 
-   * @return The query object
+   * @return The query object.
    */
   Query toQuery();
 

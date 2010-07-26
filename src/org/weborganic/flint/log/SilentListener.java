@@ -109,14 +109,13 @@ public class SilentListener implements FlintListener {
   /**
    * {@inheritDoc}
    */
-  public void error(IndexJob job, String message) {    
+  public void error(IndexJob job, String message) {
   }
 
   /**
    * {@inheritDoc}
    */
   public void error(String error) {
-    
   }
 
   /**

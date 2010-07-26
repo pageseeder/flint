@@ -151,5 +151,5 @@ public interface FlintListener {
    * @param job the job completed
    */
   void finishJob(IndexJob job);
-  
+
 }

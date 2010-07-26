@@ -135,7 +135,7 @@ public final class NoOpListener implements FlintListener {
    * 
    * {@inheritDoc}
    */
-  public void error(IndexJob job, String message) {    
+  public void error(IndexJob job, String message) {
   }
 
   /**

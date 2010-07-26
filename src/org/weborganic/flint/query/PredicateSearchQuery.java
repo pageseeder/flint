@@ -39,16 +39,17 @@ public final class PredicateSearchQuery implements SearchQuery {
    * The analyser used in this query.
    */
   private final Analyzer _analyser;
-  
+
   /**
    * The sort order.
    */
   private final Sort _sort;
-  
+
   /**
    * A flag to specify if wildcard ('*' or '?') is allowed as the first character of the predicate
    */
   private boolean allowWildCardStart = false;
+
   /**
    * Creates new predicate search query.
    * 
@@ -58,6 +59,7 @@ public final class PredicateSearchQuery implements SearchQuery {
   public PredicateSearchQuery(String predicate, String sortField) {
     this(predicate, sortField == null ? Sort.INDEXORDER : new Sort(new SortField(sortField, SortField.STRING)));
   }
+
   /**
    * Creates new predicate search query.
    * 
@@ -121,11 +123,11 @@ public final class PredicateSearchQuery implements SearchQuery {
   public void setAllowWildCardStart(boolean allowWildCardStart) {
     this.allowWildCardStart = allowWildCardStart;
   }
-  
+
   /**
-   * Returns null.
+   * Returns <code>null</code>.
    * 
-   * @return null.
+   * @return <code>null</code>.
    */
   public String getField() {
     return null;

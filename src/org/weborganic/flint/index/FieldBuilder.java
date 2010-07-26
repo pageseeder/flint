@@ -414,7 +414,7 @@ public final class FieldBuilder {
    * 
    * @see TermVector
    * 
-   * @param index The index flag as a string.
+   * @param vector The term vector.
    * 
    * @return The corresponding Lucene 3 constant or <code>null</code> if none matches.
    */

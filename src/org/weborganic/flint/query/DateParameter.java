@@ -61,7 +61,7 @@ public final class DateParameter implements SearchParameter {
    * Set the value of the upper limit for the date.
    * 
    * @param to The date or <code>null</code>.
-   */  
+   */
   public void setTo(Date to) {
     this._to = (to != null)? ISO_DATE.format(to) : null;
   }

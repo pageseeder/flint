@@ -6,7 +6,7 @@ import org.weborganic.flint.IndexException;
 
 
 /**
- * Translate a <code>Content<code> into an XML Stream, ready to be transformed to produce Index XML.
+ * Translate a <code>Content</code> into an XML Stream, ready to be transformed to produce Index XML.
  * 
  * @author Jean-Baptiste Reure
  *
