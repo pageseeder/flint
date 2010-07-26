@@ -1,6 +1,11 @@
 package org.weborganic.flint.util;
 
+import java.io.IOException;
+
 import org.apache.lucene.index.Term;
+
+import com.topologi.diffx.xml.XMLWritable;
+import com.topologi.diffx.xml.XMLWriter;
 
 /**
  * A basic class storing the frequency of each term.
@@ -11,7 +16,7 @@ import org.apache.lucene.index.Term;
  * @author Christophe Lauret
  * @version 16 July 2010
  */
-public final class TermFrequency implements Comparable<TermFrequency> {
+public final class TermFrequency implements Comparable<TermFrequency>, XMLWritable {
 
   /**
    * The term.
@@ -61,7 +66,7 @@ public final class TermFrequency implements Comparable<TermFrequency> {
     if (o instanceof TermFrequency) {
       return this.equals((TermFrequency)o);
     }
-    return this._term.equals(o);
+    return false;
   }
 
   /**
@@ -81,5 +86,24 @@ public final class TermFrequency implements Comparable<TermFrequency> {
    */
   public int compareTo(TermFrequency t) {
     return this._frequency - t._frequency;
+  }
+
+  /**
+   * Prints the XML for this object on the XML writer.
+   * 
+   * <p>Serialised as:
+   * <pre>{@code
+   *   <term field="[field]" text="[text]" frequency="[frequency]"/>
+   * }</pre>
+   * 
+   * @param xml The XML writer to use.
+   * @throws IOException If thrown by the writer.
+   */
+  public void toXML(XMLWriter xml) throws IOException {
+    xml.openElement("term");
+    xml.attribute("field", this._term.field());
+    xml.attribute("text", this._term.text());
+    xml.attribute("frequency", this._frequency);
+    xml.closeElement();
   }
 }
