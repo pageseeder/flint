@@ -14,7 +14,7 @@ import org.weborganic.flint.query.SearchQuery;
  * 
  * @version 10 March 2010
  */
-public class DeleteRule {
+public final class DeleteRule {
 
   /**
    * The Term used to delete
@@ -27,7 +27,7 @@ public class DeleteRule {
   private final Query query;
 
   /**
-   * Build a rule based on a term
+   * Build a rule based on a term.
    * 
    * @param fieldname the name of the field
    * @param fieldvalue the value of the field
@@ -38,7 +38,7 @@ public class DeleteRule {
   }
 
   /**
-   * Build a rule based on a Lucene query
+   * Build a rule based on a Lucene query.
    * 
    * @param predicate
    */
@@ -48,7 +48,7 @@ public class DeleteRule {
   }
 
   /**
-   * Return the Term used for deleting
+   * Return the Term used for deleting.
    * 
    * @return the Term used for deleting
    */
@@ -57,7 +57,7 @@ public class DeleteRule {
   }
 
   /**
-   * Return the Query used for deleting
+   * Return the Query used for deleting.
    * 
    * @return the Query used for deleting
    */
