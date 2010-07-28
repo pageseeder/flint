@@ -9,6 +9,9 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.FuzzyTermEnum;
 import org.apache.lucene.search.PrefixTermEnum;
+import org.weborganic.flint.util.Bucket.Entry;
+
+import com.topologi.diffx.xml.XMLWriter;
 
 /**
  * A collection of utility methods to manipulate and extract terms.
@@ -116,6 +119,24 @@ public final class Terms {
   }
 
   /**
+   * Loads all the fuzzy terms in the list of terms given the reader.
+   * 
+   * @param reader Index reader to use.
+   * @param terms  The bucket of terms to load.
+   * @param term   The term to use.
+   * 
+   * @throws IOException If an error is thrown by the fuzzy term enumeration.
+   */
+  @Beta public static void fuzzy(IndexReader reader, Bucket<Term> terms, Term term) throws IOException {
+    FuzzyTermEnum e = new FuzzyTermEnum(reader, term);
+    do {
+      Term t = e.term();
+      if (t != null) terms.add(t, e.docFreq());
+    } while (e.next());
+    e.close();
+  }
+
+  /**
    * Loads all the prefix terms in the list of terms given the reader.
    * 
    * @param reader Index reader to use.
@@ -129,6 +150,24 @@ public final class Terms {
     do {
       Term t = e.term();
       if (t != null && !terms.contains(t)) terms.add(t);
+    } while (e.next());
+    e.close();
+  }
+
+  /**
+   * Loads all the prefix terms in the list of terms given the reader.
+   * 
+   * @param reader Index reader to use.
+   * @param terms  The list of terms to load.
+   * @param term   The term to use.
+   * 
+   * @throws IOException If an error is thrown by the prefix term enumeration. 
+   */
+  @Beta public static void prefix(IndexReader reader, Bucket<Term> terms, Term term) throws IOException {
+    PrefixTermEnum e = new PrefixTermEnum(reader, term);
+    do {
+      Term t = e.term();
+      if (t != null) terms.add(t, e.docFreq());
     } while (e.next());
     e.close();
   }
