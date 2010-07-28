@@ -186,7 +186,7 @@ final class IndexDocumentHandler_1_0 extends DefaultHandler implements IndexDocu
   private void startFieldElement(Attributes atts) {
     this.builder.name(atts.getValue("name"));
     this.builder.index(toFieldIndex(atts.getValue("index")));
-    // handle compression    
+    // handle compression
     if ("compress".equals(atts.getValue("store"))) {
       this._isCompressed = true;
       this.builder.store(Store.NO);
@@ -245,6 +245,7 @@ final class IndexDocumentHandler_1_0 extends DefaultHandler implements IndexDocu
    * never been created.
    * 
    * @param format The date format used.
+   * @return The corresponding date format instance.
    */
   private DateFormat toDateFormat(String format) {
     if (format == null) return null;

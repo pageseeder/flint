@@ -13,7 +13,9 @@ import org.weborganic.flint.content.ContentId;
 import org.weborganic.flint.content.ContentType;
 
 /**
- * A job to run by the IndexManager. Jobs can be of three types: add, update or delete.
+ * A job to run by the IndexManager.
+ * 
+ * <p>Jobs can be of three types: add, update or delete.
  * 
  * @author Jean-Baptiste Reure
  * @version 26 February 2010
@@ -25,14 +27,22 @@ public class IndexJob implements Comparable<IndexJob> {
     public ContentType getContentType() {return CLEAR_CONTENT;}
     public String getID() {return "Clear Index";}
   };
+
   /**
    * A list of priorities for IndexJobs.
    */
   public enum Priority {
-    /** High priority job (always processed before LOW). */
+
+    /**
+     * High priority job (always processed before LOW).
+     */
     HIGH,
-    /** Low priority job (always processed after HIGH). */
+
+    /** 
+     * Low priority job (always processed after HIGH).
+     */
     LOW
+
   };
 
   /**
@@ -181,9 +191,14 @@ public class IndexJob implements Comparable<IndexJob> {
    * Compare this job to another job.
    * 
    * <p>Used to order the jobs by priority in the waiting queue.
+   * 
+   * @param job The job to compare to.
+   * @return 0 if both jobs have the same priority;
+   *         -1 if this job's priority is HIGH;
+   *         1 if this job's priority is LOW; 
    */
-  public int compareTo(IndexJob other) {
-    return this.priority == other.priority? 0 : this.priority == Priority.HIGH ? -1 : 1;
+  public int compareTo(IndexJob job) {
+    return this.priority == job.priority? 0 : this.priority == Priority.HIGH ? -1 : 1;
   }
 
   /**
@@ -201,19 +216,21 @@ public class IndexJob implements Comparable<IndexJob> {
   public boolean isFinished() {
     return this.finished;
   }
-  
+
   /**
-   * Set the final status of this job
+   * Set the final status of this job.
    * 
    * @param success true if the job succeeded
    */
   public void setSuccess(boolean success) {
     this.success = success;
   }
+
   /**
-   * Check whether this job was completed successfully or not
+   * Check whether this job was completed successfully or not.
    * 
-   * @return true if the job was successful
+   * @return <code>true</code> if the job was successful;
+   *         <code>false</code> otherwise.
    */
   public boolean wasSuccessful() {
     return this.success;
@@ -221,26 +238,34 @@ public class IndexJob implements Comparable<IndexJob> {
 
 
   /**
-   * Useful when debugging and logging.
+   * Returns a string with each class attribute value - useful when debugging and logging.
    */
-  @Override
-  public String toString() {
+  @Override public String toString() {
     return "[IndexJob - contentid:" + this.contentID + " priority:"
         + this.priority + " index:" + this.index + " finished:" + this.finished + " success:" + this.success + "]";
   }
-  
+
+  /**
+   * Indicates whether this job is to clear the index.
+   * 
+   * @return <code>true</code> if the content ID for this job is CLEAR;
+   *         <code>false</code> otherwise.
+   */
   public boolean isClearJob() {
     return this.getContentID().equals(CLEAR_CONTENT_ID);
   }
+
+  // static factory methods ========================================================================  
 
   /**
    * Used to build a new job.
    * 
    * @param id     The Content ID
-   * @param confID The Config ID (can be <code>null</code>)
+   * @param config The Config ID (can be <code>null</code>)
    * @param i      The Index
    * @param p      The job's priority
    * @param r      The job's requester
+   * @param params Parameters for use with the job (can be <code>null</code>)
    * 
    * @return the new job
    */
@@ -249,20 +274,16 @@ public class IndexJob implements Comparable<IndexJob> {
   }
 
   /**
-   * Used to build a new job.
+   * Creates a new job to clear the index.
    * 
-   * @param id     The Content ID
-   * @param confID The Config ID (can be <code>null</code>)
-   * @param i      The Index
-   * @param p      The job's priority
-   * @param r      The job's requester
+   * @param index     The Index
+   * @param priority  The job's priority
+   * @param requester The job's requester
    * 
    * @return the new job
    */
-  public static IndexJob newClearJob(Index i, Priority p, Requester r) {
-    return new IndexJob(CLEAR_CONTENT_ID, null, i, p, r, null);
+  public static IndexJob newClearJob(Index index, Priority priority, Requester requester) {
+    return new IndexJob(CLEAR_CONTENT_ID, null, index, priority, requester, null);
   }
-  
-  
 
 }

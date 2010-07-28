@@ -34,7 +34,7 @@ public final class GenericSearchQuery implements SearchQuery {
    * The list of search parameters.
    */
   private List<SearchParameter> _parameters = new ArrayList<SearchParameter>();
-  
+
   /**
    * The sort order.
    */
@@ -48,7 +48,6 @@ public final class GenericSearchQuery implements SearchQuery {
    * @param parameter A search parameter.
    */
   public void add(SearchParameter parameter) {
-    
     this._parameters.add(parameter);
   }
 
@@ -100,7 +99,7 @@ public final class GenericSearchQuery implements SearchQuery {
       SearchParameter parameter = (SearchParameter)this._parameters.get(i);
       Query q = parameter.toQuery();
       if (q != null && 
-    		  !(q instanceof BooleanQuery && ((BooleanQuery)q).clauses().isEmpty())) {
+          !(q instanceof BooleanQuery && ((BooleanQuery)q).clauses().isEmpty())) {
         query.add(q, BooleanClause.Occur.MUST);
       } else {
 //        LOGGER.debug(parameter.getClass().toString()+" was an empty query.");
@@ -142,14 +141,14 @@ public final class GenericSearchQuery implements SearchQuery {
   public String getPredicate() {
     return toQuery().toString();
   }
-  
+
   /**
-   * Unused as this query does not use a single field but may use multiple
+   * Unused as this query does not use a single field but may use multiple.
    */
   public String getField() {
     return "";
   }
-  
+
   /**
    * {@inheritDoc}
    */

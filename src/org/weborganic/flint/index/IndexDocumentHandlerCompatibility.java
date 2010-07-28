@@ -263,7 +263,7 @@ final class IndexDocumentHandlerCompatibility extends DefaultHandler implements 
     // reset the class attributes involved in this field
     resetField();
   }
-  
+
   private void addFieldToDocument(String value) {
     this.builder.value(value);
     // compressed field

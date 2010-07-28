@@ -24,19 +24,18 @@ import org.weborganic.flint.content.ContentType;
 /**
  * An IndexConfig provides the details needed to build the data to index from the original content.
  * 
- * <p>
- * The path to a valid XSLT script is needed and parameters can be provided as well.
- * </p>
+ * <p>The path to a valid XSLT script is needed and parameters can be provided as well.
  * 
- * <p>
- * The XSLT script should produce valid IndexXML format (see DTD).
- * </p>
+ * <p>The XSLT script should produce valid IndexXML format (see DTD).
  * 
  * @author Jean-Baptiste Reure
  * @version 26 February 2010
  */
 public class IndexConfig {
 
+  /**
+   * Logger to use for this config object.
+   */
   private static final Logger LOGGER = Logger.getLogger(IndexConfig.class);
 
   /**

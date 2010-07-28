@@ -14,9 +14,7 @@ package org.weborganic.flint.index;
  * @version 9 August 2004
  * @author  Christophe Lauret
  */
-public final class FieldType {
-
-  // TODO: use enum
+public enum FieldType {
 
   /**
    * Used for Lucene keywords.
@@ -29,7 +27,7 @@ public final class FieldType {
    * <p>A <code>KEYWORD</code> field is appropriate for an enumerated type of 
    * values, such as mime type, type of document, etc...
    */
-  public static final FieldType KEYWORD = new FieldType("keyword");
+  KEYWORD("keyword"),
 
   /**
    * Used for Lucene unindexed fields.
@@ -41,7 +39,7 @@ public final class FieldType {
    * <p>An <code>UNINDEXED</code> field is appropriate for values associated to 
    * the document but that need not be searched, such as URLs, file size, etc...
    */
-  public static final FieldType UNINDEXED = new FieldType("unindexed");
+  UNINDEXED("unindexed"),
 
   /**
    * Used for Lucene text fields.
@@ -57,7 +55,7 @@ public final class FieldType {
    * unless the entire value of this field is required it is better to use the
    * <code>UNSTORED</code> field which does not take as much space.
    */
-  public static final FieldType TEXT = new FieldType("text");
+  TEXT("text"),
 
   /**
    * Used for Lucene text fields that aren't stored.
@@ -69,17 +67,17 @@ public final class FieldType {
    * <p>An <code>UNSTORED</code> field is appropriate for text that need to
    * be indexed and full-text searched.
    */
-  public static final FieldType UNSTORED = new FieldType("unstored");
+  UNSTORED("unstored"),
 
   /**
    * Specific PageSeeder field which is not added to the index.
    */
-  public static final FieldType SYSTEM = new FieldType("system");
+  SYSTEM("system");
 
   /**
    * The string name of the FieldType.
    */
-  public final String type;
+  private final String _type;
 
   /**
    * Protect constructor, prevent creation of other instances.
@@ -87,7 +85,7 @@ public final class FieldType {
    * @param type The type for field.
    */
   private FieldType(String type) {
-    this.type = type;
+    this._type = type;
   }
 
   /**
@@ -123,7 +121,7 @@ public final class FieldType {
    * @return "keyword", "text", "unindexed" or "unstored".
    */
   public String toString() {
-    return this.type;
+    return this._type;
   }
 
 }

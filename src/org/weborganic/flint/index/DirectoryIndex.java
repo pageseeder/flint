@@ -32,7 +32,7 @@ public class DirectoryIndex implements Index {
   /**
    * The analyser used in this default index.
    */
-  private final static StandardAnalyzer ANALYSER = new StandardAnalyzer(IndexManager.LUCENE_VERSION);
+  private static final StandardAnalyzer ANALYSER = new StandardAnalyzer(IndexManager.LUCENE_VERSION);
 
   /**
    * The unique ID.
@@ -45,31 +45,35 @@ public class DirectoryIndex implements Index {
    * <p>Will throw an exception if the folder does not contain a valid Lucene index</p>
    * 
    * @param dir the directory containing the Lucene index.
+   * @throws IllegalArgumentException is if the specified file cannot be used as an index.
    */
-  public DirectoryIndex(File dir) {
+  public DirectoryIndex(File dir) throws IllegalArgumentException {
     try {
       this.indexDirectory = FSDirectory.open(dir);
-    } catch (IOException e) {
-      throw new IllegalArgumentException("Unable to use directory " + dir.getAbsolutePath() + " as an Index: "+ e.getMessage());
+    } catch (IOException ex) {
+      throw new IllegalArgumentException("Unable to use directory " + dir.getAbsolutePath() + " as an index", ex);
     }
     this.id = dir.getAbsolutePath();
   }
+
   /**
    * Return the Directory used in this Index.
    * 
    * @return the directory to use for the Index.
    */
-  public Directory getIndexDirectory() {
+  public final Directory getIndexDirectory() {
     return this.indexDirectory;
   }
+
   /**
-   * The Analyzer that the Index should use
+   * The Analyzer that the Index should use.
    * 
    * @return the Analyzer that the Index should use.
    */
   public Analyzer getAnalyzer() {
     return ANALYSER;
   }
+
   /**
    * This Index's unique ID.
    * 

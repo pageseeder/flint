@@ -14,34 +14,35 @@ import java.util.concurrent.TimeUnit;
 import org.apache.log4j.Logger;
 
 /**
- * The queue containing Index Jobs
+ * The queue containing Index Jobs.
  * 
  * @author Jean-Baptiste Reure
  * @version 14 May 2010
  */
-public class IndexJobQueue {
-  /**
-   * An internal logger 
-   */
-  private final static Logger logger = Logger.getLogger(IndexJobQueue.class);
+public final class IndexJobQueue {
 
   /**
-   * Delay between each job poll in milliseconds
+   * An internal logger.
+   */
+  private static final Logger LOGGER = Logger.getLogger(IndexJobQueue.class);
+
+  /**
+   * Delay between each job poll in milliseconds.
    */
   private final long jobPollDelay;
 
   /**
-   * The actual queue
+   * The actual queue.
    */
   private final PriorityBlockingQueue<IndexJob> queue;
 
   /**
-   * Simple Constructor
+   * Simple Constructor.
    * 
-   * @param poll_delay the poll delay on the queue (in milliseconds)
+   * @param pollDelay the poll delay on the queue (in milliseconds)
    */
-  public IndexJobQueue(long poll_delay) {
-    this.jobPollDelay = poll_delay;
+  public IndexJobQueue(long pollDelay) {
+    this.jobPollDelay = pollDelay;
     this.queue = new PriorityBlockingQueue<IndexJob>();
   }
 
@@ -51,21 +52,15 @@ public class IndexJobQueue {
   /**
    * Add a new update job to the indexing queue.
    * 
-   * @param ct       the Type of the Content
-   * @param id       the ID of the Content
-   * @param i        the Index to add the Content to
-   * @param config   the Config to use
-   * @param r        the Requester calling this method (used for logging)
-   * @param p        the Priority of this job
-   * @param params   the dynamic XSLt parameters
+   * @param job The job to add to this queue.
    */
   public void addJob(IndexJob job) {
-    logger.debug("Adding Index Job to Queue: "+job.toString());
+    LOGGER.debug("Adding Index Job to Queue: "+job.toString());
     this.queue.put(job);
   }
 
   /**
-   * Returns the list of jobs for the Requester provided.
+   * Returns the list of jobs for the specified requester.
    * 
    * <p>Note that by the time each job is checked, they might have run already so the method 
    * {@link IndexJob#isFinished()} should be called before parsing the job.
@@ -117,28 +112,26 @@ public class IndexJobQueue {
   public List<IndexJob> getAllJobs() {
     return new ArrayList<IndexJob>(this.queue);
   }
+
   /**
-   * Poll the next job in the queue (null if the queue is currently empty).
+   * Poll the next job in the queue (<code>null</code> if the queue is currently empty).
    * 
-   * @return the next job in the queue (null if the queue is currently empty).
+   * @return the next job in the queue (<code>null</code> if the queue is currently empty).
    * 
    * @throws InterruptedException if the thread was interrupted when waiting for the next job
    */
   public IndexJob nextJob() throws InterruptedException {
-    return this.queue.poll(jobPollDelay, TimeUnit.MILLISECONDS);
+    return this.queue.poll(this.jobPollDelay, TimeUnit.MILLISECONDS);
   }
+
   /**
-   * Return true if the queue is currently empty, false otherwise
+   * Indicates whether the queue is currently empty.
    * 
-   * @return true if the queue is currently empty, false otherwise
+   * @return <code>true</code> if there are currently no jobs;
+   *         <code>false</code> otherwise.
    */
   public boolean isEmpty() {
     return this.queue.isEmpty();
   }
-
-
-  // private methods
-  // ----------------------------------------------------------------------------------------------
-
 
 }

@@ -125,7 +125,7 @@ public class IndexManager implements Runnable {
    * The thread manager
    */
   private ExecutorService threadPool = null;
-  
+
   /**
    * A default Translator, used when no Factory matches a certain MIME Type
    */
@@ -161,16 +161,16 @@ public class IndexManager implements Runnable {
   // ----------------------------------------------------------------------------------------------
 
   /**
-   * Set the default Translator to use when no factory matches a certain MIME Type (null by default)
+   * Set the default Translator to use when no factory matches a certain MIME Type (null by default).
    * 
    * @param defaultTranslator the translator
    */
   public void setDefaultTranslator(ContentTranslator defaultTranslator) {
     this.defaultTranslator = defaultTranslator;
   }
-  
+
   /**
-   * Set the priority of the thread (this has no effect if called after the method start() is called)
+   * Set the priority of the thread (this has no effect if called after the method start() is called).
    * 
    * @param priority the priority of the Indexing Thread (from 1 to 10, default is 5)
    */

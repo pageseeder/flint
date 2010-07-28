@@ -292,7 +292,7 @@ public final class FieldBuilder {
    *   <li>Value, method {@link #value(String)} must have been called once.</li>
    * </ul>
    * 
-   * @param <code>true</code> if the {@link #build()} method can be called safely;
+   * @return <code>true</code> if the {@link #build()} method can be called safely;
    *        <code>false</code> otherwise;
    */
   public boolean isReady() {
@@ -476,7 +476,7 @@ public final class FieldBuilder {
    *
    * @return The string value for use by Lucene.
    * 
-   * @throws IllegalArgumentException Should an invalid date be parsed.
+   *
    */
   private static String toDateField(String value, DateFormat format, Resolution resolution) {
     try {

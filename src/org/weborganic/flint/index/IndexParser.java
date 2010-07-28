@@ -65,7 +65,6 @@ public final class IndexParser {
    * Creates a new IndexParser.
    *
    * @param reader    The XML reader to use.
-   * @param contentId The content id.
    */
   protected IndexParser(XMLReader reader) {
     this._reader = reader;
