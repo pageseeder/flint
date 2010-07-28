@@ -7,7 +7,7 @@
 package org.weborganic.flint.content;
 
 /**
- * The different Content Types supported by Flint.
+ * The different types of content supported by Flint.
  * 
  * @author Jean-Baptiste Reure
  * @version 26 February 2010

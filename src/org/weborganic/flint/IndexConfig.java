@@ -56,8 +56,7 @@ public class IndexConfig {
    * @param params   the list of parameters
    */
   public void addParameters(ContentType type, String mimeType, Map<String, String> params) {
-    // FIXME: Infinite loop?
-    addParameters(type, mimeType, params);
+    addParameters(type, mimeType, null, params);
   }
 
   /**
@@ -219,6 +218,7 @@ public class IndexConfig {
     @Override
     public boolean equals(Object obj) {
       if (!(obj instanceof ContentDefinition) || obj == null) return false;
+      // FIXME Poor performance creates a string for each comparison!!!
       return obj.toString().equals(this.toString());
     }
 
