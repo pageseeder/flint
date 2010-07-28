@@ -26,8 +26,11 @@ public final class XMLUtils {
    * @param xml   The XML writer.
    * 
    * @throws IOException Any I/O error.
+   * 
+   * @deprecated Use {@link Terms#toXML(XMLWriter, List)} instead
+   * 
    */
-  public static void toXML(List<Term> terms, XMLWriter xml) throws IOException {
+  @Deprecated public static void toXML(List<Term> terms, XMLWriter xml) throws IOException {
     for (Term t : terms) {
       toXML(t, xml);
     }
@@ -40,11 +43,32 @@ public final class XMLUtils {
    * @param xml The XML writer.
    * 
    * @throws IOException Any I/O error.
+   * 
+   * @deprecated Use {@link Terms#toXML(XMLWriter, Term)} instead
    */
-  public static void toXML(Term t, XMLWriter xml) throws IOException {
+  @Deprecated public static void toXML(Term t, XMLWriter xml) throws IOException {
     xml.openElement("term");
     xml.attribute("field", t.field());
     xml.attribute("text", t.text());
+    xml.closeElement();
+  }
+
+  /**
+   * Returns the XML for a term.
+   * 
+   * @param t         Term to serialise as XML.
+   * @param frequency The term document frequency.
+   * @param xml       The XML writer.
+   * 
+   * @throws IOException Any I/O error.
+   * 
+   * @deprecated Use {@link Terms#toXML(XMLWriter, Term, int)} instead
+   */
+  @Deprecated public static void toXML(Term t, int frequency, XMLWriter xml) throws IOException {
+    xml.openElement("term");
+    xml.attribute("field", t.field());
+    xml.attribute("text", t.text());
+    xml.attribute("frequency", frequency);
     xml.closeElement();
   }
 

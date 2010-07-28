@@ -172,4 +172,64 @@ public final class Terms {
     e.close();
   }
 
+  /**
+   * Returns the XML for a list of terms.
+   * 
+   * @param xml   The XML writer.
+   * @param terms The list of terms to serialise as XML.
+   * 
+   * @throws IOException Any I/O error thrown by the XML writer.
+   */
+  public static void toXML(XMLWriter xml, List<Term> terms) throws IOException {
+    for (Term t : terms) {
+      toXML(xml, t);
+    }
+  }
+
+  /**
+   * Returns the XML for a list of terms.
+   * 
+   * @param xml   The XML writer.
+   * @param terms The list of terms to serialise as XML.
+   * 
+   * @throws IOException Any I/O error thrown by the XML writer.
+   */
+  public static void toXML(XMLWriter xml, Bucket<Term> terms) throws IOException {
+    for (Entry<Term> t : terms.entrySet()) {
+      toXML(xml, t.item(), t.count());
+    }
+  }
+
+  /**
+   * Returns the XML for a term.
+   * 
+   * @param xml The XML writer.
+   * @param t   Term to serialise as XML.
+   * 
+   * @throws IOException Any I/O error thrown by the XML writer.
+   */
+  public static void toXML(XMLWriter xml, Term t) throws IOException {
+    xml.openElement("term");
+    xml.attribute("field", t.field());
+    xml.attribute("text", t.text());
+    xml.closeElement();
+  }
+
+  /**
+   * Returns the XML for a term.
+   * 
+   * @param xml       The XML writer.
+   * @param t         Term to serialise as XML.
+   * @param frequency The term document frequency.
+   * 
+   * @throws IOException Any I/O error thrown by the XML writer.
+   */
+  public static void toXML(XMLWriter xml, Term t, int frequency) throws IOException {
+    xml.openElement("term");
+    xml.attribute("field", t.field());
+    xml.attribute("text", t.text());
+    xml.attribute("frequency", frequency);
+    xml.closeElement();
+  }
+
 }
