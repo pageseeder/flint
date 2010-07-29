@@ -6,9 +6,10 @@ import java.util.List;
 
 import org.weborganic.flint.content.ContentTranslator;
 import org.weborganic.flint.content.ContentTranslatorFactory;
+import org.weborganic.flint.content.SourceForwarder;
 
 /**
- * Simple translator factory that only handles XML MIME type by simply forwarding the content 
+ * Simple translator factory that only handles XML Media types by simply forwarding the content 
  * without translation.
  * 
  * @author Jean-Baptiste Reure
@@ -26,19 +27,17 @@ public class FlintTranslatorFactory implements ContentTranslatorFactory {
     XML_MIME_TYPES.add("application/xml");
     XML_MIME_TYPES.add("application/xhtml+xml");
   }
+
   /**
-   * The translator for xml files: a source forwarder
+   * The translator for XML files: a source forwarder
    */
   private final ContentTranslator xmlTranslator;
 
   /**
    * <p>Creates a new factory for {@value XML_MIME_TYPES}.</p>
-   * <p>See XML MIME Types at 
-   * @link <a href="https://www3.tools.ietf.org/html/rfc3023">XML Media Types</a>
-   * </p>
-   * <p> And XHTML Media Types at
-   * @link <a href="http://www.w3.org/TR/xhtml-media-types/">XHTML Media Types</a>
-   * </p>
+   *
+   * @see <a href="https://www3.tools.ietf.org/html/rfc3023">XML Media Types</a>
+   * @see <a href="http://www.w3.org/TR/xhtml-media-types/">XHTML Media Types</a>
    */
   public FlintTranslatorFactory() {
     this.xmlTranslator = new SourceForwarder(XML_MIME_TYPES, "UTF-8");
@@ -49,8 +48,8 @@ public class FlintTranslatorFactory implements ContentTranslatorFactory {
    * 
    * {@inheritDoc}
    */
-  public ContentTranslator createTranslator(String mimeType) {
-    if (XML_MIME_TYPES.contains(mimeType)) return this.xmlTranslator;
+  public ContentTranslator createTranslator(String mediaType) {
+    if (XML_MIME_TYPES.contains(mediaType)) return this.xmlTranslator;
     return null;
   }
 

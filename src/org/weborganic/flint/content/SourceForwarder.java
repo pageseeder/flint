@@ -1,4 +1,4 @@
-package org.weborganic.flint;
+package org.weborganic.flint.content;
 
 import java.io.InputStreamReader;
 import java.io.Reader;
@@ -7,18 +7,17 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
+import org.weborganic.flint.IndexException;
 import org.weborganic.flint.content.Content;
 import org.weborganic.flint.content.ContentTranslator;
 
 /**
- * Simple translator that handles XML Media types by simply forwarding the content without translation.
- * 
- * @deprecated Moved package to {@link org.weborganic.flint.content.SourceForwarder}.
+ * A simple translator implementation allows XML Media types to be simply forwarded without translation.
  * 
  * @author Jean-Baptiste Reure
  * @version 10 March 2010
  */
-@Deprecated public final class SourceForwarder implements ContentTranslator {
+public final class SourceForwarder implements ContentTranslator {
 
   /**
    * The list of media types.
@@ -91,8 +90,11 @@ import org.weborganic.flint.content.ContentTranslator;
   /**
    * Returns a new {@link Reader} on the content to translate using the specified charset.
    * 
-   * @param content The content to translate
+   * @param content The content to translate.
+   * 
    * @return the reader or <code>null</code> if this forwarder does not support this Media type.
+   * 
+   * @throws IndexException If thrown while trying to access the content methods.
    */
   public Reader translate(Content content) throws IndexException {
     // Ignore deleted content
