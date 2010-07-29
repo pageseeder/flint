@@ -32,7 +32,7 @@ public final class FieldBuilder {
   /**
    * The logger for this class.
    */
-  private static final Logger LOGGER = LoggerFactory.getLogger(IndexDocumentHandler_2_0.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(FieldBuilder.class);
 
   /**
    * The name of the field currently processed.
