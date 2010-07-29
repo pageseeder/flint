@@ -7,7 +7,10 @@
 package org.weborganic.flint.content;
 
 /**
- * The different types of content supported by Flint.
+ * Objects implementing this interface define a content type.
+ * 
+ * <p>Content types are useful to associate different sets of iXML templates to documents
+ * with the same media type.
  * 
  * @author Jean-Baptiste Reure
  * @version 26 February 2010

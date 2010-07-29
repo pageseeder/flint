@@ -21,9 +21,10 @@ import javax.xml.transform.stream.StreamSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.weborganic.flint.content.ContentType;
+import org.weborganic.flint.util.Beta;
 
 /**
- * An IndexConfig provides the details needed to build the data to index from the original content.
+ * Provides the details needed to build the data to index from the original content.
  * 
  * <p>The path to a valid XSLT script is needed and parameters can be provided as well.
  * 
@@ -42,156 +43,255 @@ public class IndexConfig {
   /**
    * The XSLT script.
    */
-  private final Map<ContentDefinition, Templates> scripts = new ConcurrentHashMap<ContentDefinition, Templates>();
+  private final Map<ContentDefinition, Templates> _templates = new ConcurrentHashMap<ContentDefinition, Templates>();
 
   /**
    * A list of parameters.
    */
-  private final Map<ContentDefinition, Map<String, String>> parameters = new ConcurrentHashMap<ContentDefinition, Map<String, String>>();
+  private final Map<ContentDefinition, Map<String, String>> _parameters = new ConcurrentHashMap<ContentDefinition, Map<String, String>>();
+
+  // Parameters management =========================================================================
 
   /**
-   * Add a list of parameters for the given Content definition.
+   * Sets the parameters to supply to the templates when indexing content with the specified content type and media 
+   * type.
    * 
-   * @param type     the ContentType
-   * @param mimeType the Content's MIME Type
-   * @param params   the list of parameters
+   * <p>Any existing parameters for this content and media type will be discarded.
+   * 
+   * @param type       the type of content to index.
+   * @param media      the media type of the content (eg. "application/xml")
+   * @param parameters the name-value map of parameters to set.
    */
-  public void addParameters(ContentType type, String mimeType, Map<String, String> params) {
-    addParameters(type, mimeType, null, params);
+  public void setParameters(ContentType type, String media, Map<String, String> parameters) {
+    setParameters(type, media, null, parameters);
   }
 
   /**
-   * Add a list of parameters for the given Content definition.
+   * Sets the list of parameters to supply to the templates when indexing content with the specified content type,
+   * media type and using configuration ID.
    * 
-   * @param type     the ContentType
-   * @param mimeType the Content's MIME Type
-   * @param configId the config ID, can be <code>null</code>
-   * @param params   the list of parameters
+   * <p>Any existing parameters for this content and media type will be discarded.
+   * 
+   * @param type       the type of content to index.
+   * @param media      the media type of the content (eg. "application/xml")
+   * @param config     the configuration ID; may be <code>null</code>
+   * @param parameters the name-value map of parameters to set.
    */
-  public void addParameters(ContentType type, String mimeType, String configId, Map<String, String> params) {
-    ContentDefinition def = new ContentDefinition(type, mimeType, configId);
-    LOGGER.debug("Adding {} parameters for {}", params.size(), def.toString() );
-    this.parameters.put(def, params);
+  public void setParameters(ContentType type, String media, String config, Map<String, String> parameters) {
+    ContentDefinition def = new ContentDefinition(type, media, config);
+    LOGGER.debug("Adding {} parameters for {}", parameters.size(), def);
+    this._parameters.put(def, parameters);
   }
 
   /**
-   * Add a single parameter for the given Content definition.
+   * Adds parameters to the parameters to supply to the templates when indexing content with the specified content 
+   * type and media type.
    * 
-   * @param type       the ContentType
-   * @param mimeType   the Content's MIME Type
-   * @param paramname  the parameter's name
-   * @param paramvalue the parameter's value
+   * <p>Any existing parameters with the same name for this content and media type will be discarded.
+   * 
+   * <p>Note: This method will add to existing parameters, to set parameters, use 
+   * {@link #setParameters(ContentType, String, Map)} instead.
+   * 
+   * @param type    the type of content to index.
+   * @param media   the media type of the content (eg. "application/xml")
+   * @param params the name-value map of parameters to add.
    */
-  public void addParameter(ContentType type, String mimeType, String paramname, String paramvalue) {
-    addParameter(type, mimeType, null, paramname, paramvalue);
+  @Beta public void addParameters(ContentType type, String media, Map<String, String> parameters) {
+    addParameters(type, media, null, parameters);
   }
 
   /**
-   * Add a single parameter for the given Content definition.
+   * Adds parameters to the parameters to supply to the templates when indexing content with the specified content 
+   * type and media type.
    * 
-   * @param type       the ContentType
-   * @param mimeType   the Content's MIME Type
-   * @param configId   the config ID, can be <code>null</code>
-   * @param paramname  the parameter's name
-   * @param paramvalue the parameter's value
+   * <p>Any existing parameters with the same name for this content and media type will be discarded.
+   * 
+   * <p>Note: This method will add to existing parameters, to set parameters, use 
+   * {@link #setParameters(ContentType, String, Map)} instead.
+   * 
+   * @param type       the type of content to index.
+   * @param media      the media type of the content (eg. "application/xml")
+   * @param config     the configuration ID; may be <code>null</code>
+   * @param parameters the name-value map of parameters to add.
    */
-  public void addParameter(ContentType type, String mimeType, String configId, String paramname, String paramvalue) {
-    ContentDefinition def = new ContentDefinition(type, mimeType, configId);
-    Map<String, String> params = this.parameters.get(def);
-    if (params == null) params = new HashMap<String, String>();
-    params.put(paramname, paramvalue);
-    this.parameters.put(def, params);
-    LOGGER.debug("Adding parameter {} for {}", paramname, def.toString());
+  @Beta public void addParameters(ContentType type, String media, String config, Map<String, String> parameters) {
+    ContentDefinition def = new ContentDefinition(type, media, config);
+    Map<String, String> p = this._parameters.get(def);
+    if (p == null) {
+      p = new HashMap<String, String>();
+      this._parameters.put(def, p);
+    }
+    p.putAll(parameters);
+    LOGGER.debug("Adding {} parameters for {}", parameters.size(), def);
   }
 
   /**
-   * Return a list of parameters for the given content definition.
+   * Adds a single parameter to the parameters to supply to the templates when indexing content with the specified
+   * content type and media type.
    * 
-   * @param type     the ContentType
-   * @param mimeType the Content's MIME Type
-   * @return the list of parameters for the given Content definition (never null).
+   * <p>Any existing parameter with the same name for this content and media type will be discarded.
+   *
+   * @param type  the type of content to index.
+   * @param media the media type of the content (eg. "application/xml")
+   * @param name  the name of the parameter to add
+   * @param value the value of the parameter to add
    */
-  public Map<String, String> getParameters(ContentType type, String mimeType) {
-    return getParameters(type, mimeType, null);
+  public void addParameter(ContentType type, String media, String name, String value) {
+    addParameter(type, media, null, name, value);
   }
 
   /**
-   * Return a list of parameters for the given content definition.
+   * Adds a single parameter to the parameters to supply to the templates when indexing content with the specified
+   * content type and media type for a specific configuration ID.
    * 
-   * @param type     the ContentType
-   * @param mimeType the Content's MIME Type
-   * @param configId the config ID, can be <code>null</code>
+   * <p>Any existing parameter with the same name for this content and media type will be discarded.
+   * 
+   * @param type    the type of content to index.
+   * @param media   the media type of the content (eg. "application/xml")
+   * @param config  the configuration ID; may be <code>null</code>
+   * @param name    the name of the parameter to add
+   * @param value   the value of the parameter to add
+   */
+  public void addParameter(ContentType type, String media, String config, String name, String value) {
+    ContentDefinition def = new ContentDefinition(type, media, config);
+    Map<String, String> p = this._parameters.get(def);
+    if (p == null) {
+      p = new HashMap<String, String>();
+      this._parameters.put(def, p);
+    }
+    p.put(name, value);
+    LOGGER.debug("Adding parameter {} for {}", name, def);
+  }
+
+  /**
+   * Returns a list of parameters for the given content type and media type (and not matching a specific configuration
+   * ID).
+   * 
+   * @param type    the type of content to index.
+   * @param media   the media type of the content (eg. "application/xml")
+   * 
    * @return the list of parameters for the given Content definition (never <code>null</code>).
    */
-  public Map<String, String> getParameters(ContentType type, String mimeType, String configId) {
-    Map<String, String> params = this.parameters.get(new ContentDefinition(type, mimeType, configId));
+  public Map<String, String> getParameters(ContentType type, String media) {
+    return getParameters(type, media, null);
+  }
+
+  /**
+   * Returns an unmodifiable list of parameters for the given content type and media type and matching a specific 
+   * configuration ID.
+   * 
+   * @param type     the type of content to index.
+   * @param media    the media type of the content (eg. "application/xml")
+   * @param configId the configuration ID; may be <code>null</code>
+   * 
+   * @return the list of parameters for the given Content definition (never <code>null</code>).
+   */
+  public Map<String, String> getParameters(ContentType type, String media, String configId) {
+    Map<String, String> params = this._parameters.get(new ContentDefinition(type, media, configId));
     if (params == null) return Collections.emptyMap();
     return Collections.unmodifiableMap(params);
   }
 
+  // Templates management =========================================================================
+  
   /**
-   * Return the compiled XSLT script, <code>null</code> if not found.
+   * Returns the compiled XSLT templates or <code>null</code> if there are no templates associated with
+   * this content type and media type.
    * 
-   * @param type     the ContentType
-   * @param mimeType the Content's MIME Type
-   * @return the compiled XSLT script, <code>null</code> if not found.
+   * @param type  the type of content to index.
+   * @param media the media type of the content (eg. "application/xml")
+   * 
+   * @return the compiled XSLT template; <code>null</code> if not found.
    */
-  public Templates getTemplates(ContentType type, String mimeType) {
-    return getTemplates(type, mimeType, null);
+  public Templates getTemplates(ContentType type, String media) {
+    return getTemplates(type, media, null);
   }
 
   /**
-   * Return the compiled XSLT script, <code>null</code> if not found.
+   * Returns the compiled XSLT templates, <code>null</code>  if there are no templates associated with
+   * this content type and media type for the specified configuration ID.
    * 
-   * @param type     the ContentType
-   * @param mimeType the Content's Mime Type
-   * @param configId the config ID, can be <code>null</code>
-   * @return the compiled XSLT script, null if not found.
+   * @param type   the type of content to index.
+   * @param media  the media type of the content (eg. "application/xml")
+   * @param config the configuration ID, can be <code>null</code>
+   * 
+   * @return the compiled XSLT templates; <code>null</code> if not found.
    */
-  public Templates getTemplates(ContentType type, String mimeType, String configId) {
-    ContentDefinition def = new ContentDefinition(type, mimeType, configId);
-    LOGGER.debug("Retrieving templates for {}", def.toString());
-    return this.scripts.get(def);
+  public Templates getTemplates(ContentType type, String media, String config) {
+    ContentDefinition def = new ContentDefinition(type, media, config);
+    LOGGER.debug("Retrieving templates for {}", def);
+    return this._templates.get(def);
   }
 
   /**
-   * Add an XSLT script for the given Content definition.
+   * Adds an XSLT script for the given Content definition this content type and media type for the specified configuration ID
    * 
-   * @param type     the ContentType
-   * @param mimeType the Content's MIME Type
-   * @param xsltScript the full path to the XSLT script
+   * @deprecated Use {@link #setTemplates(ContentType, String, URI)} instead.
+   * 
+   * @param type     the type of content to index.
+   * @param media    the media type of the content (eg. "application/xml")
+   * @param template the full path to the XSLT template file.
    */
-  public void addTemplates(ContentType type, String mimeType, URI xsltScript) {
-    addTemplates(type, mimeType, null, xsltScript);
+  @Deprecated public void addTemplates(ContentType type, String mimeType, URI template) {
+    setTemplates(type, mimeType, null, template);
   }
 
   /**
-   * Add an XSLT script for the given Content definition.
+   * Adds an XSLT script for the given Content definition.
    * 
-   * @param type     the ContentType
-   * @param mimeType the Content's MIME Type
-   * @param configId the config ID, can be <code>null</code>
-   * @param xsltScript the full path to the XSLT script
+   * @deprecated Use {@link #setTemplates(ContentType, String, String, URI)} instead.
+   * 
+   * @param type     the type of content to index.
+   * @param media    the media type of the content (eg. "application/xml").
+   * @param config   the config ID, can be <code>null</code>.
+   * @param template the full path to the XSLT template file.
    */
-  public void addTemplates(ContentType type, String mimeType, String configId, URI xsltScript) {
+  @Deprecated public void addTemplates(ContentType type, String media, String config, URI template) {
+    setTemplates(type, media, config, template);
+  }
+
+
+  /**
+   * Sets the XSLT templates to use for the specified content type and media type.
+   * 
+   * @param type     the type of content to index.
+   * @param media    the media type of the content (eg. "application/xml").
+   * @param template the full path to the XSLT template file.
+   */
+  public void setTemplates(ContentType type, String mimeType, URI template) {
+    setTemplates(type, mimeType, null, template);
+  }
+
+  /**
+   * Sets the XSLT templates to use for the specified content type, media type and configuration ID.
+   * 
+   * @param type     the type of content to index.
+   * @param media    the media type of the content (eg. "application/xml").
+   * @param config   the config ID, can be <code>null</code>.
+   * @param template the full path to the XSLT template file.
+   */
+  public void setTemplates(ContentType type, String media, String config, URI template) {
     try {
-      ContentDefinition def = new ContentDefinition(type, mimeType, configId);
-      LOGGER.debug("Adding templates for {}", def.toString());
-      this.scripts.put(def, loadTemplates(xsltScript));
-    } catch (Exception e) {
-      LOGGER.warn("Failed to load XSLT script " + xsltScript + ": " + e.getMessage(), e);
-      throw new IllegalArgumentException("Invalid XSLT script " + xsltScript + ": " + e.getMessage());
+      ContentDefinition def = new ContentDefinition(type, media, config);
+      LOGGER.debug("Adding templates for {}", def);
+      this._templates.put(def, loadTemplates(template));
+    } catch (TransformerException ex) {
+      LOGGER.warn("Failed to load XSLT script " + template + ": " + ex.getMessage(), ex);
+      throw new IllegalArgumentException("Invalid XSLT script " + template + ": " + ex.getMessage());
     }
   }
 
+  // Private helpers ==============================================================================
+  
   /**
    * Gets the stylesheet at path from the cache or if not in the cache loads it and stores it in 
    * the cache for later use.
    * 
-   * @param path Path of stylesheet
-   * @return the compiled templates
+   * @param path Path to the XSLT templates.
    * 
-   * @throws TransformerException if problem parsing stylesheet
+   * @return the compiled templates.
+   * 
+   * @throws TransformerException if thrown by the {@link TransformerFactory} while parsing the stylesheet
    */
   private static Templates loadTemplates(URI path) throws TransformerException {
     TransformerFactory factory = TransformerFactory.newInstance();
@@ -199,39 +299,86 @@ public class IndexConfig {
   }
 
   /**
+   * A simple immutable object to use as a key and optimised for fast retrieval.
    * 
    * @author Jean-Baptiste Reure
+   * @author Christophe Lauret
+   * @version 29 July 2010
    */
   private static final class ContentDefinition {
 
-    private final ContentType ctype;
+	/** Content type */
+    private final ContentType _type;
 
-    private final String mtype;
+    /** Media Type */
+    private final String _media;
 
-    private final String configid;
+    /** Configuration ID */
+    private final String _configId;
 
-    public ContentDefinition(ContentType ct, String mt, String cid) {
-      this.configid = cid;
-      this.ctype = ct;
-      this.mtype = mt;
+    /** Pre-computed hash code for this object */
+    private final int hashCode;
+
+    /**
+     * Creates a new content definition.
+     * 
+     * @param type     The content type
+     * @param media    The media type
+     * @param configId The configuration ID (may be <code>null</code>)
+     */
+    public ContentDefinition(ContentType type, String media, String configId) {
+      this._type = type;
+      this._media = media;
+      this._configId = configId;
+      this.hashCode = hashCode(type, media, configId);
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
-    public boolean equals(Object obj) {
-      if (!(obj instanceof ContentDefinition) || obj == null) return false;
-      // FIXME Poor performance creates a string for each comparison!!!
-      return obj.toString().equals(this.toString());
+    public boolean equals(Object o) {
+      if (!(o instanceof ContentDefinition)) return false;
+      return this.equals((ContentDefinition)o);
     }
 
-    @Override
-    public String toString() {
-      return this.ctype.toString() + "|" + this.mtype + "|" + (this.configid == null? "" : this.configid);
+    /**
+     * Compares two content definition for equality.
+     */
+    public boolean equals(ContentDefinition def) {
+      if (def == null) return false;
+      if (this == def) return true;
+      if (!this._type.equals(def._type)) return false;
+      if (!this._media.equals(def._media)) return false;
+      if (this._configId == null) return def == null;
+      return this._configId.equals(def._configId);
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public int hashCode() {
-      return this.ctype.hashCode() * 13 + this.mtype.hashCode() * 11
-          + (this.configid == null? 7 : this.configid.hashCode() * 7);
+      return this.hashCode;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public String toString() {
+      return this._type.toString() + "|" + this._media + "|" + (this._configId == null? "" : this._configId);
+    }
+
+    /**
+     * Computes the hash code to make a more efficient key.
+     * 
+     * @param type  The content type
+     * @param media The media type
+     * @param id    The configuration (may be <code>null</code>)
+     */
+    private static int hashCode(ContentType type, String media, String id) {
+     return type.hashCode() * 13 + media.hashCode() * 19 + (id == null? 7 : id.hashCode() * 7);
     }
   }
 
