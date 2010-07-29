@@ -12,10 +12,15 @@ import org.weborganic.flint.IndexException;
 
 /**
  * This class provides a way for the IndexManager to fetch the content to add to the index.
- * Content is identified by its ContentID and its ContentType.
+ * 
+ * <p>Content is identified by its ContentID and its Media Type.
+ * 
+ * @see <a href="http://tools.ietf.org/html/rfc2046">MIME Part Two: Media Types</a>
+ * @see <a href="http://tools.ietf.org/html/rfc3023">XML Media Types</a>
  * 
  * @author Jean-Baptiste Reure
- * @version 1 March 2010
+ * @author Christophe Lauret
+ * @version 29 July 2010
  */
 public interface Content {
 
@@ -31,22 +36,16 @@ public interface Content {
   InputStream getSource() throws IndexException;
 
   /**
-   * Load the MimeType for the content.
+   * Load the media type for the content.
    * 
-   * @return a String representation of the MIME type.
+   * @see <a href="http://tools.ietf.org/html/rfc2046">MIME Part Two: Media Types</a>
+   * @see <a href="http://tools.ietf.org/html/rfc3023">XML Media Types</a>
    * 
-   * @throws IndexException Should any error occur when retrieving the value.
-   */
-  String getMimeType() throws IndexException;
-
-  /**
-   * Return true if the content should be deleted from the index.
-   * 
-   * @return true if the content should be deleted from the index, false otherwise.
+   * @return a String representation of the media type.
    * 
    * @throws IndexException Should any error occur when retrieving the value.
    */
-  boolean isDeleted() throws IndexException;
+  String getMediaType() throws IndexException;
 
   /**
    * Return the config ID to use when transforming the content, null if no ID needed.
@@ -54,6 +53,15 @@ public interface Content {
    * @return the config ID to use when transforming the content, null if no ID needed.
    */
   String getConfigID();
+
+  /**
+   * Return <code>true</code> if the content should be deleted from the index.
+   * 
+   * @return <code>true</code> if the content should be deleted from the index, false otherwise.
+   * 
+   * @throws IndexException Should any error occur when retrieving the value.
+   */
+  boolean isDeleted() throws IndexException;
 
   /**
    * Returns the rule used to delete the previous content.

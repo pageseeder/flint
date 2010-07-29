@@ -611,18 +611,18 @@ public class IndexManager implements Runnable {
    * @throws IndexException if anything went wrong
    */
   public void translateContent(FlintErrorListener errorListener, ContentType type, IndexConfig config, Content content, Map<String, String> params, Writer out) throws IndexException {
-    String mimetype = content.getMimeType();
+    String mediatype = content.getMediaType();
     // no MIME type found
-    if (mimetype == null)
-      throw new IndexException("MIME Type not found.", null);
-    ContentTranslatorFactory factory = this.translatorFactories.get(mimetype);
+    if (mediatype == null)
+      throw new IndexException("Media Type not found.", null);
+    ContentTranslatorFactory factory = this.translatorFactories.get(mediatype);
     // no factory found
     if (factory == null && this.defaultTranslator == null)
-      throw new IndexException("MIME Type "+mimetype+" is not supported, no Translator Factory was found and no default Translator was specified.", null);
+      throw new IndexException("Media Type "+mediatype+" is not supported, no Translator Factory was found and no default Translator was specified.", null);
     // load translator
-    ContentTranslator translator = factory == null ? this.defaultTranslator : factory.createTranslator(mimetype);
+    ContentTranslator translator = factory == null ? this.defaultTranslator : factory.createTranslator(mediatype);
     if (translator == null)
-      throw new IndexException("No translator was found for MIME Type "+mimetype+".", null);
+      throw new IndexException("No translator was found for MIME Type "+mediatype+".", null);
     // ok translate now
     Reader source = null;
     try {
@@ -633,7 +633,7 @@ public class IndexManager implements Runnable {
     if (source == null)
       throw new IndexException("Failed to translate Content as the Translator returned a null result.", null);
     // retrieve XSLT script
-    Templates templates = config.getTemplates(type, mimetype, content.getConfigID());
+    Templates templates = config.getTemplates(type, mediatype, content.getConfigID());
     if (templates == null)
       throw new IndexException("Failed to load XSLT script for Content.", null);
     // run XSLT script
@@ -646,7 +646,7 @@ public class IndexManager implements Runnable {
         t.setOutputProperty("doctype-system", "http://weborganic.org/schema/flint/index-documents-compatibility.dtd");
       }
       // retrieve parameters
-      Map<String, String> parameters = config.getParameters(type, mimetype, content.getConfigID());
+      Map<String, String> parameters = config.getParameters(type, mediatype, content.getConfigID());
       if (parameters != null && params != null) {
         parameters = new HashMap<String, String>(parameters);
         parameters.putAll(params);

@@ -43,7 +43,7 @@ public class SourceForwarder implements ContentTranslator {
 
   public Reader translate(Content content) throws IndexException {
     if (content.isDeleted()) return null;
-    if (!this.mimeTypes.contains(content.getMimeType())) return null;
+    if (!this.mimeTypes.contains(content.getMediaType())) return null;
     try {
       return new InputStreamReader(content.getSource(), this.charset);
     } catch (UnsupportedEncodingException e) {
