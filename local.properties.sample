@@ -2,5 +2,5 @@
 # Local Installation Properties - This is a SAMPLE file                       # 
 # --------------------------------------------------------------------------- #
 
-# Properties of the local installation of PageSeeder
+# Location of a local webapp where flint should be deployed
 local.webapp=c:/pageseeder/webapp
