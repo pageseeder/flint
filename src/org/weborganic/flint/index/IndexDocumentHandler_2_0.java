@@ -8,10 +8,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.TimeZone;
 
-import org.apache.log4j.Logger;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field.Index;
 import org.apache.lucene.document.Field.Store;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.xml.sax.Attributes;
 import org.xml.sax.SAXException;
 import org.xml.sax.helpers.DefaultHandler;
@@ -34,7 +35,7 @@ final class IndexDocumentHandler_2_0 extends DefaultHandler implements IndexDocu
   /**
    * The logger for this class.
    */
-  private static final Logger LOGGER = Logger.getLogger(IndexDocumentHandler_2_0.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(IndexDocumentHandler_2_0.class);
 
   // class attributes
   // -------------------------------------------------------------------------------------------

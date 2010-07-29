@@ -14,7 +14,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-import org.apache.log4j.Logger;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BooleanClause;
@@ -27,6 +26,8 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.WildcardQuery;
 import org.apache.lucene.search.WildcardTermEnum;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * A set of utility methods related to predicates for index functions using Lucene.
@@ -40,7 +41,7 @@ public final class QueryUtils {
   /**
    * The logger for this class.
    */
-  private static final Logger LOGGER = Logger.getLogger(QueryUtils.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(QueryUtils.class);
 
   /**
    * Prevents creation of instances. 

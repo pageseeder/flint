@@ -8,10 +8,11 @@ package org.weborganic.flint;
 
 import java.io.IOException;
 
-import org.apache.log4j.Logger;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.search.IndexSearcher;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Manager for searches.
@@ -34,7 +35,7 @@ public class SearcherManager {
   /**
    * Logger
    */
-  private static final Logger LOGGER = Logger.getLogger(SearcherManager.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(SearcherManager.class);
 
   /**
    * The current searcher used to run searches on the index
@@ -108,7 +109,7 @@ public class SearcherManager {
    * @throws IOException
    */
   private synchronized void swapSearcher(IndexSearcher newSearcher) throws IOException {
-    LOGGER.debug("Swapping searcher from " + this.currentSearcher.hashCode() + " to " + newSearcher.hashCode());
+    LOGGER.debug("Swapping searcher from {} to {}", this.currentSearcher.hashCode(), newSearcher.hashCode());
     release(this.currentSearcher);
     this.currentSearcher = newSearcher;
   }
@@ -122,7 +123,7 @@ public class SearcherManager {
    * @throws InterruptedException 
    */
   protected synchronized IndexSearcher get() {
-    LOGGER.debug("Getting searcher " + this.currentSearcher.hashCode());
+    LOGGER.debug("Getting searcher {}", this.currentSearcher.hashCode());
     this.currentSearcher.getIndexReader().incRef();
     return this.currentSearcher;
   }
@@ -134,7 +135,7 @@ public class SearcherManager {
    * @throws IOException
    */
   protected synchronized void release(IndexSearcher searcher) throws IOException {
-    LOGGER.debug("Releasing searcher " + searcher.hashCode());
+    LOGGER.debug("Releasing searcher {}", searcher.hashCode());
     searcher.getIndexReader().decRef();
     // check if we should close an old one
     if (this.currentSearcher != searcher && searcher.getIndexReader().getRefCount() == 0)
@@ -149,7 +150,7 @@ public class SearcherManager {
    * @throws InterruptedException 
    */
   protected synchronized IndexReader getReader() {
-    LOGGER.debug("Getting reader " + this.currentSearcher.getIndexReader().hashCode());
+    LOGGER.debug("Getting reader {}", this.currentSearcher.getIndexReader().hashCode());
     this.currentSearcher.getIndexReader().incRef();
     return this.currentSearcher.getIndexReader();
   }
@@ -162,7 +163,7 @@ public class SearcherManager {
    * @throws IOException
    */
   protected synchronized void releaseReader(IndexReader reader) throws IOException {
-    LOGGER.debug("Releasing reader " + reader.hashCode());
+    LOGGER.debug("Releasing reader {}", reader.hashCode());
     reader.decRef();
     // check if we should close an old one
     if (this.currentSearcher.getIndexReader() != reader && reader.getRefCount() == 0)

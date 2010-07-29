@@ -9,7 +9,6 @@ package org.weborganic.flint;
 import java.io.IOException;
 import java.util.List;
 
-import org.apache.log4j.Logger;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.BalancedSegmentMergePolicy;
 import org.apache.lucene.index.ConcurrentMergeScheduler;
@@ -18,6 +17,8 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.store.LockObtainFailedException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.weborganic.flint.content.DeleteRule;
 
 /**
@@ -34,7 +35,7 @@ public final class IndexIO {
   /**
    * Logger.
    */
-  private static final Logger LOGGER = Logger.getLogger(IndexIO.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(IndexIO.class);
 
   /**
    * Describes the state of an index. 
@@ -188,7 +189,7 @@ public final class IndexIO {
    * @throws IndexException
    */
   public boolean updateDocuments(DeleteRule rule, List<Document> documents) throws IndexException {
-    LOGGER.debug("Updating " + documents.size() + " documents");
+    LOGGER.debug("Updating {} documents", documents.size());
     try {
       if (rule != null) {
         if (rule.useTerm()) writer.deleteDocuments(rule.toTerm());

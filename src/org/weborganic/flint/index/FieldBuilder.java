@@ -3,7 +3,6 @@ package org.weborganic.flint.index;
 import java.text.DateFormat;
 import java.util.Date;
 
-import org.apache.log4j.Logger;
 import org.apache.lucene.document.CompressionTools;
 import org.apache.lucene.document.DateTools;
 import org.apache.lucene.document.Field;
@@ -11,6 +10,8 @@ import org.apache.lucene.document.DateTools.Resolution;
 import org.apache.lucene.document.Field.Index;
 import org.apache.lucene.document.Field.Store;
 import org.apache.lucene.document.Field.TermVector;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * A builder for fields.
@@ -31,7 +32,7 @@ public final class FieldBuilder {
   /**
    * The logger for this class.
    */
-  private static final Logger LOGGER = Logger.getLogger(IndexDocumentHandler_2_0.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(IndexDocumentHandler_2_0.class);
 
   /**
    * The name of the field currently processed.
@@ -386,7 +387,7 @@ public final class FieldBuilder {
   public static Store toFieldStore(String store) {
     if ("no".equals(store))  return Field.Store.NO;
     if ("yes".equals(store)) return Field.Store.YES;
-    LOGGER.warn("Invalid field store value: "+store);
+    LOGGER.warn("Invalid field store value: {}", store);
     return null;
   }
 
@@ -404,7 +405,7 @@ public final class FieldBuilder {
     try {
       return Index.valueOf(index.toUpperCase().replace('-', '_'));
     } catch (IllegalArgumentException ex) {
-      LOGGER.warn("Invalid field index value: "+index);
+      LOGGER.warn("Invalid field index value: {}", index);
       return null;
     }
   }
@@ -423,7 +424,7 @@ public final class FieldBuilder {
     try {
       return TermVector.valueOf(vector.toUpperCase().replace('-', '_'));
     } catch (IllegalArgumentException ex) {
-      LOGGER.warn("Invalid term vector value: "+vector+", defaulting to Field.TermVector.NO");
+      LOGGER.warn("Invalid term vector value: {}, defaulting to Field.TermVector.NO", vector);
       return null;
     }
   }
@@ -446,7 +447,7 @@ public final class FieldBuilder {
     if ("minute".equals(resolution))  return DateTools.Resolution.MINUTE;
     if ("second".equals(resolution))  return DateTools.Resolution.SECOND;
     if ("milli".equals(resolution))   return DateTools.Resolution.MILLISECOND;
-    LOGGER.warn("Invalid date resolution: "+resolution+", defaulting to Resolution.DAY");
+    LOGGER.warn("Invalid date resolution: {}, defaulting to Resolution.DAY", resolution);
     return DateTools.Resolution.DAY;
   }
 
@@ -463,7 +464,7 @@ public final class FieldBuilder {
     try {
       return Float.parseFloat(boost);
     } catch (NumberFormatException ex) {
-      LOGGER.warn("Could not parse boost value '"+boost+"' as float, using "+DEFAULT_BOOST_VALUE);
+      LOGGER.warn("Could not parse boost value '{}' as float, using {}", boost, DEFAULT_BOOST_VALUE);
       return DEFAULT_BOOST_VALUE;
     }
   }

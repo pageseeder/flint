@@ -10,7 +10,9 @@ package org.weborganic.flint.index;
 import javax.xml.parsers.SAXParser;
 import javax.xml.parsers.SAXParserFactory;
 
-import org.apache.log4j.Logger;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.weborganic.flint.IndexException;
 import org.xml.sax.XMLReader;
 import org.xml.sax.helpers.DefaultHandler;
@@ -27,7 +29,7 @@ public final class IndexParserFactory extends DefaultHandler {
   /**
    * The logger for this class.
    */
-  private static final Logger LOGGER = Logger.getLogger(IndexParserFactory.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(IndexParserFactory.class);
 
   /**
    * Generate an index document parser instance.

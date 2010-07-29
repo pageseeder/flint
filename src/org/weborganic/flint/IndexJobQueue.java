@@ -11,7 +11,8 @@ import java.util.List;
 import java.util.concurrent.PriorityBlockingQueue;
 import java.util.concurrent.TimeUnit;
 
-import org.apache.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * The queue containing Index Jobs.
@@ -24,7 +25,7 @@ public final class IndexJobQueue {
   /**
    * An internal logger.
    */
-  private static final Logger LOGGER = Logger.getLogger(IndexJobQueue.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(IndexJobQueue.class);
 
   /**
    * Delay between each job poll in milliseconds.
@@ -55,7 +56,7 @@ public final class IndexJobQueue {
    * @param job The job to add to this queue.
    */
   public void addJob(IndexJob job) {
-    LOGGER.debug("Adding Index Job to Queue: "+job.toString());
+    LOGGER.debug("Adding Index Job to Queue: {}", job.toString());
     this.queue.put(job);
   }
 

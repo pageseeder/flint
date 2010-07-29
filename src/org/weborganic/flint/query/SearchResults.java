@@ -13,7 +13,6 @@ import java.util.Date;
 import java.util.TimeZone;
 import java.util.zip.DataFormatException;
 
-import org.apache.log4j.Logger;
 import org.apache.lucene.document.CompressionTools;
 import org.apache.lucene.document.DateTools;
 import org.apache.lucene.document.Document;
@@ -23,6 +22,8 @@ import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.TopFieldDocs;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.weborganic.flint.IndexException;
 import org.weborganic.flint.IndexIO;
 
@@ -48,7 +49,7 @@ public final class SearchResults implements XMLWritable {
   /**
    * Logger.
    */
-  private static final Logger LOGGER = Logger.getLogger(SearchResults.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(SearchResults.class);
 
   /**
    * The ISO 8601 Date and time format

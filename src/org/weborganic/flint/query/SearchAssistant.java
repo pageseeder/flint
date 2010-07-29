@@ -12,12 +12,13 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
 
-import org.apache.log4j.Logger;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.FuzzyTermEnum;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.WildcardTermEnum;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.topologi.diffx.xml.XMLWritable;
 import com.topologi.diffx.xml.XMLWriter;
@@ -35,7 +36,7 @@ public final class SearchAssistant implements XMLWritable {
   /**
    * The logger for this class.
    */
-  private static final Logger LOGGER = Logger.getLogger(SearchAssistant.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(SearchAssistant.class);
 
   /**
    * The index reader.
@@ -124,12 +125,12 @@ public final class SearchAssistant implements XMLWritable {
   private ArrayList fuzzyTerms(Term term) throws IOException {
     // find the fuzzy terms
     FuzzyTermEnum fuzzy = new FuzzyTermEnum(this.ireader, term);
-    LOGGER.debug("Extracting fuzzy terms for "+term);
+    LOGGER.debug("Extracting fuzzy terms for {}", term);
     ArrayList terms = new ArrayList();
     do {
       Term t = fuzzy.term();
       if (t != null) {
-        LOGGER.debug("Found "+t.text());
+        LOGGER.debug("Found {}", t.text());
         terms.add(t.text());
       }
     } while (fuzzy.next());
@@ -150,7 +151,7 @@ public final class SearchAssistant implements XMLWritable {
     // find the wildcard terms
     Term wildcardTerm = term.createTerm(term.text()+WildcardTermEnum.WILDCARD_STRING);
     WildcardTermEnum wildcard = new WildcardTermEnum(this.ireader, wildcardTerm);
-    LOGGER.debug("Extracting wildcard terms for "+term);
+    LOGGER.debug("Extracting wildcard terms for {}", term);
     ArrayList terms = new ArrayList();
     do {
       Term t = wildcard.term();

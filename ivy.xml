@@ -16,6 +16,6 @@
     <dependency org="weborganic" name="wo-diffx"             rev="latest.milestone"   conf="core"/>
     <dependency org="apache"     name="lucene-misc"          rev="3.0.1"              conf="core"/>
     <dependency org="apache"     name="lucene-core"          rev="3.0.1"              conf="core"/>
-    <dependency org="apache"     name="log4j"                rev="1.2.15"             conf="core"/>
+    <dependency org="slf4j"      name="slf4j-api"            rev="latest.milestone" conf="core"/>
   </dependencies>
 </ivy-module>

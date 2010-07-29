@@ -18,7 +18,8 @@ import javax.xml.transform.TransformerException;
 import javax.xml.transform.TransformerFactory;
 import javax.xml.transform.stream.StreamSource;
 
-import org.apache.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.weborganic.flint.content.ContentType;
 
 /**
@@ -36,7 +37,7 @@ public class IndexConfig {
   /**
    * Logger to use for this config object.
    */
-  private static final Logger LOGGER = Logger.getLogger(IndexConfig.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(IndexConfig.class);
 
   /**
    * The XSLT script.
@@ -69,7 +70,7 @@ public class IndexConfig {
    */
   public void addParameters(ContentType type, String mimeType, String configId, Map<String, String> params) {
     ContentDefinition def = new ContentDefinition(type, mimeType, configId);
-    LOGGER.debug("Adding " + params.size() + " parameters for " + def.toString());
+    LOGGER.debug("Adding {} parameters for {}", params.size(), def.toString() );
     this.parameters.put(def, params);
   }
 
@@ -100,7 +101,7 @@ public class IndexConfig {
     if (params == null) params = new HashMap<String, String>();
     params.put(paramname, paramvalue);
     this.parameters.put(def, params);
-    LOGGER.debug("Adding parameter " + paramname + " for " + def.toString());
+    LOGGER.debug("Adding parameter {} for {}", paramname, def.toString());
   }
 
   /**
@@ -149,7 +150,7 @@ public class IndexConfig {
    */
   public Templates getTemplates(ContentType type, String mimeType, String configId) {
     ContentDefinition def = new ContentDefinition(type, mimeType, configId);
-    LOGGER.debug("Retrieving templates for " + def.toString());
+    LOGGER.debug("Retrieving templates for {}", def.toString());
     return this.scripts.get(def);
   }
 
@@ -175,10 +176,10 @@ public class IndexConfig {
   public void addTemplates(ContentType type, String mimeType, String configId, URI xsltScript) {
     try {
       ContentDefinition def = new ContentDefinition(type, mimeType, configId);
-      LOGGER.debug("Adding templates for " + def.toString());
+      LOGGER.debug("Adding templates for {}", def.toString());
       this.scripts.put(def, loadTemplates(xsltScript));
     } catch (Exception e) {
-      LOGGER.debug("Failed to load XSLT script " + xsltScript + ": " + e.getMessage(), e);
+      LOGGER.warn("Failed to load XSLT script " + xsltScript + ": " + e.getMessage(), e);
       throw new IllegalArgumentException("Invalid XSLT script " + xsltScript + ": " + e.getMessage());
     }
   }
