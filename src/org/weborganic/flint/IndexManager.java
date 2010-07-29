@@ -387,23 +387,31 @@ public class IndexManager implements Runnable {
     }
     return null;
   }
+
+  // Lower level API providing access to Lucene objects
+  // ----------------------------------------------------------------------------------------------
+
   /**
    * Book a near real-time Reader on the Index provided.
+   * 
    * <p>IMPORTANT: the reader should not be closed, it should be used in the following way to ensure it is closed properly:</p>
-   * <code>
+   * <pre>
    *    IndexReader reader = manager.bookIndexReader(index);
    *    try {
    *      ...
    *    } finally {
    *      manager.releaseIndexReader(index, reader);
    *    }
-   * </code>
+   * </pre>
+   * 
+   * @deprecated Use {@link #grabReader(Index)} instead.
    * 
    * @param index the index that the Index Reader will point to.
    * @return the Index Reader to read from the index
-   * @throws IndexException
+   * 
+   * @throws IndexException If an IO error occurred when getting the reader.
    */
-  public IndexReader bookIndexReader(Index index) throws IndexException {
+  @Deprecated public IndexReader bookIndexReader(Index index) throws IndexException {
     try {
       return getIndexIO(index).bookReader();
     } catch (IOException e) {
@@ -411,19 +419,170 @@ public class IndexManager implements Runnable {
       throw new IndexException("Failed getting a reader on the Index because of an I/O problem", e);
     }
   }
+
   /**
    * Release an Index Reader after it's been used.
+   * 
    * @see IndexManager#bookIndexReader(Index)
+   * 
+   * @deprecated Use {@link #release(Index, IndexReader)} instead.
+   * 
    * @param index
    * @param reader
    * @throws IndexException
    */
-  public void releaseIndexReader(Index index, IndexReader reader) throws IndexException {
+  @Deprecated public void releaseIndexReader(Index index, IndexReader reader) throws IndexException {
     try {
       getIndexIO(index).releaseReader(reader);
     } catch (IOException e) {
       this.listener.error("Failed to release a reader because of an I/O problem", e);
       throw new IndexException("Failed to release a reader because of an I/O problem", e);
+    }
+  }
+
+  /**
+   * Returns a near real-time Reader on the index provided.
+   * 
+   * <p>IMPORTANT: the reader should not be closed, it should be used in the following way to ensure it is made available to other threads:</p>
+   * <pre>
+   *    IndexReader reader = manager.grabReader(index);
+   *    try {
+   *      ...
+   *    } finally {
+   *      manager.release(index, reader);
+   *    }
+   * </pre>
+   * 
+   * @param index the index that the Index Reader will point to.
+   * @return the Index Reader to read from the index
+   * 
+   * @throws IndexException If an IO error occurred when getting the reader.
+   */
+  public IndexReader grabReader(Index index) throws IndexException {
+    try {
+      return getIndexIO(index).bookReader();
+    } catch (IOException e) {
+      this.listener.error("Failed getting a reader on the Index because of an I/O problem", e);
+      throw new IndexException("Failed getting a reader on the Index because of an I/O problem", e);
+    }
+  }
+
+  /**
+   * Release an {@link IndexReader} after it has been used.
+   * 
+   * <p>It is necessary to release a reader so that it can be reused for other threads.
+   * 
+   * @see IndexManager#grabReader(Index)
+   * 
+   * @param index  The index the reader works on.
+   * @param reader The actual Lucene index reader.
+   * 
+   * @throws IndexException Wrapping any IO exception
+   */
+  public void release(Index index, IndexReader reader) throws IndexException {
+    try {
+      getIndexIO(index).releaseReader(reader);
+    } catch (IOException ex) {
+      this.listener.error("Failed to release a reader because of an I/O problem", ex);
+      throw new IndexException("Failed to release a reader because of an I/O problem", ex);
+    }
+  }
+
+  /**
+   * Releases an {@link IndexReader} quietly after it has been used so that it can be used in a <code>finally</code>
+   * block.
+   * 
+   * <p>It is necessary to release a reader so that it can be reused for other threads.
+   * 
+   * @see IndexManager#grabReader(Index)
+   * 
+   * @param index  The index the reader works on.
+   * @param reader The actual Lucene index reader.
+   */
+  public void releaseQuietly(Index index, IndexReader reader) {
+    try {
+      getIndexIO(index).releaseReader(reader);
+    } catch (IOException ex) {
+      this.listener.error("Failed to release a reader because of an I/O problem", ex);
+    } catch (IndexException ex) {
+      this.listener.error("Failed to release a reader because of an Index problem", ex);
+    }
+  }
+
+  /**
+   * Returns a near real-time Searcher on the index provided.
+   * 
+   * <p>IMPORTANT: the searcher should not be closed, it should be used in the following way to ensure it is made available to other threads:</p>
+   * <pre>
+   *    IndexSearcher searcher = manager.grabSearcher(index);
+   *    try {
+   *      ...
+   *    } finally {
+   *      manager.release(index, searcher);
+   *    }
+   * </pre>
+   * 
+   * @param index the index that the searcher will work on.
+   * @return the index searcher to use on the index
+   * 
+   * @throws IndexException If an IO error occurred when getting the reader.
+   */
+  public IndexSearcher grabSearcher(Index index) throws IndexException {
+    try {
+      IndexIO io = getIndexIO(index);
+      return io.bookSearcher();
+    } catch (CorruptIndexException e) {
+      this.listener.error("Failed getting a Searcher to perform a query because the Index is corrupted", e);
+      throw new IndexException("Failed getting a Searcher to perform a query because the Index is corrupted", e);
+    } catch (LockObtainFailedException e) {
+      this.listener.error("Failed getting a lock on the Index to perform a query", e);
+      throw new IndexException("Failed getting a lock on the Index to perform a query", e);
+    } catch (IOException e) {
+      this.listener.error("Failed getting a searcher to perform a query on the Index because of an I/O problem", e);
+      throw new IndexException("Failed getting a searcher to perform a query on the Index because of an I/O problem", e);
+    }
+  }
+
+  /**
+   * Release an {@link IndexSearcher} after it has been used.
+   * 
+   * <p>It is necessary to release a searcher so that it can be reused by other threads.
+   * 
+   * @see IndexManager#grabSearcher(Index)
+   * 
+   * @param index  The index the searcher works on.
+   * @param reader The actual Lucene index searcher.
+   * 
+   * @throws IndexException Wrapping any IO exception
+   */
+  public void release(Index index, IndexSearcher searcher) throws IndexException {
+    try {
+      IndexIO io = getIndexIO(index);
+      io.releaseSearcher(searcher);
+    } catch (IOException e) {
+      this.listener.error("Failed to release a searcher", e);
+      throw new IndexException("Failed to release a searcher", e);
+    }
+  }
+
+  /**
+   * Releases an {@link IndexSearcher} quietly after it has been used so that it can be used in a <code>finally</code>
+   * block.
+   * 
+   * <p>It is necessary to release a searcher so that it can be reused for other threads.
+   * 
+   * @see IndexManager#grabReader(Index)
+   * 
+   * @param index  The index the searcher works on.
+   * @param reader The actual Lucene index searcher.
+   */
+  public void releaseQuietly(Index index, IndexSearcher searcher) {
+    try {
+      getIndexIO(index).releaseSearcher(searcher);
+    } catch (IOException ex) {
+      this.listener.error("Failed to release a searcher - quietly ignoring", ex);
+    } catch (IndexException ex) {
+      this.listener.error("Failed to release a searcher - quietly ignoring", ex);
     }
   }
 
@@ -599,6 +758,7 @@ public class IndexManager implements Runnable {
     }
     return true;
   }
+
   /**
    * Translate the provided content into Flint Index XML
    * 
@@ -660,10 +820,12 @@ public class IndexManager implements Runnable {
     }
   }
 
+  // Private helpers ==============================================================================
+
   /**
-   * Retrieve an IndexIO, creates it if non existent
+   * Retrieves an IndexIO, creates it if non existent.
    * 
-   * @param index
+   * @param index the index requiring the IO utility.
    * @return
    * @throws IndexException
    */

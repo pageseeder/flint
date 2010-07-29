@@ -27,6 +27,8 @@ import org.weborganic.flint.content.DeleteRule;
  * <p>This class is useful to centralise all operations on an index because it will create one
  * writer and share it with other classes if needed.
  * 
+ * <p>This is a lower level API.
+ * 
  * @author Jean-Baptiste Reure
  * @version 26 February 2010
  */
@@ -66,7 +68,9 @@ public final class IndexIO {
    */
   private IndexIO.State state = State.CLEAN;
 
-
+  /**
+   * ID of the current index.
+   */
   private final String indexID;
 
   /**
