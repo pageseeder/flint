@@ -7,6 +7,7 @@ import java.util.List;
 
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.index.TermEnum;
 import org.apache.lucene.search.FuzzyTermEnum;
 import org.apache.lucene.search.PrefixTermEnum;
 import org.weborganic.flint.util.Bucket.Entry;
@@ -171,6 +172,60 @@ public final class Terms {
     } while (e.next());
     e.close();
   }
+
+  /**
+   * Returns the list of terms for the specified field.
+   * 
+   * @param reader The index reader
+   * @param field  The field
+   * 
+   * @return the list of terms for this field
+   * 
+   * @throws IOException should any IO error be reported by the {@link IndexReader#terms(Term)} method.
+   */
+  @Beta public List<Term> terms(IndexReader reader, String field) throws IOException {
+    TermEnum e = null;
+    List<Term> terms = new ArrayList<Term>();
+    try {
+      e = reader.terms(new Term(field, ""));
+      while (field.equals(e.term().field())) {
+        terms.add(e.term());
+        if (!e.next())
+          break;
+      }
+    } finally {
+      e.close();
+    }
+    return terms;
+  }
+
+  /**
+   * Returns the list of term values for the specified field.
+   * 
+   * @param reader The index reader to use
+   * @param field  The field
+   * 
+   * @return the list of terms for this field
+   * 
+   * @throws IOException should any IO error be reported by the {@link IndexReader#terms(Term)} method.
+   */
+  @Beta public List<String> values(IndexReader reader, String field) throws IOException {
+    TermEnum e = null;
+    List<String> values = new ArrayList<String>();
+    try {
+      e = reader.terms(new Term(field, ""));
+      while (field.equals(e.term().field())) {
+        values.add(e.term().text());
+        if (!e.next())
+          break;
+      }
+    } finally {
+      e.close();
+    }
+    return values;
+  }
+
+  // XML Serialisers ==============================================================================
 
   /**
    * Returns the XML for a list of terms.
