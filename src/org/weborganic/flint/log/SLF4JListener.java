@@ -95,7 +95,7 @@ public final class SLF4JListener implements FlintListener {
    * {@inheritDoc}
    */
   public void debug(IndexJob job, String message, Throwable throwable) {
-	this._logger.debug("{} [Job:{}]", message, job.toString());
+    this._logger.debug("{} [Job:{}]", message, job.toString());
     this._logger.debug(message, throwable);
   }
 
@@ -103,7 +103,7 @@ public final class SLF4JListener implements FlintListener {
    * {@inheritDoc}
    */
   public void info(IndexJob job, String message) {
-	  this._logger.info("{} [Job:{}]", message, job.toString());
+    this._logger.info("{} [Job:{}]", message, job.toString());
   }
 
   /**
@@ -111,14 +111,14 @@ public final class SLF4JListener implements FlintListener {
    */
   public void info(IndexJob job, String message, Throwable throwable) {
     this._logger.info("{} [Job:{}]", message, job.toString());
-	this._logger.info(message, throwable);
+    this._logger.info(message, throwable);
   }
 
   /**
    * {@inheritDoc}
    */
   public void warn(IndexJob job, String message) {
-	this._logger.warn("{} [Job:{}]", message, job.toString());
+    this._logger.warn("{} [Job:{}]", message, job.toString());
   }
 
   /**
@@ -126,21 +126,21 @@ public final class SLF4JListener implements FlintListener {
    */
   public void warn(IndexJob job, String message, Throwable throwable) {
     this._logger.warn("{} [Job:{}]", message, job.toString());
-	this._logger.warn(message, throwable);
+    this._logger.warn(message, throwable);
   }
 
   /**
    * {@inheritDoc}
    */
   public void error(IndexJob job, String message) {
-	  this._logger.error("{} [Job:{}]", message, job.toString());
+    this._logger.error("{} [Job:{}]", message, job.toString());
   }
 
   /**
    * {@inheritDoc}
    */
   public void error(IndexJob job, String message, Throwable throwable) {
-	  this._logger.error("{} [Job:{}]", message, job.toString());
+    this._logger.error("{} [Job:{}]", message, job.toString());
     this._logger.error(message, throwable);
   }
 

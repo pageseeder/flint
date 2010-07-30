@@ -17,7 +17,7 @@ import org.weborganic.flint.util.Beta;
   /**
    * A default content type instance for when no more than one type is needed by an application.
    */
-  public final static NamedContentType DEFAULT = new NamedContentType("default");
+  public static final NamedContentType DEFAULT = new NamedContentType("default");
 
   /**
    * The name of this content type (immutable);
@@ -60,7 +60,7 @@ import org.weborganic.flint.util.Beta;
    * {@inheritDoc}
    */
   @Override
-  public final int hashCode() {
+  public int hashCode() {
     return this._hashCode;
   }
 
@@ -68,8 +68,8 @@ import org.weborganic.flint.util.Beta;
    * {@inheritDoc}
    */
   @Override
-  public final boolean equals(Object o) {
-	// filter out objects of the wrong type 
+  public boolean equals(Object o) {
+    // filter out objects of the wrong type 
     if (!(o instanceof NamedContentType)) return false;
     return this.equals((NamedContentType)o);
   }
@@ -81,7 +81,7 @@ import org.weborganic.flint.util.Beta;
    * @return <code>true</code> if the two content types are equal;
    *         <code>false</code> otherwise.
    */
-  public final boolean equals(NamedContentType type) {
+  public boolean equals(NamedContentType type) {
     if (type == this) return true;
     if (this._name == type._name) return true;
     return this._name.equals(type._name);

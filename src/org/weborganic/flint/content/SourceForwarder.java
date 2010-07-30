@@ -8,8 +8,6 @@ import java.util.Collections;
 import java.util.List;
 
 import org.weborganic.flint.IndexException;
-import org.weborganic.flint.content.Content;
-import org.weborganic.flint.content.ContentTranslator;
 
 /**
  * A simple translator implementation allows XML Media types to be simply forwarded without translation.
@@ -39,8 +37,8 @@ public final class SourceForwarder implements ContentTranslator {
    * @throws IllegalArgumentException    If the given charset name or media type is <code>null</code>.
    * @throws UnsupportedCharsetException If no support for the named charset is available.
    */
-  public SourceForwarder(String mediaType, String charset) {
-	this(mediaType, Charset.forName(charset));
+  public SourceForwarder(String mediaType, String charset) throws IllegalArgumentException {
+    this(mediaType, Charset.forName(charset));
   }
 
   /**
@@ -53,7 +51,7 @@ public final class SourceForwarder implements ContentTranslator {
    * @throws IllegalArgumentException    If the given charset name or media type is <code>null</code>.
    * @throws UnsupportedCharsetException If no support for the named charset is available.
    */
-  public SourceForwarder(List<String> mediaTypes, String charset) {
+  public SourceForwarder(List<String> mediaTypes, String charset) throws IllegalArgumentException {
     this(mediaTypes, Charset.forName(charset));
   }
 
@@ -65,9 +63,9 @@ public final class SourceForwarder implements ContentTranslator {
    * 
    * @throws IllegalArgumentException    If the given charset name or media type is <code>null</code>.
    */
-  public SourceForwarder(String mediaType, Charset charset) {
+  public SourceForwarder(String mediaType, Charset charset) throws IllegalArgumentException {
     if (mediaType == null) throw new IllegalArgumentException("mediaType is null");
-	if (charset == null) throw new IllegalArgumentException("charset is null");
+    if (charset == null) throw new IllegalArgumentException("charset is null");
     this._mediaTypes = Collections.singletonList(mediaType);
     this._charset = charset;
   }
@@ -80,7 +78,7 @@ public final class SourceForwarder implements ContentTranslator {
    * 
    * @throws IllegalArgumentException    If the given charset name or media type is <code>null</code>.
    */
-  public SourceForwarder(List<String> mediaTypes, Charset charset) {
+  public SourceForwarder(List<String> mediaTypes, Charset charset) throws IllegalArgumentException {
     if (mediaTypes == null) throw new IllegalArgumentException("mediaTypes is null");
     if (charset == null) throw new IllegalArgumentException("charset is null");
     this._mediaTypes = new ArrayList<String>(mediaTypes);

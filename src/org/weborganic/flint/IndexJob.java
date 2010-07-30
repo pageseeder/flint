@@ -22,10 +22,19 @@ import org.weborganic.flint.content.ContentType;
  */
 public class IndexJob implements Comparable<IndexJob> {
 
-  private final static ContentType CLEAR_CONTENT = new ContentType() {public String toString() {return "CLEAR";}};
-  private final static ContentId CLEAR_CONTENT_ID = new ContentId() {
-    public ContentType getContentType() {return CLEAR_CONTENT;}
-    public String getID() {return "Clear Index";}
+  /**
+   * Pseudo-type to indicate that the index needs to be cleared.
+   */
+  private static final ContentType CLEAR_CONTENT = new ContentType() {
+    public String toString() { return "CLEAR"; };
+  };
+
+  /**
+   * Pseudo content ID used for the index clear job.
+   */
+  private static final ContentId CLEAR_CONTENT_ID = new ContentId() {
+    public ContentType getContentType() { return CLEAR_CONTENT; }
+    public String getID() { return "Clear Index"; }
   };
 
   /**
@@ -107,8 +116,8 @@ public class IndexJob implements Comparable<IndexJob> {
     this.index = i;
     if (params != null) this.parameters = params;
     else this.parameters = Collections.emptyMap();
-    this.jobId = System.currentTimeMillis() + "-" + id.toString() + "-" + (conf == null ? "" : conf.hashCode()) + "-"
-        + i.getIndexID() + "-" + r.getRequesterID() + "-" + p.toString();
+    this.jobId = System.currentTimeMillis() + '-' + id.toString() + '-' + (conf == null ? "" : conf.hashCode()) + '-'
+        + i.getIndexID() + '-' + r.getRequesterID() + '-' + p.toString();
   }
 
   /**
@@ -220,7 +229,8 @@ public class IndexJob implements Comparable<IndexJob> {
   /**
    * Set the final status of this job.
    * 
-   * @param success true if the job succeeded
+   * @param success <code>true</code> if the job succeeded;
+   *                <code>false</code> if an error occurred.
    */
   public void setSuccess(boolean success) {
     this.success = success;
@@ -255,7 +265,7 @@ public class IndexJob implements Comparable<IndexJob> {
     return this.getContentID().equals(CLEAR_CONTENT_ID);
   }
 
-  // static factory methods ========================================================================  
+  // static factory methods ========================================================================
 
   /**
    * Used to build a new job.

@@ -92,9 +92,9 @@ public class IndexConfig {
    * <p>Note: This method will add to existing parameters, to set parameters, use 
    * {@link #setParameters(ContentType, String, Map)} instead.
    * 
-   * @param type    the type of content to index.
-   * @param media   the media type of the content (eg. "application/xml")
-   * @param params the name-value map of parameters to add.
+   * @param type       the type of content to index.
+   * @param media      the media type of the content (eg. "application/xml")
+   * @param parameters the name-value map of parameters to add.
    */
   @Beta public void addParameters(ContentType type, String media, Map<String, String> parameters) {
     addParameters(type, media, null, parameters);
@@ -193,7 +193,7 @@ public class IndexConfig {
   }
 
   // Templates management =========================================================================
-  
+
   /**
    * Returns the compiled XSLT templates or <code>null</code> if there are no templates associated with
    * this content type and media type.
@@ -224,7 +224,8 @@ public class IndexConfig {
   }
 
   /**
-   * Adds an XSLT script for the given Content definition this content type and media type for the specified configuration ID
+   * Adds an XSLT script for the given Content definition this content type and media type for the 
+   * specified configuration ID.
    * 
    * @deprecated Use {@link #setTemplates(ContentType, String, URI)} instead.
    * 
@@ -232,8 +233,8 @@ public class IndexConfig {
    * @param media    the media type of the content (eg. "application/xml")
    * @param template the full path to the XSLT template file.
    */
-  @Deprecated public void addTemplates(ContentType type, String mimeType, URI template) {
-    setTemplates(type, mimeType, null, template);
+  @Deprecated public void addTemplates(ContentType type, String media, URI template) {
+    setTemplates(type, media, null, template);
   }
 
   /**
@@ -258,8 +259,8 @@ public class IndexConfig {
    * @param media    the media type of the content (eg. "application/xml").
    * @param template the full path to the XSLT template file.
    */
-  public void setTemplates(ContentType type, String mimeType, URI template) {
-    setTemplates(type, mimeType, null, template);
+  public void setTemplates(ContentType type, String media, URI template) {
+    setTemplates(type, media, null, template);
   }
 
   /**
@@ -282,7 +283,7 @@ public class IndexConfig {
   }
 
   // Private helpers ==============================================================================
-  
+
   /**
    * Gets the stylesheet at path from the cache or if not in the cache loads it and stores it in 
    * the cache for later use.
@@ -307,7 +308,7 @@ public class IndexConfig {
    */
   private static final class ContentDefinition {
 
-	/** Content type */
+    /** Content type */
     private final ContentType _type;
 
     /** Media Type */
@@ -344,13 +345,17 @@ public class IndexConfig {
 
     /**
      * Compares two content definition for equality.
+     * 
+     * @param def the content definition to compare for equality.
+     * @return <code>true</code> if the type, media and config ID are equal;
+     *         <code>false</code> otherwise.
      */
     public boolean equals(ContentDefinition def) {
       if (def == null) return false;
       if (this == def) return true;
       if (!this._type.equals(def._type)) return false;
       if (!this._media.equals(def._media)) return false;
-      if (this._configId == null) return def == null;
+      if (this._configId == null) return def._configId == null;
       return this._configId.equals(def._configId);
     }
 
@@ -376,6 +381,8 @@ public class IndexConfig {
      * @param type  The content type
      * @param media The media type
      * @param id    The configuration (may be <code>null</code>)
+     * 
+     * @return the hashcode for this object.
      */
     private static int hashCode(ContentType type, String media, String id) {
      return type.hashCode() * 13 + media.hashCode() * 19 + (id == null? 7 : id.hashCode() * 7);

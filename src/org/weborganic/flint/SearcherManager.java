@@ -64,8 +64,9 @@ public class SearcherManager {
    */
   private synchronized void startReopen() throws InterruptedException {
     LOGGER.debug("Starting open");
-    while (this.reopening)
+    while (this.reopening) {
       wait();
+    }
     this.reopening = true;
   }
 
