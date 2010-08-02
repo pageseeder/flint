@@ -23,10 +23,13 @@ import com.topologi.diffx.xml.XMLWriter;
 /**
  * A search query to submit a predicate directly to the index.
  * 
+ * <p>This query uses the Lucene {@link QueryParser} to create a valid query instance from the
+ * supplied predicate.
+ * 
  * @author Christophe Lauret (Weborganic)
  * @author Jean-Baptiste Reure (Weborganic)
  * 
- * @version 1 September 2006
+ * @version 2 August 2010
  */
 public final class PredicateSearchQuery implements SearchQuery {
 
@@ -46,17 +49,19 @@ public final class PredicateSearchQuery implements SearchQuery {
   private final Sort _sort;
 
   /**
-   * A flag to specify if wildcard ('*' or '?') is allowed as the first character of the predicate
+   * A flag to specify if wildcard ('*' or '?') is allowed as the first character of the predicate.
    */
-  private boolean allowWildCardStart = false;
+  private boolean _allowLeadingWildcard = false;
 
   /**
    * Creates new predicate search query.
    * 
    * @param predicate The predicate for this query.
    * @param sortField The field name to use to order the results.
+   * 
+   * @throws IllegalArgumentException If the predicate is <code>null</code>.
    */
-  public PredicateSearchQuery(String predicate, String sortField) {
+  public PredicateSearchQuery(String predicate, String sortField) throws IllegalArgumentException {
     this(predicate, sortField == null ? Sort.INDEXORDER : new Sort(new SortField(sortField, SortField.STRING)));
   }
 
@@ -66,8 +71,10 @@ public final class PredicateSearchQuery implements SearchQuery {
    * @param predicate The predicate for this query.
    * @param analyzer  The analyzer to use for the query, should be the same as the one used to write the Index.
    * @param sortField The field name to use to order the results.
+   * 
+   * @throws IllegalArgumentException If the predicate is <code>null</code>.
    */
-  public PredicateSearchQuery(String predicate, Analyzer analyzer, String sortField) {
+  public PredicateSearchQuery(String predicate, Analyzer analyzer, String sortField) throws IllegalArgumentException {
     this(predicate, analyzer, sortField == null ? Sort.INDEXORDER : new Sort(new SortField(sortField, SortField.STRING)));
   }
 
@@ -75,8 +82,10 @@ public final class PredicateSearchQuery implements SearchQuery {
    * Creates new predicate search query.
    * 
    * @param predicate The predicate for this query.
+   * 
+   * @throws IllegalArgumentException If the predicate is <code>null</code>.
    */
-  public PredicateSearchQuery(String predicate) {
+  public PredicateSearchQuery(String predicate) throws IllegalArgumentException {
     this(predicate, Sort.INDEXORDER);
   }
 
@@ -85,8 +94,10 @@ public final class PredicateSearchQuery implements SearchQuery {
    * 
    * @param predicate The predicate for this query.
    * @param analyzer  The analyzer to use for the query, should be the same as the one used to write the Index.
+   * 
+   * @throws IllegalArgumentException If the predicate is <code>null</code>.
    */
-  public PredicateSearchQuery(String predicate, Analyzer analyzer) {
+  public PredicateSearchQuery(String predicate, Analyzer analyzer) throws IllegalArgumentException {
     this(predicate, analyzer, Sort.INDEXORDER);
   }
 
@@ -95,8 +106,10 @@ public final class PredicateSearchQuery implements SearchQuery {
    * 
    * @param predicate The predicate for this query.
    * @param sort      The sort order for the results.
+   * 
+   * @throws IllegalArgumentException If the predicate is <code>null</code>.
    */
-  public PredicateSearchQuery(String predicate, Sort sort) {
+  public PredicateSearchQuery(String predicate, Sort sort) throws IllegalArgumentException {
     this(predicate, new StandardAnalyzer(IndexManager.LUCENE_VERSION), sort);
   }
 
@@ -106,8 +119,11 @@ public final class PredicateSearchQuery implements SearchQuery {
    * @param predicate The predicate for this query.
    * @param analyzer  The analyzer to use for the query, should be the same as the one used to write the Index.
    * @param sort      The sort order for the results.
+   * 
+   * @throws IllegalArgumentException If the predicate is <code>null</code>. 
    */
-  public PredicateSearchQuery(String predicate, Analyzer analyzer, Sort sort) {
+  public PredicateSearchQuery(String predicate, Analyzer analyzer, Sort sort) throws IllegalArgumentException {
+    if (predicate == null) throw new IllegalArgumentException("predicate is null");
     this._predicate = predicate;
     this._analyser = analyzer;
     this._sort = sort;
@@ -115,13 +131,14 @@ public final class PredicateSearchQuery implements SearchQuery {
 
   // getters and setters
   // --------------------------------------------------------------------------------------------
+
   /**
    * Whether or not a wildcard ('*' or '?') is allowed as the first character of the predicate.
    * 
    * @param allowWildCardStart true if wildcard should be allowed, false otherwise
    */
   public void setAllowWildCardStart(boolean allowWildCardStart) {
-    this.allowWildCardStart = allowWildCardStart;
+    this._allowLeadingWildcard = allowWildCardStart;
   }
 
   /**
@@ -137,8 +154,6 @@ public final class PredicateSearchQuery implements SearchQuery {
    * Returns the predicate to use for this search.
    * 
    * @return The predicate for this search.
-   * 
-   * @see org.weborganic.flint.query.SearchQuery#getPredicate()
    */
   public String getPredicate() {
     return this._predicate;
@@ -150,14 +165,14 @@ public final class PredicateSearchQuery implements SearchQuery {
    * <p>
    * This method uses a query parser to parse the predicate.
    * 
-   * @return The Lucene query instance.
+   * @return The Lucene query instance or <code>null</code> if the predicate was <code>null</code>.
    */
   public Query toQuery() {
     if (this._predicate == null)
       return null;
     try {
       QueryParser parser = new QueryParser(IndexManager.LUCENE_VERSION, getField(), this._analyser);
-      parser.setAllowLeadingWildcard(this.allowWildCardStart);
+      parser.setAllowLeadingWildcard(this._allowLeadingWildcard);
       return parser.parse(this._predicate);
     } catch (ParseException ex) {
       return null;
@@ -176,12 +191,11 @@ public final class PredicateSearchQuery implements SearchQuery {
   /**
    * Serialises the search query as XML.
    * 
-   * <pre>
+   * <pre>{@code
    *   <search-query>
    *     <predicate>[predicate]</predicate>
-   *     <field>[field]</field>
    *   <search-query>
-   * </pre>
+   * }</pre>
    * 
    * @param xml The XML writer.
    * 
@@ -189,9 +203,7 @@ public final class PredicateSearchQuery implements SearchQuery {
    */
   public void toXML(XMLWriter xml) throws IOException {
     xml.openElement("search-query", true);
-    // the predicate produced by the query
     xml.element("predicate", this._predicate);
-    // close 'search-query'
     xml.closeElement();
   }
 
