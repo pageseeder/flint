@@ -480,6 +480,7 @@ public class IndexManager implements Runnable {
    * @throws IndexException Wrapping any IO exception
    */
   public void release(Index index, IndexReader reader) throws IndexException {
+    if (reader == null) return;
     try {
       getIndexIO(index).releaseReader(reader);
     } catch (IOException ex) {
@@ -500,6 +501,7 @@ public class IndexManager implements Runnable {
    * @param reader The actual Lucene index reader.
    */
   public void releaseQuietly(Index index, IndexReader reader) {
+    if (reader == null) return;
     try {
       getIndexIO(index).releaseReader(reader);
     } catch (IOException ex) {
@@ -550,12 +552,13 @@ public class IndexManager implements Runnable {
    * 
    * @see IndexManager#grabSearcher(Index)
    * 
-   * @param index  The index the searcher works on.
-   * @param reader The actual Lucene index searcher.
+   * @param index    The index the searcher works on.
+   * @param searcher The actual Lucene index searcher.
    * 
    * @throws IndexException Wrapping any IO exception
    */
   public void release(Index index, IndexSearcher searcher) throws IndexException {
+    if (searcher == null) return;
     try {
       IndexIO io = getIndexIO(index);
       io.releaseSearcher(searcher);
@@ -573,10 +576,11 @@ public class IndexManager implements Runnable {
    * 
    * @see IndexManager#grabReader(Index)
    * 
-   * @param index  The index the searcher works on.
-   * @param reader The actual Lucene index searcher.
+   * @param index    The index the searcher works on.
+   * @param searcher The actual Lucene index searcher.
    */
   public void releaseQuietly(Index index, IndexSearcher searcher) {
+    if (searcher == null) return;
     try {
       getIndexIO(index).releaseSearcher(searcher);
     } catch (IOException ex) {
