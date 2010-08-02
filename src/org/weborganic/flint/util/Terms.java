@@ -183,7 +183,7 @@ public final class Terms {
    * 
    * @throws IOException should any IO error be reported by the {@link IndexReader#terms(Term)} method.
    */
-  @Beta public List<Term> terms(IndexReader reader, String field) throws IOException {
+  @Beta public static List<Term> terms(IndexReader reader, String field) throws IOException {
     TermEnum e = null;
     List<Term> terms = new ArrayList<Term>();
     try {
@@ -210,8 +210,8 @@ public final class Terms {
    * @throws IOException should any IO error be reported by the {@link IndexReader#terms(Term)} method.
    */
   @Beta public List<String> values(IndexReader reader, String field) throws IOException {
-    TermEnum e = null;
     List<String> values = new ArrayList<String>();
+    TermEnum e = null;
     try {
       e = reader.terms(new Term(field, ""));
       while (field.equals(e.term().field())) {

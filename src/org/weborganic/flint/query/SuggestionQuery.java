@@ -11,6 +11,7 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.BooleanClause.Occur;
+import org.weborganic.flint.util.Beta;
 import org.weborganic.flint.util.Terms;
 
 import com.topologi.diffx.xml.XMLWriter;
@@ -21,6 +22,7 @@ import com.topologi.diffx.xml.XMLWriter;
  * @author Christophe Lauret
  * @version 21 July 2010
  */
+@Beta
 public final class SuggestionQuery implements SearchQuery {
 
   /**
@@ -62,6 +64,7 @@ public final class SuggestionQuery implements SearchQuery {
    * Computes the list of terms to generate the actual suggestion query.
    * 
    * @param reader Computes the list.
+   * @throws IOException should an error occurs while reading the index. 
    */
   public void compute(IndexReader reader) throws IOException {
     // Compute the list of terms
