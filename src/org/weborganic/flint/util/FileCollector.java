@@ -8,8 +8,11 @@ import java.util.List;
 /**
  * Collects files in a root directory and its sub-directories, using the specified file filter.
  * 
+ * <p><b>NOTE:</b> this file does not implement the Lucene {@link org.apache.lucene.search.Collector}
+ * interface and bears no relation with it.
+ * 
  * @author Christophe Lauret
- * @version 26 May 2010
+ * @version 2 August 2010
  */
 public final class FileCollector {
 
