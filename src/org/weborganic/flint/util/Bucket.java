@@ -185,23 +185,32 @@ import java.util.TreeSet;
     }
 
     /**
-     * Two {@link Entry} are equals only if the item and the count are equal.
+     * Two {@link Entry} instances are equals only if they have the same count.
+     * 
+     * <p>If the both items are comparable, they also need to be equal. 
      * 
      * @param o the item count to compare with.
      * @return <code>true</code> if equal; <code>false</code> otherwise.
      */
     public boolean equals(Entry<?> o) {
-      return this._count == o._count && this._item.equals(o._item);
+      // 
+      if (this._count != o._count) return false;
+      return comparable(this._item, o._item)? this._item.equals(o._item) : true;
     }
 
     /**
-     * Compare the using the frequency.
+     * Compare the using the item count.
+     * 
+     * <p>If both entries have the same count, and the items are comparable, this method returns 
+     * the result of their comparison. 
      * 
      * @param e the entry to compare.
      * @return the result of comparison.
      */
     public int compareTo(Entry<T> e) {
-      return e._count - this._count;
+      int c = e._count - this._count;
+      if (c != 0) return c;
+      return comparable(this._item, e._item)? ((Comparable<T>)this._item).compareTo(e._item) : 0;
     }
 
     /**
@@ -209,6 +218,16 @@ import java.util.TreeSet;
      */
     @Override public String toString() {
       return this._item.toString() + ':' + this._count;
+    }
+
+    /**
+     * Indicates whether both objects passed as arguments are comparable.
+     * @param o1 First object to compare.
+     * @param o2 First object to compare.
+     * @return <code>true</code> if both implement the {@link Comparable} interface; <code>false</code> otherwise.
+     */
+    private static boolean comparable(Object o1, Object o2) {
+      return o1 instanceof Comparable<?> && o2 instanceof Comparable<?>;
     }
 
   }
