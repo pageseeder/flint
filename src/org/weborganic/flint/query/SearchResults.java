@@ -56,7 +56,7 @@ public final class SearchResults implements XMLWritable {
    * 
    * @see <a href="http://www.iso.org/iso/date_and_time_format">ISO: Numeric representation of Dates and Time</a>
    */
-  private final String ISO8601_DATETIME = "yyyy-MM-dd'T'HH:mm:ssZ";
+  private static final String ISO8601_DATETIME = "yyyy-MM-dd'T'HH:mm:ssZ";
 
   /**
    * The maximum length for a field to expand.
@@ -68,6 +68,9 @@ public final class SearchResults implements XMLWritable {
    */
   private final ScoreDoc[] scoredocs;
 
+  /**
+   * Fields used for sorting.
+   */
   private final SortField[] sortfields;
 
   /**
@@ -75,17 +78,35 @@ public final class SearchResults implements XMLWritable {
    */
   private final SearchPaging paging;
 
+  /**
+   * The query used to produce these results.
+   */
+  private final SearchQuery query;
+
+  /**
+   * The index searcher used.
+   */
   private final IndexSearcher searcher;
 
+  /**
+   * 
+   */
   private final IndexIO indexIO;
 
+  /**
+   * Whether the search results instance has finished.
+   */
   private boolean terminated = false;
 
+  /**
+   * The total number of results
+   */
   private final int totalNbOfResults;
 
+  /**
+   * The timezone offset used to adjust the correct date and time.
+   */
   private int timezoneOffset;
-  
-  private final SearchQuery query;
 
   /**
    * Creates a new SearchResults (legacy constructor).
@@ -96,7 +117,7 @@ public final class SearchResults implements XMLWritable {
    * @deprecated
    * @throws IndexException if the documents could not be retrieved from the Index
    */
-  public SearchResults(ScoreDoc[] hits, SearchPaging paging, IndexSearcher searcher) throws IOException, IndexException {
+  @Deprecated public SearchResults(ScoreDoc[] hits, SearchPaging paging, IndexSearcher searcher) throws IOException, IndexException {
     this(null, hits, null, hits.length, paging, null, searcher);
   }
 
@@ -109,7 +130,7 @@ public final class SearchResults implements XMLWritable {
    * @deprecated
    * @throws IndexException if the documents could not be retrieved from the Index
    */
-  public SearchResults(TopFieldDocs fielddocs, SearchPaging paging, IndexSearcher searcher) throws IOException,
+  @Deprecated public SearchResults(TopFieldDocs fielddocs, SearchPaging paging, IndexSearcher searcher) throws IOException,
       IndexException {
     this(null, fielddocs.scoreDocs, fielddocs.fields, fielddocs.totalHits, paging, null, searcher);
   }
