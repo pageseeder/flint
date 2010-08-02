@@ -16,7 +16,7 @@ import java.util.TreeSet;
  * @param <T> The type of objects in this bucket.
  * 
  * @author Christophe Lauret
- * @version 28 July 2010
+ * @version 2 August 2010
  */
 @Beta public final class Bucket<T> implements Iterable<T> {
 
@@ -33,7 +33,7 @@ import java.util.TreeSet;
   /**
    * The minimum count to be included in the bucket.
    */
-  private transient int minCount = 0;
+  private transient int minCount = 1;
 
   /**
    * Creates a new bucket.
@@ -45,6 +45,21 @@ import java.util.TreeSet;
   public Bucket(int capacity) throws IllegalArgumentException {
    this._capacity = capacity;
    this._entries = new TreeSet<Entry<T>>();
+  }
+
+  /**
+   * Creates a new bucket.
+   * 
+   * @param capacity   The capacity of this bucket.
+   * @param acceptZero <code>true</code> to accept item counts equal to zero;
+   *                   <code>false</code> to only accept item counts greater than zero. 
+   * 
+   * @throws IllegalArgumentException If the capacity is < 0.
+   */
+  public Bucket(int capacity, boolean acceptZero) throws IllegalArgumentException {
+   this._capacity = capacity;
+   this._entries = new TreeSet<Entry<T>>();
+   if (acceptZero) { this.minCount = 0; }
   }
 
   /**
