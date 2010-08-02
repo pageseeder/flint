@@ -5,7 +5,19 @@ import org.apache.lucene.search.Collector;
 import org.apache.lucene.search.Scorer;
 
 /**
- * Simply counts the number of documents in search results. 
+ * Simply counts the number of documents in search results.
+ * 
+ * <p>Typical usage:
+ * <pre>
+ *  // creates a document counter
+ *  DocumentCounter counter = new DocumentCounter();
+ *
+ *  // make a search
+ *  searcher.search(query, counter);
+ *
+ *  // get the final count 
+ *  int numberOfDocuments = counter.getCount();
+ * </pre>
  * 
  * @author Christophe Lauret
  * @version 2 August 2010
@@ -40,7 +52,7 @@ public final class DocumentCounter extends Collector {
   }
 
   /**
-   * Updates the {@link BitSet} to include the collected document.
+   * Increase the document count.
    * 
    * @param doc the position of the Lucene {@link Document} in the index
    */
@@ -58,12 +70,18 @@ public final class DocumentCounter extends Collector {
   }
 
   /**
-   * Returns the {@link BitSet} generated after a search.
+   * Returns the number of documents counted after a search.
    * 
-   * @return the {@link BitSet} generated after a search.
+   * @return the  number of documents counted after a search.
    */
   public int getCount() {
     return this.count;
   }
 
+  /**
+   * Resets this document counter for reuse by resetting the count to zero.
+   */
+  public void reset() {
+    this.count = 0;
+  }
 }

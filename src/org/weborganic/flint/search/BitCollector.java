@@ -83,18 +83,18 @@ public final class BitCollector extends Collector {
   }
 
   /**
-   * Returns the {@link BitSet} generated after a search.
+   * Returns the {@link BitSet} after a search.
    * 
-   * @return the {@link BitSet} generated after a search.
+   * @return the {@link BitSet} after a search.
    */
   public BitSet getBits() {
     return this._bits;
   }
 
   /**
-   * Returns the cardinality in the {@link BitSet} generated after a search.
+   * Returns the cardinality of the {@link BitSet} after a search.
    * 
-   * @return the {@link BitSet} generated after a search.
+   * @return the cardinality of the {@link BitSet} after a search.
    */
   public int getCount() {
     return this._bits.cardinality();
