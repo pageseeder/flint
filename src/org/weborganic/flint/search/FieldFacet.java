@@ -90,14 +90,13 @@ public final class FieldFacet implements XMLWritable, Facet {
     xml.openElement("facet");
     xml.attribute("name", this._name);
     xml.attribute("type", "field");
-    xml.attribute("cumulative", Boolean.toString(this._bucket != null));
-    xml.attribute("status", "unloaded");
+    xml.attribute("computed", Boolean.toString(this._bucket != null));
     if (this._bucket != null) {
       for (Entry<Term> e : this._bucket.entrySet()) {
         xml.openElement("term");
         xml.attribute("field", e.item().field());
         xml.attribute("text", e.item().text());
-        xml.attribute("cardinality", e.item().text());
+        xml.attribute("cardinality", e.count());
         xml.closeElement();
       }
     }
