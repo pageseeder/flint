@@ -222,6 +222,7 @@ import java.util.TreeSet;
      * @param e the entry to compare.
      * @return the result of comparison.
      */
+    @SuppressWarnings("unchecked")
     public int compareTo(Entry<T> e) {
       int c = e._count - this._count;
       if (c != 0) return c;

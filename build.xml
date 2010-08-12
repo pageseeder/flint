@@ -38,7 +38,6 @@
   <target name="init">
     <tstamp/>
     <mkdir dir="${dir.bin}"/>
-    <buildnumber/>
   </target>
 
   <!-- retrieve dependencies with Ivy -->

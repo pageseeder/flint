@@ -20,11 +20,13 @@ import com.topologi.diffx.xml.XMLWriter;
 /**
  * Combines 2 search queries into 1 using an OR operator.
  *
+ * @deprecated 
+ *
  * @author Christophe Lauret (Weborganic)
  * 
  * @version 8 October 2009
  */
-public final class CombinedSearchQuery implements SearchQuery {
+@Deprecated public final class CombinedSearchQuery implements SearchQuery {
 
   /**
    * 1st search query

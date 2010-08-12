@@ -160,7 +160,7 @@ public final class SuggestionQuery implements SearchQuery {
    * {@inheritDoc}
    */
   public String getPredicate() {
-    return this.query.toString();
+    return this.query != null? this.query.toString() : null;
   }
 
   /**
