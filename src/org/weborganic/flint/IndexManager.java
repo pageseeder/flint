@@ -843,6 +843,9 @@ public class IndexManager implements Runnable {
         this.listener.error("Failed creating an Index I/O object for " + index.toString() + " because the Index is corrupted", e);
         throw new IndexException("Failed creating an Index I/O object for " + index.toString() + " because the Index is corrupted", e);
       } catch (LockObtainFailedException e) {
+        // ok maybe it's because the IO object was created in the meantime
+        io = this.indexes.get(index.getIndexID());
+        if (io != null) return io;
         this.listener.error("Failed getting a lock on the Index to create an Index I/O object for " + index.toString(), e);
         throw new IndexException("Failed getting a lock on the Index to create an Index I/O object for " + index.toString(), e);
       } catch (IOException e) {
