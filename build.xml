@@ -34,6 +34,8 @@
   -->
   <loadproperties srcFile="local.properties"/>
 
+  <ivy:settings url="${ivy.settings.url}"/>
+
   <!-- initialise -->
   <target name="init">
     <tstamp/>
