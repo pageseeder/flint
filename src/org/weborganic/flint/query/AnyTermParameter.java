@@ -107,7 +107,7 @@ public final class AnyTermParameter implements SearchParameter {
    * {@inheritDoc}
    */
   public void toXML(XMLWriter xml) throws IOException {
-    xml.openElement("any-term-parameter");
+    xml.openElement("any-term-parameter", true);
     // indicate whether this search term is empty
     xml.attribute("is-empty", Boolean.toString(this.isEmpty()));
     // not empty, give details

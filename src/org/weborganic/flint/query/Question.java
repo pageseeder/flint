@@ -176,7 +176,7 @@ public final class Question implements SearchParameter, XMLWritable {
    * {@inheritDoc}
    */
   public void toXML(XMLWriter xml) throws IOException {
-    xml.openElement("question");
+    xml.openElement("question", true);
     // indicate whether this search term is empty
     xml.attribute("is-empty", Boolean.toString(this.isEmpty()));
     if (this._query != null) {

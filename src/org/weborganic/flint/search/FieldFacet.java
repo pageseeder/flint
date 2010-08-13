@@ -101,7 +101,7 @@ public final class FieldFacet implements XMLWritable, Facet {
    * {@inheritDoc}
    */
   public void toXML(XMLWriter xml) throws IOException {
-    xml.openElement("facet");
+    xml.openElement("facet", true);
     xml.attribute("name", this._name);
     xml.attribute("type", "field");
     xml.attribute("computed", Boolean.toString(this._bucket != null));
