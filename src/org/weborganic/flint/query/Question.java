@@ -267,6 +267,22 @@ public final class Question implements SearchParameter, XMLWritable {
    *
    * @return a new question.
    */
+  public static Question newQuestion(List<String> fields, String question) {
+    List<String> names = Fields.filterNames(fields);
+    Map<String, Float> map = Fields.asBoostMap(names);
+    Question q = new Question(map, question);
+    q.compute();
+    return q;
+  }
+
+  /**
+   * A factory method to create a new question and compute it using the basic syntax.
+   * 
+   * @param fields The list of fields for the question.
+   * @param question The question itself.
+   *
+   * @return a new question.
+   */
   public static Question newQuestion(Map<String, Float> fields, String question) {
     Question q = new Question(fields, question);
     q.compute();

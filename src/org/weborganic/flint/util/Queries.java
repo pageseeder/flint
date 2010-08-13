@@ -10,9 +10,11 @@ package org.weborganic.flint.util;
 import java.util.regex.Pattern;
 
 import org.apache.lucene.index.Term;
+import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.PhraseQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermQuery;
+import org.apache.lucene.search.BooleanClause.Occur;
 
 /**
  * A set of utility methods related to query objects in Lucene.
@@ -60,6 +62,36 @@ public final class Queries {
     } else {
       return new TermQuery(new Term(field, text));
     }
+  }
+
+  /**
+   * Returns a boolean query combining all the specified queries in {@link Occur#MUST} clauses
+   * as it is were an AND operator.
+   * 
+   * @param queries the queries to combine with an AND.
+   * @return The combined queries.
+   */
+  public static Query and(Query... queries) {
+    BooleanQuery query = new BooleanQuery();
+    for (Query q : queries) {
+      query.add(q, Occur.MUST);
+    }
+    return query;
+  }
+
+  /**
+   * Returns a boolean query combining all the specified queries in {@link Occur#MUST} clauses
+   * as it is were an OR operator.
+   * 
+   * @param queries the queries to combine with an OR.
+   * @return The combined queries.
+   */
+  public static Query or(Query... queries) {
+    BooleanQuery query = new BooleanQuery();
+    for (Query q : queries) {
+      query.add(q, Occur.SHOULD);
+    }
+    return query;
   }
 
 }

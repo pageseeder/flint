@@ -22,11 +22,13 @@ import com.topologi.diffx.xml.XMLWriter;
  *   1) search field
  *   2) search value
  * 
+ * @deprecated Use {@link TermParameter} instead.
+ * 
  * @author Jin Zhou (Allette Systems)
  *
  * @version 10 November 2009
  */
-
+@Deprecated
 public final class SearchTermParameter implements SearchParameter {
 
   /**
