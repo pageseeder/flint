@@ -28,15 +28,18 @@ import org.apache.lucene.search.WildcardQuery;
 import org.apache.lucene.search.WildcardTermEnum;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.weborganic.flint.util.Queries;
 
 /**
  * A set of utility methods related to predicates for index functions using Lucene.
+ *
+ * @deprecated Use {@link Queries} instead.
  *
  * @author  Christophe Lauret (Weborganic)
  * 
  * @version 28 October 2006
  */
-public final class QueryUtils {
+@Deprecated public final class QueryUtils {
 
   /**
    * The logger for this class.
@@ -67,7 +70,7 @@ public final class QueryUtils {
    * @return a Collection of Terms
    */
   public static Collection<Term> getTerms(Query query) {
-    ArrayList<Term> terms = new ArrayList<Term>();
+    List<Term> terms = new ArrayList<Term>();
     addTerms(terms, query);
     return terms;
   }
@@ -127,7 +130,7 @@ public final class QueryUtils {
    * 
    */
   public static Collection<PhraseQuery> getPhrases(Query query) {
-    ArrayList<PhraseQuery> terms = new ArrayList<PhraseQuery>();
+    List<PhraseQuery> terms = new ArrayList<PhraseQuery>();
     addPhrases(terms, query);
     return terms;
   }
@@ -178,7 +181,7 @@ public final class QueryUtils {
    * @return the list of exact terms used.
    */
   public static List getExactTerms(IndexReader ireader, Query query) {
-    ArrayList list = new ArrayList();
+    List list = new ArrayList();
     try {
       addExactTerms(ireader, list, query);
     } catch (Exception ex) {

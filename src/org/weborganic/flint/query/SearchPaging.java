@@ -28,22 +28,22 @@ public final class SearchPaging {
   /**
    * The requested page of the search results.
    */
-  private int page = 1;
+  private int _page = 1;
 
   /**
    * The number of hits per page, default is 20.
    */
-  private int hitsPerPage = DEFAULT_HITS_PER_PAGE;
+  private int _hitsPerPage = DEFAULT_HITS_PER_PAGE;
 
   /**
    * Set mode whether the paging should equally distribute the hits
    */
-  private boolean eqDist = false;
+  private boolean _eqDist = false;
 
   /**
    * Set the total number of page, to be used with eqDist
    */
-  private int totalpage = 1;
+  private int _totalpage = 1;
 
   /**
    * Returns the number of hits per page for the searches.
@@ -51,7 +51,7 @@ public final class SearchPaging {
    * @return The number of hits per page for the searches.
    */
   public int getHitsPerPage() {
-    return this.hitsPerPage;
+    return this._hitsPerPage;
   }
 
   /**
@@ -63,7 +63,7 @@ public final class SearchPaging {
    * @param hitsPerPage The number of hits per page for the searches.
    */
   public void setHitsPerPage(int hitsPerPage) {
-    this.hitsPerPage = hitsPerPage;
+    this._hitsPerPage = hitsPerPage;
   }
 
   /**
@@ -72,7 +72,7 @@ public final class SearchPaging {
    * @return The requested page number.
    */
   public int getPage() {
-    return this.page;
+    return this._page;
   }
 
   /**
@@ -82,7 +82,7 @@ public final class SearchPaging {
    */
   public void setPage(int page) {
     // TODO: If the page number is less then 0
-    this.page = page;
+    this._page = page;
   }
 
   /**
@@ -90,8 +90,8 @@ public final class SearchPaging {
    */
   public void setEqDist(int totalpage) {
     // set the eqDist mode to true
-    this.eqDist = true;
-    this.totalpage = (totalpage > 0) ? totalpage : 1;
+    this._eqDist = true;
+    this._totalpage = (totalpage > 0) ? totalpage : 1;
   }
 
   /**
@@ -101,13 +101,13 @@ public final class SearchPaging {
    *         <code>false</code> otherwise.
    */
   public boolean checkEqDist() {
-    return this.eqDist;
+    return this._eqDist;
   }
 
   /**
    * Get the total number of pages.
    */
   public int getTotalPage() {
-    return this.totalpage;
+    return this._totalpage;
   }
 }

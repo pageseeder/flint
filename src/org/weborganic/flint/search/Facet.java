@@ -25,6 +25,14 @@ public interface Facet extends XMLWritable {
   String name();
 
   /**
+   * Returns the query that would correspond to this facet for the specified value.
+   * 
+   * @param value the text of the term to match.
+   * @return the requested query if it exists or <code>null</code>.
+   */
+  Query forValue(String value);
+
+  /**
    * Compute the values for this facet.
    * 
    * @param searcher The searcher to use to compute the facet values.

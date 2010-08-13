@@ -63,6 +63,20 @@ public final class FieldFacet implements XMLWritable, Facet {
   }
 
   /**
+   * Returns the query for given value if it the specified value matches the text for the term.
+   * 
+   * @param value the text of the term to match.
+   * @return the requested query if it exists or <code>null</code>.
+   */
+  public Query forValue(String value) {
+    if (value == null) return null;
+    for (TermQuery t : this._queries) {
+      if (value.equals(t.getTerm().text())) return t;
+    }
+    return null;
+  }
+
+  /**
    * Computes each facet option.
    * 
    * @param searcher the index search to use.
