@@ -7,9 +7,16 @@
  */
 package org.weborganic.flint.util;
 
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 import java.util.regex.Pattern;
 
+import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.PhraseQuery;
 import org.apache.lucene.search.Query;
@@ -92,6 +99,146 @@ public final class Queries {
       query.add(q, Occur.SHOULD);
     }
     return query;
+  }
+
+  /**
+   * Returns the list of similar queries by substituting one term only in the query. 
+   * 
+   * @param query  The original query
+   * @param reader A reader to extract the similar terms.
+   * 
+   * @return A list of similar queries to the specified one.
+   * 
+   * @throws IOException If thrown by the reader while extracting fuzzy terms.
+   */
+  @Beta
+  public static List<Query> similar(Query query, IndexReader reader) throws IOException {
+    List<Query> similar = new ArrayList<Query>();
+    // Extract the list of similar terms
+    Set<Term> terms = new HashSet<Term>();
+    query.extractTerms(terms);
+    for (Term t : terms) {
+      List<Term> fuzzy = Terms.fuzzy(reader, t);
+      for (Term f : fuzzy) {
+        Query sq = substitute(query, t, f); 
+        similar.add(sq);
+      }
+    }
+    return similar;
+  }
+
+  // Substitutions
+  // ==============================================================================================
+
+  /**
+   * Substitutes one term in the query for another.
+   * 
+   * <p>This method only creates new query object if required; it does not modify the given query.
+   * 
+   * <p>This method simply delegates to the appropriate <code>substitute</code> method based
+   * on the query class. Only query types for which there is an applicable <code>substitute</code> 
+   * method can be substituted.
+   * 
+   * @param query       the query where the substitution should occur.
+   * @param original    the original term to replace.
+   * @param replacement the term it should be replaced with.
+   * 
+   * @return A new query where the term has been substituted;
+   *         or the same query if no substitution was required or possible.
+   */
+  @Beta
+  public static Query substitute(Query query, Term original, Term replacement) {
+    if (query instanceof TermQuery) {
+      return substitute((TermQuery)query, original, replacement);
+    } else if (query instanceof PhraseQuery) {
+      return substitute((PhraseQuery)query, original, replacement);
+    } else if (query instanceof BooleanQuery) {
+      return substitute((BooleanQuery)query, original, replacement);
+    } else {
+      return query;
+    }
+  }
+
+  /**
+   * Substitutes one term in the term query for another.
+   * 
+   * <p>This method only creates new query object if required; it does not modify the given query.
+   * 
+   * @param query       the query where the substitution should occur.
+   * @param original    the original term to replace.
+   * @param replacement the term it should be replaced with.
+   * 
+   * @return A new term query where the term has been substituted;
+   *         or the same query if no substitution was needed.
+   */
+  @Beta
+  public static Query substitute(BooleanQuery query, Term original, Term replacement) {
+    BooleanQuery q = new BooleanQuery();
+    for (BooleanClause clause : query.getClauses()) {
+      Query qx = substitute(clause.getQuery(), original, replacement);
+      q.add(qx, clause.getOccur());
+    }
+    q.setBoost(query.getBoost());
+    return q;
+  }
+
+  /**
+   * Substitutes one term in the term query for another.
+   * 
+   * <p>This method only creates new query object if required; it does not modify the given query.
+   * 
+   * @param query       the query where the substitution should occur.
+   * @param original    the original term to replace.
+   * @param replacement the term it should be replaced with.
+   * 
+   * @return A new term query where the term has been substituted;
+   *         or the same query if no substitution was needed.
+   */
+  @Beta
+  public static TermQuery substitute(TermQuery query, Term original, Term replacement) {
+    Term t = query.getTerm();
+    if (t.equals(original)) {
+      return new TermQuery(replacement);
+    } else {
+      return query;
+    }
+  }
+
+  /**
+   * Substitutes one term in the phrase query for another.
+   * 
+   * <p>In a phrase query the replacement term must be on the same field as the original term.
+   * 
+   * <p>This method only creates new query object if required; it does not modify the given query.
+   * 
+   * @param query       the query where the substitution should occur.
+   * @param original    the original term to replace.
+   * @param replacement the term it should be replaced with.
+   * 
+   * @return A new term query where the term has been substituted;
+   *         or the same query if no substitution was needed.
+   * 
+   * @throws IllegalArgumentException if the replacement term is not on the same field as the original term. 
+   */
+  @Beta
+  public static PhraseQuery substitute(PhraseQuery query, Term original, Term replacement) 
+      throws IllegalArgumentException {
+    boolean doSubstitute = false;
+    // Check if we need to substitute
+    for (Term t : query.getTerms()) {
+      if (t.equals(original)) doSubstitute = true;
+    }
+    // Substitute if required
+    if (doSubstitute) {
+      PhraseQuery q = new PhraseQuery();
+      for (Term t : query.getTerms()) {
+        q.add(t.equals(original)? replacement : t);
+      }
+      q.setSlop(query.getSlop());
+      q.setBoost(query.getBoost());
+      return q;
+    // No substitution return the query
+    } else return query;
   }
 
 }
