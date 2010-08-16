@@ -7,13 +7,18 @@
 package org.weborganic.flint.query;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.Map.Entry;
 
 import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.Term;
 import org.apache.lucene.queryParser.MultiFieldQueryParser;
 import org.apache.lucene.queryParser.ParseException;
 import org.apache.lucene.search.BooleanQuery;
@@ -23,6 +28,7 @@ import org.weborganic.flint.IndexManager;
 import org.weborganic.flint.util.Beta;
 import org.weborganic.flint.util.Fields;
 import org.weborganic.flint.util.Queries;
+import org.weborganic.flint.util.Terms;
 
 import com.topologi.diffx.xml.XMLWritable;
 import com.topologi.diffx.xml.XMLWriter;
@@ -56,6 +62,11 @@ public final class Question implements SearchParameter, XMLWritable {
    * The computed query.
    */
   private Query _query = null;
+
+  /**
+   * The computed query.
+   */
+  private boolean _parsed = false;
 
   // Constructors
   // ==============================================================================================
@@ -134,6 +145,7 @@ public final class Question implements SearchParameter, XMLWritable {
     String[] fields = this._fields.keySet().toArray(new String[]{});
     MultiFieldQueryParser parser = new MultiFieldQueryParser(IndexManager.LUCENE_VERSION, fields, analyzer);
     this._query = parser.parse(this._question);
+    this._parsed = true;
   }
 
   /**
@@ -146,13 +158,82 @@ public final class Question implements SearchParameter, XMLWritable {
     List<String> values = Fields.toValues(this._question);
     BooleanQuery query = new BooleanQuery();
     for (String value : values) {
+      BooleanQuery sub = new BooleanQuery();
       for (Entry<String, Float> e : this._fields.entrySet()) {
         Query q = Queries.toTermOrPhraseQuery(e.getKey(), value);
         q.setBoost(e.getValue());
-        query.add(q, Occur.SHOULD);
+        sub.add(q, Occur.SHOULD);
       }
+      query.add(sub, Occur.SHOULD);
     }
     this._query = query;
+  }
+
+  /**
+   * Returns a list of questions which are considered similar, that where one term was substituted
+   * for a similar term.
+   * 
+   * @param reader the reader to use to extract the similar (fuzzy) terms.
+   * 
+   * @return a list of similar questions.
+   * 
+   * @throws IOException If thrown by the reader while getting the fuzzy terms. 
+   */
+  public List<Question> similarX(IndexReader reader) throws IOException {
+    List<Question> similar = new ArrayList<Question>();
+    // Extract the list of similar terms
+    Set<Term> terms = new HashSet<Term>();
+    this._query.extractTerms(terms);
+    for (Term t : terms) {
+      List<Term> fuzzy = Terms.fuzzy(reader, t);
+      for (Term f : fuzzy) {
+        Query sq = Queries.substitute(this._query, t, f);
+        Question sqn = new Question(this._fields, sq.toString());
+        sqn._query = sq;
+        similar.add(sqn);
+      }
+    }
+    return similar;
+  }
+
+  /**
+   * Returns a list of questions which are considered similar, that where one term was substituted
+   * for a similar term.
+   * 
+   * @param reader the reader to use to extract the similar (fuzzy) terms.
+   * 
+   * @return a list of similar questions.
+   * 
+   * @throws IOException If thrown by the reader while getting the fuzzy terms. 
+   */
+  public List<Question> similar(IndexReader reader) throws IOException {
+    List<Question> similar = new ArrayList<Question>();
+    // If the question contains a phrase, try removing the phrase
+    if (this._question.indexOf('"') >= 0) {
+      Question nophrase = newQuestion(this._fields, this._question.replace('"', ' '));
+      nophrase.compute();
+      similar.add(nophrase);
+
+    // No phrase, try substitution for each term 
+    } else {
+      List<String> values = Fields.toValues(this._question);
+      for (String value : values) {
+        Set<String> fuzzy = new HashSet<String>();
+        // collect fuzzy terms based on index
+        for (String field : this._fields.keySet()) {
+          for (Term t : Terms.fuzzy(reader, new Term(field, value))) {
+            fuzzy.add(t.text());
+          }
+        }
+        // rewrite question
+        for (String x : fuzzy) {
+          Question q = newQuestion(this._fields, this._question.replaceAll("\\Q"+value+"\\E", x));
+          q.compute();
+          similar.add(q);
+        }
+      }
+    }
+    return similar;
   }
 
   /**
