@@ -24,7 +24,7 @@ public final class DeleteRule {
   /**
    * A Lucene query used to delete
    */
-  private final Query query;
+  private final Query _query;
 
   /**
    * Build a rule based on a term.
@@ -34,16 +34,16 @@ public final class DeleteRule {
    */
   public DeleteRule(String fieldname, String fieldvalue) {
     this.term = new Term(fieldname, fieldvalue);
-    this.query = null;
+    this._query = null;
   }
 
   /**
    * Build a rule based on a Lucene query.
    * 
-   * @param predicate
+   * @param query the search query to use to identify the file to delete
    */
   public DeleteRule(SearchQuery query) {
-    this.query = query.toQuery();
+    this._query = query.toQuery();
     this.term = null;
   }
 
@@ -62,7 +62,7 @@ public final class DeleteRule {
    * @return the Query used for deleting
    */
   public Query toQuery() {
-    return this.query;
+    return this._query;
   }
 
   /**
@@ -72,7 +72,7 @@ public final class DeleteRule {
    *         <code>false</code> if a query does
    */
   public boolean useTerm() {
-    return this.query == null;
+    return this._query == null;
   }
 
 }
