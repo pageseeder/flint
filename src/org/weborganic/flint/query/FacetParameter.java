@@ -11,7 +11,7 @@ import com.topologi.diffx.xml.XMLWriter;
  * The selected value for a facet.
  * 
  * @author Christophe Lauret
- * @version 13 August 2010
+ * @version 15 August 2010
  */
 public final class FacetParameter implements SearchParameter {
 
@@ -61,7 +61,9 @@ public final class FacetParameter implements SearchParameter {
   }
 
   /**
+   * Indicates whether there is a query associated with the facet.
    * 
+   * @return <code>true</code> if empty; <code>false</code> otherwise.
    */
   public boolean isEmpty() {
     return this._query == null;
@@ -76,7 +78,9 @@ public final class FacetParameter implements SearchParameter {
   }
 
   /**
+   * Returns the XML for this facet parameter.
    * 
+   * {@inheritDoc}
    */
   public void toXML(XMLWriter xml) throws IOException {
     xml.openElement("selected-facet");
