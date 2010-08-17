@@ -3,6 +3,7 @@ package org.weborganic.flint.query;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Iterator;
 import java.util.List;
 
 import org.apache.lucene.search.BooleanQuery;
@@ -22,7 +23,7 @@ import com.topologi.diffx.xml.XMLWriter;
  * @version 16 August 2010
  */
 @Beta
-public class BasicQuery<T extends SearchParameter> implements FlintQuery {
+public class BasicQuery<T extends SearchParameter> implements FlintQuery, SearchQuery {
 
   /**
    * The query to use as a base.
@@ -38,6 +39,11 @@ public class BasicQuery<T extends SearchParameter> implements FlintQuery {
    * The Lucene query corresponding to this object. 
    */
   private volatile Query _query = null;
+
+  /**
+   * How the results should be sorted.
+   */
+  private Sort _sort = Sort.RELEVANCE;
 
   /**
    * Constructs a new query.
@@ -76,12 +82,21 @@ public class BasicQuery<T extends SearchParameter> implements FlintQuery {
   }
 
   /**
+   * Defines the sort order.
+   * 
+   * @param sort The sort order. 
+   */
+  public void setSort(Sort sort) {
+    this._sort = sort; 
+  }
+
+  /**
    * Returns the sort order for the results.
    * 
    * @return the sort order for the results (defaults to relevance).
    */
   public final Sort getSort() {
-    return Sort.RELEVANCE;
+    return this._sort != null? this._sort : Sort.RELEVANCE;
   }
 
   /**
@@ -142,6 +157,25 @@ public class BasicQuery<T extends SearchParameter> implements FlintQuery {
     xml.closeElement();
   }
 
+  /**
+   * Returns a string representation of this query for human consumption. 
+   * 
+   * @return a string representation of this query.
+   */
+  public String toString() {
+    StringBuilder s = new StringBuilder();
+    s.append(this._base.toString());
+    if (this.parameters().size() > 0) {
+      s.append(" with (");
+      for (Iterator<SearchParameter> i = this._parameters.iterator(); i.hasNext();) {
+        s.append(i.next().toString());
+        if (i.hasNext()) s.append(" and ");
+      }
+      s.append(')');
+    }
+    return s.toString();
+  };
+
   // private helpers 
   // ----------------------------------------------------------------------------------------------
 
@@ -195,5 +229,22 @@ public class BasicQuery<T extends SearchParameter> implements FlintQuery {
   public static <X extends SearchParameter> BasicQuery<X> newBasicQuery(X base, List<SearchParameter> parameters) {
     List<SearchParameter> unmodifiable = Collections.unmodifiableList(new ArrayList<SearchParameter>(parameters));
     return new BasicQuery<X>(base, unmodifiable);
+  }
+
+  /**
+   * @deprecated Will be removed in future releases
+   * @return always <code>null</code>
+   */
+  @Deprecated public String getField() {
+    // TODO Auto-generated method stub
+    return null;
+  }
+
+  /**
+   * @deprecated Will be removed in future releases
+   * @return the predicate from the {@link Query} object
+   */
+  @Deprecated public String getPredicate() {
+    return this._query.toString();
   }
 }

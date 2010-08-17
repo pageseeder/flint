@@ -22,6 +22,8 @@ import com.topologi.diffx.xml.XMLWriter;
 /**
  * A base class for all the Flint search queries.
  *
+ * @deprecated Use {@link BasicQuery} instead
+ *
  * @author  Christophe Lauret (Weborganic)
  * @author  Tu Tak Tran (Allette Systems)
  * @author  William Liem (Allette Systems)

@@ -69,7 +69,7 @@ import org.xml.sax.InputSource;
  * @author Jean-Baptiste Reure
  * @version 26 February 2010
  */
-public class IndexManager implements Runnable {
+public final class IndexManager implements Runnable {
 
   /**
    * The lucene version with which this manager is compatible.
@@ -392,58 +392,10 @@ public class IndexManager implements Runnable {
   // ----------------------------------------------------------------------------------------------
 
   /**
-   * Book a near real-time Reader on the Index provided.
-   * 
-   * <p>IMPORTANT: the reader should not be closed, it should be used in the following way to ensure it is closed properly:</p>
-   * <pre>
-   *    IndexReader reader = manager.bookIndexReader(index);
-   *    try {
-   *      ...
-   *    } finally {
-   *      manager.releaseIndexReader(index, reader);
-   *    }
-   * </pre>
-   * 
-   * @deprecated Use {@link #grabReader(Index)} instead.
-   * 
-   * @param index the index that the Index Reader will point to.
-   * @return the Index Reader to read from the index
-   * 
-   * @throws IndexException If an IO error occurred when getting the reader.
-   */
-  @Deprecated public IndexReader bookIndexReader(Index index) throws IndexException {
-    try {
-      return getIndexIO(index).bookReader();
-    } catch (IOException e) {
-      this.listener.error("Failed getting a reader on the Index because of an I/O problem", e);
-      throw new IndexException("Failed getting a reader on the Index because of an I/O problem", e);
-    }
-  }
-
-  /**
-   * Release an Index Reader after it's been used.
-   * 
-   * @see IndexManager#bookIndexReader(Index)
-   * 
-   * @deprecated Use {@link #release(Index, IndexReader)} instead.
-   * 
-   * @param index
-   * @param reader
-   * @throws IndexException
-   */
-  @Deprecated public void releaseIndexReader(Index index, IndexReader reader) throws IndexException {
-    try {
-      getIndexIO(index).releaseReader(reader);
-    } catch (IOException e) {
-      this.listener.error("Failed to release a reader because of an I/O problem", e);
-      throw new IndexException("Failed to release a reader because of an I/O problem", e);
-    }
-  }
-
-  /**
    * Returns a near real-time Reader on the index provided.
    * 
-   * <p>IMPORTANT: the reader should not be closed, it should be used in the following way to ensure it is made available to other threads:</p>
+   * <p>IMPORTANT: the reader should not be closed, it should be used in the following way to ensure
+   *  it is made available to other threads:</p>
    * <pre>
    *    IndexReader reader = manager.grabReader(index);
    *    try {
@@ -514,7 +466,8 @@ public class IndexManager implements Runnable {
   /**
    * Returns a near real-time Searcher on the index provided.
    * 
-   * <p>IMPORTANT: the searcher should not be closed, it should be used in the following way to ensure it is made available to other threads:</p>
+   * <p>IMPORTANT: the searcher should not be closed, it should be used in the following way to 
+   * ensure it is made available to other threads:</p>
    * <pre>
    *    IndexSearcher searcher = manager.grabSearcher(index);
    *    try {
