@@ -9,15 +9,12 @@ import java.util.zip.DataFormatException;
 import org.apache.lucene.document.CompressionTools;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Fieldable;
-import org.apache.lucene.index.Term;
-import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
-import org.apache.lucene.search.TermQuery;
-import org.apache.lucene.search.BooleanClause.Occur;
 import org.weborganic.flint.search.DocumentCounter;
 
 import com.topologi.diffx.xml.XMLWriter;
+import com.topologi.diffx.xml.esc.XMLEscapeUTF8;
 
 /**
  * A collection of utility methods to manipulate documents.
@@ -138,61 +135,62 @@ public final class Documents {
    * @throws IllegalArgumentException If the length of the term is larger than the length of the extract.
    */
   @Beta
-  protected static String extract(String text, String term, int length) throws IllegalArgumentException {
+  public static String extract(String text, String term, int length) throws IllegalArgumentException {
+    if (text == null) return null;
     if (term.length() > length) 
       throw new IllegalArgumentException("Term length ("+term.length()+") is larger than requested extract length ("+length+")");
-    StringBuilder extract = new StringBuilder();
     final int len = length - term.length();
-    Pattern p = Pattern.compile("(?:\\W|^)(\\Q"+term+"\\E)(?:\\W|$)");
+    Pattern p = Pattern.compile("(?:\\W|^)(\\Q"+term+"\\E)(?:\\W|$)", Pattern.CASE_INSENSITIVE);
     Matcher m = p.matcher(text);
     if (m.find()) {
+      StringBuilder extract = new StringBuilder();
       int start = m.start(1);
       int end = m.end(1);
       // the entire string can be used 
       if (length > text.length()) {
-        extract.append(text.substring(0, start));
-        extract.append("<term>").append(m.group(1)).append("</term>");
-        extract.append(text.substring(end));
+        extract.append(asXML(text.substring(0, start)));
+        extract.append("<term>").append(asXML(m.group(1))).append("</term>");
+        extract.append(asXML(text.substring(end)));
 
       // 
       } else if (start < len / 2) {
-        extract.append("[B]");
-        extract.append(text.substring(0, start));
-        extract.append("<term>").append(m.group(1)).append("</term>");
+        extract.append(asXML(text.substring(0, start)));
+        extract.append("<term>").append(asXML(m.group(1))).append("</term>");
         if ((text.length() - end < len - start)) {
-          extract.append(text.substring(end));
+          extract.append(asXML(text.substring(end)));
         } else {
-          extract.append(text.substring(end, end+len-start-1)).append("...");
+          extract.append(asXML(text.substring(end, end+len-start-1))).append("...");
         }
 
       } else if (text.length() - end < len / 2) {
-        extract.append("[C]");
         int x = text.length() - end;
         if (x > start) {
-          extract.append(text.substring(0, start));
+          extract.append(asXML(text.substring(0, start)));
         } else {
-          extract.append("...").append(text.substring(start - x, start));
+          extract.append("...").append(asXML(text.substring(start - x, start)));
         }
-        extract.append("<term>").append(m.group(1)).append("</term>");
-        extract.append(text.substring(end));
+        extract.append("<term>").append(asXML(m.group(1))).append("</term>");
+        extract.append(asXML(text.substring(end)));
 
       } else {
-        extract.append("[D]");
-        extract.append("...").append(text.substring(start - (len / 2), start));
-        extract.append("<term>").append(m.group(1)).append("</term>");
-        extract.append(text.substring(end, end + len / 2)).append("...");
+        extract.append("...").append(asXML(text.substring(start - (len / 2), start)));
+        extract.append("<term>").append(asXML(m.group(1))).append("</term>");
+        extract.append(asXML(text.substring(end, end + len / 2))).append("...");
       }
-
+      return extract.toString();
     }
-
-    return extract.toString();
+    return null;
   }
 
+  private static String asXML(String text) {
+    return XMLEscapeUTF8.UTF8_ESCAPE.toElementText(text);
+  }
+  
   public static void main(String[] args) {
     System.err.println(extract("This is a very small text.", "very", 12));
     System.err.println(extract("This is a very small text.", "very", 30));
     System.err.println(extract("This is a very small text.", "text", 12));
-    System.err.println(extract("This is a very small text.", "This", 12));
+    System.err.println(extract("This is a very small text.", "this", 12));
     System.err.println(extract("This is a very small text.", "is", 12));
   }
 
