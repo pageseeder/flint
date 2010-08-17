@@ -19,12 +19,9 @@ import java.util.Map.Entry;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.queryParser.MultiFieldQueryParser;
-import org.apache.lucene.queryParser.ParseException;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.BooleanClause.Occur;
-import org.weborganic.flint.IndexManager;
 import org.weborganic.flint.util.Beta;
 import org.weborganic.flint.util.Fields;
 import org.weborganic.flint.util.Queries;
@@ -62,11 +59,6 @@ public final class Question implements SearchParameter, XMLWritable {
    * The computed query.
    */
   private Query _query = null;
-
-  /**
-   * The computed query.
-   */
-  private boolean _parsed = false;
 
   // Constructors
   // ==============================================================================================
@@ -138,14 +130,10 @@ public final class Question implements SearchParameter, XMLWritable {
    * <p>This only needs to be done once.
    * 
    * @param analyzer The analyser used by the underlying index.
-   * 
-   * @throws ParseException If the question could not be parsed properly.
    */
-  protected void compute(Analyzer analyzer) throws ParseException {
-    String[] fields = this._fields.keySet().toArray(new String[]{});
-    MultiFieldQueryParser parser = new MultiFieldQueryParser(IndexManager.LUCENE_VERSION, fields, analyzer);
-    this._query = parser.parse(this._question);
-    this._parsed = true;
+  private void compute(Analyzer analyzer) {
+    // TODO handle stop words
+    compute();
   }
 
   /**
@@ -154,7 +142,7 @@ public final class Question implements SearchParameter, XMLWritable {
    * 
    * <p>This method ignores any Lucene specific syntax by removing it from the input string.
    */
-  protected void compute() {
+  private void compute() {
     List<String> values = Fields.toValues(this._question);
     BooleanQuery query = new BooleanQuery();
     for (String value : values) {
@@ -167,33 +155,6 @@ public final class Question implements SearchParameter, XMLWritable {
       query.add(sub, Occur.SHOULD);
     }
     this._query = query;
-  }
-
-  /**
-   * Returns a list of questions which are considered similar, that where one term was substituted
-   * for a similar term.
-   * 
-   * @param reader the reader to use to extract the similar (fuzzy) terms.
-   * 
-   * @return a list of similar questions.
-   * 
-   * @throws IOException If thrown by the reader while getting the fuzzy terms. 
-   */
-  public List<Question> similarX(IndexReader reader) throws IOException {
-    List<Question> similar = new ArrayList<Question>();
-    // Extract the list of similar terms
-    Set<Term> terms = new HashSet<Term>();
-    this._query.extractTerms(terms);
-    for (Term t : terms) {
-      List<Term> fuzzy = Terms.fuzzy(reader, t);
-      for (Term f : fuzzy) {
-        Query sq = Queries.substitute(this._query, t, f);
-        Question sqn = new Question(this._fields, sq.toString());
-        sqn._query = sq;
-        similar.add(sqn);
-      }
-    }
-    return similar;
   }
 
   /**
@@ -286,17 +247,15 @@ public final class Question implements SearchParameter, XMLWritable {
   // ==============================================================================================
 
   /**
-   * A factory method to create a new question and compute it using the Lucene {@link MultiFieldQueryParser}.
+   * A factory method to create a new question and compute it using a simple tokenizer.
    * 
    * @param field    The field for the question.
    * @param question The question itself.
    * @param analyzer The analyser to use when parsing the question.
    * 
    * @return a new question.
-   * 
-   * @throws ParseException if the question could not be parsed.
    */
-  public static Question newQuestion(String field, String question, Analyzer analyzer) throws ParseException {
+  public static Question newQuestion(String field, String question, Analyzer analyzer) {
     Map<String, Float> fields = Collections.singletonMap(field, 1.0f);
     Question q = new Question(fields, question);
     q.compute(analyzer);
@@ -304,17 +263,15 @@ public final class Question implements SearchParameter, XMLWritable {
   }
 
   /**
-   * A factory method to create a new question and compute it using the Lucene {@link MultiFieldQueryParser}.
+   * A factory method to create a new question and compute it using a simple tokenizer.
    * 
    * @param fields   The list of fields for the question.
    * @param question The question itself.
    * @param analyzer The analyser to use when parsing the question.
    * 
    * @return a new question.
-   * 
-   * @throws ParseException if the question could not be parsed.
    */
-  public static Question newQuestion(List<String> fields, String question, Analyzer analyzer) throws ParseException {
+  public static Question newQuestion(List<String> fields, String question, Analyzer analyzer) {
     List<String> names = Fields.filterNames(fields);
     Map<String, Float> map = Fields.asBoostMap(names);
     Question q = new Question(map, question);
@@ -323,20 +280,32 @@ public final class Question implements SearchParameter, XMLWritable {
   }
 
   /**
-   * A factory method to create a new question and compute it using the Lucene {@link MultiFieldQueryParser}.
+   * A factory method to create a new question and compute it using a simple tokenizer.
    * 
    * @param fields The list of fields for the question.
    * @param question The question itself.
    * @param analyzer The analyser to use when parsing the question.
    *
    * @return a new question.
-   * 
-   * @throws ParseException if the question could not be parsed.
    */
-  public static Question newQuestion(Map<String, Float> fields, String question, Analyzer analyzer) 
-      throws ParseException {
+  public static Question newQuestion(Map<String, Float> fields, String question, Analyzer analyzer) {
     Question q = new Question(fields, question);
     q.compute(analyzer);
+    return q;
+  }
+
+  /**
+   * A factory method to create a new question and compute it using the basic syntax.
+   * 
+   * @param field The field for the question.
+   * @param question The question itself.
+   *
+   * @return a new question.
+   */
+  public static Question newQuestion(String field, String question) {
+    Map<String, Float> fields = Collections.singletonMap(field, 1.0f);
+    Question q = new Question(fields, question);
+    q.compute();
     return q;
   }
 
