@@ -10,6 +10,8 @@ import java.io.IOException;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.TimeZone;
 import java.util.zip.DataFormatException;
 
@@ -18,7 +20,9 @@ import org.apache.lucene.document.DateTools;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Fieldable;
 import org.apache.lucene.index.CorruptIndexException;
+import org.apache.lucene.index.Term;
 import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.TopFieldDocs;
@@ -26,6 +30,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.weborganic.flint.IndexException;
 import org.weborganic.flint.IndexIO;
+import org.weborganic.flint.util.Documents;
 
 import com.topologi.diffx.xml.XMLWritable;
 import com.topologi.diffx.xml.XMLWriter;
@@ -239,13 +244,221 @@ public final class SearchResults implements XMLWritable {
 
     // include query
     if (this.query != null) {
-      xml.openElement("query");
-      xml.openElement("flint");
+      xml.openElement("query", true);
+      xml.attribute("lucene", this.query.toQuery().toString());
+      this.query.toXML(xml);
+      xml.closeElement();
+    }
+
+    // Display some metadata on the search
+    xml.openElement("metadata", true);
+    xml.openElement("hits", true);
+    xml.element("per-page", Integer.toString(hitsperpage));
+    xml.element("total", Integer.toString(length));
+    xml.closeElement();
+    xml.openElement("page", true);
+    xml.element("first-hit", Integer.toString(firsthit));
+    xml.element("last-hit", Integer.toString(lasthit));
+    xml.element("current", Integer.toString(this.paging.getPage()));
+    xml.element("last", Integer.toString(((length - 1) / hitsperpage) + 1));
+    xml.closeElement();
+    if (this.sortfields != null) {
+      xml.openElement("sort-fields", true);
+      for (SortField field : this.sortfields) {
+        xml.element("field", field.getField());
+      }
+      xml.closeElement();
+    }
+    xml.closeElement();
+
+    // Returned documents
+    xml.openElement("documents", true);
+
+    // iterate over the hits
+    final DateFormat iso = new SimpleDateFormat(ISO8601_DATETIME);
+    for (int i = firsthit - 1; i < lasthit; i++) {
+      xml.openElement("document", true);
+      String score = Float.toString(this.scoredocs[i].score);
+      xml.element("score", score);
+      Document doc = this.searcher.doc(this.scoredocs[i].doc);
+      // find the extract
+      Query q = this.query.toQuery();
+      Set<Term> terms = new HashSet<Term>();
+      q.extractTerms(terms);
+      for (Fieldable f : doc.getFields()) {
+        for (Term t : terms) {
+          if (t.field().equals(f.name())) {
+            String extract = Documents.extract(value(f), t.text(), 200);
+            if (extract != null) {
+              xml.openElement("extract");
+              xml.attribute("from", t.field());
+              xml.writeXML(extract);
+              xml.closeElement();
+            }
+          }
+        }
+      }
+
+      // display the value of each field
+      for (Fieldable f : doc.getFields()) {
+        // Retrieve the value
+        String value = value(f);
+        // format dates using ISO 8601
+        if (f.name().contains("date")) {
+          value = formatISO8601(value, iso, this.timezoneOffset);
+        }
+        // unnecessary to return the full value of long fields
+        if (value != null && value.length() < MAX_FIELD_VALUE_LENGTH) {
+          xml.openElement("field");
+          xml.attribute("name", f.name());
+          xml.writeText(value);
+          xml.closeElement();
+        }
+      }
+      // close 'document'
+      xml.closeElement();
+    }
+    // close 'documents'
+    xml.closeElement();
+
+    // close 'results'
+    xml.closeElement();
+
+    // close everything
+    try {
+      terminate();
+    } catch (IndexException e) {
+      throw new IOException("Error when terminating Search Results", e);
+    }
+  }
+
+  /**
+   * Return the results
+   * 
+   * @return the search results
+   * @throws IndexException
+   */
+  public ScoreDoc[] getScoreDoc() throws IndexException {
+    if (this.terminated)
+      throw new IndexException("Cannot retrieve documents after termination", new IllegalStateException());
+    return this.scoredocs;
+  }
+
+  /**
+   * Load a document from the index.
+   * 
+   * @param id the id of the document
+   * @return the document object loaded from the index, could be null
+   * @throws IndexException if the index is invalid
+   */
+  public Document getDocument(int id) throws IndexException {
+    if (this.terminated)
+      throw new IndexException("Cannot retrieve documents after termination", new IllegalStateException());
+    try {
+      return this.searcher.doc(id);
+    } catch (CorruptIndexException e) {
+      LOGGER.error("Failed to retrieve a document because of a corrupted Index", e);
+      throw new IndexException("Failed to retrieve a document because of a corrupted Index", e);
+    } catch (IOException ioe) {
+      LOGGER.error("Failed to retrieve a document because of an I/O problem", ioe);
+      throw new IndexException("Failed to retrieve a document because of an I/O problem", ioe);
+    }
+  }
+
+  /**
+   * Release all references to the searcher
+   * 
+   * @throws IndexException
+   */
+  public void terminate() throws IndexException {
+    if (this.indexIO == null) return;
+    try {
+      this.indexIO.releaseSearcher(searcher);
+      this.terminated = true;
+    } catch (IOException ioe) {
+      LOGGER.error("Failed releasing a Searcher after performing a query on the Index because of an I/O problem", ioe);
+      throw new IndexException(
+          "Failed releasing a Searcher after performing a query on the Index because of an I/O problem", ioe);
+    }
+  }
+
+  @Override
+  protected void finalize() throws Throwable {
+    if (!this.terminated) terminate();
+    super.finalize();
+  }
+
+  /**
+   * 
+   * @param value  the value from the index
+   * @param iso    the ISO 8601 date formatter
+   * @param offset the timezone offset
+   * @return
+   */
+  private static String formatISO8601(String value, DateFormat iso, int offset) {
+    if (value == null) return null;
+    if ("0".equals(value)) return "";
+    if (!"".equals(value)) try {
+      Date date = DateTools.stringToDate(value);
+      TimeZone tz = TimeZone.getDefault();
+      int rawOffset = tz.inDaylightTime(date)? offset - 3600000 : offset;
+      tz.setRawOffset(rawOffset);
+      iso.setTimeZone(tz);
+      String formatted = iso.format(date);
+      // the Java timezone does not include the required ':'
+      return formatted.substring(0, formatted.length() - 2) + ":" + formatted.substring(formatted.length() - 2);
+    } catch (Exception ex) {
+      // oh well, the field is probably not a date then, we'll keep going with the index value
+      LOGGER.error("Failed to format date field", ex);
+    }
+    // return the value 'as is'
+    return value;
+  }
+
+  private static String value(Fieldable f) {
+    String value = f.stringValue();
+    // is it a compressed field?
+    if (value == null && f.getBinaryLength() > 0) try {
+      value = CompressionTools.decompressString(f.getBinaryValue());
+    } catch (DataFormatException ex) {
+      // strange but true, unable to decompress 
+      LOGGER.error("Failed to decompress field value", ex);
+      return null;
+    }
+    return value;
+  }
+  
+  // Deprecated ===================================================================================
+
+  /**
+   * Serialises the search results as XML.
+   * 
+   * @deprecated use {@link #toXML(XMLWriter)} instead.
+   * 
+   * @param xml The XML writer.
+   * 
+   * @throws IOException Should there be any I/O exception while writing the XML.
+   */
+  public void toLegacyXML(XMLWriter xml) throws IOException {
+    xml.openElement("search-results", true);
+    if (this.indexIO != null) xml.attribute("index", this.indexIO.indexID());
+    // Check whether it's equally distribute mode, if yes then calculate num of hits for each page
+    int length = this.totalNbOfResults;
+    int hitsperpage = (this.paging.checkEqDist())? ((int)Math.ceil((double)length / (double)this.paging.getTotalPage()))
+        : this.paging.getHitsPerPage();
+    int firsthit = hitsperpage * (this.paging.getPage() - 1) + 1;
+    int lasthit = Math.min(length, firsthit + hitsperpage - 1);
+
+    // include query
+    if (this.query != null) {
+      xml.openElement("query", true);
+      xml.openElement("flint", true);
       this.query.toXML(xml);
       xml.closeElement();
       xml.element("lucene", this.query.toQuery().toString());
       xml.closeElement();
     }
+
     // Display some metadata on the search
     xml.openElement("metadata", true);
     xml.openElement("hits", true);
@@ -326,61 +539,5 @@ public final class SearchResults implements XMLWritable {
     } catch (IndexException e) {
       throw new IOException("Error when terminating Search Results", e);
     }
-  }
-
-  /**
-   * Return the results
-   * 
-   * @return the search results
-   * @throws IndexException
-   */
-  public ScoreDoc[] getScoreDoc() throws IndexException {
-    if (this.terminated)
-      throw new IndexException("Cannot retrieve documents after termination", new IllegalStateException());
-    return this.scoredocs;
-  }
-
-  /**
-   * Load a document from the index.
-   * 
-   * @param id the id of the document
-   * @return the document object loaded from the index, could be null
-   * @throws IndexException if the index is invalid
-   */
-  public Document getDocument(int id) throws IndexException {
-    if (this.terminated)
-      throw new IndexException("Cannot retrieve documents after termination", new IllegalStateException());
-    try {
-      return this.searcher.doc(id);
-    } catch (CorruptIndexException e) {
-      LOGGER.error("Failed to retrieve a document because of a corrupted Index", e);
-      throw new IndexException("Failed to retrieve a document because of a corrupted Index", e);
-    } catch (IOException ioe) {
-      LOGGER.error("Failed to retrieve a document because of an I/O problem", ioe);
-      throw new IndexException("Failed to retrieve a document because of an I/O problem", ioe);
-    }
-  }
-
-  /**
-   * Release all references to the searcher
-   * 
-   * @throws IndexException
-   */
-  public void terminate() throws IndexException {
-    if (this.indexIO == null) return;
-    try {
-      this.indexIO.releaseSearcher(searcher);
-      this.terminated = true;
-    } catch (IOException ioe) {
-      LOGGER.error("Failed releasing a Searcher after performing a query on the Index because of an I/O problem", ioe);
-      throw new IndexException(
-          "Failed releasing a Searcher after performing a query on the Index because of an I/O problem", ioe);
-    }
-  }
-
-  @Override
-  protected void finalize() throws Throwable {
-    if (!this.terminated) terminate();
-    super.finalize();
   }
 }
