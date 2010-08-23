@@ -85,14 +85,36 @@ public final class FieldFacet implements XMLWritable, Facet {
    * @throws IOException if thrown by the searcher.
    */
   public void compute(IndexSearcher searcher, Query base) throws IOException {
+    // If the base is null, simply calculate for each query
+    if (base == null) { compute(searcher); }
+    // Otherwise, make a boolean query of the base AND each facet query
     Bucket<Term> bucket = new Bucket<Term>(10);
+    DocumentCounter counter = new DocumentCounter();
     for (TermQuery q : this._queries) {
       BooleanQuery query = new BooleanQuery();
       query.add(base, Occur.MUST);
       query.add(q, Occur.MUST);
-      DocumentCounter counter = new DocumentCounter();
       searcher.search(query, counter);
       bucket.add(q.getTerm(), counter.getCount());
+      counter.reset();
+    }
+    this._bucket = bucket;
+  }
+
+  /**
+   * Computes each facet option without a base query.
+   * 
+   * @param searcher the index search to use.
+   * 
+   * @throws IOException if thrown by the searcher.
+   */
+  private void compute(IndexSearcher searcher) throws IOException {
+    Bucket<Term> bucket = new Bucket<Term>(10);
+    DocumentCounter counter = new DocumentCounter();
+    for (TermQuery q : this._queries) {
+      searcher.search(q, counter);
+      bucket.add(q.getTerm(), counter.getCount());
+      counter.reset();
     }
     this._bucket = bucket;
   }
