@@ -23,7 +23,7 @@ import com.topologi.diffx.xml.XMLWriter;
  * @version 21 July 2010
  */
 @Beta
-public final class SuggestionQuery implements SearchQuery {
+public final class SuggestionQuery implements SearchQuery, FlintQuery {
 
   /**
    * The list of terms. 

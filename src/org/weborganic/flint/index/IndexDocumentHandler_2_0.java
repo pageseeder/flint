@@ -23,7 +23,7 @@ import org.xml.sax.helpers.DefaultHandler;
  * @see <a href="http://weborganic.org/code/flint/schema/index-documents-2.0.dtd">Index Documents 2.0 Schema</a>
  * 
  * @author Christophe Lauret
- * @version 2 March 2010
+ * @version 10 September 2010
  */
 final class IndexDocumentHandler_2_0 extends DefaultHandler implements IndexDocumentHandler {
 
@@ -195,6 +195,11 @@ final class IndexDocumentHandler_2_0 extends DefaultHandler implements IndexDocu
     this.builder.dateFormat(toDateFormat(atts.getValue("date-format")));
     this.builder.resolution(atts.getValue("date-resolution"));
     // Set attributes ready for recording content
+    String type = atts.getValue("numeric-type");
+    if (type != null) {
+      this.builder.numeric(type);
+      this.builder.precisionStep(atts.getValue("precision-step"));
+    }
     this._isField = true;
   }
 

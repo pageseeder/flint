@@ -2,12 +2,12 @@
 <!--                                                                                            -->
 <!-- Title:         Flint DTD for Index Documents                                               -->
 <!-- System:        Flint                                                                       -->
-<!-- Status:        Draft                                                                       -->
+<!-- Status:        Final Draft                                                                 -->
 <!-- Description:   A schema for the defining a collection of indexable Lucene documents as     -->
 <!--                used in Lucene 3. In other words, XML documents following this schema can   -->
 <!--                be parsed by Flint to produce a valid Lucene 3 Index.                       -->
 <!-- Version:       2.0                                                                         -->
-<!-- LastModified:  1 March 2010                                                                -->
+<!-- LastModified:  10 September 2010                                                           -->
 <!-- Author(s):     Christophe Lauret, Jean-Baptiste Reure                                      -->
 <!--                                                                                            -->
 <!-- More info:                                                                                 -->
@@ -59,6 +59,13 @@
 -->
 <!ENTITY  % RESOLUTION       "(year|month|day|hour|minute|second|milli)"                          >
 
+<!--
+  Lucene 3 number type for a numeric field.
+
+  See: org.apache.lucene.document.NumericField
+-->
+<!ENTITY  % NUMERIC_TYPE     "(double|float|int|long)"                                            >
+
 <!--                                                
   A container for Lucene documents.
 
@@ -86,6 +93,8 @@
   @attribute boost           A boost value for the field.
   @attribute date-format     A date format to parse a date field.
   @attribute date-resolution The resolution for a Lucene date field.
+  @attribute numeric-type    Indicates the type of number this field should be indexed as.
+  @attribute precision-step  Indicates precision step for a numeric field.
 -->
 <!ELEMENT field                                (#PCDATA)                                          >
 <!ATTLIST field              name               CDATA                                   #REQUIRED 
@@ -94,4 +103,6 @@
                              term-vector       %FIELD_TERMVECTOR;                       #IMPLIED
                              boost              CDATA                                   #IMPLIED
                              date-format        CDATA                                   #IMPLIED
-                             date-resolution   %RESOLUTION;                             #IMPLIED  >
+                             date-resolution   %RESOLUTION;                             #IMPLIED  
+                             numeric-type      %NUMERIC_TYPE;                           #IMPLIED
+                             precision-step     CDATA                                   #IMPLIED >

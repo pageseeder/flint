@@ -8,84 +8,102 @@
 package org.weborganic.flint.query;
 
 import java.io.IOException;
-import java.text.SimpleDateFormat;
 import java.util.Date;
 
+import org.apache.lucene.document.DateTools.Resolution;
+import org.apache.lucene.search.NumericRangeQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermRangeQuery;
+import org.weborganic.flint.util.Dates;
 
 import com.topologi.diffx.xml.XMLWriter;
 
 /**
- * 
+ * Create a date range parameter.
  *
- * @author  Christophe Lauret (Weborganic)
- * @author  Jean-Baptiste Reure (Weborganic)
+ * @author Christophe Lauret (Weborganic)
+ * @author Jean-Baptiste Reure (Weborganic)
  *
- * @version 21 November 2006
+ * @version 10 September 2010
  */
 public final class DateParameter implements SearchParameter {
 
   /**
-   * ISO date formatter.
-   */
-  private static final SimpleDateFormat ISO_DATE = new SimpleDateFormat("yyyyMMdd");
-
-  /**
    * The date field.
    */
-  private static final String DATE_FIELD = "date";
+  private final String _field;
 
   /**
-   * The FROM date, if null, then no limit
+   * The FROM date, if <code>null</code>, then no lower limit.
    */
-  private String _from;
+  private Date _from;
 
   /**
-   * The TO date, if null, then today
+   * The TO date, if <code>null</code>, then no upper limit.
    */
-  private String _to;
-
-//Implementation methods ----------------------------------------------------------------------
+  private Date _to;
 
   /**
-   * Set the value of the lower limit for the date.
+   * The resolution for this date field.
+   */
+  private Resolution _resolution = Resolution.DAY;
+
+  /**
+   * Indicates whether the date field is a numeric field.
+   */
+  private boolean _numeric = false;
+
+  /**
+   * The actual Lucene query (lazy initialised)
+   */
+  private volatile Query _query;
+
+// Implementation methods ----------------------------------------------------------------------
+
+  /**
+   * Creates a new date parameter.
    * 
-   * @param from The date or <code>null</code>.
+   * @param field      the date field to search
+   * @param from       the start date in the range (may be <code>null</code>)
+   * @param to         the end date in the range (may be <code>null</code>)
+   * @param resolution the date resolution
+   * @param numeric    whether it is a numeric field
    */
-  public void setFrom(Date from) {
-    this._from = (from != null)? ISO_DATE.format(from) : null;
+  public DateParameter(String field, Date from, Date to, Resolution resolution, boolean numeric) {
+    if (field == null) throw new NullPointerException("field");
+    if (resolution == null) throw new NullPointerException("resolution");
+    this._field = field;
+    this._from = from;
+    this._to = to;
+    this._resolution = resolution;
+    this._numeric = numeric;
   }
 
   /**
-   * Set the value of the upper limit for the date.
+   * Returns the value of the lower limit of the date range.
    * 
-   * @param to The date or <code>null</code>.
+   * @return A date instance or <code>null</code>.
    */
-  public void setTo(Date to) {
-    this._to = (to != null)? ISO_DATE.format(to) : null;
+  public Date from() {
+    return this._from != null? new Date(this._from.getTime()) : null;
   }
 
   /**
-   * Returns the name of the field to search.
+   * Returns the value of the upper limit for the date range.
    * 
-   * @return The name of the field to search.
+   * @return A date instance  or <code>null</code>.
    */
-  public String getField() {
-    return DATE_FIELD;
+  public Date to() {
+    return this._to != null? new Date(this._to.getTime()) : null;
   }
 
   /**
-   * Generates the <code>Query</code> object corresponding to a date range search query.
+   * Returns the name of the date field to search.
    * 
-   * @return The Lucene query instance.
-   * 
-   * @see org.weborganic.flint.query.SearchQuery#toQuery()
+   * @return The name of the date field to search.
    */
-  public Query toQuery() {
-    if (this._from == null && this._to == null) return null;
-    // an including range query on the date
-    return new TermRangeQuery(DATE_FIELD, this._from, this._to, true, true);
+  public String field() {
+    return this._field;
   }
 
   /**
@@ -99,6 +117,26 @@ public final class DateParameter implements SearchParameter {
   }
 
   /**
+   * Generates the <code>Query</code> object corresponding to a date range search query.
+   * 
+   * Returns a <code>TermRangeQuery</code> or a <code>NumericRangeQuery</code> based on the values in this object.
+   * 
+   * @return a <code>TermRangeQuery</code>, a <code>NumericRangeQuery</code> or <code>null</code> if empty.
+   */
+  public Query toQuery() {
+    if (this._from == null && this._to == null) return null;
+    // an including range query on the date
+    if (this._query == null)  {
+      if (this._numeric) {
+        this._query = toNumericRangeQuery(this._field, this._from, this._to, this._resolution);
+      } else {
+        this._query = toTermRangeQuery(this._field, this._from, this._to, this._resolution);
+      }
+    }
+    return this._query;
+  }
+
+  /**
    * Serialises the search query as XML.
    * 
    * @param xml The XML writer.
@@ -106,12 +144,55 @@ public final class DateParameter implements SearchParameter {
    * @throws IOException Should there be any I/O exception while writing the XML.
    */
   public void toXML(XMLWriter xml) throws IOException {
-    xml.openElement("date-range", true);
+    xml.openElement("date-range", false);
     if (this._from != null)
-      xml.element("after", this._from);
+      xml.attribute("from", Dates.format(this._from, this._resolution));
     if (this._to != null)
-      xml.element("before", this._to);
+      xml.attribute("to",  Dates.format(this._to, this._resolution));
     xml.closeElement();
+  }
+
+  // Private helpers ------------------------------------------------------------------------------
+
+  /**
+   * Returns the term range query that corresponds to the specified parameters.
+   * 
+   * @param field      the date field
+   * @param from       the lower limit (may be null)
+   * @param to         the upper limit (may be null)
+   * @param resolution the date resolution in use
+   * 
+   * @return the corresponding <code>TermRangeQuery</code>
+   */
+  private static TermRangeQuery toTermRangeQuery(String field, Date from, Date to, Resolution resolution) {
+    String min = from != null? Dates.toString(from, resolution) : null;
+    String max = to != null? Dates.toString(to, resolution) : null;
+    return new TermRangeQuery(field, min, max, true, true);
+  }
+
+  /**
+   * Returns the term range query that corresponds to the specified parameters.
+   * 
+   * @param field      the date field
+   * @param from       the lower limit (may be null)
+   * @param to         the upper limit (may be null)
+   * @param resolution the date resolution in use
+   * 
+   * @return the corresponding <code>NumericRangeQuery</code>
+   */
+  private static NumericRangeQuery<? extends Number> toNumericRangeQuery(String field, Date from, Date to, Resolution resolution) {
+    Number min = from != null? Dates.toNumber(from, resolution) : null;
+    Number max = to != null? Dates.toNumber(to, resolution) : null;
+    // Using long values (resolution = MILLISECOND | SECOND | MINUTE | HOUR)
+    if (min instanceof Long) {
+      return NumericRangeQuery.newLongRange(field, (Long)min, (Long)max, true, true);
+    }
+    // Using integer values (resolution = DAY | MONTH | YEAR)
+    if (max instanceof Integer) {
+      return NumericRangeQuery.newIntRange(field, (Integer)min, (Integer)max, true, true);
+    }
+    // Should never happen
+    return null;
   }
 
 }

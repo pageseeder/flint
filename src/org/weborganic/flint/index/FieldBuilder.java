@@ -1,17 +1,21 @@
 package org.weborganic.flint.index;
 
 import java.text.DateFormat;
+import java.text.ParseException;
 import java.util.Date;
 
 import org.apache.lucene.document.CompressionTools;
 import org.apache.lucene.document.DateTools;
 import org.apache.lucene.document.Field;
-import org.apache.lucene.document.DateTools.Resolution;
 import org.apache.lucene.document.Field.Index;
 import org.apache.lucene.document.Field.Store;
 import org.apache.lucene.document.Field.TermVector;
+import org.apache.lucene.document.Fieldable;
+import org.apache.lucene.document.NumericField;
+import org.apache.lucene.util.NumericUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.weborganic.flint.util.Dates;
 
 /**
  * A builder for fields.
@@ -23,6 +27,11 @@ import org.slf4j.LoggerFactory;
  * @version 2 March 2010
  */
 public final class FieldBuilder {
+
+  /**
+   * Possible number type for a numeric field.
+   */
+  protected static enum NumericType {FLOAT, INT, DOUBLE, LONG};
 
   /**
    * The default boost value for the term.
@@ -68,6 +77,16 @@ public final class FieldBuilder {
    * The value of the field currently processed.
    */
   private CharSequence _value;
+
+  /**
+   * The class of a the number type for a numeric field.
+   */
+  private NumericType _numeric;
+
+  /**
+   * The precision step to use for numeric field.
+   */
+  private int _precisionStep = NumericUtils.PRECISION_STEP_DEFAULT;
 
   /**
    * The value of the field currently processed.
@@ -230,6 +249,68 @@ public final class FieldBuilder {
     return this;
   }
 
+  /**
+   * Sets the number type for a numeric type, set to <code>null</code> for a string.
+   * 
+   * @param type The number type for the numeric field to build.
+   * @return this builder.
+   */
+  protected FieldBuilder numeric(NumericType type) {
+    this._numeric = type;
+    return this;
+  }
+
+  /**
+   * Sets the number type for a numeric type, set to <code>null</code> for a string.
+   * 
+   * @param type The number type for the numeric field to build.
+   * @return this builder.
+   */
+  public FieldBuilder numeric(String type) {
+    this._numeric = toNumeric(type);
+    return this;
+  }
+
+  /**
+   * Sets the precision step (only applies to numeric fields).
+   * 
+   * <p>Good values depend on usage and data type.
+   * <p>Suitable values are generally between 1 and 8, see below (copied from Lucene doc)
+   * <ul>
+   *   <li>The default for all data types is 4.</li>
+   *   <li>Ideal value in most cases for 64 bit data types (long, double) is 6 or 8.</li>
+   *   <li>Ideal value in most cases for 32 bit data types (int, float) is 4.</li>
+   *   <li>For low cardinality fields larger precision steps are good.</li>
+   * </ul>
+   * 
+   * @see org.apache.lucene.document.NumericField
+   * 
+   * @param type The precision step.
+   * @return this builder.
+   */
+  public FieldBuilder precisionStep(int precision) {
+    this._precisionStep = precision;
+    return this;
+  }
+
+  /**
+   * Sets the precision step (only applies to numeric fields).
+   * 
+   * @see #precisionStep(int)
+   * 
+   * @param type The precision step to be parsed as an integer.
+   * @return this builder.
+   */
+  public FieldBuilder precisionStep(String precision) {
+    if (precision == null) return this;
+    try {
+      this._precisionStep = Integer.parseInt(precision);
+    } catch (NumberFormatException ex) {
+      LOGGER.error("Unable to parse precision step {} as an integer - ignored and used default", precision);
+    }
+    return this;
+  }
+
   // Getters
   // ----------------------------------------------------------------------------------------------
 
@@ -314,6 +395,8 @@ public final class FieldBuilder {
     this._boost = DEFAULT_BOOST_VALUE;
     this._dateformat = null;
     this._resolution = null;
+    this._numeric = null;
+    this._precisionStep = NumericUtils.PRECISION_STEP_DEFAULT;
   }
 
   /**
@@ -323,17 +406,36 @@ public final class FieldBuilder {
    * 
    * @throws IllegalStateException If the builder is not ready.
    */
-  public Field build() throws IllegalStateException {
+  public Fieldable build() throws IllegalStateException {
     checkReady();
-    String value = this._value.toString();
-    if (this._dateformat != null)
-      value = toDateField(value, this._dateformat, this._resolution);
     // construct the field
-    Field field = null;
-    if (this._vector != null)
-      field = new Field(this._name, value, this._store, this._index, this._vector);
-    else
-      field = new Field(this._name, value, this._store, this._index);
+    Fieldable field = null;
+    String value = this._value.toString();
+    // a numeric field
+    if (this._numeric != null) {
+      NumericField nf = new NumericField(this._name, this._precisionStep, this._store, this._index != Index.NO);
+      // handle dates
+      if (this._dateformat != null) {
+        Date date = toDate(value, this._dateformat);
+        if (date != null) {
+          field = setValue(nf, this._numeric, Dates.toNumber(date, this._resolution));
+        }
+      }
+      if (field == null)
+        field = setValue(nf, this._numeric, value);
+
+    // normal field (string-based)
+    } else {
+      if (this._dateformat != null) {
+        Date date = toDate(value, this._dateformat);
+        value = (date != null)? Dates.toString(date, this._resolution) : "";
+      }
+      if (this._vector != null)
+        field = new Field(this._name, value, this._store, this._index, this._vector);
+      else
+        field = new Field(this._name, value, this._store, this._index);
+    }
+    // Sets the boost if necessary
     if (this._boost != 1.0f)
       field.setBoost(this._boost);
     return field;
@@ -452,6 +554,26 @@ public final class FieldBuilder {
   }
 
   /**
+   * Returns the numeric type.
+   * 
+   * <p>If the value does not match one of the value number types
+   * this method will return <code>null</code> and the field will be indexed as a normal String field.
+   * 
+   * @param type The number type; one of ("int","float","double" or "long").
+   * 
+   * @return The corresponding <code>NumericType</code> instance or <code>null</code>. 
+   */
+  public static NumericType toNumeric(String type) {
+    if (type == null) return null;
+    if ("int".equals(type))    return NumericType.INT;
+    if ("float".equals(type))  return NumericType.FLOAT;
+    if ("double".equals(type)) return NumericType.DOUBLE;
+    if ("long".equals(type))   return NumericType.LONG;
+    LOGGER.warn("Invalid number type : {}, defaulting to null (string)", type);
+    return null;
+  }
+
+  /**
    * Returns the boost value for a field as a float.
    * 
    * <p>If the float parsing fails, this method returns the default boost value.
@@ -469,24 +591,66 @@ public final class FieldBuilder {
     }
   }
 
+
+
   // Private helpers
   // ----------------------------------------------------------------------------------------------
+
+  /**
+   * Sets the value of the numeric field.
+   * 
+   * @return the numeric field from the values in this builder; or <code>null</code>
+   * 
+   * @throws IllegalStateException If the builder is not ready.
+   */
+  private static NumericField setValue(NumericField nf, NumericType numeric, String value) throws IllegalStateException {
+    try {
+      switch (numeric) {
+        case FLOAT:  return nf.setFloatValue(Float.parseFloat(value));
+        case INT:    return nf.setIntValue(Integer.parseInt(value));
+        case DOUBLE: return nf.setDoubleValue(Double.parseDouble(value));
+        case LONG:   return nf.setLongValue(Long.parseLong(value));
+      }
+    } catch (NumberFormatException ex) {
+      LOGGER.error("Failed to parse {} as a {}", value.toString(), numeric);
+      return null;
+    }
+    return null;
+  }
+
+  /**
+   * Sets the value of the numeric field.
+   * 
+   * @return the numeric field from the values in this builder; or <code>null</code>
+   * 
+   * @throws IllegalStateException If the builder is not ready.
+   */
+  private static NumericField setValue(NumericField nf, NumericType numeric, Number value) throws IllegalStateException {
+    try {
+      switch (numeric) {
+        case FLOAT:  return nf.setFloatValue(value.floatValue());
+        case INT:    return nf.setIntValue(value.intValue());
+        case DOUBLE: return nf.setDoubleValue(value.doubleValue());
+        case LONG:   return nf.setLongValue(value.longValue());
+      }
+    } catch (NumberFormatException ex) {
+      LOGGER.error("Failed to parse {} as a {}", value.toString(), numeric);
+      return null;
+    }
+    return null;
+  }
 
   /**
    * Return the string value used by Lucene 3 for dates.
    *
    * @return The string value for use by Lucene.
-   * 
-   *
    */
-  private static String toDateField(String value, DateFormat format, Resolution resolution) {
+  private static Date toDate(String value, DateFormat format) {
     try {
-      Date date = format.parse(value.toString());
-      return DateTools.timeToString(date.getTime(), resolution);
-    } catch (Exception ex) {
-      LOGGER.warn("Ignoring unparsable date '"+value+"', format="+format+", resolution="+resolution, ex);
-      //throw new IllegalArgumentException("Unparseable date field!", ex);
-      return "";
+      return format.parse(value.toString());
+    } catch (ParseException ex) {
+      LOGGER.error("Ignoring unparsable date '{}' with format={}", value, format);
+      return null;
     }
   }
 

@@ -281,19 +281,22 @@ public final class SearchResults implements XMLWritable {
       String score = Float.toString(this.scoredocs[i].score);
       xml.element("score", score);
       Document doc = this.searcher.doc(this.scoredocs[i].doc);
-      // find the extract
-      Query q = this.query.toQuery();
-      Set<Term> terms = new HashSet<Term>();
-      q.extractTerms(terms);
-      for (Fieldable f : doc.getFields()) {
-        for (Term t : terms) {
-          if (t.field().equals(f.name())) {
-            String extract = Documents.extract(value(f), t.text(), 200);
-            if (extract != null) {
-              xml.openElement("extract");
-              xml.attribute("from", t.field());
-              xml.writeXML(extract);
-              xml.closeElement();
+
+      // Find the extract only applies to TermExtractable queries
+      if (query instanceof TermExtractable) {
+        TermExtractable q = (TermExtractable)this.query;
+        Set<Term> terms = new HashSet<Term>();
+        q.extractTerms(terms);
+        for (Fieldable f : doc.getFields()) {
+          for (Term t : terms) {
+            if (t.field().equals(f.name())) {
+              String extract = Documents.extract(value(f), t.text(), 200);
+              if (extract != null) {
+                xml.openElement("extract");
+                xml.attribute("from", t.field());
+                xml.writeXML(extract);
+                xml.closeElement();
+              }
             }
           }
         }
