@@ -277,8 +277,8 @@ public class IndexConfig {
       LOGGER.debug("Adding templates for {}", def);
       this._templates.put(def, loadTemplates(template));
     } catch (TransformerException ex) {
-      LOGGER.warn("Failed to load XSLT script " + template + ": " + ex.getMessage(), ex);
-      throw new IllegalArgumentException("Invalid XSLT script " + template + ": " + ex.getMessage());
+      LOGGER.warn("Failed to load XSLT script " + template + ": " + ex.getMessageAndLocation(), ex);
+      throw new IllegalArgumentException("Invalid XSLT script " + template + ": " + ex.getMessageAndLocation());
     }
   }
 
