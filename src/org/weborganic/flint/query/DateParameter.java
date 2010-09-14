@@ -184,11 +184,11 @@ public final class DateParameter implements SearchParameter {
     Number min = from != null? Dates.toNumber(from, resolution) : null;
     Number max = to != null? Dates.toNumber(to, resolution) : null;
     // Using long values (resolution = MILLISECOND | SECOND | MINUTE | HOUR)
-    if (min instanceof Long) {
+    if (min instanceof Long || (min == null && max instanceof Long)) {
       return NumericRangeQuery.newLongRange(field, (Long)min, (Long)max, true, true);
     }
     // Using integer values (resolution = DAY | MONTH | YEAR)
-    if (max instanceof Integer) {
+    if (min instanceof Integer || (min == null && max instanceof Integer)) {
       return NumericRangeQuery.newIntRange(field, (Integer)min, (Integer)max, true, true);
     }
     // Should never happen
