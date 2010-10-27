@@ -81,14 +81,16 @@ public final class FieldFacet implements XMLWritable, Facet {
    * 
    * @param searcher the index search to use.
    * @param base     the base query.
+   * @param size     the maximum number of field values to compute.
    * 
    * @throws IOException if thrown by the searcher.
    */
-  public void compute(IndexSearcher searcher, Query base) throws IOException {
+  public void compute(IndexSearcher searcher, Query base, int size) throws IOException {
     // If the base is null, simply calculate for each query
     if (base == null) { compute(searcher); }
+    if (size < 0) throw new IllegalArgumentException("size < 0");
     // Otherwise, make a boolean query of the base AND each facet query
-    Bucket<Term> bucket = new Bucket<Term>(10);
+    Bucket<Term> bucket = new Bucket<Term>(size);
     DocumentCounter counter = new DocumentCounter();
     for (TermQuery q : this._queries) {
       BooleanQuery query = new BooleanQuery();
@@ -99,6 +101,24 @@ public final class FieldFacet implements XMLWritable, Facet {
       counter.reset();
     }
     this._bucket = bucket;
+  }
+
+  /**
+   * Computes each facet option.
+   * 
+   * <p>Same as <code>compute(searcher, base, 10);</code>.
+   * 
+   * <p>Defaults to 10.
+   * 
+   * @see #compute(IndexSearcher, Query, int)
+   * 
+   * @param searcher the index search to use.
+   * @param base     the base query.
+   * 
+   * @throws IOException if thrown by the searcher.
+   */
+  public void compute(IndexSearcher searcher, Query base) throws IOException {
+    compute(searcher, base, 10);
   }
 
   /**
