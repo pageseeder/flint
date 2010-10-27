@@ -9,3 +9,7 @@ syntax: regexp
 ^local\.properties$
 syntax: regexp
 ^lib$
+syntax: regexp
+^.project$
+syntax: regexp
+^.classpath$
