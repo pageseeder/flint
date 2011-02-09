@@ -45,11 +45,21 @@ public class SearcherManager {
   /**
    * Create a new SearcherManager using the given writer.
    * 
-   * @param thewriter the IndexWriter used to load the real-time reader.
+   * @param writer the IndexWriter used to load the real-time reader.
    * @throws IOException If thrown while trying to get the reader.
    */
-  public SearcherManager(IndexWriter thewriter) throws IOException {
-    this.currentSearcher = new IndexSearcher(thewriter.getReader());
+  public SearcherManager(IndexWriter writer) throws IOException {
+    this.currentSearcher = new IndexSearcher(writer.getReader());
+  }
+
+  /**
+   * Create a new SearcherManager using the given writer.
+   * 
+   * @param reader the IndexWriter used to load the real-time reader.
+   * @throws IOException If thrown while trying to get the reader.
+   */
+  public SearcherManager(IndexReader reader) throws IOException {
+    this.currentSearcher = new IndexSearcher(reader);
   }
 
   // ------------------ Index re-opening methods -----------------------------
@@ -147,7 +157,7 @@ public class SearcherManager {
    * Return the current IndexReader. Important: call releaseReader() when finished with the Index Reader.
    * 
    * @return the current IndexReader
-   * .
+   * 
    * @throws InterruptedException 
    */
   protected synchronized IndexReader getReader() {
