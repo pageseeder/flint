@@ -163,10 +163,10 @@ public final class IndexManager implements Runnable {
   /**
    * Set the default Translator to use when no factory matches a certain MIME Type (null by default).
    * 
-   * @param defaultTranslator the translator
+   * @param translator the translator to use by default
    */
-  public void setDefaultTranslator(ContentTranslator defaultTranslator) {
-    this.defaultTranslator = defaultTranslator;
+  public void setDefaultTranslator(ContentTranslator translator) {
+    this.defaultTranslator = translator;
   }
 
   /**
@@ -223,16 +223,12 @@ public final class IndexManager implements Runnable {
   /**
    * Add a new update job to the indexing queue.
    * 
-   * @param ct       the Type of the Content
-   * @param id       the ID of the Content
-   * @param i        the Index to add the Content to
-   * @param config   the Config to use
-   * @param r        the Requester calling this method (used for logging)
-   * @param p        the Priority of this job
-   * @param params   the dynamic XSLT parameters
+   * @param index      the Index to add the Content to
+   * @param requester  the Requester calling this method (used for logging)
+   * @param priority   the Priority of this job
    */
-  public void clear(Index i, Requester r, Priority p) {
-    this.indexQueue.addJob(IndexJob.newClearJob(i, p, r));
+  public void clear(Index index, Requester requester, Priority priority) {
+    this.indexQueue.addJob(IndexJob.newClearJob(index, priority, requester));
   }
 
   /**
@@ -280,10 +276,12 @@ public final class IndexManager implements Runnable {
   }
 
   /**
-   * Load the existing field names form the given Index.
+   * Load the existing field names from the given Index.
    * 
-   * @param index the Index to laod the field names from
-   * @return the search results
+   * @deprecated
+   * 
+   * @param index the Index to load the field names from
+   * @return an iterator over the field names
    * @throws IndexException if any error occurred while performing the search
    */
   public Iterator<String> fieldNames(Index index) throws IndexException {
@@ -791,7 +789,7 @@ public final class IndexManager implements Runnable {
     if (io == null) {
       this.listener.debug("Creating a new IndexIO for " + index.toString());
       try {
-        io = new IndexIO(index);
+        io = IndexIO.newInstance(index);
       } catch (CorruptIndexException e) {
         this.listener.error("Failed creating an Index I/O object for " + index.toString() + " because the Index is corrupted", e);
         throw new IndexException("Failed creating an Index I/O object for " + index.toString() + " because the Index is corrupted", e);

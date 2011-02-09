@@ -6,19 +6,15 @@
  */
 package org.weborganic.flint;
 
+import java.io.File;
 import java.io.IOException;
 import java.util.List;
 
 import org.apache.lucene.document.Document;
-import org.apache.lucene.index.BalancedSegmentMergePolicy;
-import org.apache.lucene.index.ConcurrentMergeScheduler;
-import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.store.LockObtainFailedException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.FSDirectory;
 import org.weborganic.flint.content.DeleteRule;
 
 /**
@@ -32,41 +28,26 @@ import org.weborganic.flint.content.DeleteRule;
  * @author Jean-Baptiste Reure
  * @version 26 February 2010
  */
-public final class IndexIO {
-
-  /**
-   * Logger.
-   */
-  private static final Logger LOGGER = LoggerFactory.getLogger(IndexIO.class);
+public abstract class IndexIO {
 
   /**
    * Describes the state of an index. 
    */
-  private static enum State {
-    /** The index is in a clean state, ready to use */
+  static enum State {
+    /** The index is in a clean state, ready to use. */
     CLEAN,
-    /** The index needs to be opened again */
+    /** The index needs to be opened again. */
     NEEDS_REOPEN,
-    /** The index has been modified but changes have not been committed */
+    /** The index has been modified but changes have not been committed. */
     NEEDS_COMMIT,
-    /** The index has been modified and changes have been committed, but it is not in an optimal state */
+    /** The index has been modified and changes have been committed, but it is not in an optimal state. */
     NEEDS_OPTIMISE
   };
 
   /**
-   * The underlying index writer used by Flint for this index (there should only be one)
+   * State of this index.
    */
-  private final IndexWriter writer;
-
-  /**
-   * A search manager using this writer.
-   */
-  private final SearcherManager searcherManager;
-
-  /**
-   * State of this index
-   */
-  private IndexIO.State state = State.CLEAN;
+  IndexIO.State state = State.CLEAN;
 
   /**
    * ID of the current index.
@@ -77,187 +58,120 @@ public final class IndexIO {
    * Sole constructor.
    * 
    * @param index The index on which IO operations will occur. 
-   * 
-   * @throws CorruptIndexException     If thrown by Lucene when creating the index writer.
-   * @throws LockObtainFailedException If thrown by Lucene when creating the index writer.
-   * @throws IOException               If thrown by Lucene when creating the index writer.
    */
-  public IndexIO(Index index) throws CorruptIndexException, LockObtainFailedException, IOException {
+  IndexIO(Index index) {
     this.indexID = index.getIndexID();
-    this.writer = new IndexWriter(index.getIndexDirectory(), index.getAnalyzer(), IndexWriter.MaxFieldLength.LIMITED);
-    this.writer.setMergeScheduler(new ConcurrentMergeScheduler());
-    this.writer.setMergePolicy(new BalancedSegmentMergePolicy(this.writer));
-    this.searcherManager = new SearcherManager(this.writer);
   }
 
   /**
+   * Returns the ID of the index used for this class.
    * 
-   * @return
+   * @return the ID of the index used for this class.  
    */
-  public String indexID() {
+  public final String indexID() {
     return this.indexID;
   }
 
-
-  private void maybeReopen() {
-    if (this.state != State.NEEDS_REOPEN) return;
-    try {
-      LOGGER.debug("Reopen searcher");
-      this.searcherManager.maybeReopen();
-      this.state = State.NEEDS_COMMIT;
-      // FIXME exceptions are completely ignored here !!!
-    } catch (InterruptedException ex) {
-      LOGGER.error("Failed to reopen the Index Searcher because the thread has been interrupted", ex);
-    } catch (IOException ex) {
-      LOGGER.error("Failed to reopen Index Searcher because of an I/O error", ex);
-    }
-  }
+  /**
+   * Commit any changes if the state of the index requires it.
+   * 
+   * @throws IndexException should any error be thrown by Lucene while committing.
+   */
+  public abstract void maybeCommit() throws IndexException;
 
   /**
+   * Commit any changes if the state of the index requires it.
    * 
-   * @throws IndexException
+   * @throws IndexException should any error be thrown by Lucene while optimising.
    */
-  public void maybeCommit() throws IndexException {
-    if (this.state != State.NEEDS_COMMIT) return;
-    try {
-      LOGGER.debug("Committing");
-      this.writer.commit();
-      this.searcherManager.maybeReopen();
-      this.state = State.NEEDS_OPTIMISE;
-    } catch (CorruptIndexException e) {
-      throw new IndexException("Failed to commit Index because it is corrupted", e);
-    } catch (IOException e) {
-      throw new IndexException("Failed to commit Index because of an I/O error", e);
-    } catch (InterruptedException e) {
-      throw new IndexException("Failed to commit Index because of the thread has been interrupted", e);
-    }
-  }
-
-  public void maybeOptimise() throws IndexException {
-    if (this.state != State.NEEDS_OPTIMISE) return;
-    try {
-      LOGGER.debug("Optimising");
-      this.writer.optimize();
-      this.searcherManager.maybeReopen();
-      this.state = State.CLEAN;
-    } catch (CorruptIndexException e) {
-      throw new IndexException("Failed to optimise Index because it is corrupted", e);
-    } catch (IOException e) {
-      throw new IndexException("Failed to optimise Index because of an I/O error", e);
-    } catch (InterruptedException e) {
-      throw new IndexException("Failed to optimise Index because of the thread has been interrupted", e);
-    }
-  }
-
-  public boolean clearIndex() throws IndexException {
-    LOGGER.debug("Clearing Index");
-    // add documents to index
-    try {
-      writer.deleteAll();
-      this.state = State.NEEDS_REOPEN;
-    } catch (CorruptIndexException e) {
-      throw new IndexException("Failed to clear Index because it is corrupted", e);
-    } catch (IOException e) {
-      throw new IndexException("Failed to clear Index because of an I/O error", e);
-    }
-    return true;
-  }
+  public abstract void maybeOptimise() throws IndexException;
 
   /**
-   * Delete the documents defined in the detele rule.
+   * Clears the index as soon as possible (asynchronously).
    * 
-   * @param rule
-   * @return
-   * @throws IndexException
+   * @return <code>true</code> if the indexed could be scheduled for clearing;
+   *         <code>false</code>
+   * @throws IndexException should any error be thrown by Lucene.
+   * @throws UnsupportedOperationException If this implementation is read only.
    */
-  public boolean deleteDocuments(DeleteRule rule) throws IndexException {
-    LOGGER.debug("Deleting a document");
-    // add documents to index
-    try {
-      if (rule.useTerm()) writer.deleteDocuments(rule.toTerm());
-      else writer.deleteDocuments(rule.toQuery());
-      this.state = State.NEEDS_REOPEN;
-    } catch (CorruptIndexException e) {
-      throw new IndexException("Failed to delete document from Index because it is corrupted", e);
-    } catch (IOException e) {
-      throw new IndexException("Failed to delete document from Index because of an I/O error", e);
-    }
-    return true;
-  }
+  public abstract boolean clearIndex() throws IndexException, UnsupportedOperationException;
 
   /**
+   * Delete the documents defined in the delete rule as soon as possible (asynchronously).
    * 
-   * @param rule
-   * @param documents
-   * @return
-   * @throws IndexException
+   * @param rule the rule to identify the items to delete
+   * @return <code>true</code> if the item could be be scheduled for deletion;
+   *         <code>false</code>
+   * @throws IndexException should any error be thrown by Lucene.
+   * @throws UnsupportedOperationException If this implementation is read only.
    */
-  public boolean updateDocuments(DeleteRule rule, List<Document> documents) throws IndexException {
-    LOGGER.debug("Updating {} documents", documents.size());
-    try {
-      if (rule != null) {
-        if (rule.useTerm()) writer.deleteDocuments(rule.toTerm());
-        else writer.deleteDocuments(rule.toQuery());
-      }
-      for (Document doc : documents) {
-        writer.addDocument(doc);
-      }
-      this.state = State.NEEDS_REOPEN;
-    } catch (CorruptIndexException e) {
-      throw new IndexException("Failed to update document in Index because it is corrupted", e);
-    } catch (IOException e) {
-      throw new IndexException("Failed to update document in Index because of an I/O error", e);
-    }
-    return true;
-  }
+  public abstract boolean deleteDocuments(DeleteRule rule) throws IndexException, UnsupportedOperationException;
+
+  /**
+   * Update the documents defined in the delete rule as soon as possible (asynchronously).
+   * 
+   * <p>It is not possible to update an item in Lucene, instead it is first deleted then inserted 
+   * again.
+   * 
+   * @param rule the rule to identify the items to delete before update.
+   * @param documents the list of documents to replace with.
+   * @return <code>true</code> if the item could be be scheduled for update;
+   *         <code>false</code>
+   * @throws IndexException should any error be thrown by Lucene
+   * @throws UnsupportedOperationException If this implementation is read only.
+   */
+  public abstract boolean updateDocuments(DeleteRule rule, List<Document> documents) 
+    throws IndexException, UnsupportedOperationException;
 
   /**
    * Returns the index searcher for the index.
    * 
-   * <p>Note: when a searcher is booked it must be released using {{@link #releaseSearcher(IndexSearcher)}.
+   * <p>Note: when a searcher is booked it must be released using {@link #releaseSearcher(IndexSearcher)}.
    * 
    * @return The index searcher. 
    * 
    * @throws IOException
    */
-  public IndexSearcher bookSearcher() throws IOException {
-    // check for reopening
-    maybeReopen();
-    return this.searcherManager.get();
-  }
+  public abstract IndexSearcher bookSearcher() throws IOException;
 
   /**
    * 
    * @param searcher
    * @throws IOException
    */
-  public void releaseSearcher(IndexSearcher searcher) throws IOException {
-    this.searcherManager.release(searcher);
-  }
+  public abstract void releaseSearcher(IndexSearcher searcher) throws IOException;
 
-  protected IndexReader bookReader() throws IOException {
-    // check for reopening
-    maybeReopen();
-    return this.searcherManager.getReader();
-  }
+  protected abstract IndexReader bookReader() throws IOException;
 
-  protected void releaseReader(IndexReader reader) throws IOException {
-    this.searcherManager.releaseReader(reader);
-  }
+  protected abstract void releaseReader(IndexReader reader) throws IOException;
 
   /**
    * Closes the writer on this index.
    * 
    * @throws IndexException Wrapping an {@link CorruptIndexException} or an {@link IOException}.
    */
-  public void stop() throws IndexException {
-    try {
-      this.writer.close();
-    } catch (CorruptIndexException e) {
-      throw new IndexException("Failed to close Index because it is corrupted", e);
-    } catch (IOException e) {
-      throw new IndexException("Failed to close Index because of an I/O error", e);
+  public abstract void stop() throws IndexException;
+
+  /**
+   * Generate the appropriate IndexIO implementation to use.
+   * 
+   * <p>This method will try to return a read/write IndexIO instance if possible; otherwise it will
+   * return a read only instance. 
+   * 
+   * @param index The index object.
+   * @return The most appropriate IndexIO implementation to use.
+   * @throws IOException If thrown by the constructors
+   */
+  public static IndexIO newInstance(Index index) throws IOException {
+    Directory directory = index.getIndexDirectory();
+    boolean readonly = false;
+    // Detect if we can write on the files.
+    if (directory instanceof FSDirectory) {
+      File f = ((FSDirectory)directory).getFile();
+      readonly = !f.canWrite();
     }
+    // Returns the correct Index IO implementation
+    return readonly? new IndexIOReadOnly(index) : new IndexIOReadWrite(index);
   }
 
 }
