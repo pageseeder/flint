@@ -7,6 +7,7 @@
  */
 package org.weborganic.flint.index;
 
+import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.parsers.SAXParser;
 import javax.xml.parsers.SAXParserFactory;
 
@@ -14,6 +15,7 @@ import javax.xml.parsers.SAXParserFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.weborganic.flint.IndexException;
+import org.xml.sax.SAXException;
 import org.xml.sax.XMLReader;
 import org.xml.sax.helpers.DefaultHandler;
 
@@ -54,10 +56,10 @@ public final class IndexParserFactory extends DefaultHandler {
       // use this handler
       return new IndexParser(reader);
       // return the document
-    } catch (Error error) {
-      error.printStackTrace();
-      throw error;
-    } catch (Exception ex) {
+    } catch (ParserConfigurationException ex) {
+      LOGGER.error("Error while generating index document parser instance.", ex);
+      throw new IndexException("An error occurred when trying to generate a parser instance.", ex);
+    } catch (SAXException ex) {
       LOGGER.error("Error while generating index document parser instance.", ex);
       throw new IndexException("An error occurred when trying to generate a parser instance.", ex);
     } 
