@@ -19,7 +19,10 @@ import com.topologi.diffx.xml.XMLWriter;
  * Create a range parameter using numeric values.
  * 
  * <p>This class simply wraps a {@link NumericRangeQuery} instance and is therefore closely related to it.
- * This is API is still experimental and subject to change in Lucene, any change in Lucene may also be reflected in this API.
+ * This is API is still experimental and subject to change in Lucene, any change in Lucene may also
+ * be reflected in this API.
+ *
+ * @param <T> The number type for this numerix range
  *
  * @author Christophe Lauret (Weborganic)
  * @author Jean-Baptiste Reure (Weborganic)
@@ -67,8 +70,10 @@ public final class NumericRange<T extends Number> implements SearchParameter {
    * @param field        the numeric field to search
    * @param min          the minimum value in the range (may be <code>null</code>)
    * @param max          the maximum value in the range (may be <code>null</code>)
-   * @param minInclusive <code>true</code> to include values matching the lower limit in the range; <code>false</code> to exclude it.
-   * @param maxInclusive <code>true</code> to include values matching the upper limit in the range; <code>false</code> to exclude it.
+   * @param minInclusive <code>true</code> to include values matching the lower limit in the range;
+   *                     <code>false</code> to exclude it.
+   * @param maxInclusive <code>true</code> to include values matching the upper limit in the range;
+   *                     <code>false</code> to exclude it.
    */
   private NumericRange(String field, T min, T max, boolean minInclusive, boolean maxInclusive) {
     if (field == null) throw new NullPointerException("field");

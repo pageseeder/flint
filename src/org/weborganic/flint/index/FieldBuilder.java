@@ -285,7 +285,7 @@ public final class FieldBuilder {
    * 
    * @see org.apache.lucene.document.NumericField
    * 
-   * @param type The precision step.
+   * @param precision The precision step.
    * @return this builder.
    */
   public FieldBuilder precisionStep(int precision) {
@@ -298,7 +298,7 @@ public final class FieldBuilder {
    * 
    * @see #precisionStep(int)
    * 
-   * @param type The precision step to be parsed as an integer.
+   * @param precision The precision step to be parsed as an integer.
    * @return this builder.
    */
   public FieldBuilder precisionStep(String precision) {
@@ -335,7 +335,6 @@ public final class FieldBuilder {
   /**
    * Returns the field index for the field to build.
    * 
-   * @param index The field index for the field to build.
    * @return The field index for the field to build.
    */
   public Field.Index index() {
@@ -599,6 +598,10 @@ public final class FieldBuilder {
   /**
    * Sets the value of the numeric field.
    * 
+   * @param nf      The Lucene numeric field 
+   * @param numeric The numeric type (float, int, double or long)
+   * @param value   The actual value as a number
+   * 
    * @return the numeric field from the values in this builder; or <code>null</code>
    * 
    * @throws IllegalStateException If the builder is not ready.
@@ -610,16 +613,20 @@ public final class FieldBuilder {
         case INT:    return nf.setIntValue(Integer.parseInt(value));
         case DOUBLE: return nf.setDoubleValue(Double.parseDouble(value));
         case LONG:   return nf.setLongValue(Long.parseLong(value));
+        default: throw new IllegalArgumentException("Unknown numeric type:"+numeric);
       }
     } catch (NumberFormatException ex) {
       LOGGER.error("Failed to parse {} as a {}", value.toString(), numeric);
       return null;
     }
-    return null;
   }
 
   /**
    * Sets the value of the numeric field.
+   * 
+   * @param nf      The Lucene numeric field 
+   * @param numeric The numeric type (float, int, double or long)
+   * @param value   The actual value as a number
    * 
    * @return the numeric field from the values in this builder; or <code>null</code>
    * 
@@ -632,16 +639,19 @@ public final class FieldBuilder {
         case INT:    return nf.setIntValue(value.intValue());
         case DOUBLE: return nf.setDoubleValue(value.doubleValue());
         case LONG:   return nf.setLongValue(value.longValue());
+        default: throw new IllegalArgumentException("Unknown numeric type:"+numeric);
       }
     } catch (NumberFormatException ex) {
       LOGGER.error("Failed to parse {} as a {}", value.toString(), numeric);
       return null;
     }
-    return null;
   }
 
   /**
    * Return the string value used by Lucene 3 for dates.
+   *
+   * @param value  The value to turn into a date
+   * @param format The date format to parse
    *
    * @return The string value for use by Lucene.
    */
