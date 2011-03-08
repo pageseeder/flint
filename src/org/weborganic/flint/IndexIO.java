@@ -197,6 +197,9 @@ public abstract class IndexIO {
       if (directory instanceof FSDirectory) {
         File f = ((FSDirectory) directory).getFile();
         // ensure all files can write.
+        if (!f.canWrite()) {
+          readonly = true;
+        }
         for (File tf : f.listFiles()) {
           if (!tf.canWrite()) {
             readonly = true;
