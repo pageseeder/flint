@@ -18,7 +18,7 @@ import com.topologi.diffx.xml.XMLWriter;
  * A collection of utility methods to manipulate and extract terms.
  * 
  * @author Christophe Lauret
- * @version 23 June 2010
+ * @version 18 March 2011
  */
 public final class Terms {
 
@@ -188,10 +188,12 @@ public final class Terms {
     List<Term> terms = new ArrayList<Term>();
     try {
       e = reader.terms(new Term(field, ""));
-      while (field.equals(e.term().field())) {
-        terms.add(e.term());
-        if (!e.next())
-          break;
+      if (e.term() != null) {
+        while (field.equals(e.term().field())) {
+          terms.add(e.term());
+          if (!e.next())
+            break;
+        }
       }
     } finally {
       e.close();
@@ -214,10 +216,12 @@ public final class Terms {
     TermEnum e = null;
     try {
       e = reader.terms(new Term(field, ""));
-      while (field.equals(e.term().field())) {
-        values.add(e.term().text());
-        if (!e.next())
-          break;
+      if (e.term() != null) {
+        while (field.equals(e.term().field())) {
+          values.add(e.term().text());
+          if (!e.next())
+            break;
+        }
       }
     } finally {
       e.close();
