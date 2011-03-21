@@ -256,7 +256,7 @@ final class IndexDocumentHandler_2_0 extends DefaultHandler implements IndexDocu
         df = new SimpleDateFormat(format);
         df.setTimeZone(GMT);
         this.dfs.put(format, df);
-      } catch (Exception ex) {
+      } catch (IllegalArgumentException ex) {
         LOGGER.warn("Ignoring unusable date format '"+format+"'", ex);
       }
     }

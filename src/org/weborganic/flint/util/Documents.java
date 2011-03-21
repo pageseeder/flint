@@ -24,7 +24,6 @@ import com.topologi.diffx.xml.esc.XMLEscapeUTF8;
  */
 public final class Documents {
 
-
   /**
    * Utility class need no constructor.
    */
@@ -50,8 +49,10 @@ public final class Documents {
   /**
    * Returns the XML for a document.
    * 
-   * @param xml The XML writer.
-   * @param doc Lucene document to serialise as XML.
+   * @param xml   The XML writer.
+   * @param doc   Lucene document to serialise as XML.
+   * @param terms Unused???
+   * @param extractLength
    * 
    * @throws IOException Any I/O error thrown by the XML writer.
    */
@@ -182,16 +183,13 @@ public final class Documents {
     return null;
   }
 
+  /**
+   * Returns the text as a safe XML text.
+   * @param text The to escape for XML.
+   * @return the text as a safe XML text.
+   */
   private static String asXML(String text) {
     return XMLEscapeUTF8.UTF8_ESCAPE.toElementText(text);
-  }
-  
-  public static void main(String[] args) {
-    System.err.println(extract("This is a very small text.", "very", 12));
-    System.err.println(extract("This is a very small text.", "very", 30));
-    System.err.println(extract("This is a very small text.", "text", 12));
-    System.err.println(extract("This is a very small text.", "this", 12));
-    System.err.println(extract("This is a very small text.", "is", 12));
   }
 
 }

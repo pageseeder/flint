@@ -37,8 +37,8 @@ public final class Dates {
    * 
    * <p>Note: dates returned in local time.
    * 
-   * @param date       
-   * @param resolution 
+   * @param date       The date to format
+   * @param resolution The resolution for the formatting
    * 
    * @return the formatted date as ISO8601 or <code>null</code>.
    */
@@ -75,6 +75,9 @@ public final class Dates {
   /**
    * Return the string value used by Lucene 3 for dates.
    *
+   * @param date       The date to turn to a string
+   * @param resolution The resolution for the formatting
+   *
    * @return The string value for use by Lucene.
    */
   public static String toString(Date date, Resolution resolution) {
@@ -84,6 +87,9 @@ public final class Dates {
 
   /**
    * Return the numeric value used by Lucene 3 for dates.
+   *
+   * @param date       The date to convert
+   * @param resolution The resolution for the formatting
    *
    * @return The numeric value for use by Lucene.
    */
@@ -113,18 +119,20 @@ public final class Dates {
   // private helpers ------------------------------------------------------------------------------
 
   /**
-   * Pads the given numbers with zeros to the left
+   * Pads the given numbers with zeros to the left.
    * 
    * @param value to pad (eg. 2)
+   * @return The padded value (eg. "02")
    */
   private static String leftZeroPad2(int value) {
     return (value < 10)? "0" + Integer.toString(value) : Integer.toString(value);
   }
 
   /**
-   * Pads the given numbers with zeros to the left
+   * Pads the given numbers with zeros to the left.
    * 
    * @param value to pad (eg. 2)
+   * @return The padded value (eg. "002")
    */
   private static String leftZeroPad3(int value) {
     if (value >= 100) return Integer.toString(value);
@@ -133,25 +141,26 @@ public final class Dates {
   }
 
   /**
-   * Pads the given numbers with zeros to the left
+   * Pads the given numbers with zeros to the left.
    * 
    * @param value to pad (eg. 2)
+@return The padded value (eg. "0002")
    */
   private static String leftZeroPad4(int value) {
     if (value >= 1000) return Integer.toString(value);
     if (value >= 100)  return "0" + Integer.toString(value);
     if (value >= 10)   return "00" + Integer.toString(value);
-    else return "000" + Integer.toString(value);    
+    else return "000" + Integer.toString(value);
   }
 
   /**
    * Returns the timezone component of and ISO 8601 date as <code>+[hh]:[ss]</code>, 
    * <code>-[hh]:[ss]</code> or <code>Z</code>.
-   *  
+   *
    * @param offset in milliseconds.
    * @return the timezone component as <code>+[hh]:[ss]</code>, <code>-[hh]:[ss]</code> or <code>Z</code>
    */
-  private static final String toTimeZone(int offset) {
+  private static String toTimeZone(int offset) {
     if (offset == 0) return "Z";
     StringBuilder z = new StringBuilder(6);
     z.append(offset >= 0? '+' : '-');

@@ -30,7 +30,7 @@ import com.topologi.diffx.xml.XMLWriter;
  * 
  * @version 26 Feb 2009
  */
-public final class GenericSearchQuery implements SearchQuery {
+@Deprecated public final class GenericSearchQuery implements SearchQuery {
 
   /**
    * The list of search parameters.
@@ -100,11 +100,8 @@ public final class GenericSearchQuery implements SearchQuery {
     for (int i = 0; i < this._parameters.size(); i++) {
       SearchParameter parameter = (SearchParameter)this._parameters.get(i);
       Query q = parameter.toQuery();
-      if (q != null && 
-          !(q instanceof BooleanQuery && ((BooleanQuery)q).clauses().isEmpty())) {
+      if (q != null && !(q instanceof BooleanQuery && ((BooleanQuery)q).clauses().isEmpty())) {
         query.add(q, BooleanClause.Occur.MUST);
-      } else {
-//        LOGGER.debug(parameter.getClass().toString()+" was an empty query.");
       }
     }
     return query;
@@ -146,6 +143,7 @@ public final class GenericSearchQuery implements SearchQuery {
 
   /**
    * Unused as this query does not use a single field but may use multiple.
+   * @return Always "" (empty string)
    */
   public String getField() {
     return "";

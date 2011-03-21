@@ -168,7 +168,6 @@ final class IndexDocumentHandlerCompatibility extends DefaultHandler implements 
   private void startDocumentElement(Attributes atts) {
     LOGGER.debug("Parsing new index document");
     this._document = new Document();
-//    this._document.add(new Field(IndexManager.CONTENT_ID_FIELD, this.contentID, Store.YES, Index.NOT_ANALYZED));
   }
 
   /**
@@ -215,6 +214,10 @@ final class IndexDocumentHandlerCompatibility extends DefaultHandler implements 
     this._isCSV = "true".equals(atts.getValue("comma-separated"));
   }
 
+  /**
+   * @param type the field type as a string.
+   * @return "yes" if the field type is stored; "no" if unstored; <code>null</code> otherwise. 
+   */
   private static String fieldTypeToStore(String type) {
     if (type == null)                            return null;
     else if ("".equals(type))                    return "yes";
@@ -227,6 +230,10 @@ final class IndexDocumentHandlerCompatibility extends DefaultHandler implements 
     else return "yes";
   }
 
+  /**
+   * @param type the field type as a string.
+   * @return "yes" if the field type is indexed; "no" if not; <code>null</code> otherwise. 
+   */
   private static Field.Index fieldTypeToIndex(String type) {
     if (type == null)                            return null;
     else if ("".equals(type))                    return Field.Index.ANALYZED;
@@ -265,6 +272,10 @@ final class IndexDocumentHandlerCompatibility extends DefaultHandler implements 
     resetField();
   }
 
+  /**
+   * Adds the specified value to the Lucene document to index.
+   * @param value The value to add
+   */
   private void addFieldToDocument(String value) {
     this.builder.value(value);
     // compressed field
@@ -290,6 +301,7 @@ final class IndexDocumentHandlerCompatibility extends DefaultHandler implements 
    * never been created.
    * 
    * @param format The date format used.
+   * @return the corresponding date format instance.
    */
   private DateFormat toDateFormat(String format) {
     if (format == null) return null;
@@ -300,7 +312,7 @@ final class IndexDocumentHandlerCompatibility extends DefaultHandler implements 
         df = new SimpleDateFormat(format);
         df.setTimeZone(GMT);
         this.dfs.put(format, df);
-      } catch (Exception ex) {
+      } catch (IllegalArgumentException ex) {
         LOGGER.warn("Ignoring unusable date format '{}'", format, ex);
       }
     }
