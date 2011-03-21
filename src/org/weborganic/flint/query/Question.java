@@ -132,7 +132,7 @@ public final class Question implements SearchParameter, XMLWritable {
    * @param analyzer The analyser used by the underlying index.
    */
   private void compute(Analyzer analyzer) {
-    // TODO handle stop words
+    // TODO the analyser is ignored (cause problems with STOP words and case sensitivity)
     compute();
   }
 
