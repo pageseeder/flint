@@ -9,6 +9,7 @@ import java.util.List;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Sort;
+import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.BooleanClause.Occur;
 import org.weborganic.flint.util.Beta;
 
@@ -151,6 +152,20 @@ public class BasicQuery<T extends SearchParameter> implements FlintQuery, Search
       xml.openElement("parameters", !this.parameters().isEmpty());
       for (SearchParameter p : this._parameters) {
         p.toXML(xml);
+      }
+      xml.closeElement();
+      xml.openElement("sort", this._sort != Sort.RELEVANCE);
+      if (this._sort == Sort.RELEVANCE) {
+        xml.attribute("by", "relevance");
+      } else {
+        xml.attribute("by", "fields");
+        for (SortField sf : this._sort.getSort()) {
+          xml.openElement("sortfield");
+          xml.attribute("field", sf.getField());
+          xml.attribute("type", sf.getType());
+          xml.attribute("reverse", Boolean.toString(sf.getReverse()));
+          xml.closeElement();
+        }
       }
       xml.closeElement();
     }
