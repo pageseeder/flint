@@ -139,7 +139,7 @@ public class BasicQuery<T extends SearchParameter> implements FlintQuery, Search
    * {@inheritDoc}
    */
   public void toXML(XMLWriter xml) throws IOException {
-    xml.openElement("generic-query", true);
+    xml.openElement("basic-query", true);
     xml.attribute("empty", Boolean.toString(isEmpty()));
     if (!isEmpty()) {
       xml.attribute("query", this._query.toString());
