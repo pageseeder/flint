@@ -88,7 +88,7 @@ public abstract class IndexIO {
   public abstract void maybeCommit() throws IndexException;
 
   /**
-   * Commit any changes if the state of the index requires it.
+   * Optimise the index if the state of the index requires it.
    * 
    * @throws IndexException
    *           should any error be thrown by Lucene while optimising.

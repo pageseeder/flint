@@ -648,6 +648,8 @@ public final class IndexManager implements Runnable {
           this.lastActivity = System.currentTimeMillis();
         }
       } else {
+        // check the number of opened readers then
+        IndexReaderManager.closeOldReaders();
         // no jobs available, optimise if not needed
         checkForCommit();
       }
@@ -785,7 +787,7 @@ public final class IndexManager implements Runnable {
    * @throws IndexException
    */
   private IndexIO getIndexIO(Index index) throws IndexException {
-    IndexIO io = this.indexes.get(index.getIndexID());
+    IndexIO io = index == null ? null : this.indexes.get(index.getIndexID());
     if (io == null) {
       this.listener.debug("Creating a new IndexIO for " + index.toString());
       try {

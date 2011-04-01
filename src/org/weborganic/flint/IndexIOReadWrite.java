@@ -99,7 +99,10 @@ public final class IndexIOReadWrite extends IndexIO {
       throw new IndexException("Failed to commit Index because of the thread has been interrupted", e);
     }
   }
-
+  
+  /**
+   * {@inheritdoc}
+   */
   public void maybeOptimise() throws IndexException {
     if (this.state != State.NEEDS_OPTIMISE) return;
     try {
@@ -115,7 +118,10 @@ public final class IndexIOReadWrite extends IndexIO {
       throw new IndexException("Failed to optimise Index because of the thread has been interrupted", e);
     }
   }
-
+  
+  /**
+   * {@inheritdoc}
+   */
   public boolean clearIndex() throws IndexException {
     LOGGER.debug("Clearing Index");
     // add documents to index
