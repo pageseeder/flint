@@ -45,21 +45,14 @@ public class SearcherManager {
   private IndexSearcher currentSearcher;
 
   /**
-   * The underlying index writer used by Flint for this index (there should only be one).
-   */
-  private final IndexWriter writer;
-
-  /**
    * Create a new SearcherManager using the given writer.
    * 
    * @param writer the IndexWriter used to load the real-time reader.
    * @throws IOException If thrown while trying to get the reader.
    */
   public SearcherManager(IndexWriter awriter) throws IOException {
-    this.writer = awriter;
     IndexReader reader = awriter.getReader();
     this.currentSearcher = new IndexSearcher(reader);
-    IndexReaderManager.add(reader);
   }
 
   /**
@@ -69,7 +62,6 @@ public class SearcherManager {
    * @throws IOException If thrown while trying to get the reader.
    */
   public SearcherManager(IndexReader reader) throws IOException {
-    this.writer = null;
     this.currentSearcher = new IndexSearcher(reader);
   }
 
@@ -109,8 +101,7 @@ public class SearcherManager {
   public void maybeReopen() throws InterruptedException, IOException {
     startReopen();
     try {
-      final IndexSearcher searcher = this.currentSearcher;
-      searcher.getIndexReader().incRef();
+      final IndexSearcher searcher = get();
       try {
         createNewSearcher();
       } finally {
@@ -122,23 +113,11 @@ public class SearcherManager {
   }
   private void createNewSearcher() throws CorruptIndexException, IOException {
     // check if the reader is still current
-    boolean notCurrent;
-    boolean closed = false;
-    try {
-      notCurrent = !this.currentSearcher.getIndexReader().isCurrent();
-    } catch (AlreadyClosedException e) {
-      // it was closed by the reader closing thread, we'll create a new one
-      notCurrent = true;
-      closed = true;
-    }
-    // if not, we need to re-open it (or create a new one if closed)
-    if (notCurrent) {
-      IndexReader newReader = closed ? this.writer.getReader() : this.currentSearcher.getIndexReader().reopen();
+    if (!this.currentSearcher.getIndexReader().isCurrent()) {
+      // if not, we need to re-open it (or create a new one if closed)
+      IndexReader newReader = this.currentSearcher.getIndexReader().reopen();
       IndexSearcher newSearcher = new IndexSearcher(newReader);
       swapSearcher(newSearcher);
-      // store this reader only if we have a writer so we can open a new one when we close it
-      if (this.writer != null)
-        IndexReaderManager.add(newReader);
     } else {
       LOGGER.debug("Reader is still current so no need to re-open it");
     }
@@ -153,8 +132,7 @@ public class SearcherManager {
   private synchronized void swapSearcher(IndexSearcher newSearcher) throws IOException {
     LOGGER.debug("Swapping reader from {} to {}",
         this.currentSearcher.getIndexReader().hashCode(), newSearcher.getIndexReader().hashCode());
-    if (IndexReaderManager.isOpened(this.currentSearcher.getIndexReader()))
-      release(this.currentSearcher);
+    release(this.currentSearcher);
     this.currentSearcher = newSearcher;
   }
   
@@ -168,15 +146,18 @@ public class SearcherManager {
         } catch (AlreadyClosedException e) {
           // good then
         }
-        IndexReaderManager.remove(reader);
       } else {
         LOGGER.debug("Cannot close reader {} as there are still references ({})", reader.hashCode(), reader.getRefCount());
       }
-    } else IndexReaderManager.update(reader);
+    }
   }
 
   // ------------------ public methods -----------------------------
 
+  protected final void close() throws IOException {
+    this.currentSearcher.close();
+  }
+  
   /**
    * Return the current IndexSearcher. Important: call release() when finished with the searcher.
    * 
@@ -184,16 +165,6 @@ public class SearcherManager {
    * @throws InterruptedException 
    */
   protected synchronized IndexSearcher get() {
-    // check if it's still opened
-    if (!IndexReaderManager.isOpened(this.currentSearcher.getIndexReader())) {
-      // remove it then
-      IndexReaderManager.remove(this.currentSearcher.getIndexReader());
-      try {
-        createNewSearcher();
-      } catch (IOException e) {
-        LOGGER.error("Failed creating new reader", e);
-      }
-    } else IndexReaderManager.update(this.currentSearcher.getIndexReader());
     this.currentSearcher.getIndexReader().incRef();
     LOGGER.debug("Getting reader {}", this.currentSearcher.getIndexReader().hashCode());
     return this.currentSearcher;
@@ -221,16 +192,6 @@ public class SearcherManager {
    */
   protected synchronized IndexReader getReader() {
     LOGGER.debug("Getting reader {}", this.currentSearcher.getIndexReader().hashCode());
-    // check if it's still opened
-    if (!IndexReaderManager.isOpened(this.currentSearcher.getIndexReader())) {
-      // remove it then
-      IndexReaderManager.remove(this.currentSearcher.getIndexReader());
-      try {
-        createNewSearcher();
-      } catch (IOException e) {
-        LOGGER.error("Failed creating new reader", e);
-      }
-    } else IndexReaderManager.update(this.currentSearcher.getIndexReader());
     this.currentSearcher.getIndexReader().incRef();
     return this.currentSearcher.getIndexReader();
   }

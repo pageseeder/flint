@@ -39,15 +39,21 @@ public final class IndexIOReadWrite extends IndexIO {
    */
   static final Logger LOGGER = LoggerFactory.getLogger(IndexIOReadWrite.class);
 
+  private final Index index;
+  
   /**
    * The underlying index writer used by Flint for this index (there should only be one).
    */
-  private final IndexWriter writer;
+  private IndexWriter writer;
 
   /**
    * A search manager using this writer.
    */
-  private final SearcherManager searcherManager;
+  private SearcherManager searcherManager;
+  /**
+   * The last time this reader was used
+   */
+  private long lastTimeUsed;
 
   /**
    * Sole constructor.
@@ -58,12 +64,10 @@ public final class IndexIOReadWrite extends IndexIO {
    * @throws LockObtainFailedException If thrown by Lucene when creating the index writer.
    * @throws IOException               If thrown by Lucene when creating the index writer.
    */
-  public IndexIOReadWrite(Index index) throws CorruptIndexException, LockObtainFailedException, IOException {
-    super(index);
-    this.writer = new IndexWriter(index.getIndexDirectory(), index.getAnalyzer(), IndexWriter.MaxFieldLength.LIMITED);
-    this.writer.setMergeScheduler(new ConcurrentMergeScheduler());
-    this.writer.setMergePolicy(new BalancedSegmentMergePolicy(this.writer));
-    this.searcherManager = new SearcherManager(this.writer);
+  public IndexIOReadWrite(Index ind) throws IOException {
+    super(ind);
+    this.index = ind;
+    start();
   }
 
   private void maybeReopen() {
@@ -85,7 +89,7 @@ public final class IndexIOReadWrite extends IndexIO {
    * @throws IndexException
    */
   public void maybeCommit() throws IndexException {
-    if (this.state != State.NEEDS_COMMIT) return;
+    if (this.state != State.NEEDS_COMMIT || this.writer == null) return;
     try {
       LOGGER.debug("Committing");
       this.writer.commit();
@@ -104,7 +108,7 @@ public final class IndexIOReadWrite extends IndexIO {
    * {@inheritdoc}
    */
   public void maybeOptimise() throws IndexException {
-    if (this.state != State.NEEDS_OPTIMISE) return;
+    if (this.state != State.NEEDS_OPTIMISE || this.writer == null) return;
     try {
       LOGGER.debug("Optimising");
       this.writer.optimize();
@@ -126,6 +130,7 @@ public final class IndexIOReadWrite extends IndexIO {
     LOGGER.debug("Clearing Index");
     // add documents to index
     try {
+      ensureOpen();
       writer.deleteAll();
       this.state = State.NEEDS_REOPEN;
     } catch (CorruptIndexException e) {
@@ -147,6 +152,7 @@ public final class IndexIOReadWrite extends IndexIO {
     LOGGER.debug("Deleting a document");
     // add documents to index
     try {
+      ensureOpen();
       if (rule.useTerm()) writer.deleteDocuments(rule.toTerm());
       else writer.deleteDocuments(rule.toQuery());
       this.state = State.NEEDS_REOPEN;
@@ -168,6 +174,7 @@ public final class IndexIOReadWrite extends IndexIO {
   public boolean updateDocuments(DeleteRule rule, List<Document> documents) throws IndexException {
     LOGGER.debug("Updating {} documents", documents.size());
     try {
+      ensureOpen();
       if (rule != null) {
         if (rule.useTerm()) writer.deleteDocuments(rule.toTerm());
         else writer.deleteDocuments(rule.toQuery());
@@ -194,6 +201,7 @@ public final class IndexIOReadWrite extends IndexIO {
    * @throws IOException
    */
   public IndexSearcher bookSearcher() throws IOException {
+    ensureOpen();
     // check for reopening
     maybeReopen();
     return this.searcherManager.get();
@@ -205,17 +213,48 @@ public final class IndexIOReadWrite extends IndexIO {
    * @throws IOException
    */
   public void releaseSearcher(IndexSearcher searcher) throws IOException {
-    this.searcherManager.release(searcher);
+    if (this.searcherManager != null)
+      this.searcherManager.release(searcher);
+    this.lastTimeUsed = System.currentTimeMillis();
   }
 
   protected IndexReader bookReader() throws IOException {
+    ensureOpen();
     // check for reopening
     maybeReopen();
     return this.searcherManager.getReader();
   }
 
   protected void releaseReader(IndexReader reader) throws IOException {
-    this.searcherManager.releaseReader(reader);
+    if (this.searcherManager != null)
+      this.searcherManager.releaseReader(reader);
+    this.lastTimeUsed = System.currentTimeMillis();
+  }
+  /**
+   * @return the lastTimeUsed
+   */
+  public long getLastTimeUsed() {
+    return this.lastTimeUsed;
+  }
+  
+  private void ensureOpen() throws IOException {
+    if (this.writer == null)
+      start();
+    this.lastTimeUsed = System.currentTimeMillis();
+  }
+
+  /**
+   * Opens a new writer on the index.
+   * 
+   * @throws IndexException Wrapping an {@link CorruptIndexException} or an {@link IOException}.
+   */
+  public void start() throws IOException {
+    this.writer = new IndexWriter(this.index.getIndexDirectory(), this.index.getAnalyzer(), IndexWriter.MaxFieldLength.LIMITED);
+    this.writer.setMergeScheduler(new ConcurrentMergeScheduler());
+    this.writer.setMergePolicy(new BalancedSegmentMergePolicy(this.writer));
+    this.searcherManager = new SearcherManager(this.writer);
+    this.lastTimeUsed = System.currentTimeMillis();
+    OpenedIndexManager.add(this);
   }
 
   /**
@@ -225,7 +264,11 @@ public final class IndexIOReadWrite extends IndexIO {
    */
   public void stop() throws IndexException {
     try {
+      this.searcherManager.close();
+      this.searcherManager = null;
       this.writer.close();
+      this.writer = null;
+      OpenedIndexManager.remove(this);
     } catch (CorruptIndexException e) {
       throw new IndexException("Failed to close Index because it is corrupted", e);
     } catch (IOException e) {

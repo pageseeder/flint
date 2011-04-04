@@ -649,7 +649,7 @@ public final class IndexManager implements Runnable {
         }
       } else {
         // check the number of opened readers then
-        IndexReaderManager.closeOldReaders();
+        OpenedIndexManager.closeOldReaders();
         // no jobs available, optimise if not needed
         checkForCommit();
       }
