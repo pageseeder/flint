@@ -254,7 +254,7 @@ public final class IndexIOReadWrite extends IndexIO {
     this.writer.setMergePolicy(new BalancedSegmentMergePolicy(this.writer));
     this.searcherManager = new SearcherManager(this.writer);
     this.lastTimeUsed = System.currentTimeMillis();
-    OpenedIndexManager.add(this);
+    OpenIndexManager.add(this);
   }
 
   /**
@@ -268,7 +268,7 @@ public final class IndexIOReadWrite extends IndexIO {
       this.searcherManager = null;
       this.writer.close();
       this.writer = null;
-      OpenedIndexManager.remove(this);
+      OpenIndexManager.remove(this);
     } catch (CorruptIndexException e) {
       throw new IndexException("Failed to close Index because it is corrupted", e);
     } catch (IOException e) {

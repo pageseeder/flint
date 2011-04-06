@@ -15,17 +15,17 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Manager for index readers.
- * Handles closing of readers that have been opened for a long time if there are too many opened.
+ * Manager for open indexes.
+ * Handles closing of indexes that have been opened for a long time if there are too many open ones.
  * 
  * @author Jean-Baptiste Reure
  * @version 26 February 2010
  */
-public class OpenedIndexManager {
+public class OpenIndexManager {
   /**
    * Logger
    */
-  private static final Logger LOGGER = LoggerFactory.getLogger(OpenedIndexManager.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(OpenIndexManager.class);
   /**
    * How to compare opened readers: the "highest" is the one that was used the least recently
    */

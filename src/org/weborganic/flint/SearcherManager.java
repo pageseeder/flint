@@ -8,7 +8,6 @@ package org.weborganic.flint;
 
 import java.io.IOException;
 
-import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.search.IndexSearcher;
@@ -103,7 +102,14 @@ public class SearcherManager {
     try {
       final IndexSearcher searcher = get();
       try {
-        createNewSearcher();
+        if (!this.currentSearcher.getIndexReader().isCurrent()) {
+          // if not current, we need to re-open it
+          IndexReader newReader = this.currentSearcher.getIndexReader().reopen();
+          IndexSearcher newSearcher = new IndexSearcher(newReader);
+          swapSearcher(newSearcher);
+        } else {
+          LOGGER.debug("Reader is still current so no need to re-open it");
+        }
       } finally {
         release(searcher);
       }
@@ -111,32 +117,27 @@ public class SearcherManager {
       doneReopen();
     }
   }
-  private void createNewSearcher() throws CorruptIndexException, IOException {
-    // check if the reader is still current
-    if (!this.currentSearcher.getIndexReader().isCurrent()) {
-      // if not, we need to re-open it (or create a new one if closed)
-      IndexReader newReader = this.currentSearcher.getIndexReader().reopen();
-      IndexSearcher newSearcher = new IndexSearcher(newReader);
-      swapSearcher(newSearcher);
-    } else {
-      LOGGER.debug("Reader is still current so no need to re-open it");
-    }
-  }
 
   /**
-   * Performs a swap between current searcher and given searcher.
+   * Perform a swap between current searcher and given searcher.
    * 
    * @param newSearcher
    * @throws IOException
    */
   private synchronized void swapSearcher(IndexSearcher newSearcher) throws IOException {
-    LOGGER.debug("Swapping reader from {} to {}",
+    LOGGER.debug("Swapping reader from {} to {}", 
         this.currentSearcher.getIndexReader().hashCode(), newSearcher.getIndexReader().hashCode());
     release(this.currentSearcher);
     this.currentSearcher = newSearcher;
   }
-  
-  private void tryToCloseReader(IndexReader reader) throws IOException {
+  /**
+   * Check if the reader provided is not current and not used anymore in which case it is closed.
+   * 
+   * @param reader the reader to check
+   * 
+   * @throws IOException if closing failed
+   */
+  private void closeIfDirty(IndexReader reader) throws IOException {
     // check if we should close an old one
     if (this.currentSearcher.getIndexReader() != reader) {
       if (reader.getRefCount() == 0) {
@@ -144,7 +145,7 @@ public class SearcherManager {
         try {
           reader.close();
         } catch (AlreadyClosedException e) {
-          // good then
+          // good then, no need to worry
         }
       } else {
         LOGGER.debug("Cannot close reader {} as there are still references ({})", reader.hashCode(), reader.getRefCount());
@@ -154,7 +155,15 @@ public class SearcherManager {
 
   // ------------------ public methods -----------------------------
 
+  /**
+   * Close this searcher by closing the current searcher and its current reader.
+   * 
+   * @throws IOException If closing this searcher failed
+   */
   protected final void close() throws IOException {
+    // close reader
+    this.currentSearcher.getIndexReader().close();
+    // then searcher
     this.currentSearcher.close();
   }
   
@@ -180,7 +189,7 @@ public class SearcherManager {
     LOGGER.debug("Releasing reader {}", searcher.getIndexReader().hashCode());
     searcher.getIndexReader().decRef();
     // check if we should close an old one
-    tryToCloseReader(searcher.getIndexReader());
+    closeIfDirty(searcher.getIndexReader());
   }
 
   /**
@@ -207,6 +216,6 @@ public class SearcherManager {
     LOGGER.debug("Releasing reader {}", reader.hashCode());
     reader.decRef();
     // check if we should close an old one
-    tryToCloseReader(reader);
+    closeIfDirty(reader);
   }
 }

@@ -55,6 +55,8 @@ import org.weborganic.flint.util.FlintEntityResolver;
 import org.weborganic.flint.util.FlintErrorListener;
 import org.xml.sax.InputSource;
 
+import sun.misc.IOUtils;
+
 /**
  * Main class from Flint, applications should create one instance of this class.
  * 
@@ -649,7 +651,7 @@ public final class IndexManager implements Runnable {
         }
       } else {
         // check the number of opened readers then
-        OpenedIndexManager.closeOldReaders();
+        OpenIndexManager.closeOldReaders();
         // no jobs available, optimise if not needed
         checkForCommit();
       }
@@ -774,6 +776,12 @@ public final class IndexManager implements Runnable {
       t.transform(new StreamSource(source), new StreamResult(out));
     } catch (Exception ex) {
       throw new IndexException("Failed to create Index XML from Source content.", ex);
+    } finally {
+      try {
+        source.close();
+      } catch (IOException e) {
+        // oh well we try, fail silently
+      }
     }
   }
 
