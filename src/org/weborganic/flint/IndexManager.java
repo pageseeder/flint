@@ -55,8 +55,6 @@ import org.weborganic.flint.util.FlintEntityResolver;
 import org.weborganic.flint.util.FlintErrorListener;
 import org.xml.sax.InputSource;
 
-import sun.misc.IOUtils;
-
 /**
  * Main class from Flint, applications should create one instance of this class.
  * 
