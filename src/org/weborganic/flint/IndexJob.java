@@ -250,7 +250,8 @@ public class IndexJob implements Comparable<IndexJob> {
   /**
    * Returns a string with each class attribute value - useful when debugging and logging.
    */
-  @Override public String toString() {
+  @Override
+  public String toString() {
     return "[IndexJob - contentid:" + this.contentID + " priority:"
         + this.priority + " index:" + this.index + " finished:" + this.finished + " success:" + this.success + "]";
   }

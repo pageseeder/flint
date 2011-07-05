@@ -20,7 +20,7 @@ import com.topologi.diffx.xml.esc.XMLEscapeUTF8;
  * A collection of utility methods to manipulate documents.
  * 
  * @author Christophe Lauret
- * @version 30 July 2010
+ * @version 5 July 2011
  */
 public final class Documents {
 
@@ -61,19 +61,11 @@ public final class Documents {
     xml.openElement("document", true);
     // display the value of each field
     for (Fieldable f : doc.getFields()) {
-      String value = f.stringValue();
-      // is it a compressed field?
-      if (value == null && f.getBinaryLength() > 0) {
-        try {
-          value = CompressionTools.decompressString(f.getBinaryValue());
-        } catch (DataFormatException ex) {
-          continue;
-        }
-      }
+      String value = toValue(f);
       // TODO: date formatting
 
-      // unnecessary to return the full value of long fields
-      if (value.length() < 100) {
+      // Unnecessary to return the full value of long fields
+      if (value != null && value.length() < 100) {
         xml.openElement("field");
         xml.attribute("name", f.name());
         xml.writeText(value);
@@ -83,7 +75,6 @@ public final class Documents {
     // close 'document'
     xml.closeElement();
   }
-
 
   /**
    * Returns the XML for a document.
@@ -98,20 +89,11 @@ public final class Documents {
     xml.openElement("document", true);
     // display the value of each field
     for (Fieldable f : doc.getFields()) {
-      String value = f.stringValue();
-      // is it a compressed field?
-      if (value == null && f.getBinaryLength() > 0) {
-        try {
-          value = CompressionTools.decompressString(f.getBinaryValue());
-        } catch (DataFormatException ex) {
-//            LOGGER.warn("Failed to decompress field value", ex);
-          continue;
-        }
-      }
+      String value = toValue(f);
       // TODO: date formatting
 
       // unnecessary to return the full value of long fields
-      if (value.length() < 100) {
+      if (value != null && value.length() < 100) {
         xml.openElement("field");
         xml.attribute("name", f.name());
         xml.writeText(value);
@@ -192,4 +174,22 @@ public final class Documents {
     return XMLEscapeUTF8.UTF8_ESCAPE.toElementText(text);
   }
 
+  /**
+   * Returns the value of the specified field decompressing it if required.
+   * 
+   * @param f The field
+   * @return its value
+   */
+  private static String toValue(Fieldable f) {
+    String value = f.stringValue();
+    // is it a compressed field?
+    if (value == null && f.getBinaryLength() > 0) {
+      try {
+        value = CompressionTools.decompressString(f.getBinaryValue());
+      } catch (DataFormatException ex) {
+        value = null;
+      }
+    }
+    return value;
+  }
 }
