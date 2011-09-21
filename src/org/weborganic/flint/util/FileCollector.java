@@ -88,6 +88,8 @@ public final class FileCollector {
   private static void list(File dir, FileFilter filter, List<File> collected) {
     // get all the files in the current directory
     File[] files = filter != null? dir.listFiles(filter) : dir.listFiles();
+    // make sure there are files
+    if (files == null) return;
     // iterate over the files, collect
     for (File f : files) {
       // scan directories

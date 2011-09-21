@@ -9,6 +9,7 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.Searcher;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.BooleanClause.Occur;
 import org.weborganic.flint.util.Beta;
@@ -85,7 +86,7 @@ public final class FieldFacet implements XMLWritable, Facet {
    * 
    * @throws IOException if thrown by the searcher.
    */
-  public void compute(IndexSearcher searcher, Query base, int size) throws IOException {
+  public void compute(Searcher searcher, Query base, int size) throws IOException {
     // If the base is null, simply calculate for each query
     if (base == null) { compute(searcher); }
     if (size < 0) throw new IllegalArgumentException("size < 0");
@@ -117,7 +118,7 @@ public final class FieldFacet implements XMLWritable, Facet {
    * 
    * @throws IOException if thrown by the searcher.
    */
-  public void compute(IndexSearcher searcher, Query base) throws IOException {
+  public void compute(Searcher searcher, Query base) throws IOException {
     compute(searcher, base, 10);
   }
 
@@ -128,7 +129,7 @@ public final class FieldFacet implements XMLWritable, Facet {
    * 
    * @throws IOException if thrown by the searcher.
    */
-  private void compute(IndexSearcher searcher) throws IOException {
+  private void compute(Searcher searcher) throws IOException {
     Bucket<Term> bucket = new Bucket<Term>(10);
     DocumentCounter counter = new DocumentCounter();
     for (TermQuery q : this._queries) {

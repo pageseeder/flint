@@ -56,7 +56,7 @@ public class OpenIndexManager {
    * opened readers is less than the maximum allowed.
    */
   public final static void closeOldReaders() {
-    LOGGER.debug("Currently {} opened reader(s): {}", openedIndexes.size(), openedIndexes);
+//    LOGGER.debug("Currently {} opened reader(s): {}", openedIndexes.size(), openedIndexes);
     while (openedIndexes.size() > MAX_OPENED_INDEXES) {
       // get the oldest one
       IndexIOReadWrite or = Collections.max(openedIndexes.values(), openedIndexComparator);
