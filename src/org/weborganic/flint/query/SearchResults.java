@@ -11,6 +11,8 @@ import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.HashSet;
+import java.util.Iterator;
+import java.util.NoSuchElementException;
 import java.util.Set;
 import java.util.TimeZone;
 import java.util.zip.DataFormatException;
@@ -22,7 +24,6 @@ import org.apache.lucene.document.Fieldable;
 import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.TopFieldDocs;
@@ -350,8 +351,11 @@ public final class SearchResults implements XMLWritable {
   /**
    * Load a document from the index.
    * 
+   * <p>Note this 
+   * 
    * @param id the id of the document
    * @return the document object loaded from the index, could be null
+   * 
    * @throws IndexException if the index is invalid
    */
   public Document getDocument(int id) throws IndexException {
@@ -431,6 +435,101 @@ public final class SearchResults implements XMLWritable {
     return value;
   }
 
-  // Deprecated ===================================================================================
+  /**
+   * Provides an iterable class over the Lucene documents.
+   * 
+   * <p>This allows Lucene documents from these results to be iterated over in a for each loop:
+   * <pre>
+   *   for (Document doc : results.documents()) {
+   *     ...
+   *   }
+   * </pre>
+   * 
+   * @return an iterable class over the Lucene documents.
+   * 
+   * @throws IllegalStateException If these results have been closed (terminated already).
+   */
+  public Iterable<Document> documents() {
+    if (this.terminated)
+      throw new IllegalStateException();
+    return new DocIterable();
+  }
+
+  // Private classes
+  // ----------------------------------------------------------------------------------------------
+
+  /**
+   * An iterable class over the documents in these results.
+   * 
+   * @author christophe Lauret
+   * @version 6 October 2011
+   */
+  private final class DocIterable implements Iterable<Document> {
+  
+    /**
+     * Provides an iterable class over the Lucene documents.
+     * 
+     * <p>this can be used in a for each loop
+     * 
+     * @return an iterable class over the Lucene documents.
+     */
+    @Override
+    public Iterator<Document> iterator() {
+      return new DocIterator();
+    }
+
+  }
+
+  /**
+   * An iterator over the documents in these results.
+   * 
+   * @author christophe Lauret
+   * @version 6 October 2011
+   */
+  private final class DocIterator implements Iterator<Document> {
+
+    /**
+     * The index searcher used.
+     */
+    private final IndexSearcher searcher = SearchResults.this.searcher;
+
+    /**
+     * The actual search results from Lucene.
+     */
+    private final ScoreDoc[] scoredocs = SearchResults.this.scoredocs;
+
+    /**
+     * The max number results.
+     */
+    private final int count = SearchResults.this.totalNbOfResults;
+
+    /**
+     * The current index for this iterator.
+     */
+    private int index = 0;
+
+    @Override
+    public boolean hasNext() {
+      return index < count;
+    }
+
+    @Override
+    public Document next() {
+      if (!hasNext()) throw new NoSuchElementException();
+      try {
+        return this.searcher.doc(this.scoredocs[index++].doc);
+      } catch (IOException ex) {
+        throw new IllegalStateException("Error retrieving document", ex);
+      }
+    }
+
+    /**
+     * @throws UnsupportedOperationException
+     */
+    @Override
+    public void remove() {
+      throw new UnsupportedOperationException("Cannot remove documents from searc results");
+    }
+  }
 
 }
