@@ -11,12 +11,12 @@ package org.weborganic.flint.query;
  * This class allows for a better control of search results by specifying paging information for the
  * index tools to use.
  * 
- * <p>
- * Note: This has nothing to do with memory management.
+ * <p>Pages start at 1.
+ * 
+ * <p>Note: This has nothing to do with memory management.
  * 
  * @author Christophe Lauret (Weborganic)
- * 
- * @version 22 August 2006
+ * @version 6 October 2011
  */
 public final class SearchPaging {
 
@@ -44,6 +44,23 @@ public final class SearchPaging {
    * Set the total number of page, to be used with eqDist
    */
   private int _totalpage = 1;
+
+  /**
+   * Creates a new paging configuration using the default values.
+   */
+  public SearchPaging() {
+  }
+
+  /**
+   * Creates a new paging configuration using the specified values.
+   * 
+   * @param page        The page requested.
+   * @param hitsPerPage The maximum number of results per page.
+   */
+  public SearchPaging(int page, int hitsPerPage) {
+    setPage(page);
+    setHitsPerPage(hitsPerPage);
+  }
 
   /**
    * Returns the number of hits per page for the searches.
@@ -79,9 +96,12 @@ public final class SearchPaging {
    * Sets the page number.
    * 
    * @param page The page number.
+   * 
+   * @throws IllegalArgumentException if the page is less than 1.
    */
   public void setPage(int page) {
     // TODO: If the page number is less then 0
+    if (page < 1) throw new IllegalArgumentException("Pages must be greater than 1");
     this._page = page;
   }
 
