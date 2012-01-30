@@ -94,6 +94,7 @@ public final class TermParameter implements SearchParameter {
   /**
    * {@inheritDoc}
    */
+  @Override
   public String toString() {
     return this._term.toString();
   }

@@ -70,6 +70,11 @@ public final class SearchResults implements XMLWritable {
   private static final int MAX_FIELD_VALUE_LENGTH = 1000;
 
   /**
+   * One minute in milliseconds.
+   */
+  private static final int ONE_MINUTE_IN_MS = 60000;
+  
+  /**
    * The actual search results from Lucene.
    */
   private final ScoreDoc[] scoredocs;
@@ -223,7 +228,7 @@ public final class SearchResults implements XMLWritable {
    * @param timezoneInMinutes the timezone offset in minutes (difference with GMT)
    */
   public void setTimeZone(int timezoneInMinutes) {
-    this.timezoneOffset = timezoneInMinutes * 60000;
+    this.timezoneOffset = timezoneInMinutes * ONE_MINUTE_IN_MS;
   }
 
   /**
@@ -465,7 +470,7 @@ public final class SearchResults implements XMLWritable {
    * @version 6 October 2011
    */
   private final class DocIterable implements Iterable<Document> {
-  
+
     /**
      * Provides an iterable class over the Lucene documents.
      * 
