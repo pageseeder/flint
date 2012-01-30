@@ -47,7 +47,7 @@ public final class AnyTermParameter implements SearchParameter {
   /**
    * Creates an empty instance of this class.
    */
-  private AnyTermParameter(){
+  private AnyTermParameter() {
     this._terms = Collections.emptyList();
   }
 
