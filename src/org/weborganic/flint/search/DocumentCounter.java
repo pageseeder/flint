@@ -39,6 +39,7 @@ public final class DocumentCounter extends Collector {
    * Does nothing - the scorer is irrelevant when counting documents.
    * @param scorer the scorer. 
    */
+  @Override
   public void setScorer(Scorer scorer) {
     // ignore scorer
   }
@@ -47,6 +48,7 @@ public final class DocumentCounter extends Collector {
    * Accept documents out of order - the order is irrelevant when counting.
    * @return always <code>true</code>. 
    */
+  @Override
   public boolean acceptsDocsOutOfOrder() {
     return true;
   }
@@ -56,6 +58,7 @@ public final class DocumentCounter extends Collector {
    * 
    * @param doc the position of the Lucene {@link Document} in the index
    */
+  @Override
   public void collect(int doc) {
     this.count++;
   }
@@ -66,6 +69,7 @@ public final class DocumentCounter extends Collector {
    * @param reader  the next index reader
    * @param docbase used to re-base document ids for the index.
    */
+  @Override
   public void setNextReader(IndexReader reader, int docbase) {
   }
 

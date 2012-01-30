@@ -51,6 +51,7 @@ public final class BitCollector extends Collector {
    * Does nothing - the scorer is irrelevant when populating {@link BitSet}s.
    * @param scorer the scorer.
    */
+  @Override
   public void setScorer(Scorer scorer) {
     // ignore scorer
   }
@@ -59,6 +60,7 @@ public final class BitCollector extends Collector {
    * Accept documents out of order - the order is irrelevant when populating {@link BitSet}s.
    * @return always <code>true</code>. 
    */
+  @Override
   public boolean acceptsDocsOutOfOrder() {
     return true;
   }
@@ -68,6 +70,7 @@ public final class BitCollector extends Collector {
    * 
    * @param doc the position of the Lucene {@link Document} in the index
    */
+  @Override
   public void collect(int doc) {
     this._bits.set(doc + this._docbase);
   }
@@ -78,6 +81,7 @@ public final class BitCollector extends Collector {
    * @param reader  the next index reader
    * @param docbase used to re-base document ids for the index.
    */
+  @Override
   public void setNextReader(IndexReader reader, int docbase) {
     this._docbase = docbase;
   }
