@@ -39,8 +39,11 @@ public final class IndexIOReadWrite extends IndexIO {
    */
   static final Logger LOGGER = LoggerFactory.getLogger(IndexIOReadWrite.class);
 
-  private final Index index;
-  
+  /**
+   * The index this class acts upon.
+   */
+  private final Index _index;
+
   /**
    * The underlying index writer used by Flint for this index (there should only be one).
    */
@@ -60,13 +63,11 @@ public final class IndexIOReadWrite extends IndexIO {
    * 
    * @param index The index on which IO operations will occur. 
    * 
-   * @throws CorruptIndexException     If thrown by Lucene when creating the index writer.
-   * @throws LockObtainFailedException If thrown by Lucene when creating the index writer.
    * @throws IOException               If thrown by Lucene when creating the index writer.
    */
-  public IndexIOReadWrite(Index ind) throws IOException {
-    super(ind);
-    this.index = ind;
+  public IndexIOReadWrite(Index index) throws IOException {
+    super(index);
+    this._index = index;
     start();
   }
 
@@ -77,9 +78,9 @@ public final class IndexIOReadWrite extends IndexIO {
       this.searcherManager.maybeReopen();
       this.state = State.NEEDS_COMMIT;
       // FIXME exceptions are completely ignored here !!!
-    } catch (InterruptedException ex) {
+    } catch (final InterruptedException ex) {
       LOGGER.error("Failed to reopen the Index Searcher because the thread has been interrupted", ex);
-    } catch (IOException ex) {
+    } catch (final IOException ex) {
       LOGGER.error("Failed to reopen Index Searcher because of an I/O error", ex);
     }
   }
@@ -88,6 +89,7 @@ public final class IndexIOReadWrite extends IndexIO {
    * 
    * @throws IndexException
    */
+  @Override
   public void maybeCommit() throws IndexException {
     if (this.state != State.NEEDS_COMMIT || this.writer == null) return;
     try {
@@ -95,18 +97,19 @@ public final class IndexIOReadWrite extends IndexIO {
       this.writer.commit();
       this.searcherManager.maybeReopen();
       this.state = State.NEEDS_OPTIMISE;
-    } catch (CorruptIndexException e) {
+    } catch (final CorruptIndexException e) {
       throw new IndexException("Failed to commit Index because it is corrupted", e);
-    } catch (IOException e) {
+    } catch (final IOException e) {
       throw new IndexException("Failed to commit Index because of an I/O error", e);
-    } catch (InterruptedException e) {
+    } catch (final InterruptedException e) {
       throw new IndexException("Failed to commit Index because of the thread has been interrupted", e);
     }
   }
-  
+
   /**
-   * {@inheritdoc}
+   * {@inheritDoc}
    */
+  @Override
   public void maybeOptimise() throws IndexException {
     if (this.state != State.NEEDS_OPTIMISE || this.writer == null) return;
     try {
@@ -114,51 +117,56 @@ public final class IndexIOReadWrite extends IndexIO {
       this.writer.optimize();
       this.searcherManager.maybeReopen();
       this.state = State.CLEAN;
-    } catch (CorruptIndexException e) {
+    } catch (final CorruptIndexException e) {
       throw new IndexException("Failed to optimise Index because it is corrupted", e);
-    } catch (IOException e) {
+    } catch (final IOException e) {
       throw new IndexException("Failed to optimise Index because of an I/O error", e);
-    } catch (InterruptedException e) {
+    } catch (final InterruptedException e) {
       throw new IndexException("Failed to optimise Index because of the thread has been interrupted", e);
     }
   }
-  
+
   /**
-   * {@inheritdoc}
+   * {@inheritDoc}
    */
+  @Override
   public boolean clearIndex() throws IndexException {
     LOGGER.debug("Clearing Index");
     // add documents to index
     try {
       ensureOpen();
-      writer.deleteAll();
+      this.writer.deleteAll();
       this.state = State.NEEDS_REOPEN;
-    } catch (CorruptIndexException e) {
+    } catch (final CorruptIndexException e) {
       throw new IndexException("Failed to clear Index because it is corrupted", e);
-    } catch (IOException e) {
+    } catch (final IOException e) {
       throw new IndexException("Failed to clear Index because of an I/O error", e);
     }
     return true;
   }
 
   /**
-   * Delete the documents defined in the detele rule.
+   * Delete the documents defined in the delete rule.
    * 
    * @param rule
    * @return
    * @throws IndexException
    */
+  @Override
   public boolean deleteDocuments(DeleteRule rule) throws IndexException {
     LOGGER.debug("Deleting a document");
     // add documents to index
     try {
       ensureOpen();
-      if (rule.useTerm()) writer.deleteDocuments(rule.toTerm());
-      else writer.deleteDocuments(rule.toQuery());
+      if (rule.useTerm()) {
+        this.writer.deleteDocuments(rule.toTerm());
+      } else {
+        this.writer.deleteDocuments(rule.toQuery());
+      }
       this.state = State.NEEDS_REOPEN;
-    } catch (CorruptIndexException e) {
+    } catch (final CorruptIndexException e) {
       throw new IndexException("Failed to delete document from Index because it is corrupted", e);
-    } catch (IOException e) {
+    } catch (final IOException e) {
       throw new IndexException("Failed to delete document from Index because of an I/O error", e);
     }
     return true;
@@ -171,21 +179,25 @@ public final class IndexIOReadWrite extends IndexIO {
    * @return
    * @throws IndexException
    */
+  @Override
   public boolean updateDocuments(DeleteRule rule, List<Document> documents) throws IndexException {
     LOGGER.debug("Updating {} documents", documents.size());
     try {
       ensureOpen();
       if (rule != null) {
-        if (rule.useTerm()) writer.deleteDocuments(rule.toTerm());
-        else writer.deleteDocuments(rule.toQuery());
+        if (rule.useTerm()) {
+          this.writer.deleteDocuments(rule.toTerm());
+        } else {
+          this.writer.deleteDocuments(rule.toQuery());
+        }
       }
-      for (Document doc : documents) {
-        writer.addDocument(doc);
+      for (final Document doc : documents) {
+        this.writer.addDocument(doc);
       }
       this.state = State.NEEDS_REOPEN;
-    } catch (CorruptIndexException e) {
+    } catch (final CorruptIndexException e) {
       throw new IndexException("Failed to update document in Index because it is corrupted", e);
-    } catch (IOException e) {
+    } catch (final IOException e) {
       throw new IndexException("Failed to update document in Index because of an I/O error", e);
     }
     return true;
@@ -200,6 +212,7 @@ public final class IndexIOReadWrite extends IndexIO {
    * 
    * @throws IOException
    */
+  @Override
   public IndexSearcher bookSearcher() throws IOException {
     ensureOpen();
     // check for reopening
@@ -212,12 +225,15 @@ public final class IndexIOReadWrite extends IndexIO {
    * @param searcher
    * @throws IOException
    */
+  @Override
   public void releaseSearcher(IndexSearcher searcher) throws IOException {
-    if (this.searcherManager != null)
+    if (this.searcherManager != null) {
       this.searcherManager.release(searcher);
+    }
     this.lastTimeUsed = System.currentTimeMillis();
   }
 
+  @Override
   protected IndexReader bookReader() throws IOException {
     ensureOpen();
     // check for reopening
@@ -225,9 +241,11 @@ public final class IndexIOReadWrite extends IndexIO {
     return this.searcherManager.getReader();
   }
 
+  @Override
   protected void releaseReader(IndexReader reader) throws IOException {
-    if (this.searcherManager != null)
+    if (this.searcherManager != null) {
       this.searcherManager.releaseReader(reader);
+    }
     this.lastTimeUsed = System.currentTimeMillis();
   }
   /**
@@ -238,8 +256,9 @@ public final class IndexIOReadWrite extends IndexIO {
   }
   
   private void ensureOpen() throws IOException {
-    if (this.writer == null)
+    if (this.writer == null) {
       start();
+    }
     this.lastTimeUsed = System.currentTimeMillis();
   }
 
@@ -249,7 +268,7 @@ public final class IndexIOReadWrite extends IndexIO {
    * @throws IndexException Wrapping an {@link CorruptIndexException} or an {@link IOException}.
    */
   public void start() throws IOException {
-    this.writer = new IndexWriter(this.index.getIndexDirectory(), this.index.getAnalyzer(), IndexWriter.MaxFieldLength.LIMITED);
+    this.writer = new IndexWriter(this._index.getIndexDirectory(), this._index.getAnalyzer(), IndexWriter.MaxFieldLength.LIMITED);
     this.writer.setMergeScheduler(new ConcurrentMergeScheduler());
     this.writer.setMergePolicy(new BalancedSegmentMergePolicy(this.writer));
     this.searcherManager = new SearcherManager(this.writer);
@@ -262,6 +281,7 @@ public final class IndexIOReadWrite extends IndexIO {
    * 
    * @throws IndexException Wrapping an {@link CorruptIndexException} or an {@link IOException}.
    */
+  @Override
   public void stop() throws IndexException {
     try {
       this.searcherManager.close();
@@ -269,9 +289,9 @@ public final class IndexIOReadWrite extends IndexIO {
       this.writer.close();
       this.writer = null;
       OpenIndexManager.remove(this);
-    } catch (CorruptIndexException e) {
+    } catch (final CorruptIndexException e) {
       throw new IndexException("Failed to close Index because it is corrupted", e);
-    } catch (IOException e) {
+    } catch (final IOException e) {
       throw new IndexException("Failed to close Index because of an I/O error", e);
     }
   }

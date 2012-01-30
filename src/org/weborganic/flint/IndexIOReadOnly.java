@@ -44,7 +44,7 @@ public final class IndexIOReadOnly extends IndexIO {
   /**
    * The underlying index reader used by Flint for this index (there should only be one).
    */
-  private final IndexReader reader;
+  private final IndexReader _reader;
 
   /**
    * A search manager using this writer.
@@ -61,25 +61,28 @@ public final class IndexIOReadOnly extends IndexIO {
    */
   public IndexIOReadOnly(Index index) throws CorruptIndexException, IOException {
     super(index);
-    this.reader = IndexReader.open(index.getIndexDirectory(), true);
-    this.searcherManager = new SearcherManager(this.reader);
+    this._reader = IndexReader.open(index.getIndexDirectory(), true);
+    this.searcherManager = new SearcherManager(this._reader);
   }
 
   /**
    * Does nothing.
    */
+  @Override
   public void maybeCommit() {
   }
 
   /**
    * Does nothing.
    */
+  @Override
   public void maybeOptimise() {
   }
 
   /**
    * Does nothing.
    */
+  @Override
   public void stop() {
   }
 
@@ -89,6 +92,7 @@ public final class IndexIOReadOnly extends IndexIO {
    * @return nothing
    * @throws UnsupportedOperationException Always.
    */
+  @Override
   public boolean clearIndex() throws UnsupportedOperationException {
     throw UNSUPPORTED;
   }
@@ -100,6 +104,7 @@ public final class IndexIOReadOnly extends IndexIO {
    * @return nothing
    * @throws UnsupportedOperationException Always.
    */
+  @Override
   public boolean deleteDocuments(DeleteRule rule) throws UnsupportedOperationException {
     throw UNSUPPORTED;
   }
@@ -112,6 +117,7 @@ public final class IndexIOReadOnly extends IndexIO {
    * @return nothing
    * @throws UnsupportedOperationException Always.
    */
+  @Override
   public boolean updateDocuments(DeleteRule rule, List<Document> documents) throws UnsupportedOperationException {
     throw UNSUPPORTED;
   }
@@ -125,23 +131,31 @@ public final class IndexIOReadOnly extends IndexIO {
    * 
    * @throws IOException If reported by the {@link SearcherManager#get()}.
    */
+  @Override
   public IndexSearcher bookSearcher() throws IOException {
     return this.searcherManager.get();
   }
 
   /**
-   * 
-   * @param searcher
-   * @throws IOException
+   * {@inheritDoc}
    */
+  @Override
   public void releaseSearcher(IndexSearcher searcher) throws IOException {
     this.searcherManager.release(searcher);
   }
 
+  /**
+   * {@inheritDoc}
+   */
+  @Override
   protected IndexReader bookReader() throws IOException {
     return this.searcherManager.getReader();
   }
 
+  /**
+   * {@inheritDoc}
+   */
+  @Override
   protected void releaseReader(IndexReader reader) throws IOException {
     this.searcherManager.releaseReader(reader);
   }
