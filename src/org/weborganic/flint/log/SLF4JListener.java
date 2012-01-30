@@ -10,9 +10,14 @@ import org.weborganic.flint.IndexJob;
  * <p>This implementation simply wraps a {@link Logger} instance.
  * 
  * @author Christophe Lauret
- * @version 29 July 2010
+ * @version 30 January 2012
  */
 public final class SLF4JListener implements FlintListener {
+
+  /**
+   * The format string used for all SLF4J.
+   */
+  private static final String FORMAT_STRING = "{} [Job:{}]";
 
   /**
    * Sole instance.
@@ -88,14 +93,14 @@ public final class SLF4JListener implements FlintListener {
    * {@inheritDoc}
    */
   public void debug(IndexJob job, String message) {
-    this._logger.debug("{} [Job:{}]", message, job.toString());
+    this._logger.debug(FORMAT_STRING, message, job.toString());
   }
 
   /**
    * {@inheritDoc}
    */
   public void debug(IndexJob job, String message, Throwable throwable) {
-    this._logger.debug("{} [Job:{}]", message, job.toString());
+    this._logger.debug(FORMAT_STRING, message, job.toString());
     this._logger.debug(message, throwable);
   }
 
@@ -103,14 +108,14 @@ public final class SLF4JListener implements FlintListener {
    * {@inheritDoc}
    */
   public void info(IndexJob job, String message) {
-    this._logger.info("{} [Job:{}]", message, job.toString());
+    this._logger.info(FORMAT_STRING, message, job.toString());
   }
 
   /**
    * {@inheritDoc}
    */
   public void info(IndexJob job, String message, Throwable throwable) {
-    this._logger.info("{} [Job:{}]", message, job.toString());
+    this._logger.info(FORMAT_STRING, message, job.toString());
     this._logger.info(message, throwable);
   }
 
@@ -118,14 +123,14 @@ public final class SLF4JListener implements FlintListener {
    * {@inheritDoc}
    */
   public void warn(IndexJob job, String message) {
-    this._logger.warn("{} [Job:{}]", message, job.toString());
+    this._logger.warn(FORMAT_STRING, message, job.toString());
   }
 
   /**
    * {@inheritDoc}
    */
   public void warn(IndexJob job, String message, Throwable throwable) {
-    this._logger.warn("{} [Job:{}]", message, job.toString());
+    this._logger.warn(FORMAT_STRING, message, job.toString());
     this._logger.warn(message, throwable);
   }
 
@@ -133,14 +138,14 @@ public final class SLF4JListener implements FlintListener {
    * {@inheritDoc}
    */
   public void error(IndexJob job, String message) {
-    this._logger.error("{} [Job:{}]", message, job.toString());
+    this._logger.error(FORMAT_STRING, message, job.toString());
   }
 
   /**
    * {@inheritDoc}
    */
   public void error(IndexJob job, String message, Throwable throwable) {
-    this._logger.error("{} [Job:{}]", message, job.toString());
+    this._logger.error(FORMAT_STRING, message, job.toString());
     this._logger.error(message, throwable);
   }
 
@@ -155,6 +160,6 @@ public final class SLF4JListener implements FlintListener {
    * {@inheritDoc}
    */
   public void startJob(IndexJob job) {
-    this._logger.info("Done! [Job:{}]", job.toString());
+    this._logger.info("Starting [Job:{}]", job.toString());
   }
 }

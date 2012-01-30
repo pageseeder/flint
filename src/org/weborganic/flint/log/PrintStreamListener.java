@@ -105,14 +105,14 @@ public final class PrintStreamListener implements FlintListener {
    * {@inheritDoc}
    */
   public void debug(IndexJob job, String message) {
-    this._stream.println("[ERROR] "+message+" "+job.toString());
+    this._stream.println("[DEBUG] "+message+' '+job.toString());
   }
 
   /**
    * {@inheritDoc}
    */
   public void debug(IndexJob job, String message, Throwable throwable) {
-    this._stream.println("[ERROR] "+message+" "+job.toString());
+    debug(job, message);
     if (throwable != null)
       throwable.printStackTrace(this._stream);
   }
@@ -121,14 +121,14 @@ public final class PrintStreamListener implements FlintListener {
    * {@inheritDoc}
    */
   public void info(IndexJob job, String message) {
-    this._stream.println("[INFO ] "+message+" "+job.toString());
+    this._stream.println("[INFO ] "+message+' '+job.toString());
   }
 
   /**
    * {@inheritDoc}
    */
   public void info(IndexJob job, String message, Throwable throwable) {
-    this._stream.println("[INFO] "+message+" "+job.toString());
+    info(job, message);
     if (throwable != null)
       throwable.printStackTrace(this._stream);
   }
@@ -137,14 +137,14 @@ public final class PrintStreamListener implements FlintListener {
    * {@inheritDoc}
    */
   public void warn(IndexJob job, String message) {
-    this._stream.println("[WARN ] "+message+" "+job.toString());
+    this._stream.println("[WARN ] "+message+' '+job.toString());
   }
 
   /**
    * {@inheritDoc}
    */
   public void warn(IndexJob job, String message, Throwable throwable) {
-    this._stream.println("[WARN] "+message+" "+job.toString());
+    warn(job, message);
     if (throwable != null)
       throwable.printStackTrace(this._stream);
   }
@@ -153,14 +153,14 @@ public final class PrintStreamListener implements FlintListener {
    * {@inheritDoc}
    */
   public void error(IndexJob job, String message) {
-    this._stream.println("[ERROR] "+message+" "+job.toString());
+    this._stream.println("[ERROR] "+message+' '+job.toString());
   }
 
   /**
    * {@inheritDoc}
    */
   public void error(IndexJob job, String message, Throwable throwable) {
-    this._stream.println("[ERROR] "+message+" "+job.toString());
+    error(job, message);
     if (throwable != null)
       throwable.printStackTrace(this._stream);
   }
