@@ -22,7 +22,7 @@ import com.topologi.diffx.xml.XMLWriter;
  * This is API is still experimental and subject to change in Lucene, any change in Lucene may also
  * be reflected in this API.
  *
- * @param <T> The number type for this numerix range
+ * @param <T> The number type for this numeric range
  *
  * @author Christophe Lauret (Weborganic)
  * @author Jean-Baptiste Reure (Weborganic)
@@ -108,7 +108,7 @@ public final class NumericRange<T extends Number> implements SearchParameter {
   public String field() {
     return this._field;
   }
-  
+
   /**
    * Indicates whether the lower limit is inclusive.
    * 
@@ -185,7 +185,8 @@ public final class NumericRange<T extends Number> implements SearchParameter {
    * 
    * @return the corresponding <code>NumericRangeQuery</code>
    */
-  private static NumericRangeQuery<? extends Number> toNumericRangeQuery(String field, Number min, Number max, boolean minInclusive, boolean maxInclusive) {
+  private static NumericRangeQuery<? extends Number> 
+      toNumericRangeQuery(String field, Number min, Number max, boolean minInclusive, boolean maxInclusive) {
     // Long
     if (min instanceof Long || (min == null && max instanceof Long)) {
       return NumericRangeQuery.newLongRange(field, (Long)min, (Long)max, minInclusive, maxInclusive);
@@ -209,62 +210,78 @@ public final class NumericRange<T extends Number> implements SearchParameter {
   // factory methods ------------------------------------------------------------------------------
 
   /**
-   * Factory that creates a <code>NumericRangeParameter</code>, that queries a double range using the default precisionStep.
+   * Factory that creates a <code>NumericRangeParameter</code>, that queries a double range using 
+   * the default precisionStep.
    * 
    * @param field        the numeric field to search
    * @param min          the minimum value in the range (may be <code>null</code>)
    * @param max          the maximum value in the range (may be <code>null</code>)
-   * @param minInclusive <code>true</code> to include values matching the lower limit in the range; <code>false</code> to exclude it.
-   * @param maxInclusive <code>true</code> to include values matching the upper limit in the range; <code>false</code> to exclude it.
+   * @param minInclusive <code>true</code> to include values matching the lower limit in the range;
+   *                     <code>false</code> to exclude it.
+   * @param maxInclusive <code>true</code> to include values matching the upper limit in the range;
+   *                     <code>false</code> to exclude it.
    * 
    * @return a new range.
    */
-  public static NumericRange<Double> newDoubleRange(String field, Double min, Double max, boolean minInclusive, boolean maxInclusive) {
+  public static NumericRange<Double> newDoubleRange(String field, Double min, Double max, 
+      boolean minInclusive, boolean maxInclusive) {
     return new NumericRange<Double>(field, min, max, minInclusive, maxInclusive);
   }
 
   /**
-   * Factory that creates a <code>NumericRangeParameter</code>, that queries a float range using the default precisionStep.
+   * Factory that creates a <code>NumericRangeParameter</code>, that queries a float range using the
+   * default precisionStep.
    * 
    * @param field        the numeric field to search
    * @param min          the minimum value in the range (may be <code>null</code>)
    * @param max          the maximum value in the range (may be <code>null</code>)
-   * @param minInclusive <code>true</code> to include values matching the lower limit in the range; <code>false</code> to exclude it.
-   * @param maxInclusive <code>true</code> to include values matching the upper limit in the range; <code>false</code> to exclude it.
+   * @param minInclusive <code>true</code> to include values matching the lower limit in the range;
+   *                     <code>false</code> to exclude it.
+   * @param maxInclusive <code>true</code> to include values matching the upper limit in the range;
+   *                     <code>false</code> to exclude it.
    * 
    * @return a new range.
    */
-  public static NumericRange<Float> newFloatRange(String field, Float min, Float max, boolean minInclusive, boolean maxInclusive) {
+  public static NumericRange<Float> newFloatRange(String field, Float min, Float max, 
+      boolean minInclusive, boolean maxInclusive) {
     return new NumericRange<Float>(field, min, max, minInclusive, maxInclusive);
   }
 
   /**
-   * Factory that creates a <code>NumericRangeParameter</code>, that queries a int range using the default precisionStep.
+   * Factory that creates a <code>NumericRangeParameter</code>, that queries a int range using the 
+   * default precisionStep.
    * 
    * @param field        the numeric field to search
    * @param min          the minimum value in the range (may be <code>null</code>)
    * @param max          the maximum value in the range (may be <code>null</code>)
-   * @param minInclusive <code>true</code> to include values matching the lower limit in the range; <code>false</code> to exclude it.
-   * @param maxInclusive <code>true</code> to include values matching the upper limit in the range; <code>false</code> to exclude it.
+   * @param minInclusive <code>true</code> to include values matching the lower limit in the range;
+   *                     <code>false</code> to exclude it.
+   * @param maxInclusive <code>true</code> to include values matching the upper limit in the range;
+   *                     <code>false</code> to exclude it.
    * 
    * @return a new range.
    */
-  public static NumericRange<Integer> newIntRange(String field, Integer min, Integer max, boolean minInclusive, boolean maxInclusive) {
+  public static NumericRange<Integer> newIntRange(String field, Integer min, Integer max, 
+      boolean minInclusive, boolean maxInclusive) {
     return new NumericRange<Integer>(field, min, max, minInclusive, maxInclusive);
   }
 
   /**
-   * Factory that creates a <code>NumericRangeParameter</code>, that queries a long range using the default precisionStep.
+   * Factory that creates a <code>NumericRangeParameter</code>, that queries a long range using the 
+   * default precisionStep.
    * 
    * @param field        the numeric field to search
    * @param min          the minimum value in the range (may be <code>null</code>)
    * @param max          the maximum value in the range (may be <code>null</code>)
-   * @param minInclusive <code>true</code> to include values matching the lower limit in the range; <code>false</code> to exclude it.
-   * @param maxInclusive <code>true</code> to include values matching the upper limit in the range; <code>false</code> to exclude it.
+   * @param minInclusive <code>true</code> to include values matching the lower limit in the range;
+   *                     <code>false</code> to exclude it.
+   * @param maxInclusive <code>true</code> to include values matching the upper limit in the range;
+   *                     <code>false</code> to exclude it.
    * 
    * @return a new range.
    */
-  public static NumericRange<Long>  newLongRange(String field, Long min, Long max, boolean minInclusive, boolean maxInclusive) {
+  public static NumericRange<Long>  newLongRange(String field, Long min, Long max, 
+      boolean minInclusive, boolean maxInclusive) {
     return new NumericRange<Long>(field, min, max, minInclusive, maxInclusive);
   }
 
