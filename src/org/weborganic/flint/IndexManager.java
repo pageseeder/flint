@@ -1,6 +1,6 @@
 /*
  * This file is part of the Flint library.
- * 
+ *
  * For licensing information please see the file license.txt included in the release. A copy of this licence can also be
  * found at http://www.opensource.org/licenses/artistic-license-2.0.php
  */
@@ -14,7 +14,6 @@ import java.io.Writer;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -31,7 +30,6 @@ import javax.xml.transform.stream.StreamSource;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.IndexReader.FieldOption;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Sort;
@@ -58,7 +56,7 @@ import org.xml.sax.InputSource;
 
 /**
  * Main class from Flint, applications should create one instance of this class.
- * 
+ *
  * <ul>
  *   <li>To start and stop the indexing thread, use the methods {@link #start()} and {@link #stop()}.</li>
  *   <li>To register IndexConfigs, use the methods registerIndexConfig() and getConfig().</li>
@@ -66,7 +64,7 @@ import org.xml.sax.InputSource;
  *   <li>To search an Index, use the methods {@link IndexManager#query()}</li>
  *   <li>to load an Index's statuses, use the method {@link #getStatus()}</li>
  * </ul>
- * 
+ *
  * @author Jean-Baptiste Reure
  * @version 26 February 2010
  */
@@ -134,7 +132,7 @@ public final class IndexManager implements Runnable {
 
   /**
    * Simple constructor which will use a SilentListener.
-   * 
+   *
    * @param cf the Content Fetcher used to retrieve the content to index.
    */
   public IndexManager(ContentFetcher cf) {
@@ -143,7 +141,7 @@ public final class IndexManager implements Runnable {
 
   /**
    * Simple Constructor.
-   * 
+   *
    * @param cf       the Content Fetcher used to retrieve the content to index.
    * @param listener an object used to record events
    */
@@ -163,9 +161,9 @@ public final class IndexManager implements Runnable {
 
   /**
    * Set the default translator to use when no factory matches a MIME type.
-   * 
+   *
    * <p>This to the {@link ContentTranslator} used when the MIME. Default is <code>null</code>.
-   * 
+   *
    * @param translator the translator to use by default.
    */
   public void setDefaultTranslator(ContentTranslator translator) {
@@ -174,24 +172,24 @@ public final class IndexManager implements Runnable {
 
   /**
    * Set the priority of the thread.
-   * 
+   *
    * <p>This has no effect if called after the method <code>start()</code> is called.
    *
    * @param priority the priority of the Indexing Thread (from 1 to 10, default is 5)
-   * 
+   *
    * @throws IndexOutOfBoundsException if the priority is less than 1 or greater than 10.
    */
   public void setThreadPriority(int priority) {
-    if (priority < 1 || priority > 10) 
+    if (priority < 1 || priority > 10)
       throw new IndexOutOfBoundsException("Thread priority is should be between 1 and 10 but was "+priority);
     this.threadPriority = priority;
   }
 
   /**
    * Register a new factory with the all the MIME types supported by the factory.
-   * 
+   *
    * <p>If there was already a factory registered for a MIME type, it is overwritten.
-   * 
+   *
    * @param factory The factory to register
    */
   public void registerTranslatorFactory(ContentTranslatorFactory factory) {
@@ -203,10 +201,10 @@ public final class IndexManager implements Runnable {
 
   /**
    * Register a new factory with the given MIME type.
-   * 
+   *
    * <p>If there was already a factory registered for this MIME type, it is overwritten.
    * <p>The factory object must support the MIME type provided
-   * 
+   *
    * @param mimeType the MIME type
    * @param factory  the factory to register
    */
@@ -216,7 +214,7 @@ public final class IndexManager implements Runnable {
 
   /**
    * Add a new update job to the indexing queue.
-   * 
+   *
    * @param id       the ID of the Content
    * @param i        the Index to add the Content to
    * @param config   the Config to use
@@ -231,7 +229,7 @@ public final class IndexManager implements Runnable {
 
   /**
    * Add a new update job to the indexing queue.
-   * 
+   *
    * @param index      the Index to add the Content to
    * @param requester  the Requester calling this method (used for logging)
    * @param priority   the Priority of this job
@@ -242,12 +240,12 @@ public final class IndexManager implements Runnable {
 
   /**
    * Returns the list of waiting jobs for the Requester provided.
-   * 
-   * <p>Note that by the time each job is checked, they might have run already so the method 
+   *
+   * <p>Note that by the time each job is checked, they might have run already so the method
    * {@link IndexJob#isFinished()} should be called before parsing the job.
-   * 
+   *
    * <p>The list will never be <code>null</code>.
-   * 
+   *
    * @param r the Requester
    * @return the list of jobs waiting (never <code>null</code>)
    */
@@ -257,12 +255,12 @@ public final class IndexManager implements Runnable {
 
   /**
    * Returns the list of waiting jobs for the index provided.
-   * 
-   * <p>Note that by the time each job is checked, they might have run already so the method 
+   *
+   * <p>Note that by the time each job is checked, they might have run already so the method
    * {@link IndexJob#isFinished()} should be called before parsing the job.
-   * 
+   *
    * <p>The list will never be <code>null</code>.
-   * 
+   *
    * @param i the index
    * @return the list of jobs waiting (never <code>null</code>)
    */
@@ -272,12 +270,12 @@ public final class IndexManager implements Runnable {
 
   /**
    * Returns the list of waiting job for the all the indexes.
-   * 
-   * <p>Note that by the time each job is checked, they might have run already so the method 
+   *
+   * <p>Note that by the time each job is checked, they might have run already so the method
    * {@link IndexJob#isFinished()} should be called before parsing the job.
-   * 
+   *
    * <p>The list will never be <code>null</code>.
-   * 
+   *
    * @return the list of jobs waiting (never <code>null</code>)
    */
   public List<IndexJob> getStatus() {
@@ -286,7 +284,7 @@ public final class IndexManager implements Runnable {
 
   /**
    * Run a search on the given Index.
-   * 
+   *
    * @param index the Index to run the search on
    * @param query the query to run
    * @return the search results
@@ -298,13 +296,13 @@ public final class IndexManager implements Runnable {
 
   /**
    * Run a search on the given Index.
-   * 
+   *
    * @param index  the Index to run the search on
    * @param query  the query to run
    * @param paging paging details (can be <code>null</code>)
-   * 
+   *
    * @return the search results
-   * 
+   *
    * @throws IndexException if any error occurred while performing the search
    */
   public SearchResults query(Index index, SearchQuery query, SearchPaging paging) throws IndexException {
@@ -360,7 +358,7 @@ public final class IndexManager implements Runnable {
 
   /**
    * Returns a near real-time Reader on the index provided.
-   * 
+   *
    * <p>IMPORTANT: the reader should not be closed, it should be used in the following way to ensure
    *  it is made available to other threads:</p>
    * <pre>
@@ -371,10 +369,10 @@ public final class IndexManager implements Runnable {
    *      manager.release(index, reader);
    *    }
    * </pre>
-   * 
+   *
    * @param index the index that the Index Reader will point to.
    * @return the Index Reader to read from the index
-   * 
+   *
    * @throws IndexException If an IO error occurred when getting the reader.
    */
   public IndexReader grabReader(Index index) throws IndexException {
@@ -388,14 +386,14 @@ public final class IndexManager implements Runnable {
 
   /**
    * Release an {@link IndexReader} after it has been used.
-   * 
+   *
    * <p>It is necessary to release a reader so that it can be reused for other threads.
-   * 
+   *
    * @see IndexManager#grabReader(Index)
-   * 
+   *
    * @param index  The index the reader works on.
    * @param reader The actual Lucene index reader.
-   * 
+   *
    * @throws IndexException Wrapping any IO exception
    */
   public void release(Index index, IndexReader reader) throws IndexException {
@@ -411,11 +409,11 @@ public final class IndexManager implements Runnable {
   /**
    * Releases an {@link IndexReader} quietly after it has been used so that it can be used in a <code>finally</code>
    * block.
-   * 
+   *
    * <p>It is necessary to release a reader so that it can be reused for other threads.
-   * 
+   *
    * @see IndexManager#grabReader(Index)
-   * 
+   *
    * @param index  The index the reader works on.
    * @param reader The actual Lucene index reader.
    */
@@ -432,8 +430,8 @@ public final class IndexManager implements Runnable {
 
   /**
    * Returns a near real-time Searcher on the index provided.
-   * 
-   * <p>IMPORTANT: the searcher should not be closed, it should be used in the following way to 
+   *
+   * <p>IMPORTANT: the searcher should not be closed, it should be used in the following way to
    * ensure it is made available to other threads:</p>
    * <pre>
    *    IndexSearcher searcher = manager.grabSearcher(index);
@@ -443,10 +441,10 @@ public final class IndexManager implements Runnable {
    *      manager.release(index, searcher);
    *    }
    * </pre>
-   * 
+   *
    * @param index the index that the searcher will work on.
    * @return the index searcher to use on the index
-   * 
+   *
    * @throws IndexException If an IO error occurred when getting the reader.
    */
   public IndexSearcher grabSearcher(Index index) throws IndexException {
@@ -467,14 +465,14 @@ public final class IndexManager implements Runnable {
 
   /**
    * Release an {@link IndexSearcher} after it has been used.
-   * 
+   *
    * <p>It is necessary to release a searcher so that it can be reused by other threads.
-   * 
+   *
    * @see IndexManager#grabSearcher(Index)
-   * 
+   *
    * @param index    The index the searcher works on.
    * @param searcher The actual Lucene index searcher.
-   * 
+   *
    * @throws IndexException Wrapping any IO exception
    */
   public void release(Index index, IndexSearcher searcher) throws IndexException {
@@ -491,11 +489,11 @@ public final class IndexManager implements Runnable {
   /**
    * Releases an {@link IndexSearcher} quietly after it has been used so that it can be used in a <code>finally</code>
    * block.
-   * 
+   *
    * <p>It is necessary to release a searcher so that it can be reused for other threads.
-   * 
+   *
    * @see IndexManager#grabReader(Index)
-   * 
+   *
    * @param index    The index the searcher works on.
    * @param searcher The actual Lucene index searcher.
    */
@@ -512,7 +510,7 @@ public final class IndexManager implements Runnable {
 
   /**
    * Translate content into IDX data.
-   * 
+   *
    * @param type    the Content Type
    * @param config  the index config, where the XSLT script is registered
    * @param content the actual Content to transform
@@ -536,6 +534,7 @@ public final class IndexManager implements Runnable {
     // create the worker thread pool
     this.threadPool = Executors.newCachedThreadPool(new ThreadFactory() {
       /** {@inheritDoc} */
+      @Override
       public Thread newThread(Runnable r) {
         Thread t = new Thread(r, "Indexing Thread with priority of "+IndexManager.this.threadPriority);
         t.setPriority(IndexManager.this.threadPriority);
@@ -554,7 +553,7 @@ public final class IndexManager implements Runnable {
     // Close all indexes
     for (Entry<String, IndexIO> e : this._indexes.entrySet()) {
       String id = e.getKey();
-      IndexIO index = e.getValue(); 
+      IndexIO index = e.getValue();
       try {
         index.stop();
       } catch (IndexException ex) {
@@ -566,6 +565,7 @@ public final class IndexManager implements Runnable {
   /**
    * The thread's main method.
    */
+  @Override
   public void run() {
     IndexJob nextJob = null;
     while (true) {
@@ -634,9 +634,9 @@ public final class IndexManager implements Runnable {
 
   /**
    * Add or update a document in an index
-   * 
+   *
    * @param job
-   * 
+   *
    * @return true if the job was successful
    */
   private boolean updateJob(IndexJob job, Content content, IndexIO io) {
@@ -670,9 +670,9 @@ public final class IndexManager implements Runnable {
 
   /**
    * Delete a doc from an index
-   * 
+   *
    * @param job
-   * 
+   *
    * @return true if the job was successful
    */
   private boolean deleteJob(IndexJob job, Content content, IndexIO io) {
@@ -689,7 +689,7 @@ public final class IndexManager implements Runnable {
 
   /**
    * Translate the provided content into Flint Index XML
-   * 
+   *
    * @param errorListener   a listener for the XSLT transformation errors
    * @param type            the type of the content
    * @param config          the config used to retrieve the XSLT templates
@@ -761,7 +761,7 @@ public final class IndexManager implements Runnable {
 
   /**
    * Retrieves an IndexIO, creates it if non existent.
-   * 
+   *
    * @param index the index requiring the IO utility.
    * @return
    * @throws IndexException
@@ -803,7 +803,7 @@ public final class IndexManager implements Runnable {
       if (!this._indexQueue.isEmpty()) return;
     }
     // ok optimise now?
-    if ((System.currentTimeMillis() - _lastActivity) > INACTIVE_OPTIMISE_TIME) {
+    if ((System.currentTimeMillis() - this._lastActivity) > INACTIVE_OPTIMISE_TIME) {
       ios = new ArrayList<IndexIO>(this._indexes.values());
       // loop through the indexes and optimise
       for (IndexIO io : ios) {

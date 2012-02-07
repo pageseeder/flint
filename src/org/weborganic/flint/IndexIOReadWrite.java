@@ -1,6 +1,6 @@
 /*
  * This file is part of the Flint library.
- * 
+ *
  * For licensing information please see the file license.txt included in the release. A copy of this licence can also be
  * found at http://www.opensource.org/licenses/artistic-license-2.0.php
  */
@@ -16,19 +16,18 @@ import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.store.LockObtainFailedException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.weborganic.flint.content.DeleteRule;
 
 /**
  * Provides a set of utility methods to deal with IO operations on an Index.
- * 
+ *
  * <p>This class is useful to centralise all operations on an index because it will create one
  * writer and share it with other classes if needed.
- * 
+ *
  * <p>This is a lower level API.
- * 
+ *
  * @author Jean-Baptiste Reure
  * @version 26 February 2010
  */
@@ -60,9 +59,9 @@ public final class IndexIOReadWrite extends IndexIO {
 
   /**
    * Sole constructor.
-   * 
-   * @param index The index on which IO operations will occur. 
-   * 
+   *
+   * @param index The index on which IO operations will occur.
+   *
    * @throws IOException               If thrown by Lucene when creating the index writer.
    */
   public IndexIOReadWrite(Index index) throws IOException {
@@ -86,7 +85,7 @@ public final class IndexIOReadWrite extends IndexIO {
   }
 
   /**
-   * 
+   *
    * @throws IndexException
    */
   @Override
@@ -147,7 +146,7 @@ public final class IndexIOReadWrite extends IndexIO {
 
   /**
    * Delete the documents defined in the delete rule.
-   * 
+   *
    * @param rule
    * @return
    * @throws IndexException
@@ -173,7 +172,7 @@ public final class IndexIOReadWrite extends IndexIO {
   }
 
   /**
-   * 
+   *
    * @param rule
    * @param documents
    * @return
@@ -205,11 +204,11 @@ public final class IndexIOReadWrite extends IndexIO {
 
   /**
    * Returns the index searcher for the index.
-   * 
+   *
    * <p>Note: when a searcher is booked it must be released using {{@link #releaseSearcher(IndexSearcher)}.
-   * 
-   * @return The index searcher. 
-   * 
+   *
+   * @return The index searcher.
+   *
    * @throws IOException
    */
   @Override
@@ -221,7 +220,7 @@ public final class IndexIOReadWrite extends IndexIO {
   }
 
   /**
-   * 
+   *
    * @param searcher
    * @throws IOException
    */
@@ -254,7 +253,7 @@ public final class IndexIOReadWrite extends IndexIO {
   public long getLastTimeUsed() {
     return this.lastTimeUsed;
   }
-  
+
   private void ensureOpen() throws IOException {
     if (this.writer == null) {
       start();
@@ -264,7 +263,7 @@ public final class IndexIOReadWrite extends IndexIO {
 
   /**
    * Opens a new writer on the index.
-   * 
+   *
    * @throws IndexException Wrapping an {@link CorruptIndexException} or an {@link IOException}.
    */
   public void start() throws IOException {
@@ -278,7 +277,7 @@ public final class IndexIOReadWrite extends IndexIO {
 
   /**
    * Closes the writer on this index.
-   * 
+   *
    * @throws IndexException Wrapping an {@link CorruptIndexException} or an {@link IOException}.
    */
   @Override
