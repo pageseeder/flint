@@ -22,10 +22,13 @@ import org.xml.sax.helpers.DefaultHandler;
  * The handler for the Flint Index Documents format version 1.
  *
  * @see <a href="http://weborganic.org/code/flint/schema/index-documents-1.0.dtd">Index Documents 1.0 Schema</a>
- * 
+ *
+ * @deprecated Will be removed with no replacement in Flint 1.8
+ *
  * @author Christophe Lauret
  * @version 2 March 2010
  */
+@Deprecated
 final class IndexDocumentHandlerCompatibility extends DefaultHandler implements IndexDocumentHandler {
 
   /**
@@ -75,9 +78,9 @@ final class IndexDocumentHandlerCompatibility extends DefaultHandler implements 
   private boolean _isCompressed = false;
 
   /**
-   * The field builder. 
+   * The field builder.
    */
-  private FieldBuilder builder = new FieldBuilder(); 
+  private FieldBuilder builder = new FieldBuilder();
 
   /**
    * The characters found within a field.
@@ -90,6 +93,7 @@ final class IndexDocumentHandlerCompatibility extends DefaultHandler implements 
   /**
    * {@inheritDoc}
    */
+  @Override
   public List<Document> getDocuments() {
     return this.documents;
   }
@@ -102,6 +106,7 @@ final class IndexDocumentHandlerCompatibility extends DefaultHandler implements 
    *
    * <p>Initialise this handler.
    */
+  @Override
   public void startDocument() {
     LOGGER.debug("Start processing iXML documents (compatibility version)");
     this.documents = new ArrayList<Document>();
@@ -110,6 +115,7 @@ final class IndexDocumentHandlerCompatibility extends DefaultHandler implements 
   /**
    * Receives notification of the end of the document.
    */
+  @Override
   public void endDocument() {
     LOGGER.debug("End processing iXML document");
   }
@@ -117,6 +123,7 @@ final class IndexDocumentHandlerCompatibility extends DefaultHandler implements 
   /**
    * {@inheritDoc}
    */
+  @Override
   public void startElement(String uri, String localName, String qName, Attributes attributes) {
     if ("field".equals(qName)) {
       startFieldElement(attributes);
@@ -128,6 +135,7 @@ final class IndexDocumentHandlerCompatibility extends DefaultHandler implements 
   /**
    * {@inheritDoc}
    */
+  @Override
   public void endElement(String uri, String localName, String qName) {
     if ("field".equals(qName)) {
       endFieldElement();
@@ -149,6 +157,7 @@ final class IndexDocumentHandlerCompatibility extends DefaultHandler implements 
    *
    * @throws SAXException Any SAX exception, possibly wrapping another exception.
    */
+  @Override
   public void characters(char[] ch, int start, int length) throws SAXException {
     if (this._isField) {
       for (int i = start; i < (length+start); i++) {
@@ -162,7 +171,7 @@ final class IndexDocumentHandlerCompatibility extends DefaultHandler implements 
 
   /**
    * Handles the start of a 'document' element.
-   * 
+   *
    * @param atts The attributes to handles.
    */
   private void startDocumentElement(Attributes atts) {
@@ -185,7 +194,7 @@ final class IndexDocumentHandlerCompatibility extends DefaultHandler implements 
 
   /**
    * Handles the start of a new 'field' element
-   * 
+   *
    * @param atts The attributes to handles.
    */
   private void startFieldElement(Attributes atts) {
@@ -216,7 +225,7 @@ final class IndexDocumentHandlerCompatibility extends DefaultHandler implements 
 
   /**
    * @param type the field type as a string.
-   * @return "yes" if the field type is stored; "no" if unstored; <code>null</code> otherwise. 
+   * @return "yes" if the field type is stored; "no" if unstored; <code>null</code> otherwise.
    */
   private static String fieldTypeToStore(String type) {
     if (type == null)                            return null;
@@ -232,7 +241,7 @@ final class IndexDocumentHandlerCompatibility extends DefaultHandler implements 
 
   /**
    * @param type the field type as a string.
-   * @return "yes" if the field type is indexed; "no" if not; <code>null</code> otherwise. 
+   * @return "yes" if the field type is indexed; "no" if not; <code>null</code> otherwise.
    */
   private static Field.Index fieldTypeToIndex(String type) {
     if (type == null)                            return null;
@@ -299,7 +308,7 @@ final class IndexDocumentHandlerCompatibility extends DefaultHandler implements 
    *
    * <p>Otherwise retrieve from hashtable or create an instance if it's
    * never been created.
-   * 
+   *
    * @param format The date format used.
    * @return the corresponding date format instance.
    */
