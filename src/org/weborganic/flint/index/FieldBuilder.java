@@ -19,19 +19,19 @@ import org.weborganic.flint.util.Dates;
 
 /**
  * A builder for fields.
- * 
+ *
  * <p>This class can be used to temporarily hold values required to creates new fields and
  * ensure that the field can be build without errors.
- * 
+ *
  * @author Christophe Lauret
- * @version 2 March 2010
+ * @version 10 February 2012
  */
 public final class FieldBuilder {
 
   /**
    * Possible number type for a numeric field.
    */
-  protected static enum NumericType {FLOAT, INT, DOUBLE, LONG};
+  protected static enum NumericType { FLOAT, INT, DOUBLE, LONG };
 
   /**
    * The default boost value for the term.
@@ -98,7 +98,7 @@ public final class FieldBuilder {
 
   /**
    * The name of the field to build.
-   * 
+   *
    * @param name The name of the field to build.
    * @return this builder.
    */
@@ -109,7 +109,7 @@ public final class FieldBuilder {
 
   /**
    * The value of the field to build.
-   * 
+   *
    * @param value The value of the field to build.
    * @return this builder.
    */
@@ -120,7 +120,7 @@ public final class FieldBuilder {
 
   /**
    * Set the field store for the field to build.
-   * 
+   *
    * @param store The field store for the field to build.
    * @return this builder.
    */
@@ -131,9 +131,9 @@ public final class FieldBuilder {
 
   /**
    * Set the field store for the field to build.
-   * 
+   *
    * @see #toFieldStore(String)
-   * 
+   *
    * @param store The field store for the field to build as a string.
    * @return this builder.
    */
@@ -144,7 +144,7 @@ public final class FieldBuilder {
 
   /**
    * Set the field index for the field to build.
-   * 
+   *
    * @param index The field index for the field to build.
    * @return this builder.
    */
@@ -155,9 +155,9 @@ public final class FieldBuilder {
 
   /**
    * Set the field index for the field to build.
-   * 
+   *
    * @see #toFieldIndex(String)
-   * 
+   *
    * @param index The field index for the field to build as a string.
    * @return this builder.
    */
@@ -168,7 +168,7 @@ public final class FieldBuilder {
 
   /**
    * Sets the term vector.
-   * 
+   *
    * @param vector The term vector for the field to build.
    * @return this builder.
    */
@@ -179,9 +179,9 @@ public final class FieldBuilder {
 
   /**
    * Sets the term vector.
-   * 
+   *
    * @see FieldBuilder#toTermVector(String)
-   * 
+   *
    * @param vector The term vector for the field to build as a string.
    * @return this builder.
    */
@@ -192,7 +192,7 @@ public final class FieldBuilder {
 
   /**
    * Returns the boost value for this field.
-   * 
+   *
    * @param boost The boost value for this field as a string.
    * @return this builder.
    */
@@ -203,9 +203,9 @@ public final class FieldBuilder {
 
   /**
    * Returns the boost value for this field.
-   * 
+   *
    * @see #toBoost(String)
-   * 
+   *
    * @param boost The boost value for this field as a string.
    * @return this builder.
    */
@@ -216,7 +216,7 @@ public final class FieldBuilder {
 
   /**
    * Returns the date format for this field.
-   * 
+   *
    * @param dateformat A date format to parse dates.
    * @return this builder.
    */
@@ -227,7 +227,7 @@ public final class FieldBuilder {
 
   /**
    * Returns the date resolution for this field.
-   * 
+   *
    * @param resolution A date resolution to parse dates.
    * @return this builder.
    */
@@ -238,9 +238,9 @@ public final class FieldBuilder {
 
   /**
    * Returns the date resolution for this field.
-   * 
+   *
    * @see FieldBuilder#toResolution(String)
-   * 
+   *
    * @param resolution A date resolution to parse dates.
    * @return this builder.
    */
@@ -251,7 +251,7 @@ public final class FieldBuilder {
 
   /**
    * Sets the number type for a numeric type, set to <code>null</code> for a string.
-   * 
+   *
    * @param type The number type for the numeric field to build.
    * @return this builder.
    */
@@ -262,7 +262,7 @@ public final class FieldBuilder {
 
   /**
    * Sets the number type for a numeric type, set to <code>null</code> for a string.
-   * 
+   *
    * @param type The number type for the numeric field to build.
    * @return this builder.
    */
@@ -273,7 +273,7 @@ public final class FieldBuilder {
 
   /**
    * Sets the precision step (only applies to numeric fields).
-   * 
+   *
    * <p>Good values depend on usage and data type.
    * <p>Suitable values are generally between 1 and 8, see below (copied from Lucene doc)
    * <ul>
@@ -282,9 +282,9 @@ public final class FieldBuilder {
    *   <li>Ideal value in most cases for 32 bit data types (int, float) is 4.</li>
    *   <li>For low cardinality fields larger precision steps are good.</li>
    * </ul>
-   * 
+   *
    * @see org.apache.lucene.document.NumericField
-   * 
+   *
    * @param precision The precision step.
    * @return this builder.
    */
@@ -295,9 +295,9 @@ public final class FieldBuilder {
 
   /**
    * Sets the precision step (only applies to numeric fields).
-   * 
+   *
    * @see #precisionStep(int)
-   * 
+   *
    * @param precision The precision step to be parsed as an integer.
    * @return this builder.
    */
@@ -316,7 +316,7 @@ public final class FieldBuilder {
 
   /**
    * Returns the name of the field to build.
-   * 
+   *
    * @return The name of the field to build.
    */
   public String name() {
@@ -325,7 +325,7 @@ public final class FieldBuilder {
 
   /**
    * Returns the field store for the field to build.
-   * 
+   *
    * @return The field store for the field to build.
    */
   public Field.Store store() {
@@ -334,7 +334,7 @@ public final class FieldBuilder {
 
   /**
    * Returns the field index for the field to build.
-   * 
+   *
    * @return The field index for the field to build.
    */
   public Field.Index index() {
@@ -352,7 +352,7 @@ public final class FieldBuilder {
 
   /**
    * Returns the boost value for this field.
-   * 
+   *
    * @return The boost value for this field.
    */
   public float boost() {
@@ -364,7 +364,7 @@ public final class FieldBuilder {
 
   /**
    * Indicates whether all required attributes have been set.
-   * 
+   *
    * <p>The required attributes are:
    * <ul>
    *   <li>Name, method {@link #name(String)} must have been called once.</li>
@@ -372,7 +372,7 @@ public final class FieldBuilder {
    *   <li>Field Index, method {@link #index(Index)} or {@link #index(String)} must have been called once.</li>
    *   <li>Value, method {@link #value(String)} must have been called once.</li>
    * </ul>
-   * 
+   *
    * @return <code>true</code> if the {@link #build()} method can be called safely;
    *        <code>false</code> otherwise;
    */
@@ -382,7 +382,7 @@ public final class FieldBuilder {
 
   /**
    * Resets all this class attribute so that a new field can be build.
-   * 
+   *
    * <p>Invoke this function once a field has been build or before building a new field.
    */
   public void reset() {
@@ -400,9 +400,9 @@ public final class FieldBuilder {
 
   /**
    * Builds the field from the values in this builder.
-   * 
+   *
    * @return the field from the values in this builder.
-   * 
+   *
    * @throws IllegalStateException If the builder is not ready.
    */
   public Fieldable build() throws IllegalStateException {
@@ -442,9 +442,9 @@ public final class FieldBuilder {
 
   /**
    * Builds an stored unindexed compressed version of the field from the values in this builder.
-   * 
+   *
    * @return the field from the values in this builder.
-   * 
+   *
    * @throws IllegalStateException If the builder is not ready.
    */
   public Field buildCompressed() throws IllegalStateException {
@@ -459,17 +459,17 @@ public final class FieldBuilder {
 
   /**
    * Checks that required attributes have been set
-   * 
-   * @throws IllegalStateException Should any missing attribute prevent a build. 
+   *
+   * @throws IllegalStateException Should any missing attribute prevent a build.
    */
   private void checkReady() throws IllegalStateException {
     if (this._name  == null)
       throw new IllegalStateException("Unable to build field, field name not set");
     if (this._index == null)
       throw new IllegalStateException("Unable to build field, field index not set");
-    if (this._store == null) 
+    if (this._store == null)
       throw new IllegalStateException("Unable to build field, field store not set");
-    if (this._value == null) 
+    if (this._value == null)
       throw new IllegalStateException("Unable to build field, field value not set");
   }
 
@@ -478,11 +478,11 @@ public final class FieldBuilder {
 
   /**
    * Returns the Lucene 3 Field Store matching the specified value.
-   * 
+   *
    * @see Field.Store
-   * 
-   * @param store The store flag as a string. 
-   * 
+   *
+   * @param store The store flag as a string.
+   *
    * @return The corresponding Lucene 3 constant or <code>null</code> if none matches.
    */
   public static Store toFieldStore(String store) {
@@ -494,11 +494,11 @@ public final class FieldBuilder {
 
   /**
    * Returns the Lucene 3 Field Index matching the specified value.
-   * 
+   *
    * @see Field.Index
-   * 
+   *
    * @param index The index flag as a string.
-   * 
+   *
    * @return The corresponding Lucene 3 constant or <code>null</code> if none matches.
    */
   public static Index toFieldIndex(String index) {
@@ -513,11 +513,11 @@ public final class FieldBuilder {
 
   /**
    * Returns the Lucene 3 Field Index from the attribute value.
-   * 
+   *
    * @see TermVector
-   * 
+   *
    * @param vector The term vector.
-   * 
+   *
    * @return The corresponding Lucene 3 constant or <code>null</code> if none matches.
    */
   public static TermVector toTermVector(String vector) {
@@ -532,35 +532,35 @@ public final class FieldBuilder {
 
   /**
    * Returns the resolution for date.
-   * 
+   *
    * @see DateTools.Resolution
-   * 
-   * @param resolution The date tools resolution. 
-   * 
-   * @return The corresponding Lucene 3 constant. 
+   *
+   * @param resolution The date tools resolution.
+   *
+   * @return The corresponding Lucene 3 constant.
    */
   public static DateTools.Resolution toResolution(String resolution) {
     if (resolution == null) return null;
-    if ("year".equals(resolution))    return DateTools.Resolution.YEAR;
-    if ("month".equals(resolution))   return DateTools.Resolution.MONTH;
-    if ("day".equals(resolution))     return DateTools.Resolution.DAY;
-    if ("hour".equals(resolution))    return DateTools.Resolution.HOUR;
-    if ("minute".equals(resolution))  return DateTools.Resolution.MINUTE;
-    if ("second".equals(resolution))  return DateTools.Resolution.SECOND;
-    if ("milli".equals(resolution))   return DateTools.Resolution.MILLISECOND;
+    else if ("year".equals(resolution))    return DateTools.Resolution.YEAR;
+    else if ("month".equals(resolution))   return DateTools.Resolution.MONTH;
+    else if ("day".equals(resolution))     return DateTools.Resolution.DAY;
+    else if ("hour".equals(resolution))    return DateTools.Resolution.HOUR;
+    else if ("minute".equals(resolution))  return DateTools.Resolution.MINUTE;
+    else if ("second".equals(resolution))  return DateTools.Resolution.SECOND;
+    else if ("milli".equals(resolution))   return DateTools.Resolution.MILLISECOND;
     LOGGER.warn("Invalid date resolution: {}, defaulting to Resolution.DAY", resolution);
     return DateTools.Resolution.DAY;
   }
 
   /**
    * Returns the numeric type.
-   * 
+   *
    * <p>If the value does not match one of the value number types
    * this method will return <code>null</code> and the field will be indexed as a normal String field.
-   * 
+   *
    * @param type The number type; one of ("int","float","double" or "long").
-   * 
-   * @return The corresponding <code>NumericType</code> instance or <code>null</code>. 
+   *
+   * @return The corresponding <code>NumericType</code> instance or <code>null</code>.
    */
   public static NumericType toNumeric(String type) {
     if (type == null) return null;
@@ -574,7 +574,7 @@ public final class FieldBuilder {
 
   /**
    * Returns the boost value for a field as a float.
-   * 
+   *
    * <p>If the float parsing fails, this method returns the default boost value.
    *
    * @param boost The boost value.
@@ -590,20 +590,18 @@ public final class FieldBuilder {
     }
   }
 
-
-
   // Private helpers
   // ----------------------------------------------------------------------------------------------
 
   /**
    * Sets the value of the numeric field.
-   * 
-   * @param nf      The Lucene numeric field 
+   *
+   * @param nf      The Lucene numeric field
    * @param numeric The numeric type (float, int, double or long)
    * @param value   The actual value as a number
-   * 
+   *
    * @return the numeric field from the values in this builder; or <code>null</code>
-   * 
+   *
    * @throws IllegalStateException If the builder is not ready.
    */
   private static NumericField setValue(NumericField nf, NumericType numeric, String value) throws IllegalStateException {
@@ -623,16 +621,17 @@ public final class FieldBuilder {
 
   /**
    * Sets the value of the numeric field.
-   * 
-   * @param nf      The Lucene numeric field 
+   *
+   * @param nf      The Lucene numeric field
    * @param numeric The numeric type (float, int, double or long)
    * @param value   The actual value as a number
-   * 
+   *
    * @return the numeric field from the values in this builder; or <code>null</code>
-   * 
+   *
    * @throws IllegalStateException If the builder is not ready.
    */
-  private static NumericField setValue(NumericField nf, NumericType numeric, Number value) throws IllegalStateException {
+  private static NumericField setValue(NumericField nf, NumericType numeric, Number value)
+      throws IllegalStateException {
     try {
       switch (numeric) {
         case FLOAT:  return nf.setFloatValue(value.floatValue());

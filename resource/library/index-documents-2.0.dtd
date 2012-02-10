@@ -69,10 +69,13 @@
 <!--                                                
   A container for Lucene documents.
 
-  @element document The list of documents.
+  @element document          The list of documents.
+  @attribute version         The Flint document version.
+  @attribute timezone        A specific timezone used by the document.
 -->
 <!ELEMENT documents                         (document*)                                           >
-<!ATTLIST documents          version         CDATA                                   #FIXED "2.0" >
+<!ATTLIST documents          version         CDATA                                   #FIXED "2.0" 
+                             timezone        CDATA                                       #IMPLIED >
 
 <!--                                                
   A Lucene document.
