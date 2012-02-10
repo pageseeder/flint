@@ -311,15 +311,18 @@ public final class IndexManager implements Runnable {
     try {
       io = getIndexIO(index);
       searcher = io.bookSearcher();
-    } catch (CorruptIndexException e) {
-      this._listener.error("Failed getting a Searcher to perform a query because the Index is corrupted", e);
-      throw new IndexException("Failed getting a Searcher to perform a query because the Index is corrupted", e);
-    } catch (LockObtainFailedException e) {
-      this._listener.error("Failed getting a lock on the Index to perform a query", e);
-      throw new IndexException("Failed getting a lock on the Index to perform a query", e);
-    } catch (IOException e) {
-      this._listener.error("Failed getting a searcher to perform a query on the Index because of an I/O problem", e);
-      throw new IndexException("Failed getting a searcher to perform a query on the Index because of an I/O problem", e);
+    } catch (CorruptIndexException ex) {
+      final String message = "Failed getting a Searcher to perform a query because the Index is corrupted";
+      this._listener.error(message, ex);
+      throw new IndexException(message, ex);
+    } catch (LockObtainFailedException ex) {
+      final String message = "Failed getting a lock on the Index to perform a query";
+      this._listener.error(message, ex);
+      throw new IndexException(message, ex);
+    } catch (IOException ex) {
+      final String message = "Failed getting a searcher to perform a query on the Index because of an I/O problem";
+      this._listener.error(message, ex);
+      throw new IndexException(message, ex);
     }
     if (searcher != null) {
       try {
@@ -327,8 +330,9 @@ public final class IndexManager implements Runnable {
         if (lquery == null) {
           try {
             io.releaseSearcher(searcher);
-          } catch (IOException ioe) {
-            this._listener.error("Failed releasing a Searcher after performing a query on the Index because of an I/O problem", ioe);
+          } catch (IOException ex) {
+            String message = "Failed releasing a Searcher after performing a query because of an I/O problem";
+            this._listener.error(message, ex);
           }
           this._listener.error("Failed performing a query on the Index because the query is null", null);
           throw new IndexException("Failed performing a query on the Index because the query is null", new NullPointerException("Null query"));
