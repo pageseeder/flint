@@ -9,13 +9,29 @@ import org.apache.lucene.document.DateTools.Resolution;
 
 /**
  * A collection of utility methods to deal with dates.
- * 
+ *
  * <p>By default, Flint uses ISO8601.
- * 
+ *
  * @author Christophe Lauret
  * @version 10 September 2010
  */
 public final class Dates {
+
+
+  /**
+   * The maximum length for a field to expand.
+   */
+  private static final int ONE_SECOND_IN_MS = 1000;
+
+  /**
+   * One minute in milliseconds.
+   */
+  private static final int ONE_MINUTE_IN_MS = 60000;
+
+  /**
+   * One hour in milliseconds.
+   */
+  private static final int ONE_HOUR_IN_MS = 3600000;
 
   /** Utility class. */
   private Dates() {
@@ -23,7 +39,7 @@ public final class Dates {
 
   /**
    * Formats the specified date as a String with the given resolution using ISO8601.
-   * 
+   *
    * <p>Formats based on the resolution using the ISO8601 extended format:
    * <ul>
    *   <li>Year <code>[YYYY]</code>
@@ -34,12 +50,12 @@ public final class Dates {
    *   <li>Second <code>[YYYY]-[MM]-[DD]T[hh]:[mm]:[ss]</code>
    *   <li>MilliSecond <code> [YYYY]-[MM]-[DD]T[hh]:[mm]:[ss].[sss]</code>
    * </ul>
-   * 
+   *
    * <p>Note: dates returned in local time.
-   * 
+   *
    * @param date       The date to format
    * @param resolution The resolution for the formatting
-   * 
+   *
    * @return the formatted date as ISO8601 or <code>null</code>.
    */
   public static String format(Date date, Resolution resolution) {
@@ -97,10 +113,10 @@ public final class Dates {
     if (date == null) return null;
     long timems = date.getTime();
     // Resolution higher than Day -> Long
-    if (resolution == Resolution.MILLISECOND) { return Long.valueOf(timems); }
-    if (resolution == Resolution.SECOND)      { return Long.valueOf(timems / 1000); }
-    if (resolution == Resolution.MINUTE)      { return Long.valueOf(timems / 60000); }
-    if (resolution == Resolution.HOUR)        { return Long.valueOf(timems / 3600000); }
+    if (resolution == Resolution.MILLISECOND) return Long.valueOf(timems);
+    else if (resolution == Resolution.SECOND) return Long.valueOf(timems / ONE_SECOND_IN_MS);
+    else if (resolution == Resolution.MINUTE) return Long.valueOf(timems / ONE_MINUTE_IN_MS);
+    else if (resolution == Resolution.HOUR)   return Long.valueOf(timems / ONE_HOUR_IN_MS);
     // Resolution lower than Day -> Integer
     Calendar c = GregorianCalendar.getInstance();
     c.setTimeInMillis(timems);
@@ -120,7 +136,7 @@ public final class Dates {
 
   /**
    * Pads the given numbers with zeros to the left.
-   * 
+   *
    * @param value to pad (eg. 2)
    * @return The padded value (eg. "02")
    */
@@ -130,7 +146,7 @@ public final class Dates {
 
   /**
    * Pads the given numbers with zeros to the left.
-   * 
+   *
    * @param value to pad (eg. 2)
    * @return The padded value (eg. "002")
    */
@@ -142,9 +158,9 @@ public final class Dates {
 
   /**
    * Pads the given numbers with zeros to the left.
-   * 
+   *
    * @param value to pad (eg. 2)
-@return The padded value (eg. "0002")
+   * @return The padded value (eg. "0002")
    */
   private static String leftZeroPad4(int value) {
     if (value >= 1000) return Integer.toString(value);
@@ -154,7 +170,7 @@ public final class Dates {
   }
 
   /**
-   * Returns the timezone component of and ISO 8601 date as <code>+[hh]:[ss]</code>, 
+   * Returns the timezone component of and ISO 8601 date as <code>+[hh]:[ss]</code>,
    * <code>-[hh]:[ss]</code> or <code>Z</code>.
    *
    * @param offset in milliseconds.

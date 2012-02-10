@@ -18,7 +18,7 @@ import com.topologi.diffx.xml.esc.XMLEscapeUTF8;
 
 /**
  * A collection of utility methods to manipulate documents.
- * 
+ *
  * @author Christophe Lauret
  * @version 5 July 2011
  */
@@ -32,12 +32,12 @@ public final class Documents {
 
   /**
    * Count the number of documents matching the specified query.
-   * 
+   *
    * @param searcher the index search to use.
    * @param query    the query.
-   * 
+   *
    * @return the number of documents matching the specified query.
-   * 
+   *
    * @throws IOException if thrown by the searcher.
    */
   public static int count(IndexSearcher searcher, Query query) throws IOException {
@@ -48,12 +48,12 @@ public final class Documents {
 
   /**
    * Returns the XML for a document.
-   * 
+   *
    * @param xml   The XML writer.
    * @param doc   Lucene document to serialise as XML.
    * @param terms Unused???
    * @param extractLength
-   * 
+   *
    * @throws IOException Any I/O error thrown by the XML writer.
    */
   @Beta
@@ -78,10 +78,10 @@ public final class Documents {
 
   /**
    * Returns the XML for a document.
-   * 
+   *
    * @param xml The XML writer.
    * @param doc Lucene document to serialise as XML.
-   * 
+   *
    * @throws IOException Any I/O error thrown by the XML writer.
    */
   @Beta
@@ -106,22 +106,22 @@ public final class Documents {
 
   /**
    * Returns the extract from the text for the given terms and with the maximum specified length.
-   * 
+   *
    * <p>This method will include "..." whenever the text was cut (at the beginning or the end).
-   * 
-   * @param text   the text to search 
+   *
+   * @param text   the text to search
    * @param term   the term to find
    * @param length The length of the extract
-   * 
+   *
    * @return the extract or <code>null</code> if the term could not be found.
-   * 
+   *
    * @throws IllegalArgumentException If the length of the term is larger than the length of the extract.
    */
   @Beta
   public static String extract(String text, String term, int length) throws IllegalArgumentException {
     if (text == null) return null;
-    if (term.length() > length) 
-      throw new IllegalArgumentException("Term length ("+term.length()+") is larger than requested extract length ("+length+")");
+    if (term.length() > length)
+      throw new IllegalArgumentException("Term length ("+term.length()+") is larger than extract length ("+length+")");
     final int len = length - term.length();
     Pattern p = Pattern.compile("(?:\\W|^)(\\Q"+term+"\\E)(?:\\W|$)", Pattern.CASE_INSENSITIVE);
     Matcher m = p.matcher(text);
@@ -129,13 +129,13 @@ public final class Documents {
       StringBuilder extract = new StringBuilder();
       int start = m.start(1);
       int end = m.end(1);
-      // the entire string can be used 
+      // the entire string can be used
       if (length > text.length()) {
         extract.append(asXML(text.substring(0, start)));
         extract.append("<term>").append(asXML(m.group(1))).append("</term>");
         extract.append(asXML(text.substring(end)));
 
-      // 
+      //
       } else if (start < len / 2) {
         extract.append(asXML(text.substring(0, start)));
         extract.append("<term>").append(asXML(m.group(1))).append("</term>");
@@ -176,7 +176,7 @@ public final class Documents {
 
   /**
    * Returns the value of the specified field decompressing it if required.
-   * 
+   *
    * @param f The field
    * @return its value
    */
