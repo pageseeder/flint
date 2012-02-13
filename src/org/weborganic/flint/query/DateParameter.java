@@ -1,5 +1,4 @@
 /*
-/*
  * This file is part of the Flint library.
  *
  * For licensing information please see the file license.txt included in the release.

@@ -15,7 +15,6 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.BooleanQuery;
-import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Searcher;
 import org.apache.lucene.search.TermQuery;
@@ -120,7 +119,7 @@ public final class FieldFacet implements XMLWritable, Facet {
    *
    * <p>Defaults to 10.
    *
-   * @see #compute(IndexSearcher, Query, int)
+   * @see #compute(Searcher, Query, int)
    *
    * @param searcher the index search to use.
    * @param base     the base query.
