@@ -1,8 +1,9 @@
 /*
  * This file is part of the Flint library.
- * 
- * For licensing information please see the file license.txt included in the release. A copy of this licence can also be
- * found at http://www.opensource.org/licenses/artistic-license-2.0.php
+ *
+ * For licensing information please see the file license.txt included in the release.
+ * A copy of this licence can also be found at
+ *   http://www.opensource.org/licenses/artistic-license-2.0.php
  */
 package org.weborganic.flint;
 
@@ -19,12 +20,12 @@ import org.weborganic.flint.content.DeleteRule;
 
 /**
  * Provides a set of utility methods to deal with IO operations on an Index.
- * 
+ *
  * <p>This class is useful to centralise all operations on an index because it will create one
  * writer and share it with other classes if needed.
- * 
+ *
  * <p>This is a lower level API.
- * 
+ *
  * @author Jean-Baptiste Reure
  * @version 26 February 2010
  */
@@ -38,7 +39,7 @@ public final class IndexIOReadOnly extends IndexIO {
   /**
    * Error to throw if an operation requiring write permissions is needed.
    */
-  private static final UnsupportedOperationException UNSUPPORTED = 
+  private static final UnsupportedOperationException UNSUPPORTED =
     new UnsupportedOperationException("Index I/O is ReadOnly");
 
   /**
@@ -53,9 +54,9 @@ public final class IndexIOReadOnly extends IndexIO {
 
   /**
    * Sole constructor.
-   * 
-   * @param index The index on which IO operations will occur. 
-   * 
+   *
+   * @param index The index on which IO operations will occur.
+   *
    * @throws CorruptIndexException     If thrown by Lucene when creating the index writer.
    * @throws IOException               If thrown by Lucene when creating the index writer.
    */
@@ -88,7 +89,7 @@ public final class IndexIOReadOnly extends IndexIO {
 
   /**
    * This operation is not supported in read only mode.
-   * 
+   *
    * @return nothing
    * @throws UnsupportedOperationException Always.
    */
@@ -99,7 +100,7 @@ public final class IndexIOReadOnly extends IndexIO {
 
   /**
    * This operation is not supported in read only mode.
-   * 
+   *
    * @param rule Ignored
    * @return nothing
    * @throws UnsupportedOperationException Always.
@@ -111,7 +112,7 @@ public final class IndexIOReadOnly extends IndexIO {
 
   /**
    * This operation is not supported in read only mode.
-   * 
+   *
    * @param rule      Ignored
    * @param documents Ignored
    * @return nothing
@@ -124,11 +125,11 @@ public final class IndexIOReadOnly extends IndexIO {
 
   /**
    * Returns the index searcher for the index.
-   * 
+   *
    * <p>Note: when a searcher is booked it must be released using {{@link #releaseSearcher(IndexSearcher)}.
-   * 
+   *
    * @return The index searcher.
-   * 
+   *
    * @throws IOException If reported by the {@link SearcherManager#get()}.
    */
   @Override

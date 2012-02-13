@@ -1,8 +1,9 @@
 /*
  * This file is part of the Flint library.
- * 
- * For licensing information please see the file license.txt included in the release. A copy of this licence can also be
- * found at http://www.opensource.org/licenses/artistic-license-2.0.php
+ *
+ * For licensing information please see the file license.txt included in the release.
+ * A copy of this licence can also be found at
+ *   http://www.opensource.org/licenses/artistic-license-2.0.php
  */
 package org.weborganic.flint;
 
@@ -16,7 +17,7 @@ import org.slf4j.LoggerFactory;
 
 /**
  * The queue containing Index Jobs.
- * 
+ *
  * @author Jean-Baptiste Reure
  * @version 14 May 2010
  */
@@ -39,7 +40,7 @@ public final class IndexJobQueue {
 
   /**
    * Simple Constructor.
-   * 
+   *
    * @param pollDelay the poll delay on the queue (in milliseconds)
    */
   public IndexJobQueue(long pollDelay) {
@@ -52,7 +53,7 @@ public final class IndexJobQueue {
 
   /**
    * Add a new update job to the indexing queue.
-   * 
+   *
    * @param job The job to add to this queue.
    */
   public void addJob(IndexJob job) {
@@ -62,12 +63,12 @@ public final class IndexJobQueue {
 
   /**
    * Returns the list of jobs for the specified requester.
-   * 
-   * <p>Note that by the time each job is checked, they might have run already so the method 
+   *
+   * <p>Note that by the time each job is checked, they might have run already so the method
    * {@link IndexJob#isFinished()} should be called before parsing the job.
-   * 
+   *
    * <p>The list will never be <code>null</code>.
-   * 
+   *
    * @param r the Requester
    * @return the list of jobs (never <code>null</code>)
    */
@@ -82,12 +83,12 @@ public final class IndexJobQueue {
 
   /**
    * Returns the list of jobs for the index provided.
-   * 
-   * <p>Note that by the time each job is checked, they might have run already so the method 
+   *
+   * <p>Note that by the time each job is checked, they might have run already so the method
    * {@link IndexJob#isFinished()} should be called before parsing the job.
-   * 
+   *
    * <p>The list will never be <code>null</code>.
-   * 
+   *
    * @param i the index
    * @return the list of jobs (never <code>null</code>)
    */
@@ -102,12 +103,12 @@ public final class IndexJobQueue {
 
   /**
    * Returns the complete list of jobs.
-   * 
-   * <p>Note that by the time each job is checked, they might have run already so the method 
+   *
+   * <p>Note that by the time each job is checked, they might have run already so the method
    * {@link IndexJob#isFinished()} should be called before parsing the job.
-   * 
+   *
    * <p>The list will never be <code>null</code>.
-   * 
+   *
    * @return the list of jobs waiting (never <code>null</code>)
    */
   public List<IndexJob> getAllJobs() {
@@ -116,9 +117,9 @@ public final class IndexJobQueue {
 
   /**
    * Poll the next job in the queue (<code>null</code> if the queue is currently empty).
-   * 
+   *
    * @return the next job in the queue (<code>null</code> if the queue is currently empty).
-   * 
+   *
    * @throws InterruptedException if the thread was interrupted when waiting for the next job
    */
   public IndexJob nextJob() throws InterruptedException {
@@ -127,7 +128,7 @@ public final class IndexJobQueue {
 
   /**
    * Indicates whether the queue is currently empty.
-   * 
+   *
    * @return <code>true</code> if there are currently no jobs;
    *         <code>false</code> otherwise.
    */

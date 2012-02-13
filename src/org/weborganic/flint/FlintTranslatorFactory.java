@@ -1,3 +1,10 @@
+/*
+ * This file is part of the Flint library.
+ *
+ * For licensing information please see the file license.txt included in the release.
+ * A copy of this licence can also be found at
+ *   http://www.opensource.org/licenses/artistic-license-2.0.php
+ */
 package org.weborganic.flint;
 
 import java.util.ArrayList;
@@ -9,9 +16,9 @@ import org.weborganic.flint.content.ContentTranslatorFactory;
 import org.weborganic.flint.content.SourceForwarder;
 
 /**
- * Simple translator factory that only handles XML Media types by simply forwarding the content 
+ * Simple translator factory that only handles XML Media types by simply forwarding the content
  * without translation.
- * 
+ *
  * @author Jean-Baptiste Reure
  * @author Christophe Lauret
  * @version 26 May 2010
@@ -45,9 +52,10 @@ public class FlintTranslatorFactory implements ContentTranslatorFactory {
 
   /**
    * Only creates a translator if the specified MIME type matches one of {@value XML_MIME_TYPES}.
-   * 
+   *
    * {@inheritDoc}
    */
+  @Override
   public ContentTranslator createTranslator(String mediaType) {
     if (XML_MIME_TYPES.contains(mediaType)) return this.xmlTranslator;
     return null;
@@ -55,9 +63,10 @@ public class FlintTranslatorFactory implements ContentTranslatorFactory {
 
   /**
    * Returns a list containing the {@value XML_MIME_TYPES}.
-   * 
+   *
    * {@inheritDoc}
    */
+  @Override
   public List<String> getMimeTypesSupported() {
     return Collections.unmodifiableList(XML_MIME_TYPES);
   }

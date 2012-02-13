@@ -1,8 +1,9 @@
 /*
  * This file is part of the Flint library.
- * 
- * For licensing information please see the file license.txt included in the release. A copy of this licence can also be
- * found at http://www.opensource.org/licenses/artistic-license-2.0.php
+ *
+ * For licensing information please see the file license.txt included in the release.
+ * A copy of this licence can also be found at
+ *   http://www.opensource.org/licenses/artistic-license-2.0.php
  */
 package org.weborganic.flint;
 
@@ -17,7 +18,7 @@ import org.slf4j.LoggerFactory;
 /**
  * Manager for open indexes.
  * Handles closing of indexes that have been opened for a long time if there are too many open ones.
- * 
+ *
  * @author Jean-Baptiste Reure
  * @version 26 February 2010
  */
@@ -36,6 +37,7 @@ public final class OpenIndexManager {
     /**
      * {@inheritdoc}
      */
+    @Override
     public int compare(IndexIOReadWrite o1, IndexIOReadWrite o2) {
       return o1.getLastTimeUsed() < o2.getLastTimeUsed() ? 1 : o1.getLastTimeUsed() == o2.getLastTimeUsed() ? 0 : -1;
     }

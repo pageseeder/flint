@@ -1,8 +1,9 @@
 /*
  * This file is part of the Flint library.
- * 
- * For licensing information please see the file license.txt included in the release. A copy of this licence can also be
- * found at http://www.opensource.org/licenses/artistic-license-2.0.php
+ *
+ * For licensing information please see the file license.txt included in the release.
+ * A copy of this licence can also be found at
+ *   http://www.opensource.org/licenses/artistic-license-2.0.php
  */
 package org.weborganic.flint;
 
@@ -14,9 +15,9 @@ import org.weborganic.flint.content.ContentType;
 
 /**
  * A job to run by the IndexManager.
- * 
+ *
  * <p>Jobs can be of three types: add, update or delete.
- * 
+ *
  * @author Jean-Baptiste Reure
  * @version 26 February 2010
  */
@@ -26,6 +27,7 @@ public class IndexJob implements Comparable<IndexJob> {
    * Pseudo-type to indicate that the index needs to be cleared.
    */
   private static final ContentType CLEAR_CONTENT = new ContentType() {
+    @Override
     public String toString() { return "CLEAR"; };
   };
 
@@ -33,7 +35,9 @@ public class IndexJob implements Comparable<IndexJob> {
    * Pseudo content ID used for the index clear job.
    */
   private static final ContentId CLEAR_CONTENT_ID = new ContentId() {
+    @Override
     public ContentType getContentType() { return CLEAR_CONTENT; }
+    @Override
     public String getID() { return "Clear Index"; }
   };
 
@@ -47,7 +51,7 @@ public class IndexJob implements Comparable<IndexJob> {
      */
     HIGH,
 
-    /** 
+    /**
      * Low priority job (always processed after HIGH).
      */
     LOW
@@ -101,7 +105,7 @@ public class IndexJob implements Comparable<IndexJob> {
 
   /**
    * Private constructor, to build a job, use one of the static methods newAddJob(), newUpdateJob() or newDeleteJob().
-   * 
+   *
    * @param id      The Content ID
    * @param conf    The Config
    * @param i       The Index
@@ -122,7 +126,7 @@ public class IndexJob implements Comparable<IndexJob> {
 
   /**
    * Return this job's ID.
-   * 
+   *
    * @return this job's ID.
    */
   protected String getJobID() {
@@ -131,7 +135,7 @@ public class IndexJob implements Comparable<IndexJob> {
 
   /**
    * Return the content ID used to retrieve the content and the config.
-   * 
+   *
    * @return the content ID.
    */
   public ContentId getContentID() {
@@ -140,7 +144,7 @@ public class IndexJob implements Comparable<IndexJob> {
 
   /**
    * Return the config.
-   * 
+   *
    * @return the config
    */
   public IndexConfig getConfig() {
@@ -149,7 +153,7 @@ public class IndexJob implements Comparable<IndexJob> {
 
   /**
    * Return the Index that this job is to be run on.
-   * 
+   *
    * @return the Index that this job is to be run on.
    */
   public Index getIndex() {
@@ -158,7 +162,7 @@ public class IndexJob implements Comparable<IndexJob> {
 
   /**
    * Return the original job's requester.
-   * 
+   *
    * @return the original job's requester.
    */
   public Requester getRequester() {
@@ -167,7 +171,7 @@ public class IndexJob implements Comparable<IndexJob> {
 
   /**
    * Return the dynamic XSLT parameters for this job (unmodifiable list, never <code>null</code>).
-   * 
+   *
    * @return the dynamic XSLT parameters for this job
    */
   public Map<String, String> getParameters() {
@@ -176,7 +180,7 @@ public class IndexJob implements Comparable<IndexJob> {
 
   /**
    * Return true if this job was launched by the Requester provided.
-   * 
+   *
    * @param req the Requester to check.
    * @return <code>true</code> if this job was launched by the Requester provided;
    *         <code>false</code> otherwise.
@@ -187,7 +191,7 @@ public class IndexJob implements Comparable<IndexJob> {
 
   /**
    * Return <code>true</code> if this job is running on the provided index.
-   * 
+   *
    * @param ind the Index to check
    * @return <code>true</code> if this job is running on the provided index;
    *         <code>false</code> otherwise.
@@ -198,14 +202,15 @@ public class IndexJob implements Comparable<IndexJob> {
 
   /**
    * Compare this job to another job.
-   * 
+   *
    * <p>Used to order the jobs by priority in the waiting queue.
-   * 
+   *
    * @param job The job to compare to.
    * @return 0 if both jobs have the same priority;
    *         -1 if this job's priority is HIGH;
-   *         1 if this job's priority is LOW; 
+   *         1 if this job's priority is LOW;
    */
+  @Override
   public int compareTo(IndexJob job) {
     return this.priority == job.priority? 0 : this.priority == Priority.HIGH ? -1 : 1;
   }
@@ -219,7 +224,7 @@ public class IndexJob implements Comparable<IndexJob> {
 
   /**
    * Indicates whether the job is finished.
-   * 
+   *
    * @return <code>true</code> if the job is finished
    */
   public boolean isFinished() {
@@ -228,7 +233,7 @@ public class IndexJob implements Comparable<IndexJob> {
 
   /**
    * Set the final status of this job.
-   * 
+   *
    * @param success <code>true</code> if the job succeeded;
    *                <code>false</code> if an error occurred.
    */
@@ -238,7 +243,7 @@ public class IndexJob implements Comparable<IndexJob> {
 
   /**
    * Check whether this job was completed successfully or not.
-   * 
+   *
    * @return <code>true</code> if the job was successful;
    *         <code>false</code> otherwise.
    */
@@ -258,7 +263,7 @@ public class IndexJob implements Comparable<IndexJob> {
 
   /**
    * Indicates whether this job is to clear the index.
-   * 
+   *
    * @return <code>true</code> if the content ID for this job is CLEAR;
    *         <code>false</code> otherwise.
    */
@@ -270,14 +275,14 @@ public class IndexJob implements Comparable<IndexJob> {
 
   /**
    * Used to build a new job.
-   * 
+   *
    * @param id     The Content ID
    * @param config The Config ID (can be <code>null</code>)
    * @param i      The Index
    * @param p      The job's priority
    * @param r      The job's requester
    * @param params Parameters for use with the job (can be <code>null</code>)
-   * 
+   *
    * @return the new job
    */
   public static IndexJob newJob(ContentId id, IndexConfig config, Index i, Priority p, Requester r, Map<String, String> params) {
@@ -286,11 +291,11 @@ public class IndexJob implements Comparable<IndexJob> {
 
   /**
    * Creates a new job to clear the index.
-   * 
+   *
    * @param index     The Index
    * @param priority  The job's priority
    * @param requester The job's requester
-   * 
+   *
    * @return the new job
    */
   public static IndexJob newClearJob(Index index, Priority priority, Requester requester) {
