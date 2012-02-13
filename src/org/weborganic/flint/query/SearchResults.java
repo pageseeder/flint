@@ -8,8 +8,7 @@
 package org.weborganic.flint.query;
 
 import java.io.IOException;
-import java.text.DateFormat;
-import java.text.SimpleDateFormat;
+import java.text.ParseException;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -17,7 +16,6 @@ import java.util.NoSuchElementException;
 import java.util.Set;
 import java.util.TimeZone;
 
-import org.apache.lucene.document.DateTools;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Fieldable;
 import org.apache.lucene.index.CorruptIndexException;
@@ -30,6 +28,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.weborganic.flint.IndexException;
 import org.weborganic.flint.IndexIO;
+import org.weborganic.flint.util.Dates;
 import org.weborganic.flint.util.Documents;
 import org.weborganic.flint.util.Fields;
 
@@ -58,20 +57,6 @@ public final class SearchResults implements XMLWritable {
    * Logger.
    */
   private static final Logger LOGGER = LoggerFactory.getLogger(SearchResults.class);
-
-  /**
-   * The ISO 8601 Date format
-   *
-   * @see <a href="http://www.iso.org/iso/date_and_time_format">ISO: Numeric representation of Dates and Time</a>
-   */
-  private static final String ISO8601_DATE = "yyyy-MM-dd";
-
-  /**
-   * The ISO 8601 Date and time format
-   *
-   * @see <a href="http://www.iso.org/iso/date_and_time_format">ISO: Numeric representation of Dates and Time</a>
-   */
-  private static final String ISO8601_DATETIME = "yyyy-MM-dd'T'HH:mm:ssZ";
 
   /**
    * The maximum length for a field to expand.
@@ -136,16 +121,6 @@ public final class SearchResults implements XMLWritable {
    */
   private int timezoneOffset;
 
-  /**
-   * The ISO 8601 date formatter to use (when resolution is less than day).
-   */
-  private final DateFormat iso_date = new SimpleDateFormat(ISO8601_DATE);
-
-  /**
-   * The ISO 8601 date and time formatter to use (when resolution is greater than day).
-   */
-  private final DateFormat iso_datetime = new SimpleDateFormat(ISO8601_DATETIME);
-
   // Constructors
   // ---------------------------------------------------------------------------------------------
 
@@ -206,7 +181,6 @@ public final class SearchResults implements XMLWritable {
     this.timezoneOffset = tz.getRawOffset();
     // take daylight savings into account
     if (tz.inDaylightTime(new Date())) this.timezoneOffset += ONE_HOUR_IN_MS;
-    this.iso_date.setTimeZone(TimeZone.getTimeZone("GMT"));
   }
 
   // Basic public methods
@@ -300,11 +274,15 @@ public final class SearchResults implements XMLWritable {
         // Retrieve the value
         String value = Fields.toString(f);
         // format dates using ISO 8601
-        if (value != null && value.length() > 0 && f.name().contains("date")) {
-          if (value.length() > 8) {
-            value = asDateTime(value, this.iso_datetime, this.timezoneOffset);
-          } else {
-            value = asDate(value, this.iso_date);
+        if (value != null && value.length() > 0 && f.name().contains("date") && Dates.isLuceneDate(value)) {
+          try {
+            if (value.length() > 8) {
+              value = Dates.toISODateTime(value, this.timezoneOffset);
+            } else {
+              value = Dates.toISODate(value);
+            }
+          } catch (ParseException ex) {
+            LOGGER.info("Unparseable date found {}", value);
           }
         }
         // unnecessary to return the full value of long fields
@@ -398,57 +376,6 @@ public final class SearchResults implements XMLWritable {
   protected void finalize() throws Throwable {
     if (!this._terminated) terminate();
     super.finalize();
-  }
-
-  /**
-   * Format the value as an ISO8601 date time.
-   *
-   * @param value       the value from the index
-   * @param isodatetime the ISO 8601 date formatter
-   * @param offset      the timezone offset (adjust for the specified offset)
-   *
-   * @return the corresponding value.
-   */
-  private static String asDateTime(String value, DateFormat isodatetime, int offset) {
-    assert value != null && value.length() > 8;
-    try {
-      Date date = DateTools.stringToDate(value);
-      // Only adjust for day light savings...
-      TimeZone tz = TimeZone.getDefault();
-      int rawOffset = tz.inDaylightTime(date)? offset - ONE_HOUR_IN_MS : offset;
-      tz.setRawOffset(rawOffset);
-      isodatetime.setTimeZone(tz);
-      String formatted = isodatetime.format(date);
-      // the Java timezone does not include the required ':'
-      return formatted.substring(0, formatted.length() - 2) + ":" + formatted.substring(formatted.length() - 2);
-    } catch (Exception ex) {
-      // oh well, the field is probably not a date then, we'll keep going with the index value
-      LOGGER.error("Failed to format date field", ex);
-    }
-    // return the value 'as is'
-    return value;
-  }
-
-  /**
-   *
-   * @param value    the value from the index
-   * @param isodate  the ISO 8601 date formatter
-   *
-   * @return the corresponding value.
-   */
-  private static String asDate(String value, DateFormat isodate) {
-    assert value != null && value.length() <= 8;
-    // Odd case when it is zero??
-    if ("0".equals(value)) return "";
-    try {
-      Date date = DateTools.stringToDate(value);
-      return isodate.format(date);
-    } catch (Exception ex) {
-      // oh well, the field is probably not a date then, we'll keep going with the index value
-      LOGGER.error("Failed to format date field", ex);
-    }
-    // return the value 'as is'
-    return value;
   }
 
   /**
