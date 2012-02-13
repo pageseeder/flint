@@ -1,8 +1,17 @@
+/*
+ * This file is part of the Flint library.
+ *
+ * For licensing information please see the file license.txt included in the release.
+ * A copy of this licence can also be found at
+ *   http://www.opensource.org/licenses/artistic-license-2.0.php
+ */
 package org.weborganic.flint.content;
 
 import java.io.InputStreamReader;
 import java.io.Reader;
 import java.nio.charset.Charset;
+import java.nio.charset.IllegalCharsetNameException;
+import java.nio.charset.UnsupportedCharsetException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -11,7 +20,7 @@ import org.weborganic.flint.IndexException;
 
 /**
  * A simple translator implementation allows XML Media types to be simply forwarded without translation.
- * 
+ *
  * @author Jean-Baptiste Reure
  * @version 10 March 2010
  */
@@ -29,10 +38,10 @@ public final class SourceForwarder implements ContentTranslator {
 
   /**
    * Forwards data for one MIME type only, will return in any other case.
-   * 
+   *
    * @param mediaType The Media type that this translator can forward.
    * @param charset   The name of the charset to use for decoding byte streams.
-   * 
+   *
    * @throws IllegalCharsetNameException If the given charset name is illegal.
    * @throws IllegalArgumentException    If the given charset name or media type is <code>null</code>.
    * @throws UnsupportedCharsetException If no support for the named charset is available.
@@ -43,10 +52,10 @@ public final class SourceForwarder implements ContentTranslator {
 
   /**
    * Forwards data for one MIME type only, will return in any other case.
-   * 
+   *
    * @param mediaTypes The list of Media types this translator should forward.
    * @param charset    The name of the charset to use for decoding byte streams.
-   * 
+   *
    * @throws IllegalCharsetNameException If the given charset name is illegal.
    * @throws IllegalArgumentException    If the given charset name or media type is <code>null</code>.
    * @throws UnsupportedCharsetException If no support for the named charset is available.
@@ -57,10 +66,10 @@ public final class SourceForwarder implements ContentTranslator {
 
   /**
    * Forwards data for one MIME type only, will return in any other case.
-   * 
+   *
    * @param mediaType The Media type that this translator can forward.
    * @param charset   The charset to use for decoding byte streams.
-   * 
+   *
    * @throws IllegalArgumentException    If the given charset name or media type is <code>null</code>.
    */
   public SourceForwarder(String mediaType, Charset charset) throws IllegalArgumentException {
@@ -72,10 +81,10 @@ public final class SourceForwarder implements ContentTranslator {
 
   /**
    * Forwards data for one MIME type only, will return in any other case.
-   * 
+   *
    * @param mediaTypes The list of Media types this translator should forward.
    * @param charset    The charset to use for decoding byte streams.
-   * 
+   *
    * @throws IllegalArgumentException    If the given charset name or media type is <code>null</code>.
    */
   public SourceForwarder(List<String> mediaTypes, Charset charset) throws IllegalArgumentException {
@@ -87,13 +96,14 @@ public final class SourceForwarder implements ContentTranslator {
 
   /**
    * Returns a new {@link Reader} on the content to translate using the specified charset.
-   * 
+   *
    * @param content The content to translate.
-   * 
+   *
    * @return the reader or <code>null</code> if this forwarder does not support this Media type.
-   * 
+   *
    * @throws IndexException If thrown while trying to access the content methods.
    */
+  @Override
   public Reader translate(Content content) throws IndexException {
     // Ignore deleted content
     if (content.isDeleted()) return null;

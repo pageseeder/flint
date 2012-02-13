@@ -1,14 +1,21 @@
+/*
+ * This file is part of the Flint library.
+ *
+ * For licensing information please see the file license.txt included in the release.
+ * A copy of this licence can also be found at
+ *   http://www.opensource.org/licenses/artistic-license-2.0.php
+ */
 package org.weborganic.flint.content;
 
 import org.weborganic.flint.util.Beta;
 
 /**
  * A basic immutable implementation of a content type with a name.
- * 
+ *
  * <p>Two content types with the same name are considered equal.
- * 
+ *
  * <p>The name string can be interned to enable strict equality comparison.
- * 
+ *
  * @author Christophe Lauret
  * @version 29 July 2010
  */
@@ -30,33 +37,33 @@ import org.weborganic.flint.util.Beta;
   private final int _hashCode;
 
   /**
-   * Creates a new content type with the given name interning the string automatically. 
-   * 
-   * <p>Warning: this is useful only 
-   * 
+   * Creates a new content type with the given name interning the string automatically.
+   *
+   * <p>Warning: this is useful only
+   *
    * @param name The name of this content type.
    */
   public NamedContentType(String name) {
     this._name = name.intern();
-    this._hashCode = this._name.hashCode(); 
+    this._hashCode = this._name.hashCode();
   }
 
   /**
-   * Creates a new content type with the given name. 
-   * 
+   * Creates a new content type with the given name.
+   *
    * <p>If the application uses many content types, it is best NOT to intern the string.
-   * 
+   *
    * @param name   The name of the content type.
    * @param intern <code>true</code> to intern the string; <code>false</code> otherwise.
    */
   public NamedContentType(String name, boolean intern) {
     this._name = intern? name.intern() : name;
-    this._hashCode = this._name.hashCode(); 
+    this._hashCode = this._name.hashCode();
   }
 
   /**
    * Returns a pre-computed hashcode value based on the name.
-   * 
+   *
    * {@inheritDoc}
    */
   @Override
@@ -69,14 +76,14 @@ import org.weborganic.flint.util.Beta;
    */
   @Override
   public boolean equals(Object o) {
-    // filter out objects of the wrong type 
+    // filter out objects of the wrong type
     if (!(o instanceof NamedContentType)) return false;
     return this.equals((NamedContentType)o);
   }
 
   /**
    * Compares two named content types for equality.
-   * 
+   *
    * @param type The type of equality.
    * @return <code>true</code> if the two content types are equal;
    *         <code>false</code> otherwise.
@@ -89,7 +96,7 @@ import org.weborganic.flint.util.Beta;
 
   /**
    * The name of this content type.
-   * 
+   *
    * @return the name of this content type.
    */
   public String name() {
@@ -98,7 +105,7 @@ import org.weborganic.flint.util.Beta;
 
   /**
    * Returns the name of this content type.
-   * 
+   *
    * {@inheritDoc}
    */
   @Override
