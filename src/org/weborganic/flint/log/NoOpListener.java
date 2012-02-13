@@ -1,14 +1,21 @@
+/*
+ * This file is part of the Flint library.
+ *
+ * For licensing information please see the file license.txt included in the release.
+ * A copy of this licence can also be found at
+ *   http://www.opensource.org/licenses/artistic-license-2.0.php
+ */
 package org.weborganic.flint.log;
 
 import org.weborganic.flint.IndexJob;
 
 /**
  * A listener implementation that does nothing.
- * 
+ *
  * <p>It will happily ignore anything that is reported to it.
- * 
+ *
  * <p>Access the singleton instance with {@link #getInstance()}.
- * 
+ *
  * @author Christophe Lauret
  * @version 1 June 2010
  */
@@ -21,7 +28,7 @@ public final class NoOpListener implements FlintListener {
 
   /**
    * Returns the singleton instance.
-   * 
+   *
    * @return the singleton instance
    */
   public static NoOpListener getInstance() {
@@ -36,145 +43,163 @@ public final class NoOpListener implements FlintListener {
 
   /**
    * Do nothing.
-   * 
+   *
    * {@inheritDoc}
    */
+  @Override
   public void debug(String debug) {
   }
 
   /**
    * Do nothing.
-   * 
+   *
    * {@inheritDoc}
    */
+  @Override
   public void error(String error, Throwable throwable) {
   }
 
   /**
    * Do nothing.
-   * 
+   *
    * {@inheritDoc}
    */
+  @Override
   public void debug(IndexJob job, String debug) {
   }
 
   /**
    * Do nothing.
-   * 
+   *
    * {@inheritDoc}
    */
+  @Override
   public void error(IndexJob job, String error, Throwable throwable) {
   }
 
   /**
    * Do nothing.
-   * 
+   *
    * {@inheritDoc}
    */
+  @Override
   public void info(IndexJob job, String info) {
   }
 
   /**
    * Do nothing.
-   * 
+   *
    * {@inheritDoc}
    */
+  @Override
   public void warn(IndexJob job, String warning) {
   }
 
   /**
    * Do nothing.
-   * 
+   *
    * {@inheritDoc}
    */
+  @Override
   public void info(String info) {
   }
 
   /**
    * Do nothing.
-   * 
+   *
    * {@inheritDoc}
    */
+  @Override
   public void warn(String warning) {
   }
 
   /**
    * Do nothing.
-   * 
+   *
    * {@inheritDoc}
    */
+  @Override
   public void finishJob(IndexJob job) {
   }
 
   /**
    * Do nothing.
-   * 
+   *
    * {@inheritDoc}
    */
+  @Override
   public void startJob(IndexJob job) {
   }
 
   /**
    * Do nothing.
-   * 
+   *
    * {@inheritDoc}
    */
+  @Override
   public void debug(IndexJob job, String message, Throwable throwable) {
   }
 
   /**
    * Do nothing.
-   * 
+   *
    * {@inheritDoc}
    */
+  @Override
   public void debug(String debug, Throwable throwable) {
   }
 
   /**
    * Do nothing.
-   * 
+   *
    * {@inheritDoc}
    */
+  @Override
   public void error(IndexJob job, String message) {
   }
 
   /**
    * Do nothing.
-   * 
+   *
    * {@inheritDoc}
    */
+  @Override
   public void error(String error) {
   }
 
   /**
    * Do nothing.
-   * 
+   *
    * {@inheritDoc}
    */
+  @Override
   public void info(IndexJob job, String message, Throwable throwable) {
   }
 
   /**
    * Do nothing.
-   * 
+   *
    * {@inheritDoc}
    */
+  @Override
   public void info(String info, Throwable throwable) {
   }
 
   /**
    * Do nothing.
-   * 
+   *
    * {@inheritDoc}
    */
+  @Override
   public void warn(IndexJob job, String message, Throwable throwable) {
   }
 
   /**
    * Do nothing.
-   * 
+   *
    * {@inheritDoc}
    */
+  @Override
   public void warn(String warning, Throwable throwable) {
   }
 
