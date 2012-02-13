@@ -15,7 +15,9 @@ import org.apache.lucene.index.ConcurrentMergeScheduler;
 import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.util.Version;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.weborganic.flint.content.DeleteRule;
@@ -52,6 +54,7 @@ public final class IndexIOReadWrite extends IndexIO {
    * A search manager using this writer.
    */
   private SearcherManager searcherManager;
+
   /**
    * The last time this reader was used
    */
@@ -85,8 +88,11 @@ public final class IndexIOReadWrite extends IndexIO {
   }
 
   /**
+   * Attempts to commit all outstanding changes in the writer when the index is in 'NEEDS_COMMIT' state.
    *
-   * @throws IndexException
+   * <p>Does nothing if the writer is not in {@link State#NEEDS_COMMIT} state or if the writer is <code>null</code>.
+   *
+   * @throws IndexException Will wrap any exception thrown while trying to commit the index.
    */
   @Override
   public void maybeCommit() throws IndexException {
@@ -96,17 +102,21 @@ public final class IndexIOReadWrite extends IndexIO {
       this.writer.commit();
       this.searcherManager.maybeReopen();
       this.state = State.NEEDS_OPTIMISE;
-    } catch (final CorruptIndexException e) {
-      throw new IndexException("Failed to commit Index because it is corrupted", e);
-    } catch (final IOException e) {
-      throw new IndexException("Failed to commit Index because of an I/O error", e);
-    } catch (final InterruptedException e) {
-      throw new IndexException("Failed to commit Index because of the thread has been interrupted", e);
+    } catch (final CorruptIndexException ex) {
+      throw new IndexException("Failed to commit Index because it is corrupted", ex);
+    } catch (final IOException ex) {
+      throw new IndexException("Failed to commit Index because of an I/O error", ex);
+    } catch (final InterruptedException ex) {
+      throw new IndexException("Failed to commit Index because of the thread has been interrupted", ex);
     }
   }
 
   /**
-   * {@inheritDoc}
+   * Attempts to optimize the index is in 'NEEDS_OPTIMISE' state.
+   *
+   * <p>Does nothing if the writer is not in {@link State#NEEDS_OPTIMISE} state or if the writer is <code>null</code>.
+   *
+   * @throws IndexException Will wrap any exception thrown while trying to commit the index.
    */
   @Override
   public void maybeOptimise() throws IndexException {
@@ -267,9 +277,10 @@ public final class IndexIOReadWrite extends IndexIO {
    * @throws IndexException Wrapping an {@link CorruptIndexException} or an {@link IOException}.
    */
   public void start() throws IOException {
-    this.writer = new IndexWriter(this._index.getIndexDirectory(), this._index.getAnalyzer(), IndexWriter.MaxFieldLength.LIMITED);
-    this.writer.setMergeScheduler(new ConcurrentMergeScheduler());
-    this.writer.setMergePolicy(new BalancedSegmentMergePolicy(this.writer));
+    IndexWriterConfig config = new IndexWriterConfig(Version.LUCENE_30, this._index.getAnalyzer());
+    config.setMergeScheduler(new ConcurrentMergeScheduler());
+    config.setMergePolicy(new BalancedSegmentMergePolicy());
+    this.writer = new IndexWriter(this._index.getIndexDirectory(), config);
     this.searcherManager = new SearcherManager(this.writer);
     this.lastTimeUsed = System.currentTimeMillis();
     OpenIndexManager.add(this);
