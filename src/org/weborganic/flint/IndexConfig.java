@@ -1,8 +1,9 @@
 /*
  * This file is part of the Flint library.
- * 
- * For licensing information please see the file license.txt included in the release. A copy of this licence can also be
- * found at http://www.opensource.org/licenses/artistic-license-2.0.php
+ *
+ * For licensing information please see the file license.txt included in the release.
+ * A copy of this licence can also be found at
+ *   http://www.opensource.org/licenses/artistic-license-2.0.php
  */
 package org.weborganic.flint;
 
@@ -25,11 +26,11 @@ import org.weborganic.flint.util.Beta;
 
 /**
  * Provides the details needed to build the data to index from the original content.
- * 
+ *
  * <p>The path to a valid XSLT script is needed and parameters can be provided as well.
- * 
+ *
  * <p>The XSLT script should produce valid IndexXML format (see DTD).
- * 
+ *
  * @author Jean-Baptiste Reure
  * @version 26 February 2010
  */
@@ -48,16 +49,17 @@ public class IndexConfig {
   /**
    * A list of parameters.
    */
-  private final Map<ContentDefinition, Map<String, String>> _parameters = new ConcurrentHashMap<ContentDefinition, Map<String, String>>();
+  private final Map<ContentDefinition, Map<String, String>> _parameters
+    = new ConcurrentHashMap<ContentDefinition, Map<String, String>>();
 
   // Parameters management =========================================================================
 
   /**
-   * Sets the parameters to supply to the templates when indexing content with the specified content type and media 
+   * Sets the parameters to supply to the templates when indexing content with the specified content type and media
    * type.
-   * 
+   *
    * <p>Any existing parameters for this content and media type will be discarded.
-   * 
+   *
    * @param type       the type of content to index.
    * @param media      the media type of the content (eg. "application/xml")
    * @param parameters the name-value map of parameters to set.
@@ -69,9 +71,9 @@ public class IndexConfig {
   /**
    * Sets the list of parameters to supply to the templates when indexing content with the specified content type,
    * media type and using configuration ID.
-   * 
+   *
    * <p>Any existing parameters for this content and media type will be discarded.
-   * 
+   *
    * @param type       the type of content to index.
    * @param media      the media type of the content (eg. "application/xml")
    * @param config     the configuration ID; may be <code>null</code>
@@ -84,14 +86,14 @@ public class IndexConfig {
   }
 
   /**
-   * Adds parameters to the parameters to supply to the templates when indexing content with the specified content 
+   * Adds parameters to the parameters to supply to the templates when indexing content with the specified content
    * type and media type.
-   * 
+   *
    * <p>Any existing parameters with the same name for this content and media type will be discarded.
-   * 
-   * <p>Note: This method will add to existing parameters, to set parameters, use 
+   *
+   * <p>Note: This method will add to existing parameters, to set parameters, use
    * {@link #setParameters(ContentType, String, Map)} instead.
-   * 
+   *
    * @param type       the type of content to index.
    * @param media      the media type of the content (eg. "application/xml")
    * @param parameters the name-value map of parameters to add.
@@ -101,14 +103,14 @@ public class IndexConfig {
   }
 
   /**
-   * Adds parameters to the parameters to supply to the templates when indexing content with the specified content 
+   * Adds parameters to the parameters to supply to the templates when indexing content with the specified content
    * type and media type.
-   * 
+   *
    * <p>Any existing parameters with the same name for this content and media type will be discarded.
-   * 
-   * <p>Note: This method will add to existing parameters, to set parameters, use 
+   *
+   * <p>Note: This method will add to existing parameters, to set parameters, use
    * {@link #setParameters(ContentType, String, Map)} instead.
-   * 
+   *
    * @param type       the type of content to index.
    * @param media      the media type of the content (eg. "application/xml")
    * @param config     the configuration ID; may be <code>null</code>
@@ -128,7 +130,7 @@ public class IndexConfig {
   /**
    * Adds a single parameter to the parameters to supply to the templates when indexing content with the specified
    * content type and media type.
-   * 
+   *
    * <p>Any existing parameter with the same name for this content and media type will be discarded.
    *
    * @param type  the type of content to index.
@@ -143,9 +145,9 @@ public class IndexConfig {
   /**
    * Adds a single parameter to the parameters to supply to the templates when indexing content with the specified
    * content type and media type for a specific configuration ID.
-   * 
+   *
    * <p>Any existing parameter with the same name for this content and media type will be discarded.
-   * 
+   *
    * @param type    the type of content to index.
    * @param media   the media type of the content (eg. "application/xml")
    * @param config  the configuration ID; may be <code>null</code>
@@ -166,10 +168,10 @@ public class IndexConfig {
   /**
    * Returns a list of parameters for the given content type and media type (and not matching a specific configuration
    * ID).
-   * 
+   *
    * @param type    the type of content to index.
    * @param media   the media type of the content (eg. "application/xml")
-   * 
+   *
    * @return the list of parameters for the given Content definition (never <code>null</code>).
    */
   public Map<String, String> getParameters(ContentType type, String media) {
@@ -177,13 +179,13 @@ public class IndexConfig {
   }
 
   /**
-   * Returns an unmodifiable list of parameters for the given content type and media type and matching a specific 
+   * Returns an unmodifiable list of parameters for the given content type and media type and matching a specific
    * configuration ID.
-   * 
+   *
    * @param type     the type of content to index.
    * @param media    the media type of the content (eg. "application/xml")
    * @param configId the configuration ID; may be <code>null</code>
-   * 
+   *
    * @return the list of parameters for the given Content definition (never <code>null</code>).
    */
   public Map<String, String> getParameters(ContentType type, String media, String configId) {
@@ -197,10 +199,10 @@ public class IndexConfig {
   /**
    * Returns the compiled XSLT templates or <code>null</code> if there are no templates associated with
    * this content type and media type.
-   * 
+   *
    * @param type  the type of content to index.
    * @param media the media type of the content (eg. "application/xml")
-   * 
+   *
    * @return the compiled XSLT template; <code>null</code> if not found.
    */
   public Templates getTemplates(ContentType type, String media) {
@@ -210,11 +212,11 @@ public class IndexConfig {
   /**
    * Returns the compiled XSLT templates, <code>null</code>  if there are no templates associated with
    * this content type and media type for the specified configuration ID.
-   * 
+   *
    * @param type   the type of content to index.
    * @param media  the media type of the content (eg. "application/xml")
    * @param config the configuration ID, can be <code>null</code>
-   * 
+   *
    * @return the compiled XSLT templates; <code>null</code> if not found.
    */
   public Templates getTemplates(ContentType type, String media, String config) {
@@ -224,37 +226,8 @@ public class IndexConfig {
   }
 
   /**
-   * Adds an XSLT script for the given Content definition this content type and media type for the 
-   * specified configuration ID.
-   * 
-   * @deprecated Use {@link #setTemplates(ContentType, String, URI)} instead.
-   * 
-   * @param type     the type of content to index.
-   * @param media    the media type of the content (eg. "application/xml")
-   * @param template the full path to the XSLT template file.
-   */
-  @Deprecated public void addTemplates(ContentType type, String media, URI template) {
-    setTemplates(type, media, null, template);
-  }
-
-  /**
-   * Adds an XSLT script for the given Content definition.
-   * 
-   * @deprecated Use {@link #setTemplates(ContentType, String, String, URI)} instead.
-   * 
-   * @param type     the type of content to index.
-   * @param media    the media type of the content (eg. "application/xml").
-   * @param config   the config ID, can be <code>null</code>.
-   * @param template the full path to the XSLT template file.
-   */
-  @Deprecated public void addTemplates(ContentType type, String media, String config, URI template) {
-    setTemplates(type, media, config, template);
-  }
-
-
-  /**
    * Sets the XSLT templates to use for the specified content type and media type.
-   * 
+   *
    * @param type     the type of content to index.
    * @param media    the media type of the content (eg. "application/xml").
    * @param template the full path to the XSLT template file.
@@ -265,7 +238,7 @@ public class IndexConfig {
 
   /**
    * Sets the XSLT templates to use for the specified content type, media type and configuration ID.
-   * 
+   *
    * @param type     the type of content to index.
    * @param media    the media type of the content (eg. "application/xml").
    * @param config   the config ID, can be <code>null</code>.
@@ -285,13 +258,13 @@ public class IndexConfig {
   // Private helpers ==============================================================================
 
   /**
-   * Gets the stylesheet at path from the cache or if not in the cache loads it and stores it in 
+   * Gets the stylesheet at path from the cache or if not in the cache loads it and stores it in
    * the cache for later use.
-   * 
+   *
    * @param path Path to the XSLT templates.
-   * 
+   *
    * @return the compiled templates.
-   * 
+   *
    * @throws TransformerException if thrown by the {@link TransformerFactory} while parsing the stylesheet
    */
   private static Templates loadTemplates(URI path) throws TransformerException {
@@ -301,7 +274,7 @@ public class IndexConfig {
 
   /**
    * A simple immutable object to use as a key and optimised for fast retrieval.
-   * 
+   *
    * @author Jean-Baptiste Reure
    * @author Christophe Lauret
    * @version 29 July 2010
@@ -322,7 +295,7 @@ public class IndexConfig {
 
     /**
      * Creates a new content definition.
-     * 
+     *
      * @param type     The content type
      * @param media    The media type
      * @param configId The configuration ID (may be <code>null</code>)
@@ -345,7 +318,7 @@ public class IndexConfig {
 
     /**
      * Compares two content definition for equality.
-     * 
+     *
      * @param def the content definition to compare for equality.
      * @return <code>true</code> if the type, media and config ID are equal;
      *         <code>false</code> otherwise.
@@ -377,11 +350,11 @@ public class IndexConfig {
 
     /**
      * Computes the hash code to make a more efficient key.
-     * 
+     *
      * @param type  The content type
      * @param media The media type
      * @param id    The configuration (may be <code>null</code>)
-     * 
+     *
      * @return the hashcode for this object.
      */
     private static int hashCode(ContentType type, String media, String id) {
