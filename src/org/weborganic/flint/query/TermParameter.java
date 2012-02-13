@@ -1,8 +1,10 @@
 /*
+/*
  * This file is part of the Flint library.
- * 
- * For licensing information please see the file license.txt included in the release. A copy of this licence can also be
- * found at http://www.opensource.org/licenses/artistic-license-2.0.php
+ *
+ * For licensing information please see the file license.txt included in the release.
+ * A copy of this licence can also be found at
+ *   http://www.opensource.org/licenses/artistic-license-2.0.php
  */
 package org.weborganic.flint.query;
 
@@ -16,7 +18,7 @@ import com.topologi.diffx.xml.XMLWriter;
 
 /**
  * A basic search parameter wrapping a simple {@link Term}.
- * 
+ *
  * @author Christophe Lauret
  * @version 13 August 2010
  */
@@ -32,7 +34,7 @@ public final class TermParameter implements SearchParameter {
    *
    * @param field The name of the field to search.
    * @param text  The text to match in the field value.
-   * 
+   *
    * @throws NullPointerException If either parameter is <code>null</code>.
    */
   public TermParameter(String field, String text) throws NullPointerException {
@@ -45,7 +47,7 @@ public final class TermParameter implements SearchParameter {
    * Creates a new term parameter from the specified term.
    *
    * @param term The term to match.
-   * 
+   *
    * @throws NullPointerException If either is <code>null</code>.
    */
   public TermParameter(Term term) throws NullPointerException {
@@ -56,6 +58,7 @@ public final class TermParameter implements SearchParameter {
   /**
    * {@inheritDoc}
    */
+  @Override
   public boolean isEmpty() {
     return this._term.field().isEmpty() || this._term.text().isEmpty();
   }
@@ -71,6 +74,7 @@ public final class TermParameter implements SearchParameter {
   /**
    * {@inheritDoc}
    */
+  @Override
   public Query toQuery() {
     if (this.isEmpty()) { return null; }
     return new TermQuery(this._term);
@@ -79,6 +83,7 @@ public final class TermParameter implements SearchParameter {
   /**
    * {@inheritDoc}
    */
+  @Override
   public void toXML(XMLWriter xml) throws IOException {
     xml.openElement("term-parameter");
     // indicate whether this search term is empty

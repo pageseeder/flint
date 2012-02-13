@@ -1,8 +1,9 @@
 /*
  * This file is part of the Flint library.
- * 
- * For licensing information please see the file license.txt included in the release. A copy of this licence can also be
- * found at http://www.opensource.org/licenses/artistic-license-2.0.php
+ *
+ * For licensing information please see the file license.txt included in the release.
+ * A copy of this licence can also be found at
+ *   http://www.opensource.org/licenses/artistic-license-2.0.php
  */
 package org.weborganic.flint.query;
 
@@ -15,9 +16,9 @@ import org.apache.lucene.search.Query;
 import com.topologi.diffx.xml.XMLWriter;
 
 /**
- * A search parameter wrapping a simple {@link Term} prefix and use to generate a Lucene 
+ * A search parameter wrapping a simple {@link Term} prefix and use to generate a Lucene
  * {@link PrefixQuery}.
- * 
+ *
  * @author Christophe Lauret
  * @version 30 January 2012
  */
@@ -33,7 +34,7 @@ public final class PrefixParameter implements SearchParameter {
    *
    * @param field  The name of the field to search.
    * @param prefix The prefix text to match in the field value.
-   * 
+   *
    * @throws NullPointerException If either parameter is <code>null</code>.
    */
   public PrefixParameter(String field, String prefix) throws NullPointerException {
@@ -46,7 +47,7 @@ public final class PrefixParameter implements SearchParameter {
    * Creates a new prefix parameter from the specified term prefix.
    *
    * @param prefix The term prefix to match.
-   * 
+   *
    * @throws NullPointerException If the specified prefix is <code>null</code>.
    */
   public PrefixParameter(Term prefix) throws NullPointerException {
@@ -57,6 +58,7 @@ public final class PrefixParameter implements SearchParameter {
   /**
    * {@inheritDoc}
    */
+  @Override
   public boolean isEmpty() {
     return this._prefix.field().isEmpty() || this._prefix.text().isEmpty();
   }
@@ -72,6 +74,7 @@ public final class PrefixParameter implements SearchParameter {
   /**
    * {@inheritDoc}
    */
+  @Override
   public Query toQuery() {
     if (this.isEmpty()) { return null; }
     return new PrefixQuery(this._prefix);
@@ -80,6 +83,7 @@ public final class PrefixParameter implements SearchParameter {
   /**
    * {@inheritDoc}
    */
+  @Override
   public void toXML(XMLWriter xml) throws IOException {
     xml.openElement("prefix-parameter");
     // indicate whether this search term is empty

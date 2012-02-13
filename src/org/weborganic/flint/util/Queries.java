@@ -2,7 +2,7 @@
  * This file is part of the Flint library.
  *
  * For licensing information please see the file license.txt included in the release.
- * A copy of this licence can also be found at 
+ * A copy of this licence can also be found at
  *   http://www.opensource.org/licenses/artistic-license-2.0.php
  */
 package org.weborganic.flint.util;
@@ -17,11 +17,11 @@ import java.util.regex.Pattern;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BooleanClause;
+import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.PhraseQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermQuery;
-import org.apache.lucene.search.BooleanClause.Occur;
 
 /**
  * A set of utility methods related to query objects in Lucene.
@@ -37,19 +37,19 @@ public final class Queries {
   private static final Pattern IS_A_PHRASE = Pattern.compile("\\\"[^\\\"]+\\\"");
 
   /**
-   * Prevents creation of instances. 
+   * Prevents creation of instances.
    */
   private Queries() {
   }
 
   /**
    * Returns the term or phrase query corresponding to the specified text.
-   * 
-   * <p>If the text is surrounded by double quotes, this method will 
-   * return a {@link PhraseQuery} otherwise, it will return a simple {@link TermQuery}. 
-   * 
+   *
+   * <p>If the text is surrounded by double quotes, this method will
+   * return a {@link PhraseQuery} otherwise, it will return a simple {@link TermQuery}.
+   *
    * <p>Note: Quotation marks are thrown away.
-   * 
+   *
    * @param field the field to construct the terms.
    * @param text  the text to construct the query from.
    * @return the corresponding query.
@@ -61,7 +61,7 @@ public final class Queries {
     boolean isPhrase = IS_A_PHRASE.matcher(text).matches();
     if (isPhrase) {
       PhraseQuery phrase = new PhraseQuery();
-      String[] terms = text.substring(1, text.length()-1).split("\\s+"); 
+      String[] terms = text.substring(1, text.length()-1).split("\\s+");
       for (String t : terms) {
         phrase.add(new Term(field, t));
       }
@@ -74,7 +74,7 @@ public final class Queries {
   /**
    * Returns a boolean query combining all the specified queries in {@link Occur#MUST} clauses
    * as it is were an AND operator.
-   * 
+   *
    * @param queries the queries to combine with an AND.
    * @return The combined queries.
    */
@@ -89,7 +89,7 @@ public final class Queries {
   /**
    * Returns a boolean query combining all the specified queries in {@link Occur#MUST} clauses
    * as it is were an OR operator.
-   * 
+   *
    * @param queries the queries to combine with an OR.
    * @return The combined queries.
    */
@@ -102,13 +102,13 @@ public final class Queries {
   }
 
   /**
-   * Returns the list of similar queries by substituting one term only in the query. 
-   * 
+   * Returns the list of similar queries by substituting one term only in the query.
+   *
    * @param query  The original query
    * @param reader A reader to extract the similar terms.
-   * 
+   *
    * @return A list of similar queries to the specified one.
-   * 
+   *
    * @throws IOException If thrown by the reader while extracting fuzzy terms.
    */
   @Beta
@@ -120,7 +120,7 @@ public final class Queries {
     for (Term t : terms) {
       List<Term> fuzzy = Terms.fuzzy(reader, t);
       for (Term f : fuzzy) {
-        Query sq = substitute(query, t, f); 
+        Query sq = substitute(query, t, f);
         similar.add(sq);
       }
     }
@@ -132,17 +132,17 @@ public final class Queries {
 
   /**
    * Substitutes one term in the query for another.
-   * 
+   *
    * <p>This method only creates new query object if required; it does not modify the given query.
-   * 
+   *
    * <p>This method simply delegates to the appropriate <code>substitute</code> method based
-   * on the query class. Only query types for which there is an applicable <code>substitute</code> 
+   * on the query class. Only query types for which there is an applicable <code>substitute</code>
    * method can be substituted.
-   * 
+   *
    * @param query       the query where the substitution should occur.
    * @param original    the original term to replace.
    * @param replacement the term it should be replaced with.
-   * 
+   *
    * @return A new query where the term has been substituted;
    *         or the same query if no substitution was required or possible.
    */
@@ -161,13 +161,13 @@ public final class Queries {
 
   /**
    * Substitutes one term in the term query for another.
-   * 
+   *
    * <p>This method only creates new query object if required; it does not modify the given query.
-   * 
+   *
    * @param query       the query where the substitution should occur.
    * @param original    the original term to replace.
    * @param replacement the term it should be replaced with.
-   * 
+   *
    * @return A new term query where the term has been substituted;
    *         or the same query if no substitution was needed.
    */
@@ -184,13 +184,13 @@ public final class Queries {
 
   /**
    * Substitutes one term in the term query for another.
-   * 
+   *
    * <p>This method only creates new query object if required; it does not modify the given query.
-   * 
+   *
    * @param query       the query where the substitution should occur.
    * @param original    the original term to replace.
    * @param replacement the term it should be replaced with.
-   * 
+   *
    * @return A new term query where the term has been substituted;
    *         or the same query if no substitution was needed.
    */
@@ -206,22 +206,22 @@ public final class Queries {
 
   /**
    * Substitutes one term in the phrase query for another.
-   * 
+   *
    * <p>In a phrase query the replacement term must be on the same field as the original term.
-   * 
+   *
    * <p>This method only creates new query object if required; it does not modify the given query.
-   * 
+   *
    * @param query       the query where the substitution should occur.
    * @param original    the original term to replace.
    * @param replacement the term it should be replaced with.
-   * 
+   *
    * @return A new term query where the term has been substituted;
    *         or the same query if no substitution was needed.
-   * 
-   * @throws IllegalArgumentException if the replacement term is not on the same field as the original term. 
+   *
+   * @throws IllegalArgumentException if the replacement term is not on the same field as the original term.
    */
   @Beta
-  public static PhraseQuery substitute(PhraseQuery query, Term original, Term replacement) 
+  public static PhraseQuery substitute(PhraseQuery query, Term original, Term replacement)
       throws IllegalArgumentException {
     boolean doSubstitute = false;
     // Check if we need to substitute

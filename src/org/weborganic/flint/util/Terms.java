@@ -1,3 +1,10 @@
+/*
+ * This file is part of the Flint library.
+ *
+ * For licensing information please see the file license.txt included in the release.
+ * A copy of this licence can also be found at
+ *   http://www.opensource.org/licenses/artistic-license-2.0.php
+ */
 package org.weborganic.flint.util;
 
 import java.io.IOException;
@@ -16,7 +23,7 @@ import com.topologi.diffx.xml.XMLWriter;
 
 /**
  * A collection of utility methods to manipulate and extract terms.
- * 
+ *
  * @author Christophe Lauret
  * @version 18 March 2011
  */
@@ -27,6 +34,7 @@ public final class Terms {
    */
   private static final Comparator<Term> TEXT_COMPARATOR = new Comparator<Term>()  {
     /** {@inheritDoc} */
+    @Override
     public int compare(Term t1, Term t2) {
       return t1.text().compareTo(t2.text());
     }
@@ -38,7 +46,7 @@ public final class Terms {
 
   /**
    * Returns a comparator to order terms using their text value.
-   * 
+   *
    * @return a comparator to order terms using their text value.
    */
   public static Comparator<Term> textComparator() {
@@ -47,12 +55,12 @@ public final class Terms {
 
   /**
    * Returns the list of terms based on the given list of fields and texts.
-   * 
+   *
    * <p>The number of the terms returns is (number of fields) x (number of texts).
-   * 
+   *
    * @param fields The list of fields.
-   * @param texts  The list of texts. 
-   * 
+   * @param texts  The list of texts.
+   *
    * @return The corresponding list of terms.
    */
   public static List<Term> terms(List<String> fields, List<String> texts) {
@@ -67,14 +75,14 @@ public final class Terms {
 
   /**
    * Returns the list of fuzzy terms given a term and using the specified index reader.
-   * 
+   *
    * @see #loadPrefixTerms(IndexReader, List, Term)
-   * 
+   *
    * @param reader Index reader to use.
    * @param term   The term to use.
-   * 
+   *
    * @return The corresponding list of fuzzy terms.
-   * 
+   *
    * @throws IOException If an error is thrown by the fuzzy term enumeration.
    */
   public static List<Term> fuzzy(IndexReader reader, Term term) throws IOException {
@@ -85,14 +93,14 @@ public final class Terms {
 
   /**
    * Returns the list of prefix terms given a term and using the specified index reader.
-   * 
+   *
    * @see #loadPrefixTerms(IndexReader, List, Term)
-   * 
+   *
    * @param reader Index reader to use.
    * @param term   The term to use.
-   * 
+   *
    * @return The corresponding list of prefix terms.
-   * 
+   *
    * @throws IOException If an error is thrown by the prefix term enumeration.
    */
   public static List<Term> prefix(IndexReader reader, Term term) throws IOException {
@@ -103,11 +111,11 @@ public final class Terms {
 
   /**
    * Loads all the fuzzy terms in the list of terms given the reader.
-   * 
+   *
    * @param reader Index reader to use.
    * @param terms  The list of terms to load.
    * @param term   The term to use.
-   * 
+   *
    * @throws IOException If an error is thrown by the fuzzy term enumeration.
    */
   public static void fuzzy(IndexReader reader, List<Term> terms, Term term) throws IOException {
@@ -121,11 +129,11 @@ public final class Terms {
 
   /**
    * Loads all the fuzzy terms in the list of terms given the reader.
-   * 
+   *
    * @param reader Index reader to use.
    * @param terms  The bucket of terms to load.
    * @param term   The term to use.
-   * 
+   *
    * @throws IOException If an error is thrown by the fuzzy term enumeration.
    */
   @Beta public static void fuzzy(IndexReader reader, Bucket<Term> terms, Term term) throws IOException {
@@ -139,12 +147,12 @@ public final class Terms {
 
   /**
    * Loads all the prefix terms in the list of terms given the reader.
-   * 
+   *
    * @param reader Index reader to use.
    * @param terms  The list of terms to load.
    * @param term   The term to use.
-   * 
-   * @throws IOException If an error is thrown by the prefix term enumeration. 
+   *
+   * @throws IOException If an error is thrown by the prefix term enumeration.
    */
   public static void prefix(IndexReader reader, List<Term> terms, Term term) throws IOException {
     PrefixTermEnum e = new PrefixTermEnum(reader, term);
@@ -157,12 +165,12 @@ public final class Terms {
 
   /**
    * Loads all the prefix terms in the list of terms given the reader.
-   * 
+   *
    * @param reader Index reader to use.
    * @param terms  The list of terms to load.
    * @param term   The term to use.
-   * 
-   * @throws IOException If an error is thrown by the prefix term enumeration. 
+   *
+   * @throws IOException If an error is thrown by the prefix term enumeration.
    */
   @Beta public static void prefix(IndexReader reader, Bucket<Term> terms, Term term) throws IOException {
     PrefixTermEnum e = new PrefixTermEnum(reader, term);
@@ -175,12 +183,12 @@ public final class Terms {
 
   /**
    * Returns the list of terms for the specified field.
-   * 
+   *
    * @param reader The index reader
    * @param field  The field
-   * 
+   *
    * @return the list of terms for this field
-   * 
+   *
    * @throws IOException should any IO error be reported by the {@link IndexReader#terms(Term)} method.
    */
   @Beta public static List<Term> terms(IndexReader reader, String field) throws IOException {
@@ -203,12 +211,12 @@ public final class Terms {
 
   /**
    * Returns the list of term values for the specified field.
-   * 
+   *
    * @param reader The index reader to use
    * @param field  The field
-   * 
+   *
    * @return the list of terms for this field
-   * 
+   *
    * @throws IOException should any IO error be reported by the {@link IndexReader#terms(Term)} method.
    */
   @Beta public List<String> values(IndexReader reader, String field) throws IOException {
@@ -233,10 +241,10 @@ public final class Terms {
 
   /**
    * Returns the XML for a list of terms.
-   * 
+   *
    * @param xml   The XML writer.
    * @param terms The list of terms to serialise as XML.
-   * 
+   *
    * @throws IOException Any I/O error thrown by the XML writer.
    */
   public static void toXML(XMLWriter xml, List<Term> terms) throws IOException {
@@ -247,10 +255,10 @@ public final class Terms {
 
   /**
    * Returns the XML for a list of terms.
-   * 
+   *
    * @param xml   The XML writer.
    * @param terms The list of terms to serialise as XML.
-   * 
+   *
    * @throws IOException Any I/O error thrown by the XML writer.
    */
   public static void toXML(XMLWriter xml, Bucket<Term> terms) throws IOException {
@@ -261,10 +269,10 @@ public final class Terms {
 
   /**
    * Returns the XML for a term.
-   * 
+   *
    * @param xml The XML writer.
    * @param t   Term to serialise as XML.
-   * 
+   *
    * @throws IOException Any I/O error thrown by the XML writer.
    */
   public static void toXML(XMLWriter xml, Term t) throws IOException {
@@ -276,11 +284,11 @@ public final class Terms {
 
   /**
    * Returns the XML for a term.
-   * 
+   *
    * @param xml       The XML writer.
    * @param t         Term to serialise as XML.
    * @param frequency The term document frequency.
-   * 
+   *
    * @throws IOException Any I/O error thrown by the XML writer.
    */
   public static void toXML(XMLWriter xml, Term t, int frequency) throws IOException {

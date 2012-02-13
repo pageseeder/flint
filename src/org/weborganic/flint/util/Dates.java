@@ -1,3 +1,12 @@
+/*
+ * This file is part of the Flint import java.util.Calendar;
+import java.util.Date;
+import java.util.GregorianCalendar;
+
+import org.apache.lucene.document.DateTools;
+import org.apache.lucene.document.DateTools.Resolution;
+tic-license-2.0.php
+ */
 package org.weborganic.flint.util;
 
 import java.util.Calendar;

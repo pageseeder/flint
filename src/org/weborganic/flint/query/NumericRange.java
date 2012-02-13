@@ -2,7 +2,7 @@
  * This file is part of the Flint library.
  *
  * For licensing information please see the file license.txt included in the release.
- * A copy of this licence can also be found at 
+ * A copy of this licence can also be found at
  *   http://www.opensource.org/licenses/artistic-license-2.0.php
  */
 package org.weborganic.flint.query;
@@ -17,7 +17,7 @@ import com.topologi.diffx.xml.XMLWriter;
 
 /**
  * Create a range parameter using numeric values.
- * 
+ *
  * <p>This class simply wraps a {@link NumericRangeQuery} instance and is therefore closely related to it.
  * This is API is still experimental and subject to change in Lucene, any change in Lucene may also
  * be reflected in this API.
@@ -66,7 +66,7 @@ public final class NumericRange<T extends Number> implements SearchParameter {
 
   /**
    * Creates a new numeric range parameter.
-   * 
+   *
    * @param field        the numeric field to search
    * @param min          the minimum value in the range (may be <code>null</code>)
    * @param max          the maximum value in the range (may be <code>null</code>)
@@ -84,7 +84,7 @@ public final class NumericRange<T extends Number> implements SearchParameter {
 
   /**
    * Returns the value of the lower limit of the range.
-   * 
+   *
    * @return A minimum value or <code>null</code>.
    */
   public T min() {
@@ -93,7 +93,7 @@ public final class NumericRange<T extends Number> implements SearchParameter {
 
   /**
    * Returns the value of the upper limit for the range.
-   * 
+   *
    * @return A maximum value or <code>null</code>.
    */
   public T max() {
@@ -102,7 +102,7 @@ public final class NumericRange<T extends Number> implements SearchParameter {
 
   /**
    * Returns the name of the numeric field to search.
-   * 
+   *
    * @return The name of the numeric field to search.
    */
   public String field() {
@@ -111,7 +111,7 @@ public final class NumericRange<T extends Number> implements SearchParameter {
 
   /**
    * Indicates whether the lower limit is inclusive.
-   * 
+   *
    * @return <code>true</code> to include the lower limit in the range; <code>false</code> to included it.
    */
   public boolean includesMin() {
@@ -120,7 +120,7 @@ public final class NumericRange<T extends Number> implements SearchParameter {
 
   /**
    * Indicates whether the upper limit is inclusive.
-   * 
+   *
    * @return <code>true</code> to include the upper limit in the range; <code>false</code> to included it.
    */
   public boolean includesMax() {
@@ -129,21 +129,23 @@ public final class NumericRange<T extends Number> implements SearchParameter {
 
   /**
    * Returns <code>true</code> if this search query does not contain any parameter.
-   * 
+   *
    * @return <code>true</code> if this search query does not contain any parameter;
    *         <code>false</code> otherwise.
    */
+  @Override
   public boolean isEmpty() {
     return this._min == null && this._max == null;
   }
 
   /**
    * Generates the <code>Query</code> object corresponding to a numeric range search query.
-   * 
+   *
    * Returns a <code>NumericRangeQuery</code> based on the values in this object.
-   * 
+   *
    * @return a <code>NumericRangeQuery</code> or <code>null</code> if empty.
    */
+  @Override
   public Query toQuery() {
     if (this._min == null && this._max == null) return null;
     if (this._query == null)  {
@@ -154,11 +156,12 @@ public final class NumericRange<T extends Number> implements SearchParameter {
 
   /**
    * Serialises the search query as XML.
-   * 
+   *
    * @param xml The XML writer.
-   * 
+   *
    * @throws IOException Should there be any I/O exception while writing the XML.
    */
+  @Override
   public void toXML(XMLWriter xml) throws IOException {
     xml.openElement("numeric-range", false);
     if (this._min != null) {
@@ -176,16 +179,16 @@ public final class NumericRange<T extends Number> implements SearchParameter {
 
   /**
    * Returns the numeric range query that corresponds to the specified parameters.
-   * 
+   *
    * @param field        the numeric field
    * @param min          the lower limit (may be null)
    * @param max          the upper limit (may be null)
    * @param minInclusive <code>true</code> to include the minimum value in the range; <code>false</code> to excluded it.
    * @param maxInclusive <code>true</code> to include the maximum value in the range; <code>false</code> to excluded it.
-   * 
+   *
    * @return the corresponding <code>NumericRangeQuery</code>
    */
-  private static NumericRangeQuery<? extends Number> 
+  private static NumericRangeQuery<? extends Number>
       toNumericRangeQuery(String field, Number min, Number max, boolean minInclusive, boolean maxInclusive) {
     // Long
     if (min instanceof Long || (min == null && max instanceof Long)) {
@@ -210,9 +213,9 @@ public final class NumericRange<T extends Number> implements SearchParameter {
   // factory methods ------------------------------------------------------------------------------
 
   /**
-   * Factory that creates a <code>NumericRangeParameter</code>, that queries a double range using 
+   * Factory that creates a <code>NumericRangeParameter</code>, that queries a double range using
    * the default precisionStep.
-   * 
+   *
    * @param field        the numeric field to search
    * @param min          the minimum value in the range (may be <code>null</code>)
    * @param max          the maximum value in the range (may be <code>null</code>)
@@ -220,10 +223,10 @@ public final class NumericRange<T extends Number> implements SearchParameter {
    *                     <code>false</code> to exclude it.
    * @param maxInclusive <code>true</code> to include values matching the upper limit in the range;
    *                     <code>false</code> to exclude it.
-   * 
+   *
    * @return a new range.
    */
-  public static NumericRange<Double> newDoubleRange(String field, Double min, Double max, 
+  public static NumericRange<Double> newDoubleRange(String field, Double min, Double max,
       boolean minInclusive, boolean maxInclusive) {
     return new NumericRange<Double>(field, min, max, minInclusive, maxInclusive);
   }
@@ -231,7 +234,7 @@ public final class NumericRange<T extends Number> implements SearchParameter {
   /**
    * Factory that creates a <code>NumericRangeParameter</code>, that queries a float range using the
    * default precisionStep.
-   * 
+   *
    * @param field        the numeric field to search
    * @param min          the minimum value in the range (may be <code>null</code>)
    * @param max          the maximum value in the range (may be <code>null</code>)
@@ -239,18 +242,18 @@ public final class NumericRange<T extends Number> implements SearchParameter {
    *                     <code>false</code> to exclude it.
    * @param maxInclusive <code>true</code> to include values matching the upper limit in the range;
    *                     <code>false</code> to exclude it.
-   * 
+   *
    * @return a new range.
    */
-  public static NumericRange<Float> newFloatRange(String field, Float min, Float max, 
+  public static NumericRange<Float> newFloatRange(String field, Float min, Float max,
       boolean minInclusive, boolean maxInclusive) {
     return new NumericRange<Float>(field, min, max, minInclusive, maxInclusive);
   }
 
   /**
-   * Factory that creates a <code>NumericRangeParameter</code>, that queries a int range using the 
+   * Factory that creates a <code>NumericRangeParameter</code>, that queries a int range using the
    * default precisionStep.
-   * 
+   *
    * @param field        the numeric field to search
    * @param min          the minimum value in the range (may be <code>null</code>)
    * @param max          the maximum value in the range (may be <code>null</code>)
@@ -258,18 +261,18 @@ public final class NumericRange<T extends Number> implements SearchParameter {
    *                     <code>false</code> to exclude it.
    * @param maxInclusive <code>true</code> to include values matching the upper limit in the range;
    *                     <code>false</code> to exclude it.
-   * 
+   *
    * @return a new range.
    */
-  public static NumericRange<Integer> newIntRange(String field, Integer min, Integer max, 
+  public static NumericRange<Integer> newIntRange(String field, Integer min, Integer max,
       boolean minInclusive, boolean maxInclusive) {
     return new NumericRange<Integer>(field, min, max, minInclusive, maxInclusive);
   }
 
   /**
-   * Factory that creates a <code>NumericRangeParameter</code>, that queries a long range using the 
+   * Factory that creates a <code>NumericRangeParameter</code>, that queries a long range using the
    * default precisionStep.
-   * 
+   *
    * @param field        the numeric field to search
    * @param min          the minimum value in the range (may be <code>null</code>)
    * @param max          the maximum value in the range (may be <code>null</code>)
@@ -277,10 +280,10 @@ public final class NumericRange<T extends Number> implements SearchParameter {
    *                     <code>false</code> to exclude it.
    * @param maxInclusive <code>true</code> to include values matching the upper limit in the range;
    *                     <code>false</code> to exclude it.
-   * 
+   *
    * @return a new range.
    */
-  public static NumericRange<Long>  newLongRange(String field, Long min, Long max, 
+  public static NumericRange<Long>  newLongRange(String field, Long min, Long max,
       boolean minInclusive, boolean maxInclusive) {
     return new NumericRange<Long>(field, min, max, minInclusive, maxInclusive);
   }

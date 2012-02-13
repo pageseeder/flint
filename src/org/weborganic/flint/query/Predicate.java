@@ -1,8 +1,9 @@
 /*
  * This file is part of the Flint library.
- * 
- * For licensing information please see the file license.txt included in the release. A copy of this licence can also be
- * found at http://www.opensource.org/licenses/artistic-license-2.0.php
+ *
+ * For licensing information please see the file license.txt included in the release.
+ * A copy of this licence can also be found at
+ *   http://www.opensource.org/licenses/artistic-license-2.0.php
  */
 package org.weborganic.flint.query;
 
@@ -13,8 +14,8 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.Map.Entry;
+import java.util.Set;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
@@ -34,14 +35,14 @@ import com.topologi.diffx.xml.XMLWriter;
 
 /**
  * A simple parameter to represent a Lucene predicate produced by a query parser.
- * 
+ *
  * <p>The <i>predicate</i> is similar to the {@link Question} except that it can be used for
  * more powerful search; it is however more difficult to produce similar predicates.
- * 
+ *
  * <p>It acts on one or multiple fields, each field can have a different boost level.
- * 
+ *
  * <p>Use the factory methods to create new predicate.
- * 
+ *
  * @author Christophe Lauret (Weborganic)
  * @version 16 August 2010
  */
@@ -68,13 +69,13 @@ public final class Predicate implements SearchParameter, XMLWritable {
 
   /**
    * Creates a new question.
-   * 
-   * <p>This is a low level API constructor; to ensure that this class works well, ensure that the 
+   *
+   * <p>This is a low level API constructor; to ensure that this class works well, ensure that the
    * fields cannot be modified externally and that field names do not include empty strings.
-   * 
+   *
    * @param fields    The fields to search mapped to their respective boost.
    * @param predicate The text before parsing.
-   * 
+   *
    * @throws NullPointerException If either argument is <code>null</code>.
    */
   protected Predicate(Map<String, Float> fields, String predicate) throws NullPointerException {
@@ -89,7 +90,7 @@ public final class Predicate implements SearchParameter, XMLWritable {
 
   /**
    * Returns the list of fields this question applies to.
-   * 
+   *
    * @return the list of fields this question applies to.
    */
   public Collection<String> fields() {
@@ -98,7 +99,7 @@ public final class Predicate implements SearchParameter, XMLWritable {
 
   /**
    * Returns the underlying predicate string.
-   * 
+   *
    * @return the underlying predicate string.
    */
   public String predicate() {
@@ -107,9 +108,9 @@ public final class Predicate implements SearchParameter, XMLWritable {
 
   /**
    * Returns the boost value for the specified field.
-   * 
+   *
    * @param field the name of the field.
-   * 
+   *
    * @return the corresponding boost value.
    */
   public float getBoost(String field) {
@@ -119,21 +120,22 @@ public final class Predicate implements SearchParameter, XMLWritable {
 
   /**
    * A question is empty if either the predicate or the fields are empty.
-   * 
+   *
    * @return <code>true</code> if either the predicate or the fields are empty;
    *         <code>false</code> if the predicate has a value and there is at least one field.
    */
+  @Override
   public boolean isEmpty() {
     return this._predicate.isEmpty() || this._fields.isEmpty();
   }
 
   /**
    * Computes the query for this question.
-   * 
+   *
    * <p>This only needs to be done once.
-   * 
+   *
    * @param analyzer The analyser used by the underlying index.
-   * 
+   *
    * @throws ParseException If the question could not be parsed properly.
    */
   private void compute(Analyzer analyzer) throws ParseException {
@@ -144,9 +146,9 @@ public final class Predicate implements SearchParameter, XMLWritable {
 
   /**
    * Computes the query for this question using the {@link StandardAnalyzer}.
-   * 
+   *
    * <p>This method ignores any Lucene specific syntax by removing it from the input string.
-   * 
+   *
    * @throws ParseException If the question could not be parsed properly.
    */
   private void compute() throws ParseException {
@@ -156,12 +158,12 @@ public final class Predicate implements SearchParameter, XMLWritable {
   /**
    * Returns a list of predicates which are considered similar, that where one term was substituted
    * for a similar term.
-   * 
+   *
    * @param reader the reader to use to extract the similar (fuzzy) terms.
-   * 
+   *
    * @return a list of similar predicates.
-   * 
-   * @throws IOException If thrown by the reader while getting the fuzzy terms. 
+   *
+   * @throws IOException If thrown by the reader while getting the fuzzy terms.
    */
   public List<Predicate> similar(IndexReader reader) throws IOException {
     List<Predicate> similar = new ArrayList<Predicate>();
@@ -183,13 +185,14 @@ public final class Predicate implements SearchParameter, XMLWritable {
 
   /**
    * Returns this object as Lucene query instance.
-   * 
+   *
    * @see #isEmpty()
-   * 
+   *
    * @return this object as a Lucene query instance, or <code>null</code> if this query is empty.
    * @throws IllegalStateException if the query has not been computed before - should not happen if using factory
    *           methods.
    */
+  @Override
   public Query toQuery() throws IllegalStateException {
     // Return null if empty
     if (this.isEmpty()) { return null; }
@@ -201,6 +204,7 @@ public final class Predicate implements SearchParameter, XMLWritable {
   /**
    * {@inheritDoc}
    */
+  @Override
   public void toXML(XMLWriter xml) throws IOException {
     xml.openElement("predicate", true);
     // indicate whether this search term is empty
@@ -223,6 +227,7 @@ public final class Predicate implements SearchParameter, XMLWritable {
   /**
    * {@inheritDoc}
    */
+  @Override
   public String toString() {
     return this._predicate + " in " + this._fields.entrySet();
   }
@@ -232,13 +237,13 @@ public final class Predicate implements SearchParameter, XMLWritable {
 
   /**
    * A factory method to create a new predicate and compute it using the Lucene {@link MultiFieldQueryParser}.
-   * 
+   *
    * @param field     The default field for the predicate.
    * @param predicate The predicate to parse
    * @param analyzer  The analyser to use when parsing the predicate.
-   * 
+   *
    * @return a new predicate.
-   * 
+   *
    * @throws ParseException if the predicate could not be parsed.
    */
   public static Predicate newPredicate(String field, String predicate, Analyzer analyzer) throws ParseException {
@@ -250,13 +255,13 @@ public final class Predicate implements SearchParameter, XMLWritable {
 
   /**
    * A factory method to create a new predicate and compute it using the Lucene {@link MultiFieldQueryParser}.
-   * 
+   *
    * @param fields    The list of default fields for the predicate.
    * @param predicate The predicate to parse
    * @param analyzer  The analyser to use when parsing the predicate.
-   * 
+   *
    * @return a new predicate.
-   * 
+   *
    * @throws ParseException if the predicate could not be parsed.
    */
   public static Predicate newPredicate(List<String> fields, String predicate, Analyzer analyzer) throws ParseException {
@@ -269,16 +274,16 @@ public final class Predicate implements SearchParameter, XMLWritable {
 
   /**
    * A factory method to create a new question and compute it using the Lucene {@link MultiFieldQueryParser}.
-   * 
+   *
    * @param fields    The list of fields for the question.
    * @param predicate The predicate to parse
    * @param analyzer  The analyser to use when parsing the predicate.
-   * 
+   *
    * @return a new predicate.
-   * 
+   *
    * @throws ParseException if the predicate could not be parsed.
    */
-  public static Predicate newPredicate(Map<String, Float> fields, String predicate, Analyzer analyzer) 
+  public static Predicate newPredicate(Map<String, Float> fields, String predicate, Analyzer analyzer)
       throws ParseException {
     Predicate q = new Predicate(fields, predicate);
     q.compute(analyzer);
@@ -288,12 +293,12 @@ public final class Predicate implements SearchParameter, XMLWritable {
   /**
    * A factory method to create a new question and compute it using the Lucene {@link MultiFieldQueryParser}
    * and the {@link StandardAnalyzer}.
-   * 
+   *
    * @param fields    The list of fields for the question.
    * @param predicate The predicate to parse
    *
    * @return a new predicate.
-   * 
+   *
    * @throws ParseException if the predicate could not be parsed.
    */
   public static Predicate newPredicate(List<String> fields, String predicate) throws ParseException {
@@ -307,12 +312,12 @@ public final class Predicate implements SearchParameter, XMLWritable {
   /**
    * A factory method to create a new question and compute it using the Lucene {@link MultiFieldQueryParser}
    * and the {@link StandardAnalyzer}.
-   * 
+   *
    * @param fields    The list of fields for the question.
    * @param predicate The predicate to parse
    *
    * @return a new predicate.
-   * 
+   *
    * @throws ParseException if the predicate could not be parsed.
    */
   public static Predicate newPredicate(Map<String, Float> fields, String predicate) throws ParseException {

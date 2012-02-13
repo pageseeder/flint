@@ -1,3 +1,10 @@
+/*
+ * This file is part of the Flint library.
+ *
+ * For licensing information please see the file license.txt included in the release.
+ * A copy of this licence can also be found at
+ *   http://www.opensource.org/licenses/artistic-license-2.0.php
+ */
 package org.weborganic.flint.search;
 
 import java.util.BitSet;
@@ -7,11 +14,11 @@ import org.apache.lucene.search.Collector;
 import org.apache.lucene.search.Scorer;
 
 /**
- * Collects Lucene search results into a bit set. 
- * 
+ * Collects Lucene search results into a bit set.
+ *
  * <p>This class is useful when mixing and matching various criteria by using boolean operations
- * on the bit sets. 
- * 
+ * on the bit sets.
+ *
  * @author Christophe Lauret
  * @version 2 August 2010
  */
@@ -29,9 +36,9 @@ public final class BitCollector extends Collector {
 
   /**
    * Creates a new collector by setting the size of the bit set.
-   * 
+   *
    * <p>The size of the bit should be the size of the index (number of documents).
-   * 
+   *
    * @param size the size of the {@link BitSet} to create.
    */
   public BitCollector(int size) {
@@ -40,7 +47,7 @@ public final class BitCollector extends Collector {
 
   /**
    * Creates a new collector using the specified bit set.
-   * 
+   *
    * @param bits The bit set to use (must be the size of the index).
    */
   public BitCollector(BitSet bits) {
@@ -58,7 +65,7 @@ public final class BitCollector extends Collector {
 
   /**
    * Accept documents out of order - the order is irrelevant when populating {@link BitSet}s.
-   * @return always <code>true</code>. 
+   * @return always <code>true</code>.
    */
   @Override
   public boolean acceptsDocsOutOfOrder() {
@@ -67,7 +74,7 @@ public final class BitCollector extends Collector {
 
   /**
    * Updates the {@link BitSet} to include the collected document.
-   * 
+   *
    * @param doc the position of the Lucene {@link Document} in the index
    */
   @Override
@@ -77,7 +84,7 @@ public final class BitCollector extends Collector {
 
   /**
    * Changes the document base to re-base the document position in the bit set.
-   * 
+   *
    * @param reader  the next index reader
    * @param docbase used to re-base document ids for the index.
    */
@@ -88,7 +95,7 @@ public final class BitCollector extends Collector {
 
   /**
    * Returns the {@link BitSet} after a search.
-   * 
+   *
    * @return the {@link BitSet} after a search.
    */
   public BitSet getBits() {
@@ -97,7 +104,7 @@ public final class BitCollector extends Collector {
 
   /**
    * Returns the cardinality of the {@link BitSet} after a search.
-   * 
+   *
    * @return the cardinality of the {@link BitSet} after a search.
    */
   public int getCount() {

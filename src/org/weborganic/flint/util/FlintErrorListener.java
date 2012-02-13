@@ -1,3 +1,10 @@
+/*
+ * This file is part of the Flint library.
+ *
+ * For licensing information please see the file license.txt included in the release.
+ * A copy of this licence can also be found at
+ *   http://www.opensource.org/licenses/artistic-license-2.0.php
+ */
 package org.weborganic.flint.util;
 
 import javax.xml.transform.ErrorListener;
@@ -8,7 +15,7 @@ import org.weborganic.flint.log.FlintListener;
 
 /**
  * Basic error listener for XSLT transformation in flint.
- * 
+ *
  * @author Jean-Baptiste Reure
  * @version 31 May 2010
  */
@@ -26,7 +33,7 @@ public class FlintErrorListener implements ErrorListener {
 
   /**
    * Create a new listener.
-   * 
+   *
    * @param listener the listener to log messages to
    * @param job      the Job the errors belong to
    */
@@ -38,6 +45,7 @@ public class FlintErrorListener implements ErrorListener {
   /**
    * {@inheritDoc}
    */
+  @Override
   public void error(TransformerException te) throws TransformerException {
     if (this._job != null)
       this._listener.error(this._job, "ERROR: "+te.getMessageAndLocation());
@@ -48,6 +56,7 @@ public class FlintErrorListener implements ErrorListener {
   /**
    * {@inheritDoc}
    */
+  @Override
   public void fatalError(TransformerException te) throws TransformerException {
     if (this._job != null)
       this._listener.error(this._job, "FATAL: "+te.getMessageAndLocation());
@@ -58,6 +67,7 @@ public class FlintErrorListener implements ErrorListener {
   /**
    * {@inheritDoc}
    */
+  @Override
   public void warning(TransformerException te) throws TransformerException {
     if (this._job != null)
       this._listener.warn(this._job, "WARNING: "+te.getMessageAndLocation());

@@ -2,7 +2,7 @@
  * This file is part of the Flint library.
  *
  * For licensing information please see the file license.txt included in the release.
- * A copy of this licence can also be found at 
+ * A copy of this licence can also be found at
  *   http://www.opensource.org/licenses/artistic-license-2.0.php
  */
 package org.weborganic.flint.query;
@@ -27,7 +27,7 @@ import com.topologi.diffx.xml.XMLWriter;
  * @author  Christophe Lauret (Weborganic)
  * @author  Tu Tak Tran (Allette Systems)
  * @author  William Liem (Allette Systems)
- * 
+ *
  * @version 26 Feb 2009
  */
 @Deprecated public final class GenericSearchQuery implements SearchQuery {
@@ -46,7 +46,7 @@ import com.topologi.diffx.xml.XMLWriter;
 
   /**
    * Adds a parameter to this search query.
-   * 
+   *
    * @param parameter A search parameter.
    */
   public void add(SearchParameter parameter) {
@@ -55,10 +55,11 @@ import com.topologi.diffx.xml.XMLWriter;
 
   /**
    * Indicates whether this query is without parameters.
-   * 
+   *
    * @return <code>true</code> if this search query does not contain any parameter;
    *         <code>false</code> otherwise.
    */
+  @Override
   public boolean isEmpty() {
     for (int i = 0; i < this._parameters.size(); i++) {
       SearchParameter parameter = this._parameters.get(i);
@@ -70,35 +71,37 @@ import com.topologi.diffx.xml.XMLWriter;
 
   /**
    * Defines the sort order.
-   * 
-   * @param sort The sort order. 
+   *
+   * @param sort The sort order.
    */
   public void setSort(Sort sort) {
-    this._sort = sort; 
+    this._sort = sort;
   }
 
   /**
    * Defines the sort order.
-   * 
-   * @return the sorting rules for this 
+   *
+   * @return the sorting rules for this
    */
+  @Override
   public Sort getSort() {
     return this._sort;
   }
 
   /**
    * Generates the <code>Query</code> object corresponding to a search query.
-   * 
+   *
    * @return The Lucene query instance.
-   * 
+   *
    * @see org.weborganic.flint.query.SearchQuery#toQuery()
    */
+  @Override
   public Query toQuery() {
     BooleanQuery query = new BooleanQuery();
 
     // iterate over the possible parameters
     for (int i = 0; i < this._parameters.size(); i++) {
-      SearchParameter parameter = (SearchParameter)this._parameters.get(i);
+      SearchParameter parameter = this._parameters.get(i);
       Query q = parameter.toQuery();
       if (q != null && !(q instanceof BooleanQuery && ((BooleanQuery)q).clauses().isEmpty())) {
         query.add(q, BooleanClause.Occur.MUST);
@@ -109,17 +112,18 @@ import com.topologi.diffx.xml.XMLWriter;
 
   /**
    * Serialises the search query as XML.
-   * 
+   *
    * @param xml The XML writer.
-   * 
+   *
    * @throws IOException Should there be any I/O exception while writing the XML.
    */
+  @Override
   public void toXML(XMLWriter xml) throws IOException {
     xml.openElement("search-query", true);
 
     // serialise each parameter individually
     for (int i = 0; i < this._parameters.size(); i++) {
-      SearchParameter parameter = (SearchParameter)this._parameters.get(i);
+      SearchParameter parameter = this._parameters.get(i);
       parameter.toXML(xml);
     }
 
@@ -137,6 +141,7 @@ import com.topologi.diffx.xml.XMLWriter;
    *
    * @return The predicate corresponding to the Lucene query.
    */
+  @Override
   public String getPredicate() {
     return toQuery().toString();
   }
@@ -145,6 +150,7 @@ import com.topologi.diffx.xml.XMLWriter;
    * Unused as this query does not use a single field but may use multiple.
    * @return Always "" (empty string)
    */
+  @Override
   public String getField() {
     return "";
   }
@@ -152,6 +158,7 @@ import com.topologi.diffx.xml.XMLWriter;
   /**
    * {@inheritDoc}
    */
+  @Override
   public String toString() {
     StringBuffer s = new StringBuffer();
     s.append('(');

@@ -2,19 +2,19 @@
  * This file is part of the Flint library.
  *
  * For licensing information please see the file license.txt included in the release.
- * A copy of this licence can also be found at 
+ * A copy of this licence can also be found at
  *   http://www.opensource.org/licenses/artistic-license-2.0.php
  */
 package org.weborganic.flint.util;
 
 /**
  * A set of utility methods to help with command-line interface.
- * 
+ *
  * <p>The methods in this class would typically be used in the <code>main(String[])</code>
  * method of a class.
  *
  * @author  Christophe Lauret (Weborganic)
- * 
+ *
  * @version 8 September 2006
  */
 public final class CommandLine {
@@ -27,12 +27,12 @@ public final class CommandLine {
 
   /**
    * Returns the value corresponding to the given switch.
-   * 
+   *
    * <p>Returns <code>null</code> if any of the parameters is <code>null</code>.
    *
    * @param name The name of the command line switch
    * @param args The command line arguments
-   * 
+   *
    * @return The value of the parameter or <code>null</code>.
    */
   public static String getParameter(String name, String[] args) {
@@ -50,12 +50,12 @@ public final class CommandLine {
    *
    * <p>This method will go through every argument to check whether the switch exists
    * or not.
-   * 
+   *
    * <p>Returns <code>false</code> if any of the parameters is <code>null</code>.
    *
    * @param name The name of the command line switch.
    * @param args The command line arguments.
-   * 
+   *
    * @return <code>true</code> if the switch if available; <code>false</code> otherwise.
    */
   public static boolean hasSwitch(String name, String[] args) {

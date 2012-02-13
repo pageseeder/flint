@@ -1,3 +1,10 @@
+/*
+ * This file is part of the Flint library.
+ *
+ * For licensing information please see the file license.txt included in the release.
+ * A copy of this licence can also be found at
+ *   http://www.opensource.org/licenses/artistic-license-2.0.php
+ */
 package org.weborganic.flint.query;
 
 import java.io.IOException;
@@ -6,19 +13,19 @@ import java.util.List;
 
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.TermQuery;
-import org.apache.lucene.search.BooleanClause.Occur;
 import org.weborganic.flint.util.Beta;
 import org.weborganic.flint.util.Terms;
 
 import com.topologi.diffx.xml.XMLWriter;
 
 /**
- * A Search query for use as auto suggest. 
- * 
+ * A Search query for use as auto suggest.
+ *
  * @author Christophe Lauret
  * @version 21 July 2010
  */
@@ -42,7 +49,7 @@ public final class SuggestionQuery implements SearchQuery, FlintQuery {
 
   /**
    * Create a new auto-suggest query for the specified list of terms with no condition.
-   * 
+   *
    * @param terms     The list of terms that should be matched.
    */
   public SuggestionQuery(List<Term> terms) {
@@ -51,7 +58,7 @@ public final class SuggestionQuery implements SearchQuery, FlintQuery {
 
   /**
    * Create a new auto-suggest query for the specified list of terms.
-   * 
+   *
    * @param terms     The list of terms that should be matched.
    * @param condition The condition that must be met by all suggested results (may be <code>null</code>).
    */
@@ -62,9 +69,9 @@ public final class SuggestionQuery implements SearchQuery, FlintQuery {
 
   /**
    * Computes the list of terms to generate the actual suggestion query.
-   * 
+   *
    * @param reader Computes the list.
-   * @throws IOException should an error occurs while reading the index. 
+   * @throws IOException should an error occurs while reading the index.
    */
   public void compute(IndexReader reader) throws IOException {
     // Compute the list of terms
@@ -90,7 +97,7 @@ public final class SuggestionQuery implements SearchQuery, FlintQuery {
 
   /**
    * Prints this query as XML on the specified XML writer.
-   * 
+   *
    * <p>XML:
    * <pre>{@code
    *  <suggestion-query>
@@ -106,13 +113,14 @@ public final class SuggestionQuery implements SearchQuery, FlintQuery {
    *    </condition>
    *  </suggestion-query>
    * }</pre>
-   * 
+   *
    * @see Query#toString()
-   * 
+   *
    * @param xml The XML writer to use.
-   * 
-   * @throws IOException If thrown by 
+   *
+   * @throws IOException If thrown by
    */
+  @Override
   public void toXML(XMLWriter xml) throws IOException {
     xml.openElement("suggestion-query");
     xml.openElement("terms");
@@ -134,6 +142,7 @@ public final class SuggestionQuery implements SearchQuery, FlintQuery {
   /**
    * {@inheritDoc}
    */
+  @Override
   public Query toQuery() {
     return this.query;
   }
@@ -141,33 +150,37 @@ public final class SuggestionQuery implements SearchQuery, FlintQuery {
   /**
    * {@inheritDoc}
    */
+  @Override
   public boolean isEmpty() {
     return this._terms.isEmpty();
   }
 
   /**
    * Always sort by relevance.
-   * 
+   *
    * {@inheritDoc}
    */
+  @Override
   public Sort getSort() {
     return Sort.RELEVANCE;
   }
 
   /**
    * Always sorts by relevance.
-   * 
+   *
    * {@inheritDoc}
    */
+  @Override
   public String getPredicate() {
     return this.query != null? this.query.toString() : null;
   }
 
   /**
    * Returns the field of the first entered term or <code>null</code>.
-   * 
+   *
    * {@inheritDoc}
    */
+  @Override
   public String getField() {
     if (this._terms.isEmpty()) return null;
     return this._terms.get(0).field();

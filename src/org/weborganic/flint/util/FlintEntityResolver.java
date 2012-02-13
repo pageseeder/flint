@@ -2,7 +2,7 @@
  * This file is part of the Flint library.
  *
  * For licensing information please see the file license.txt included in the release.
- * A copy of this licence can also be found at 
+ * A copy of this licence can also be found at
  *   http://www.opensource.org/licenses/artistic-license-2.0.php
  */
 package org.weborganic.flint.util;
@@ -21,22 +21,22 @@ import org.xml.sax.SAXException;
 
 /**
  * Resolves the public identifiers used by Flint.
- * 
+ *
  * <p>Flint public identifiers should match the following:
- * 
+ *
  * <pre>
  *   -//Weborganic//DTD::Flint [name_of_schema]//EN
  * </pre>
- * 
+ *
  * @author  Christophe Lauret (Weborganic)
- * 
+ *
  * @version 1 March 2010
  */
 public final class FlintEntityResolver implements EntityResolver {
 
   /**
    * The prefix used by Flint for all public identifiers.
-   * 
+   *
    * Public identifiers starting with any other prefix will be ignored.
    */
   public static final String PUBLIC_ID_PREFIX = "-//Weborganic//DTD::Flint ";
@@ -59,14 +59,15 @@ public final class FlintEntityResolver implements EntityResolver {
 
   /**
    * @see org.xml.sax.EntityResolver#resolveEntity(String, String)
-   * 
+   *
    * @param publicId The public identifier for the entity.
    * @param systemId The system identifier for the entity.
-   * 
+   *
    * @return The entity as an XML input source.
-   * 
+   *
    * @throws SAXException If the library has not been defined.
    */
+  @Override
   public InputSource resolveEntity(String publicId, String systemId) throws SAXException {
     // process only public identifiers that are valid for Flint
     String dtd = toFileName(publicId);
@@ -88,9 +89,9 @@ public final class FlintEntityResolver implements EntityResolver {
 
   /**
    * Returns the file name for the specified public ID.
-   * 
+   *
    * Only "-//Weborganic//DTD::Flint"
-   * 
+   *
    * @param publicId the public identifier.
    * @return The corresponding filename.
    */
@@ -98,13 +99,13 @@ public final class FlintEntityResolver implements EntityResolver {
     if (publicId == null) return null;
     if (!publicId.startsWith(PUBLIC_ID_PREFIX)) return null;
     int length = publicId.endsWith(PUBLIC_ID_SUFFIX)? publicId.length() - PUBLIC_ID_SUFFIX.length() : publicId.length();
-    if (length <= PUBLIC_ID_PREFIX.length()) return null; 
+    if (length <= PUBLIC_ID_PREFIX.length()) return null;
     return publicId.substring(PUBLIC_ID_PREFIX.length(), length).toLowerCase().replace(' ', '-') + ".dtd";
   }
 
   /**
    * Returns the single instance defined in this class.
-   * 
+   *
    * @return The single instance defined in this class.
    */
   public static FlintEntityResolver getInstance() {
@@ -116,7 +117,7 @@ public final class FlintEntityResolver implements EntityResolver {
 
   /**
    * Returns the input stream for the specified system ID.
-   * 
+   *
    * @param systemId The system ID
    * @return The corresponding resource or <code>null</code>;
    * @throws SAXException Wrap any IO or malformed URL exception.

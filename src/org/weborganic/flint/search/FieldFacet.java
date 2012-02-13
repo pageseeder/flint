@@ -1,3 +1,10 @@
+/*
+ * This file is part of the Flint library.
+ *
+ * For licensing information please see the file license.txt included in the release.
+ * A copy of this licence can also be found at
+ *   http://www.opensource.org/licenses/artistic-license-2.0.php
+ */
 package org.weborganic.flint.search;
 
 import java.io.IOException;
@@ -6,22 +13,23 @@ import java.util.List;
 
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.BooleanQuery;
+import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Searcher;
 import org.apache.lucene.search.TermQuery;
-import org.apache.lucene.search.BooleanClause.Occur;
 import org.weborganic.flint.util.Beta;
 import org.weborganic.flint.util.Bucket;
-import org.weborganic.flint.util.Terms;
 import org.weborganic.flint.util.Bucket.Entry;
+import org.weborganic.flint.util.Terms;
 
 import com.topologi.diffx.xml.XMLWritable;
 import com.topologi.diffx.xml.XMLWriter;
 
 /**
  * A facet implementation using a simple index field.
- * 
+ *
  * @author Christophe Lauret
  * @version 2 August 2010
  */
@@ -45,7 +53,7 @@ public final class FieldFacet implements XMLWritable, Facet {
 
   /**
    * Creates a new facet with the specified name;
-   * 
+   *
    * @param name    The name of the facet.
    * @param queries The subqueries to use on top of the base query to calculate the facet values.
    */
@@ -58,16 +66,18 @@ public final class FieldFacet implements XMLWritable, Facet {
    * Returns the name of the field.
    * @return the name of the field.
    */
+  @Override
   public String name() {
     return this._name;
   }
 
   /**
    * Returns the query for given value if it the specified value matches the text for the term.
-   * 
+   *
    * @param value the text of the term to match.
    * @return the requested query if it exists or <code>null</code>.
    */
+  @Override
   public Query forValue(String value) {
     if (value == null) return null;
     for (TermQuery t : this._queries) {
@@ -78,11 +88,11 @@ public final class FieldFacet implements XMLWritable, Facet {
 
   /**
    * Computes each facet option.
-   * 
+   *
    * @param searcher the index search to use.
    * @param base     the base query.
    * @param size     the maximum number of field values to compute.
-   * 
+   *
    * @throws IOException if thrown by the searcher.
    */
   public void compute(Searcher searcher, Query base, int size) throws IOException {
@@ -105,27 +115,28 @@ public final class FieldFacet implements XMLWritable, Facet {
 
   /**
    * Computes each facet option.
-   * 
+   *
    * <p>Same as <code>compute(searcher, base, 10);</code>.
-   * 
+   *
    * <p>Defaults to 10.
-   * 
+   *
    * @see #compute(IndexSearcher, Query, int)
-   * 
+   *
    * @param searcher the index search to use.
    * @param base     the base query.
-   * 
+   *
    * @throws IOException if thrown by the searcher.
    */
+  @Override
   public void compute(Searcher searcher, Query base) throws IOException {
     compute(searcher, base, 10);
   }
 
   /**
    * Computes each facet option without a base query.
-   * 
+   *
    * @param searcher the index search to use.
-   * 
+   *
    * @throws IOException if thrown by the searcher.
    */
   private void compute(Searcher searcher) throws IOException {
@@ -142,6 +153,7 @@ public final class FieldFacet implements XMLWritable, Facet {
   /**
    * {@inheritDoc}
    */
+  @Override
   public void toXML(XMLWriter xml) throws IOException {
     xml.openElement("facet", true);
     xml.attribute("name", this._name);
@@ -163,12 +175,12 @@ public final class FieldFacet implements XMLWritable, Facet {
 
   /**
    * Creates a new facet for the specified field.
-   * 
+   *
    * @param field  the field for this facet.
    * @param reader the reader to use.
-   * 
+   *
    * @return the corresponding Facet ready to use with a base query.
-   * 
+   *
    * @throws IOException if thrown by the reader.
    */
   public static FieldFacet newFacet(String field, IndexReader reader) throws IOException {

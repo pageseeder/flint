@@ -1,3 +1,10 @@
+/*
+ * This file is part of the Flint library.
+ *
+ * For licensing information please see the file license.txt included in the release.
+ * A copy of this licence can also be found at
+ *   http://www.opensource.org/licenses/artistic-license-2.0.php
+ */
 package org.weborganic.flint.util;
 
 import java.io.File;
@@ -7,10 +14,10 @@ import java.util.List;
 
 /**
  * Collects files in a root directory and its sub-directories, using the specified file filter.
- * 
+ *
  * <p><b>NOTE:</b> this file does not implement the Lucene {@link org.apache.lucene.search.Collector}
  * interface and bears no relation with it.
- * 
+ *
  * @author Christophe Lauret
  * @version 2 August 2010
  */
@@ -28,7 +35,7 @@ public final class FileCollector {
 
   /**
    * Creates a new unfiltered file collector.
-   * 
+   *
    * @param root The root directory to scan.
    */
   public FileCollector(File root) {
@@ -38,7 +45,7 @@ public final class FileCollector {
 
   /**
    * Returns all the files as specified.
-   * 
+   *
    * @return all the files as specified.
    */
   public List<File> list() {
@@ -46,28 +53,28 @@ public final class FileCollector {
   }
 
   /**
-   * Lists all the files in the specified directory and its descendants. 
-   * 
+   * Lists all the files in the specified directory and its descendants.
+   *
    * <p>Note: The file filter only affects files, directory are still scanned regardless.
-   * 
+   *
    * @param root   the root directory to scan.
    * @param filter a file filter to use.
-   * 
+   *
    * @return all the collected files matching the filter.
    */
   public static List<File> list(File root, FileFilter filter) {
     List<File> files = new LinkedList<File>();
     list(root, filter, files);
-    return files; 
+    return files;
   }
 
   /**
-   * Lists all the files in the specified directory and its descendants. 
-   * 
+   * Lists all the files in the specified directory and its descendants.
+   *
    * <p>Note: The file filter affects both files and directories.
-   * 
+   *
    * @param root   the root directory to scan.
-   * 
+   *
    * @return all the collected files matching the filter.
    */
   public static List<File> list(File root) {
@@ -77,10 +84,10 @@ public final class FileCollector {
   // private helpers ------------------------------------------------------------------------------
 
   /**
-   * Lists all the files in the specified directory and its descendants. 
-   * 
+   * Lists all the files in the specified directory and its descendants.
+   *
    * <p>Note: The file filter only affects files, directory are still scanned regardless.
-   * 
+   *
    * @param dir      the root directory to scan.
    * @param filter    a file filter to use.
    * @param collected files collected so far.

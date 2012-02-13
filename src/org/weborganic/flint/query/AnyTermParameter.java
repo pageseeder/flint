@@ -1,8 +1,9 @@
 /*
  * This file is part of the Flint library.
- * 
- * For licensing information please see the file license.txt included in the release. A copy of this licence can also be
- * found at http://www.opensource.org/licenses/artistic-license-2.0.php
+ *
+ * For licensing information please see the file license.txt included in the release.
+ * A copy of this licence can also be found at
+ *   http://www.opensource.org/licenses/artistic-license-2.0.php
  */
 package org.weborganic.flint.query;
 
@@ -11,19 +12,19 @@ import java.util.Collections;
 import java.util.List;
 
 import org.apache.lucene.index.Term;
+import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermQuery;
-import org.apache.lucene.search.BooleanClause.Occur;
 import org.weborganic.flint.util.Terms;
 
 import com.topologi.diffx.xml.XMLWriter;
 
 /**
  * A basic search parameter wrapping a simple list of {@link Term}s.
- * 
+ *
  * <p>The final query must match at least one of the terms listed.
- * 
+ *
  * @author Christophe Lauret
  * @version 13 August 2010
  */
@@ -56,7 +57,7 @@ public final class AnyTermParameter implements SearchParameter {
    *
    * @param field The name of the field to search.
    * @param text  The text to match in the field value.
-   * 
+   *
    * @throws NullPointerException If either parameter is <code>null</code>.
    */
   public AnyTermParameter(String field, String text) throws NullPointerException {
@@ -69,7 +70,7 @@ public final class AnyTermParameter implements SearchParameter {
    * Creates a new term parameter from the specified term.
    *
    * @param terms The term to match.
-   * 
+   *
    * @throws NullPointerException If either is <code>null</code>.
    */
   public AnyTermParameter(List<Term> terms) throws NullPointerException {
@@ -80,6 +81,7 @@ public final class AnyTermParameter implements SearchParameter {
   /**
    * {@inheritDoc}
    */
+  @Override
   public boolean isEmpty() {
     return this._terms.isEmpty();
   }
@@ -95,6 +97,7 @@ public final class AnyTermParameter implements SearchParameter {
   /**
    * {@inheritDoc}
    */
+  @Override
   public Query toQuery() {
     if (this.isEmpty()) { return null; }
     if (this._query == null) {
@@ -106,6 +109,7 @@ public final class AnyTermParameter implements SearchParameter {
   /**
    * {@inheritDoc}
    */
+  @Override
   public void toXML(XMLWriter xml) throws IOException {
     xml.openElement("any-term-parameter", true);
     // indicate whether this search term is empty
@@ -118,6 +122,7 @@ public final class AnyTermParameter implements SearchParameter {
   /**
    * {@inheritDoc}
    */
+  @Override
   public String toString() {
     return this._terms.toString();
   }
@@ -137,8 +142,8 @@ public final class AnyTermParameter implements SearchParameter {
   // ----------------------------------------------------------------------------------------------
 
   /**
-   * Returns the query that would match any one of the terms in the list. 
-   * 
+   * Returns the query that would match any one of the terms in the list.
+   *
    * @param terms the list of terms
    * @return the corresponding query.
    */
@@ -151,7 +156,7 @@ public final class AnyTermParameter implements SearchParameter {
       for (Term t : this._terms) {
         q.add(new TermQuery(t), Occur.SHOULD);
       }
-      return q; 
+      return q;
     }
   }
 

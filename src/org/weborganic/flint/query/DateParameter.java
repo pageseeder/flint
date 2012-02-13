@@ -1,8 +1,9 @@
 /*
+/*
  * This file is part of the Flint library.
  *
  * For licensing information please see the file license.txt included in the release.
- * A copy of this licence can also be found at 
+ * A copy of this licence can also be found at
  *   http://www.opensource.org/licenses/artistic-license-2.0.php
  */
 package org.weborganic.flint.query;
@@ -62,7 +63,7 @@ public final class DateParameter implements SearchParameter {
 
   /**
    * Creates a new date parameter.
-   * 
+   *
    * @param field      the date field to search
    * @param from       the start date in the range (may be <code>null</code>)
    * @param to         the end date in the range (may be <code>null</code>)
@@ -81,7 +82,7 @@ public final class DateParameter implements SearchParameter {
 
   /**
    * Returns the value of the lower limit of the date range.
-   * 
+   *
    * @return A date instance or <code>null</code>.
    */
   public Date from() {
@@ -90,7 +91,7 @@ public final class DateParameter implements SearchParameter {
 
   /**
    * Returns the value of the upper limit for the date range.
-   * 
+   *
    * @return A date instance  or <code>null</code>.
    */
   public Date to() {
@@ -99,7 +100,7 @@ public final class DateParameter implements SearchParameter {
 
   /**
    * Returns the name of the date field to search.
-   * 
+   *
    * @return The name of the date field to search.
    */
   public String field() {
@@ -108,21 +109,23 @@ public final class DateParameter implements SearchParameter {
 
   /**
    * Returns <code>true</code> if this search query does not contain any parameter.
-   * 
+   *
    * @return <code>true</code> if this search query does not contain any parameter;
    *         <code>false</code> otherwise.
    */
+  @Override
   public boolean isEmpty() {
     return this._from == null && this._to == null;
   }
 
   /**
    * Generates the <code>Query</code> object corresponding to a date range search query.
-   * 
+   *
    * Returns a <code>TermRangeQuery</code> or a <code>NumericRangeQuery</code> based on the values in this object.
-   * 
+   *
    * @return a <code>TermRangeQuery</code>, a <code>NumericRangeQuery</code> or <code>null</code> if empty.
    */
+  @Override
   public Query toQuery() {
     if (this._from == null && this._to == null) return null;
     // an including range query on the date
@@ -138,11 +141,12 @@ public final class DateParameter implements SearchParameter {
 
   /**
    * Serialises the search query as XML.
-   * 
+   *
    * @param xml The XML writer.
-   * 
+   *
    * @throws IOException Should there be any I/O exception while writing the XML.
    */
+  @Override
   public void toXML(XMLWriter xml) throws IOException {
     xml.openElement("date-range", false);
     if (this._from != null)
@@ -156,12 +160,12 @@ public final class DateParameter implements SearchParameter {
 
   /**
    * Returns the term range query that corresponds to the specified parameters.
-   * 
+   *
    * @param field      the date field
    * @param from       the lower limit (may be null)
    * @param to         the upper limit (may be null)
    * @param resolution the date resolution in use
-   * 
+   *
    * @return the corresponding <code>TermRangeQuery</code>
    */
   private static TermRangeQuery toTermRangeQuery(String field, Date from, Date to, Resolution resolution) {
@@ -172,12 +176,12 @@ public final class DateParameter implements SearchParameter {
 
   /**
    * Returns the term range query that corresponds to the specified parameters.
-   * 
+   *
    * @param field      the date field
    * @param from       the lower limit (may be null)
    * @param to         the upper limit (may be null)
    * @param resolution the date resolution in use
-   * 
+   *
    * @return the corresponding <code>NumericRangeQuery</code>
    */
   private static NumericRangeQuery<? extends Number> toNumericRangeQuery(String field, Date from, Date to, Resolution resolution) {

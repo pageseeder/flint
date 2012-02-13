@@ -1,3 +1,10 @@
+/*
+ * This file is part of the Flint library.
+ *
+ * For licensing information please see the file license.txt included in the release.
+ * A copy of this licence can also be found at
+ *   http://www.opensource.org/licenses/artistic-license-2.0.php
+ */
 package org.weborganic.flint.util;
 
 import java.util.ArrayList;
@@ -10,11 +17,11 @@ import java.util.TreeSet;
 
 /**
  * The bucket is a list of items with a fixed size ordered by count.
- * 
+ *
  * <p>The bucket has a limited capacity.
- * 
+ *
  * @param <T> The type of objects in this bucket.
- * 
+ *
  * @author Christophe Lauret
  * @version 2 August 2010
  */
@@ -37,9 +44,9 @@ import java.util.TreeSet;
 
   /**
    * Creates a new bucket.
-   * 
+   *
    * @param capacity The capacity of this bucket.
-   * 
+   *
    * @throws IllegalArgumentException If the capacity is < 0.
    */
   public Bucket(int capacity) throws IllegalArgumentException {
@@ -49,11 +56,11 @@ import java.util.TreeSet;
 
   /**
    * Creates a new bucket.
-   * 
+   *
    * @param capacity   The capacity of this bucket.
    * @param acceptZero <code>true</code> to accept item counts equal to zero;
-   *                   <code>false</code> to only accept item counts greater than zero. 
-   * 
+   *                   <code>false</code> to only accept item counts greater than zero.
+   *
    * @throws IllegalArgumentException If the capacity is < 0.
    */
   public Bucket(int capacity, boolean acceptZero) throws IllegalArgumentException {
@@ -64,7 +71,7 @@ import java.util.TreeSet;
 
   /**
    * Indicates whether this bucket contains any item.
-   * 
+   *
    * @return <code>true</code> if the size of this bucket is 0; <code>false</code> otherwise.
    */
   public boolean isEmpty() {
@@ -73,7 +80,7 @@ import java.util.TreeSet;
 
   /**
    * Indicates whether this bucket has reached its capacity.
-   * 
+   *
    * @return <code>true</code> if the size of this bucket is capacity; <code>false</code> otherwise.
    */
   public boolean isFull() {
@@ -82,9 +89,9 @@ import java.util.TreeSet;
 
   /**
    * Adds an object to this bucket.
-   * 
-   * @param item  A new Item 
-   * @param count Its cardinality 
+   *
+   * @param item  A new Item
+   * @param count Its cardinality
    */
   public void add(T item, int count) {
     if (count >= this.minCount) {
@@ -98,29 +105,30 @@ import java.util.TreeSet;
 
   /**
    * Return the count for the specified item.
-   * 
+   *
    * @param item the item
    * @return the count for the item; 0 if not found.
    */
   public int count(T item) {
     for (Entry<T> e : this._entries) {
-      if (e._item.equals(item)) return e.count(); 
+      if (e._item.equals(item)) return e.count();
     }
     return 0;
   }
 
   /**
    * Returns an iterator over the items in the bucket.
-   * 
+   *
    * @return an iterator over the items in the bucket.
    */
+  @Override
   public Iterator<T> iterator() {
     return this.items().iterator();
   }
 
   /**
    * Returns a unmodifiable set of entries in the bucket.
-   * 
+   *
    * @return a unmodifiable set of entries in the bucket.
    */
   public Set<Entry<T>> entrySet() {
@@ -129,7 +137,7 @@ import java.util.TreeSet;
 
   /**
    * Returns the list of items.
-   * 
+   *
    * @return the list of items.
    */
   public List<T> items() {
@@ -140,7 +148,7 @@ import java.util.TreeSet;
 
   /**
    * An Item-Count pair used as an entry for the bucket.
-   * 
+   *
    * @author Christophe Lauret
    *
    * @param <T> the type of object being counted.
@@ -159,7 +167,7 @@ import java.util.TreeSet;
 
     /**
      * Creates a new item count the fields are final.
-     * 
+     *
      * @param item  The term.
      * @param count Its occurrence.
      */
@@ -201,27 +209,28 @@ import java.util.TreeSet;
 
     /**
      * Two {@link Entry} instances are equals only if they have the same count.
-     * 
-     * <p>If the both items are comparable, they also need to be equal. 
-     * 
+     *
+     * <p>If the both items are comparable, they also need to be equal.
+     *
      * @param o the item count to compare with.
      * @return <code>true</code> if equal; <code>false</code> otherwise.
      */
     public boolean equals(Entry<?> o) {
-      // 
+      //
       if (this._count != o._count) return false;
       return comparable(this._item, o._item)? this._item.equals(o._item) : true;
     }
 
     /**
      * Compare the using the item count.
-     * 
-     * <p>If both entries have the same count, and the items are comparable, this method returns 
-     * the result of their comparison. 
-     * 
+     *
+     * <p>If both entries have the same count, and the items are comparable, this method returns
+     * the result of their comparison.
+     *
      * @param e the entry to compare.
      * @return the result of comparison.
      */
+    @Override
     @SuppressWarnings("unchecked")
     public int compareTo(Entry<T> e) {
       int c = e._count - this._count;

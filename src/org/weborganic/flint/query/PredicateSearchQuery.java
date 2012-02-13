@@ -2,7 +2,7 @@
  * This file is part of the Flint library.
  *
  * For licensing information please see the file license.txt included in the release.
- * A copy of this licence can also be found at 
+ * A copy of this licence can also be found at
  *   http://www.opensource.org/licenses/artistic-license-2.0.php
  */
 package org.weborganic.flint.query;
@@ -22,13 +22,13 @@ import com.topologi.diffx.xml.XMLWriter;
 
 /**
  * A search query to submit a predicate directly to the index.
- * 
+ *
  * <p>This query uses the Lucene {@link QueryParser} to create a valid query instance from the
  * supplied predicate.
- * 
+ *
  * @author Christophe Lauret (Weborganic)
  * @author Jean-Baptiste Reure (Weborganic)
- * 
+ *
  * @version 2 August 2010
  */
 public final class PredicateSearchQuery implements SearchQuery {
@@ -55,10 +55,10 @@ public final class PredicateSearchQuery implements SearchQuery {
 
   /**
    * Creates new predicate search query.
-   * 
+   *
    * @param predicate The predicate for this query.
    * @param sortField The field name to use to order the results.
-   * 
+   *
    * @throws IllegalArgumentException If the predicate is <code>null</code>.
    */
   public PredicateSearchQuery(String predicate, String sortField) throws IllegalArgumentException {
@@ -67,11 +67,11 @@ public final class PredicateSearchQuery implements SearchQuery {
 
   /**
    * Creates new predicate search query.
-   * 
+   *
    * @param predicate The predicate for this query.
    * @param analyzer  The analyzer to use for the query, should be the same as the one used to write the Index.
    * @param sortField The field name to use to order the results.
-   * 
+   *
    * @throws IllegalArgumentException If the predicate is <code>null</code>.
    */
   public PredicateSearchQuery(String predicate, Analyzer analyzer, String sortField) throws IllegalArgumentException {
@@ -80,9 +80,9 @@ public final class PredicateSearchQuery implements SearchQuery {
 
   /**
    * Creates new predicate search query.
-   * 
+   *
    * @param predicate The predicate for this query.
-   * 
+   *
    * @throws IllegalArgumentException If the predicate is <code>null</code>.
    */
   public PredicateSearchQuery(String predicate) throws IllegalArgumentException {
@@ -91,10 +91,10 @@ public final class PredicateSearchQuery implements SearchQuery {
 
   /**
    * Creates new predicate search query.
-   * 
+   *
    * @param predicate The predicate for this query.
    * @param analyzer  The analyzer to use for the query, should be the same as the one used to write the Index.
-   * 
+   *
    * @throws IllegalArgumentException If the predicate is <code>null</code>.
    */
   public PredicateSearchQuery(String predicate, Analyzer analyzer) throws IllegalArgumentException {
@@ -103,10 +103,10 @@ public final class PredicateSearchQuery implements SearchQuery {
 
   /**
    * Creates new predicate search query.
-   * 
+   *
    * @param predicate The predicate for this query.
    * @param sort      The sort order for the results.
-   * 
+   *
    * @throws IllegalArgumentException If the predicate is <code>null</code>.
    */
   public PredicateSearchQuery(String predicate, Sort sort) throws IllegalArgumentException {
@@ -115,12 +115,12 @@ public final class PredicateSearchQuery implements SearchQuery {
 
   /**
    * Creates new predicate search query.
-   * 
+   *
    * @param predicate The predicate for this query.
    * @param analyzer  The analyzer to use for the query, should be the same as the one used to write the Index.
    * @param sort      The sort order for the results.
-   * 
-   * @throws IllegalArgumentException If the predicate is <code>null</code>. 
+   *
+   * @throws IllegalArgumentException If the predicate is <code>null</code>.
    */
   public PredicateSearchQuery(String predicate, Analyzer analyzer, Sort sort) throws IllegalArgumentException {
     if (predicate == null) throw new IllegalArgumentException("predicate is null");
@@ -134,7 +134,7 @@ public final class PredicateSearchQuery implements SearchQuery {
 
   /**
    * Whether or not a wildcard ('*' or '?') is allowed as the first character of the predicate.
-   * 
+   *
    * @param allowWildCardStart true if wildcard should be allowed, false otherwise
    */
   public void setAllowWildCardStart(boolean allowWildCardStart) {
@@ -143,30 +143,33 @@ public final class PredicateSearchQuery implements SearchQuery {
 
   /**
    * Returns <code>null</code>.
-   * 
+   *
    * @return <code>null</code>.
    */
+  @Override
   public String getField() {
     return null;
   }
 
   /**
    * Returns the predicate to use for this search.
-   * 
+   *
    * @return The predicate for this search.
    */
+  @Override
   public String getPredicate() {
     return this._predicate;
   }
 
   /**
    * Returns the Lucene query instance corresponding to this object.
-   * 
+   *
    * <p>
    * This method uses a query parser to parse the predicate.
-   * 
+   *
    * @return The Lucene query instance or <code>null</code> if the predicate was <code>null</code>.
    */
+  @Override
   public Query toQuery() {
     if (this._predicate == null)
       return null;
@@ -181,26 +184,28 @@ public final class PredicateSearchQuery implements SearchQuery {
 
   /**
    * Returns <code>true</code> if the predicate has not been set.
-   * 
+   *
    * @return <code>true</code> if the predicate has not been set; <code>false</code> otherwise.
    */
+  @Override
   public boolean isEmpty() {
     return this._predicate == null;
   }
 
   /**
    * Serialises the search query as XML.
-   * 
+   *
    * <pre>{@code
    *   <search-query>
    *     <predicate>[predicate]</predicate>
    *   <search-query>
    * }</pre>
-   * 
+   *
    * @param xml The XML writer.
-   * 
+   *
    * @throws IOException Should there be any I/O exception while writing the XML.
    */
+  @Override
   public void toXML(XMLWriter xml) throws IOException {
     xml.openElement("search-query", true);
     xml.element("predicate", this._predicate);
@@ -209,9 +214,10 @@ public final class PredicateSearchQuery implements SearchQuery {
 
   /**
    * Returns the sort order.
-   * 
+   *
    * @return the sorting rules for the search results
    */
+  @Override
   public Sort getSort() {
     return this._sort;
   }
