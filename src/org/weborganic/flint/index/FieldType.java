@@ -1,8 +1,9 @@
 /*
  * This file is part of the Flint library.
- * 
- * For licensing information please see the file license.txt included in the release. A copy of this licence can also be
- * found at http://www.opensource.org/licenses/artistic-license-2.0.php
+ *
+ * For licensing information please see the file license.txt included in the release.
+ * A copy of this licence can also be found at
+ *   http://www.opensource.org/licenses/artistic-license-2.0.php
  */
 package org.weborganic.flint.index;
 
@@ -20,11 +21,11 @@ public enum FieldType {
    * Used for Lucene keywords.
    *
    * <p>Keywords are not tokenised by the indexed and are stored as is
-   * by the indexer. The value of this type of field cannot be searched 
+   * by the indexer. The value of this type of field cannot be searched
    * using full-text, but a search based on the exact value of this field
    * can be performed.
    *
-   * <p>A <code>KEYWORD</code> field is appropriate for an enumerated type of 
+   * <p>A <code>KEYWORD</code> field is appropriate for an enumerated type of
    * values, such as mime type, type of document, etc...
    */
   KEYWORD("keyword"),
@@ -36,7 +37,7 @@ public enum FieldType {
    * are not tokenised into words. The value can retrieved for the documents
    * in the results, but cannot be searched.
    *
-   * <p>An <code>UNINDEXED</code> field is appropriate for values associated to 
+   * <p>An <code>UNINDEXED</code> field is appropriate for values associated to
    * the document but that need not be searched, such as URLs, file size, etc...
    */
   UNINDEXED("unindexed"),
@@ -120,6 +121,7 @@ public enum FieldType {
    *
    * @return "keyword", "text", "unindexed" or "unstored".
    */
+  @Override
   public String toString() {
     return this._type;
   }

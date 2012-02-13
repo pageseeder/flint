@@ -1,3 +1,10 @@
+/*
+ * This file is part of the Flint library.
+ *
+ * For licensing information please see the file license.txt included in the release.
+ * A copy of this licence can also be found at
+ *   http://www.opensource.org/licenses/artistic-license-2.0.php
+ */
 package org.weborganic.flint.index;
 
 import java.text.DateFormat;
@@ -22,7 +29,7 @@ import org.xml.sax.helpers.DefaultHandler;
  * The handler for the Flint Index Documents format version 1.
  *
  * @see <a href="http://weborganic.org/code/flint/schema/index-documents-1.0.dtd">Index Documents 1.0 Schema</a>
- * 
+ *
  * @author Christophe Lauret
  * @version 2 March 2010
  */
@@ -70,9 +77,9 @@ final class IndexDocumentHandler_1_0 extends DefaultHandler implements IndexDocu
   private boolean _isCompressed;
 
   /**
-   * The field builder. 
+   * The field builder.
    */
-  private FieldBuilder builder = new FieldBuilder(); 
+  private FieldBuilder builder = new FieldBuilder();
 
   /**
    * The characters found within a field.
@@ -85,6 +92,7 @@ final class IndexDocumentHandler_1_0 extends DefaultHandler implements IndexDocu
   /**
    * {@inheritDoc}
    */
+  @Override
   public List<Document> getDocuments() {
     return this.documents;
   }
@@ -97,6 +105,7 @@ final class IndexDocumentHandler_1_0 extends DefaultHandler implements IndexDocu
    *
    * <p>Initialise this handler.
    */
+  @Override
   public void startDocument() {
     LOGGER.debug("Start processing iXML documents (version 1.0)");
     this.documents = new ArrayList<Document>();
@@ -105,6 +114,7 @@ final class IndexDocumentHandler_1_0 extends DefaultHandler implements IndexDocu
   /**
    * Receives notification of the end of the document.
    */
+  @Override
   public void endDocument() {
     LOGGER.debug("End processing iXML document");
   }
@@ -112,6 +122,7 @@ final class IndexDocumentHandler_1_0 extends DefaultHandler implements IndexDocu
   /**
    * {@inheritDoc}
    */
+  @Override
   public void startElement(String uri, String localName, String qName, Attributes attributes) {
     if ("field".equals(qName)) {
       startFieldElement(attributes);
@@ -123,6 +134,7 @@ final class IndexDocumentHandler_1_0 extends DefaultHandler implements IndexDocu
   /**
    * {@inheritDoc}
    */
+  @Override
   public void endElement(String uri, String localName, String qName) {
     if ("field".equals(qName)) {
       endFieldElement();
@@ -144,6 +156,7 @@ final class IndexDocumentHandler_1_0 extends DefaultHandler implements IndexDocu
    *
    * @throws SAXException Any SAX exception, possibly wrapping another exception.
    */
+  @Override
   public void characters(char[] ch, int start, int length) throws SAXException {
     if (this._isField) {
       for (int i = start; i < (length+start); i++) {
@@ -157,7 +170,7 @@ final class IndexDocumentHandler_1_0 extends DefaultHandler implements IndexDocu
 
   /**
    * Handles the start of a 'document' element.
-   * 
+   *
    * @param atts The attributes to handles.
    */
   private void startDocumentElement(Attributes atts) {
@@ -181,7 +194,7 @@ final class IndexDocumentHandler_1_0 extends DefaultHandler implements IndexDocu
 
   /**
    * Handles the start of a new 'field' element
-   * 
+   *
    * @param atts The attributes to handles.
    */
   private void startFieldElement(Attributes atts) {
@@ -244,7 +257,7 @@ final class IndexDocumentHandler_1_0 extends DefaultHandler implements IndexDocu
    *
    * <p>Otherwise retrieve from hashtable or create an instance if it's
    * never been created.
-   * 
+   *
    * @param format The date format used.
    * @return The corresponding date format instance.
    */
@@ -289,7 +302,7 @@ final class IndexDocumentHandler_1_0 extends DefaultHandler implements IndexDocu
 
   /**
    * Return the field index values handling legacy Lucene 2 values.
-   * 
+   *
    * @param index The field index value.
    * @return the Lucene 3 field index values corresponding to the specified string.
    */

@@ -1,8 +1,9 @@
 /*
  * This file is part of the Flint library.
- * 
- * For licensing information please see the file license.txt included in the release. A copy of this licence can also be
- * found at http://www.opensource.org/licenses/artistic-license-2.0.php
+ *
+ * For licensing information please see the file license.txt included in the release.
+ * A copy of this licence can also be found at
+ *   http://www.opensource.org/licenses/artistic-license-2.0.php
  */
 package org.weborganic.flint.index;
 
@@ -18,7 +19,7 @@ import org.weborganic.flint.IndexManager;
 
 /**
  * Implementation of Index, uses a File object to build a Lucene index.
- * 
+ *
  * @author Jean-Baptiste Reure
  * @version 26 February 2010
  */
@@ -41,9 +42,9 @@ public class DirectoryIndex implements Index {
 
   /**
    * Simple constructor that builds a new Index from the provided directory.
-   * 
+   *
    * <p>Will throw an exception if the folder does not contain a valid Lucene index</p>
-   * 
+   *
    * @param dir the directory containing the Lucene index.
    * @throws IllegalArgumentException is if the specified file cannot be used as an index.
    */
@@ -58,27 +59,30 @@ public class DirectoryIndex implements Index {
 
   /**
    * Return the Directory used in this Index.
-   * 
+   *
    * @return the directory to use for the Index.
    */
+  @Override
   public final Directory getIndexDirectory() {
     return this.indexDirectory;
   }
 
   /**
    * The Analyzer that the Index should use.
-   * 
+   *
    * @return the Analyzer that the Index should use.
    */
+  @Override
   public Analyzer getAnalyzer() {
     return ANALYSER;
   }
 
   /**
    * This Index's unique ID.
-   * 
+   *
    * @return the unique ID for the Index.
    */
+  @Override
   public String getIndexID() {
     return this.id;
   }
