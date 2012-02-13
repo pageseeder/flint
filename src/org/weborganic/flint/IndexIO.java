@@ -227,7 +227,7 @@ public abstract class IndexIO {
     // Detect if we can write on the files.
     try {
       if (directory instanceof FSDirectory) {
-        File f = ((FSDirectory) directory).getDirectory();
+        File f = ((FSDirectory) directory).getFile();
         // ensure all files can write.
         if (!f.canWrite()) {
           readonly = true;

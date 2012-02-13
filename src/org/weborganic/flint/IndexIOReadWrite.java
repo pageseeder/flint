@@ -15,9 +15,7 @@ import org.apache.lucene.index.ConcurrentMergeScheduler;
 import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.util.Version;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.weborganic.flint.content.DeleteRule;
@@ -277,10 +275,13 @@ public final class IndexIOReadWrite extends IndexIO {
    * @throws IndexException Wrapping an {@link CorruptIndexException} or an {@link IOException}.
    */
   public void start() throws IOException {
-    IndexWriterConfig config = new IndexWriterConfig(Version.LUCENE_30, this._index.getAnalyzer());
-    config.setMergeScheduler(new ConcurrentMergeScheduler());
-    config.setMergePolicy(new BalancedSegmentMergePolicy());
-    this.writer = new IndexWriter(this._index.getIndexDirectory(), config);
+    // Lucene 3.1+:
+    // IndexWriterConfig config = new IndexWriterConfig(Version.LUCENE_30, this._index.getAnalyzer());
+    // config.setMergeScheduler(new ConcurrentMergeScheduler());
+    // config.setMergePolicy(new BalancedSegmentMergePolicy());
+    this.writer = new IndexWriter(this._index.getIndexDirectory(), this._index.getAnalyzer(), IndexWriter.MaxFieldLength.LIMITED);
+    this.writer.setMergeScheduler(new ConcurrentMergeScheduler());
+    this.writer.setMergePolicy(new BalancedSegmentMergePolicy(this.writer));
     this.searcherManager = new SearcherManager(this.writer);
     this.lastTimeUsed = System.currentTimeMillis();
     OpenIndexManager.add(this);

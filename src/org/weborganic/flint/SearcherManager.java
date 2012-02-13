@@ -51,7 +51,8 @@ public class SearcherManager {
    * @throws IOException If thrown while trying to get the reader.
    */
   public SearcherManager(IndexWriter writer) throws IOException {
-    IndexReader reader = IndexReader.open(writer, true);
+    IndexReader reader = writer.getReader();
+    // Lucene 3.1+: IndexReader.open(writer, true);
     this.currentSearcher = new IndexSearcher(reader);
   }
 
@@ -211,7 +212,7 @@ public class SearcherManager {
    *
    * @param reader the reader to release
    *
-   * @throws IOException
+   * @throws IOException If thrown when attempting to close the reader, when reader is no longer in use.
    */
   protected synchronized void releaseReader(IndexReader reader) throws IOException {
     LOGGER.debug("Releasing reader {}", reader.hashCode());
