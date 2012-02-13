@@ -1,8 +1,9 @@
 /*
  * This file is part of the Flint library.
  *
- * For licensing information please see the file license.txt included in the release. A copy of this licence can also be
- * found at http://www.opensource.org/licenses/artistic-license-2.0.php
+ * For licensing information please see the file license.txt included in the release.
+ * A copy of this licence can also be found at
+ *   http://www.opensource.org/licenses/artistic-license-2.0.php
  */
 package org.weborganic.flint;
 
@@ -226,7 +227,7 @@ public abstract class IndexIO {
     // Detect if we can write on the files.
     try {
       if (directory instanceof FSDirectory) {
-        File f = ((FSDirectory) directory).getFile();
+        File f = ((FSDirectory) directory).getDirectory();
         // ensure all files can write.
         if (!f.canWrite()) {
           readonly = true;
