@@ -204,7 +204,7 @@ public final class Terms {
         }
       }
     } finally {
-      e.close();
+      if (e != null) e.close();
     }
     return terms;
   }
@@ -232,7 +232,7 @@ public final class Terms {
         }
       }
     } finally {
-      e.close();
+      if (e != null) e.close();
     }
     return values;
   }
