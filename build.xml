@@ -25,20 +25,21 @@
   <!-- other properties -->
   <loadfile property="version" srcfile="version.txt" description="Version to build"/>
 
-  <!-- Loads the Ivy properties. -->
-  <loadproperties srcFile="ivy.properties"/>
-
   <!--
     Loads the properties of the local installation of PageSeeder:
     - local.webapp        (Path to the local PS webapp directory, eg. 'c:/pageseeder/webapp') 
   -->
   <loadproperties srcFile="local.properties"/>
 
-  <ivy:settings url="${ivy.settings.url}"/>
+  <!-- Only load Ivy properties if not defined globally -->
+  <target name="-load-ivy-properties" unless="ivy.settings.url">
+    <loadproperties srcFile="ivy.properties"/>
+  </target>
 
   <!-- initialise -->
-  <target name="init">
+  <target name="init" depends="-load-ivy-properties">
     <tstamp/>
+    <ivy:settings url="${ivy.settings.url}"/>
     <mkdir dir="${dir.bin}"/>
   </target>
 
