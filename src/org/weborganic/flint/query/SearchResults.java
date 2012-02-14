@@ -273,7 +273,7 @@ public final class SearchResults implements XMLWritable {
       for (Fieldable f : doc.getFields()) {
         // Retrieve the value
         String value = Fields.toString(f);
-        // format dates using ISO 8601
+        // format dates using ISO 8601 when possible
         if (value != null && value.length() > 0 && f.name().contains("date") && Dates.isLuceneDate(value)) {
           try {
             if (value.length() > 8) {
@@ -282,7 +282,7 @@ public final class SearchResults implements XMLWritable {
               value = Dates.toISODate(value);
             }
           } catch (ParseException ex) {
-            LOGGER.info("Unparseable date found {}", value);
+            LOGGER.warn("Unparseable date found {}", value);
           }
         }
         // unnecessary to return the full value of long fields
