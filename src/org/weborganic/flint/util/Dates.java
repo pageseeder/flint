@@ -280,10 +280,11 @@ public final class Dates {
    */
   private static String toTimeZone(int offset) {
     if (offset == 0) return "Z";
+    int _offset = offset;
     StringBuilder z = new StringBuilder(6);
-    z.append(offset >= 0? '+' : '-');
-    if (offset < 0) offset = offset*-1;
-    z.append(leftZeroPad2(offset / (1000*60*60))).append(':').append(leftZeroPad2((offset / (1000*60)) % 60));
+    z.append(_offset >= 0? '+' : '-');
+    if (_offset < 0) _offset = _offset*-1;
+    z.append(leftZeroPad2(_offset / (1000*60*60))).append(':').append(leftZeroPad2((_offset / (1000*60)) % 60));
     return z.toString();
   }
 
