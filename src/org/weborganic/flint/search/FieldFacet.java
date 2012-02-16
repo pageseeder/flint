@@ -30,10 +30,15 @@ import com.topologi.diffx.xml.XMLWriter;
  * A facet implementation using a simple index field.
  *
  * @author Christophe Lauret
- * @version 2 August 2010
+ * @version 16 February 2012
  */
 @Beta
 public final class FieldFacet implements XMLWritable, Facet {
+
+  /**
+   * The default number of facet values if not specified.
+   */
+  public static final int DEFAULT_MAX_NUMBER_OF_VALUES = 10;
 
   /**
    * The name of this facet
@@ -96,7 +101,7 @@ public final class FieldFacet implements XMLWritable, Facet {
    */
   public void compute(Searcher searcher, Query base, int size) throws IOException {
     // If the base is null, simply calculate for each query
-    if (base == null) { compute(searcher); }
+    if (base == null) { compute(searcher, size); }
     if (size < 0) throw new IllegalArgumentException("size < 0");
     // Otherwise, make a boolean query of the base AND each facet query
     Bucket<Term> bucket = new Bucket<Term>(size);
@@ -128,18 +133,19 @@ public final class FieldFacet implements XMLWritable, Facet {
    */
   @Override
   public void compute(Searcher searcher, Query base) throws IOException {
-    compute(searcher, base, 10);
+    compute(searcher, base, DEFAULT_MAX_NUMBER_OF_VALUES);
   }
 
   /**
    * Computes each facet option without a base query.
    *
    * @param searcher the index search to use.
+   * @param size     the number of facet values to calculate.
    *
    * @throws IOException if thrown by the searcher.
    */
-  private void compute(Searcher searcher) throws IOException {
-    Bucket<Term> bucket = new Bucket<Term>(10);
+  private void compute(Searcher searcher, int size) throws IOException {
+    Bucket<Term> bucket = new Bucket<Term>(size);
     DocumentCounter counter = new DocumentCounter();
     for (TermQuery q : this._queries) {
       searcher.search(q, counter);
@@ -159,6 +165,7 @@ public final class FieldFacet implements XMLWritable, Facet {
     xml.attribute("type", "field");
     xml.attribute("computed", Boolean.toString(this._bucket != null));
     if (this._bucket != null) {
+      xml.attribute("total", this._bucket.getConsidered());
       for (Entry<Term> e : this._bucket.entrySet()) {
         xml.openElement("term");
         xml.attribute("field", e.item().field());

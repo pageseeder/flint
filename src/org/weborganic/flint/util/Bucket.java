@@ -23,7 +23,7 @@ import java.util.TreeSet;
  * @param <T> The type of objects in this bucket.
  *
  * @author Christophe Lauret
- * @version 2 August 2010
+ * @version 16 February 2012
  */
 @Beta public final class Bucket<T> implements Iterable<T> {
 
@@ -41,6 +41,11 @@ import java.util.TreeSet;
    * The minimum count to be included in the bucket.
    */
   private transient int minCount = 1;
+
+  /**
+   * Indicates the number of entries that have been considered.
+   */
+  private int _considered = 0;
 
   /**
    * Creates a new bucket.
@@ -94,6 +99,7 @@ import java.util.TreeSet;
    * @param count Its cardinality
    */
   public void add(T item, int count) {
+    this._considered++;
     if (count >= this.minCount) {
       this._entries.add(new Entry<T>(item, count));
       if (this._entries.size() > this._capacity) {
@@ -144,6 +150,29 @@ import java.util.TreeSet;
     List<T> items = new ArrayList<T>(this._entries.size());
     for (Entry<T> e : this._entries) { items.add(e.item()); }
     return items;
+  }
+
+  /**
+   * Returns the capacity of this bucket.
+   *
+   * @return the capacity of this bucket.
+   */
+  public int capacity() {
+    return this._capacity;
+  }
+
+  /**
+   * Returns the number of items that have been considered for inclusion in this bucket.
+   *
+   * <p>The value returned by this method is always a positive integer. This method effectively
+   * counts the number of times the {@link #add(Object, int)} method has been invoked.
+   *
+   * <p>This method is useful to know whether many items were missing from the facet or not.
+   *
+   * @return The number of items that have been considered for inclusion in this bucket.
+   */
+  public int getConsidered() {
+    return this._considered;
   }
 
   /**
