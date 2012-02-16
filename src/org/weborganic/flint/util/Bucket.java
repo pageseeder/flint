@@ -38,6 +38,11 @@ import java.util.TreeSet;
   private final SortedSet<Entry<T>> _entries;
 
   /**
+   * Whether to include entries which count is zero.
+   */
+  private final boolean _acceptZero;
+
+  /**
    * The minimum count to be included in the bucket.
    */
   private transient int minCount = 1;
@@ -57,6 +62,7 @@ import java.util.TreeSet;
   public Bucket(int capacity) throws IllegalArgumentException {
    this._capacity = capacity;
    this._entries = new TreeSet<Entry<T>>();
+   this._acceptZero = false;
   }
 
   /**
@@ -72,6 +78,7 @@ import java.util.TreeSet;
    this._capacity = capacity;
    this._entries = new TreeSet<Entry<T>>();
    if (acceptZero) { this.minCount = 0; }
+   this._acceptZero = acceptZero;
   }
 
   /**
@@ -99,7 +106,7 @@ import java.util.TreeSet;
    * @param count Its cardinality
    */
   public void add(T item, int count) {
-    this._considered++;
+    if (count > 0 || this._acceptZero) this._considered++;
     if (count >= this.minCount) {
       this._entries.add(new Entry<T>(item, count));
       if (this._entries.size() > this._capacity) {
