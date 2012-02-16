@@ -59,6 +59,11 @@ public final class SearchResults implements XMLWritable {
   private static final Logger LOGGER = LoggerFactory.getLogger(SearchResults.class);
 
   /**
+   * Types of values formatted in the result.
+   */
+  private static enum ValueType {STRING, DATE, DATETIME};
+
+  /**
    * The maximum length for a field to expand.
    */
   private static final int MAX_FIELD_VALUE_LENGTH = 1000;
@@ -273,13 +278,16 @@ public final class SearchResults implements XMLWritable {
       for (Fieldable f : doc.getFields()) {
         // Retrieve the value
         String value = Fields.toString(f);
+        ValueType type = ValueType.STRING;
         // format dates using ISO 8601 when possible
         if (value != null && value.length() > 0 && f.name().contains("date") && Dates.isLuceneDate(value)) {
           try {
             if (value.length() > 8) {
               value = Dates.toISODateTime(value, this.timezoneOffset);
+              type = ValueType.DATETIME;
             } else {
               value = Dates.toISODate(value);
+              if (value.length() == 10) type = ValueType.DATE;
             }
           } catch (ParseException ex) {
             LOGGER.warn("Unparseable date found {}", value);
@@ -289,6 +297,9 @@ public final class SearchResults implements XMLWritable {
         if (value != null && value.length() < MAX_FIELD_VALUE_LENGTH) {
           xml.openElement("field");
           xml.attribute("name", f.name());
+          // Display the correct attributes so that we know we can format the date
+          if (type == ValueType.DATE) xml.attribute("date", value);
+          else if (type == ValueType.DATETIME) xml.attribute("datetime", value);
           xml.writeText(value);
           xml.closeElement();
         }
