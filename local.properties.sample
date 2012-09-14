@@ -1,6 +1,7 @@
 # --------------------------------------------------------------------------- #
-# Local Installation Properties - This is a SAMPLE file                       # 
+# Local Installation Properties - This is a SAMPLE file                       #
 # --------------------------------------------------------------------------- #
 
 # Location of a local webapp where flint should be deployed
 local.webapp=c:/pageseeder/webapp
+ivy.settings.url=

@@ -27,17 +27,12 @@
 
   <!--
     Loads the properties of the local installation of PageSeeder:
-    - local.webapp        (Path to the local PS webapp directory, eg. 'c:/pageseeder/webapp') 
+    - local.webapp        (Path to the local PS webapp directory, eg. 'c:/pageseeder/webapp')
   -->
   <loadproperties srcFile="local.properties"/>
 
-  <!-- Only load Ivy properties if not defined globally -->
-  <target name="-load-ivy-properties" unless="ivy.settings.url">
-    <loadproperties srcFile="ivy.properties"/>
-  </target>
-
   <!-- initialise -->
-  <target name="init" depends="-load-ivy-properties">
+  <target name="init">
     <tstamp/>
     <ivy:settings url="${ivy.settings.url}"/>
     <mkdir dir="${dir.bin}"/>
@@ -92,15 +87,15 @@
   <target name="javadoc" depends="compile" description="generate the java documentation">
     <mkdir dir="${dir.doc}"/>
     <ivy:findrevision organisation="weborganic" module="${name.short}" revision="latest.milestone"/>
-    <javadoc destdir="${dir.doc}" access="public" 
-                                  use="true" 
-                                  notree="false" 
-                                  nonavbar="false" 
-                                  noindex="false" 
-                                  splitindex="true" 
-                                  author="false" version="false" 
-                                  nodeprecatedlist="false" 
-                                  nodeprecated="false" 
+    <javadoc destdir="${dir.doc}" access="public"
+                                  use="true"
+                                  notree="false"
+                                  nonavbar="false"
+                                  noindex="false"
+                                  splitindex="true"
+                                  author="false" version="false"
+                                  nodeprecatedlist="false"
+                                  nodeprecated="false"
                                   sourcepath="${dir.src}"
                                   stylesheetfile="${dir.resource}/javadoc.css"
                                   doctitle="${name.display} ${ivy.revision} API">
@@ -134,7 +129,7 @@
     <delete dir="${dir.bin}"/>
   </target>
 
-  <!-- 
+  <!--
     Publish the build on the Ivy, must specify
     - publish.status    ('milestone' or 'integration')
     - publish.resolver  ('shared' or 'local')
@@ -163,7 +158,7 @@
     <ivy:resolve revision="${publish.revision}" log="quiet"/>
     <ivy:publish resolver="${publish.resolver}"
                  module="${name.short}"
-                 artifactspattern="release/${DSTAMP}/[artifact]-[revision].[ext]" 
+                 artifactspattern="release/${DSTAMP}/[artifact]-[revision].[ext]"
                  revision="${publish.revision}"
                  status="${publish.status}"/>
     <echo message="Published ${publish.status} release as ${publish.revision}"/>
