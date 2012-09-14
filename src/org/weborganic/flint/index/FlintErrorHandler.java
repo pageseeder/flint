@@ -23,25 +23,16 @@ public class FlintErrorHandler implements ErrorHandler {
 
   // TODO: make a little more lenient!
 
-  /**
-   * {@inheritDoc}
-   */
   @Override
   public void error(SAXParseException exc) throws SAXException {
     throw exc;
   }
 
-  /**
-   * {@inheritDoc}
-   */
   @Override
   public void fatalError(SAXParseException exc) throws SAXException {
     throw exc;
   }
 
-  /**
-   * {@inheritDoc}
-   */
   @Override
   public void warning(SAXParseException exc) throws SAXException {
     throw exc;
