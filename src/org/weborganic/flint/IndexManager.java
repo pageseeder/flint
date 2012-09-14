@@ -541,7 +541,7 @@ public final class IndexManager implements Runnable {
       /** {@inheritDoc} */
       @Override
       public Thread newThread(Runnable r) {
-        Thread t = new Thread(r, "Indexing Thread with priority of "+IndexManager.this.threadPriority);
+        Thread t = new Thread(r, "indexing-p"+IndexManager.this.threadPriority);
         t.setPriority(IndexManager.this.threadPriority);
         return t;
       }
