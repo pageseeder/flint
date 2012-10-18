@@ -24,6 +24,9 @@ import java.util.List;
  *   <li><code>application/xhtml+xml</code></li>
  * </ul>
  *
+ * @see <a href="https://www3.tools.ietf.org/html/rfc3023">XML Media Types</a>
+ * @see <a href="http://www.w3.org/TR/xhtml-media-types/">XHTML Media Types</a>
+ *
  * @author Jean-Baptiste Reure
  * @author Christophe Lauret
  *
@@ -42,10 +45,7 @@ public class AutoXMLTranslatorFactory implements ContentTranslatorFactory {
   private final ContentTranslator xmlTranslator;
 
   /**
-   * <p>Creates a new factory for XML mediatypes.</p>
-   *
-   * @see <a href="https://www3.tools.ietf.org/html/rfc3023">XML Media Types</a>
-   * @see <a href="http://www.w3.org/TR/xhtml-media-types/">XHTML Media Types</a>
+   * Creates a new factory for XML media types.
    */
   public AutoXMLTranslatorFactory() {
     this.xmlTranslator = new SourceForwarder(this.types, "UTF-8");
@@ -55,7 +55,7 @@ public class AutoXMLTranslatorFactory implements ContentTranslatorFactory {
   }
 
   /**
-   * <p>Creates a new factory for {@value XML_MIME_TYPES}.</p>
+   * Creates a new factory with the default XML media types and including the specified types.
    *
    * @param include Additional media types to include.
    */

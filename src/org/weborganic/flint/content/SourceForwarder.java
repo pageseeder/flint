@@ -12,7 +12,6 @@ import java.io.Reader;
 import java.nio.charset.Charset;
 import java.nio.charset.IllegalCharsetNameException;
 import java.nio.charset.UnsupportedCharsetException;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
@@ -90,7 +89,7 @@ public final class SourceForwarder implements ContentTranslator {
   public SourceForwarder(List<String> mediaTypes, Charset charset) throws IllegalArgumentException {
     if (mediaTypes == null) throw new IllegalArgumentException("mediaTypes is null");
     if (charset == null) throw new IllegalArgumentException("charset is null");
-    this._mediaTypes = new ArrayList<String>(mediaTypes);
+    this._mediaTypes = mediaTypes;
     this._charset = charset;
   }
 
