@@ -243,6 +243,8 @@ public class IndexConfig {
    * @param media    the media type of the content (eg. "application/xml").
    * @param config   the config ID, can be <code>null</code>.
    * @param template the full path to the XSLT template file.
+   *
+   * @throws IllegalArgumentException If the templates are invalid.
    */
   public void setTemplates(ContentType type, String media, String config, URI template) {
     try {

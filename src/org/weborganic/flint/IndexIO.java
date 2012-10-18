@@ -69,8 +69,7 @@ public abstract class IndexIO {
   /**
    * Sole constructor.
    *
-   * @param index
-   *          The index on which IO operations will occur.
+   * @param index The index on which IO operations will occur.
    */
   IndexIO(Index index) {
     this.indexID = index.getIndexID();
@@ -88,16 +87,14 @@ public abstract class IndexIO {
   /**
    * Commit any changes if the state of the index requires it.
    *
-   * @throws IndexException
-   *           should any error be thrown by Lucene while committing.
+   * @throws IndexException should any error be thrown by Lucene while committing.
    */
   public abstract void maybeCommit() throws IndexException;
 
   /**
    * Optimise the index if the state of the index requires it.
    *
-   * @throws IndexException
-   *           should any error be thrown by Lucene while optimising.
+   * @throws IndexException should any error be thrown by Lucene while optimising.
    */
   public abstract void maybeOptimise() throws IndexException;
 
@@ -105,11 +102,9 @@ public abstract class IndexIO {
    * Clears the index as soon as possible (asynchronously).
    *
    * @return <code>true</code> if the indexed could be scheduled for clearing;
-   *         <code>false</code>
-   * @throws IndexException
-   *           should any error be thrown by Lucene.
-   * @throws UnsupportedOperationException
-   *           If this implementation is read only.
+   *         <code>false</code> otherwise.
+   * @throws IndexException should any error be thrown by Lucene.
+   * @throws UnsupportedOperationException If this implementation is read only.
    */
   public abstract boolean clearIndex() throws IndexException, UnsupportedOperationException;
 
@@ -117,14 +112,11 @@ public abstract class IndexIO {
    * Delete the documents defined in the delete rule as soon as possible
    * (asynchronously).
    *
-   * @param rule
-   *          the rule to identify the items to delete
+   * @param rule the rule to identify the items to delete
    * @return <code>true</code> if the item could be be scheduled for deletion;
    *         <code>false</code>
-   * @throws IndexException
-   *           should any error be thrown by Lucene.
-   * @throws UnsupportedOperationException
-   *           If this implementation is read only.
+   * @throws IndexException should any error be thrown by Lucene.
+   * @throws UnsupportedOperationException If this implementation is read only.
    */
   public abstract boolean deleteDocuments(DeleteRule rule) throws IndexException, UnsupportedOperationException;
 
@@ -136,16 +128,12 @@ public abstract class IndexIO {
    * It is not possible to update an item in Lucene, instead it is first deleted
    * then inserted again.
    *
-   * @param rule
-   *          the rule to identify the items to delete before update.
-   * @param documents
-   *          the list of documents to replace with.
+   * @param rule the rule to identify the items to delete before update.
+   * @param documents the list of documents to replace with.
    * @return <code>true</code> if the item could be be scheduled for update;
    *         <code>false</code>
-   * @throws IndexException
-   *           should any error be thrown by Lucene
-   * @throws UnsupportedOperationException
-   *           If this implementation is read only.
+   * @throws IndexException should any error be thrown by Lucene
+   * @throws UnsupportedOperationException If this implementation is read only.
    */
   public abstract boolean updateDocuments(DeleteRule rule, List<Document> documents)
       throws IndexException, UnsupportedOperationException;
@@ -202,9 +190,7 @@ public abstract class IndexIO {
   /**
    * Closes the writer on this index.
    *
-   * @throws IndexException
-   *           Wrapping an {@link CorruptIndexException} or an
-   *           {@link IOException}.
+   * @throws IndexException Wrapping an {@link CorruptIndexException} or an {@link IOException}.
    */
   public abstract void stop() throws IndexException;
 
@@ -215,11 +201,10 @@ public abstract class IndexIO {
    * This method will try to return a read/write IndexIO instance if possible;
    * otherwise it will return a read only instance.
    *
-   * @param index
-   *          The index object.
+   * @param index The index object.
    * @return The most appropriate IndexIO implementation to use.
-   * @throws IOException
-   *           If thrown by the constructors
+   *
+   * @throws IOException If thrown by the constructors
    */
   public static IndexIO newInstance(Index index) throws IOException {
     Directory directory = index.getIndexDirectory();

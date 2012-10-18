@@ -133,9 +133,6 @@ public final class IndexIOReadWrite extends IndexIO {
     }
   }
 
-  /**
-   * {@inheritDoc}
-   */
   @Override
   public boolean clearIndex() throws IndexException {
     LOGGER.debug("Clearing Index");
@@ -152,13 +149,6 @@ public final class IndexIOReadWrite extends IndexIO {
     return true;
   }
 
-  /**
-   * Delete the documents defined in the delete rule.
-   *
-   * @param rule
-   * @return
-   * @throws IndexException
-   */
   @Override
   public boolean deleteDocuments(DeleteRule rule) throws IndexException {
     LOGGER.debug("Deleting a document");
@@ -179,13 +169,6 @@ public final class IndexIOReadWrite extends IndexIO {
     return true;
   }
 
-  /**
-   *
-   * @param rule
-   * @param documents
-   * @return
-   * @throws IndexException
-   */
   @Override
   public boolean updateDocuments(DeleteRule rule, List<Document> documents) throws IndexException {
     LOGGER.debug("Updating {} documents", documents.size());
@@ -227,11 +210,6 @@ public final class IndexIOReadWrite extends IndexIO {
     return this.searcherManager.get();
   }
 
-  /**
-   *
-   * @param searcher
-   * @throws IOException
-   */
   @Override
   public void releaseSearcher(IndexSearcher searcher) throws IOException {
     if (this.searcherManager != null) {
@@ -255,6 +233,7 @@ public final class IndexIOReadWrite extends IndexIO {
     }
     this.lastTimeUsed = System.currentTimeMillis();
   }
+
   /**
    * @return the lastTimeUsed
    */
@@ -262,6 +241,11 @@ public final class IndexIOReadWrite extends IndexIO {
     return this.lastTimeUsed;
   }
 
+  /**
+   * Ensures that it is open.
+   *
+   * @throws IOException
+   */
   private void ensureOpen() throws IOException {
     if (this.writer == null) {
       start();

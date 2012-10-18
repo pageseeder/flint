@@ -57,8 +57,8 @@ public final class IndexIOReadOnly extends IndexIO {
    *
    * @param index The index on which IO operations will occur.
    *
-   * @throws CorruptIndexException     If thrown by Lucene when creating the index writer.
-   * @throws IOException               If thrown by Lucene when creating the index writer.
+   * @throws CorruptIndexException If thrown by Lucene when creating the index writer.
+   * @throws IOException           If thrown by Lucene when creating the index writer.
    */
   public IndexIOReadOnly(Index index) throws CorruptIndexException, IOException {
     super(index);
@@ -116,6 +116,7 @@ public final class IndexIOReadOnly extends IndexIO {
    * @param rule      Ignored
    * @param documents Ignored
    * @return nothing
+   *
    * @throws UnsupportedOperationException Always.
    */
   @Override
@@ -137,25 +138,16 @@ public final class IndexIOReadOnly extends IndexIO {
     return this.searcherManager.get();
   }
 
-  /**
-   * {@inheritDoc}
-   */
   @Override
   public void releaseSearcher(IndexSearcher searcher) throws IOException {
     this.searcherManager.release(searcher);
   }
 
-  /**
-   * {@inheritDoc}
-   */
   @Override
   protected IndexReader bookReader() throws IOException {
     return this.searcherManager.getReader();
   }
 
-  /**
-   * {@inheritDoc}
-   */
   @Override
   protected void releaseReader(IndexReader reader) throws IOException {
     this.searcherManager.releaseReader(reader);
