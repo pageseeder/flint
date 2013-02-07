@@ -203,4 +203,22 @@ public final class NoOpListener implements FlintListener {
   public void warn(String warning, Throwable throwable) {
   }
 
+  /**
+   * Do nothing.
+   *
+   * {@inheritDoc}
+   */
+  @Override
+  public void startBatch() {
+  }
+
+  /**
+   * Do nothing.
+   *
+   * {@inheritDoc}
+   */
+  @Override
+  public void endBatch() {
+ }
+
 }

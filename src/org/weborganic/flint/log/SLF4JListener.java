@@ -32,6 +32,11 @@ public final class SLF4JListener implements FlintListener {
   private final Logger _logger;
 
   /**
+   * The size of the batch being processes.
+   */
+  private int _batchSize = 0;
+
+  /**
    * Creates a new logger for the specified Logger.
    *
    * @param logger The underlying logger to use.
@@ -40,151 +45,108 @@ public final class SLF4JListener implements FlintListener {
     this._logger = logger;
   }
 
-  /**
-   * {@inheritDoc}
-   */
   @Override
   public void debug(String message) {
     this._logger.debug(message);
   }
 
-  /**
-   * {@inheritDoc}
-   */
   @Override
   public void debug(String debug, Throwable throwable) {
     this._logger.debug(debug, throwable);
   }
 
-  /**
-   * {@inheritDoc}
-   */
   @Override
   public void info(String message) {
     this._logger.info(message);
   }
 
-  /**
-   * {@inheritDoc}
-   */
   @Override
   public void info(String info, Throwable throwable) {
     this._logger.info(info, throwable);
   }
 
-  /**
-   * {@inheritDoc}
-   */
   @Override
   public void warn(String message) {
     this._logger.warn(message);
   }
 
-  /**
-   * {@inheritDoc}
-   */
   @Override
   public void warn(String warn, Throwable throwable) {
     this._logger.warn(warn, throwable);
   }
 
-  /**
-   * {@inheritDoc}
-   */
   @Override
   public void error(String message) {
     error(message, null);
   }
 
-  /**
-   * {@inheritDoc}
-   */
   @Override
   public void error(String message, Throwable throwable) {
     this._logger.error(message, throwable);
   }
 
-  /**
-   * {@inheritDoc}
-   */
   @Override
   public void debug(IndexJob job, String message) {
     this._logger.debug(FORMAT_STRING, message, job.toString());
   }
 
-  /**
-   * {@inheritDoc}
-   */
   @Override
   public void debug(IndexJob job, String message, Throwable throwable) {
     this._logger.debug(FORMAT_STRING, message, job.toString());
     this._logger.debug(message, throwable);
   }
 
-  /**
-   * {@inheritDoc}
-   */
   @Override
   public void info(IndexJob job, String message) {
     this._logger.info(FORMAT_STRING, message, job.toString());
   }
 
-  /**
-   * {@inheritDoc}
-   */
   @Override
   public void info(IndexJob job, String message, Throwable throwable) {
     this._logger.info(FORMAT_STRING, message, job.toString());
     this._logger.info(message, throwable);
   }
 
-  /**
-   * {@inheritDoc}
-   */
   @Override
   public void warn(IndexJob job, String message) {
     this._logger.warn(FORMAT_STRING, message, job.toString());
   }
 
-  /**
-   * {@inheritDoc}
-   */
   @Override
   public void warn(IndexJob job, String message, Throwable throwable) {
     this._logger.warn(FORMAT_STRING, message, job.toString());
     this._logger.warn(message, throwable);
   }
 
-  /**
-   * {@inheritDoc}
-   */
   @Override
   public void error(IndexJob job, String message) {
     this._logger.error(FORMAT_STRING, message, job.toString());
   }
 
-  /**
-   * {@inheritDoc}
-   */
   @Override
   public void error(IndexJob job, String message, Throwable throwable) {
     this._logger.error(FORMAT_STRING, message, job.toString());
     this._logger.error(message, throwable);
   }
 
-  /**
-   * {@inheritDoc}
-   */
   @Override
   public void finishJob(IndexJob job) {
-    this._logger.info("Done! [Job:{}]", job.toString());
+    this._batchSize++;
+    this._logger.debug("Done! [Job:{}]", job.toString());
   }
 
-  /**
-   * {@inheritDoc}
-   */
   @Override
   public void startJob(IndexJob job) {
-    this._logger.info("Starting [Job:{}]", job.toString());
+    this._logger.debug("Starting [Job:{}]", job.toString());
+  }
+
+  @Override
+  public void startBatch() {
+  }
+
+  @Override
+  public void endBatch() {
+    this._logger.debug("Indexed {} files", this._batchSize);
+    this._batchSize = 0;
   }
 }

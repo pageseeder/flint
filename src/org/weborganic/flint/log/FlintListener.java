@@ -8,99 +8,129 @@
 package org.weborganic.flint.log;
 
 import org.weborganic.flint.IndexJob;
+import org.weborganic.flint.IndexListener;
 
 /**
  * A listener for indexing job in order to report on the event.
  *
+ * @deprecated This interface will be replaced by the quieter {@link IndexListener}
+ *
  * @author Jean-Baptiste Reure
- * @version 26 May 2010
+ * @author Christophe Lauret
+ *
+ * @version 8 February 2013
  */
-public interface FlintListener {
+@Deprecated
+public interface FlintListener extends IndexListener {
 
   /**
-   * To log an information message.
+   * To log a debug message attached to an indexing job.
    *
-   * @param info the information message
+   * @deprecated debug messages are logged instead
+   *
+   * @param job       the job concerned
+   * @param message   the warning message
    */
-  void info(String info);
+  @Deprecated
+  void debug(IndexJob job, String message);
 
   /**
-   * To log an information message.
+   * To log a debug message attached to an indexing job.
    *
-   * @param info the information message
-   * @param throwable the exception
-   */
-  void info(String info, Throwable throwable);
-
-  /**
-   * To log a warning message.
+   * @deprecated debug messages are logged instead
    *
-   * @param warning the warning message
+   * @param job       the job concerned
+   * @param message   the warning message
+   * @param throwable an exception
    */
-  void warn(String warning);
-
-  /**
-   * To log a warning message.
-   *
-   * @param warning the warning message
-   * @param throwable the exception
-   */
-  void warn(String warning, Throwable throwable);
+  @Deprecated
+  void debug(IndexJob job, String message, Throwable throwable);
 
   /**
    * To log a debug message.
    *
+   * @deprecated debug messages are logged instead
+   *
    * @param debug the debug message
    */
+  @Deprecated
   void debug(String debug);
 
   /**
    * To log a debug message.
    *
+   * @deprecated debug messages are logged instead
+   *
    * @param debug the debug message
    * @param throwable the exception
    */
+  @Deprecated
   void debug(String debug, Throwable throwable);
 
   /**
-   * When an error occurred.
+   * To log an information message.
    *
-   * @param error the error message
+   * @deprecated info messages are logged instead
+   *
+   * @param info the information message
    */
-  void error(String error);
+  @Deprecated
+  void info(String info);
 
   /**
-   * When an error occurred.
+   * To log an information message.
    *
-   * @param error the error message
+   * @deprecated info messages are logged instead
+   *
+   * @param info the information message
    * @param throwable the exception
    */
-  void error(String error, Throwable throwable);
+  @Deprecated
+  void info(String info, Throwable throwable);
 
   /**
    * To log an information message attached to an indexing job.
    *
+   * @deprecated info messages are logged instead
+   *
    * @param job       the job concerned
    * @param message   the information message
    */
+  @Deprecated
   void info(IndexJob job, String message);
 
   /**
    * To log an information message attached to an indexing job.
    *
+   * @deprecated info messages are logged instead
+   *
    * @param job       the job concerned
    * @param message   the information message
    * @param throwable an exception
    */
+  @Deprecated
   void info(IndexJob job, String message, Throwable throwable);
 
   /**
-   * To log a warning message attached to an indexing job.
+   * To log a warning message.
    *
-   * @param job       the job concerned
-   * @param message   the warning message
+   * @deprecated Use logger instead
+   *
+   * @param warning the warning message
    */
-  void warn(IndexJob job, String message);
+  @Deprecated
+  void warn(String warning);
+
+  /**
+   * To log a warning message.
+   *
+   * @deprecated Use logger instead
+   *
+   * @param warning the warning message
+   * @param throwable the exception
+   */
+  @Deprecated
+  void warn(String warning, Throwable throwable);
 
   /**
    * To log a warning message attached to an indexing job.
@@ -112,51 +142,35 @@ public interface FlintListener {
   void warn(IndexJob job, String message, Throwable throwable);
 
   /**
-   * To log a debug message attached to an indexing job.
+   * When an error occurred.
    *
-   * @param job       the job concerned
-   * @param message   the warning message
+   * @deprecated Use logger instead
+   *
+   * @param error the error message
    */
-  void debug(IndexJob job, String message);
+  @Deprecated
+  void error(String error);
 
   /**
-   * To log a debug message attached to an indexing job.
+   * When an error occurred.
    *
-   * @param job       the job concerned
-   * @param message   the warning message
-   * @param throwable an exception
-   */
-  void debug(IndexJob job, String message, Throwable throwable);
-
-  /**
-   * When an error occurred during to an indexing job.
+   * @deprecated Use logger instead
    *
-   * @param job       the job concerned
-   * @param message   the error message
-   */
-  void error(IndexJob job, String message);
-
-  /**
-   * When an error occurred during to an indexing job.
-   *
-   * @param job       the job concerned
-   * @param message   the error message
+   * @param error the error message
    * @param throwable the exception
    */
-  void error(IndexJob job, String message, Throwable throwable);
+  @Deprecated
+  void error(String error, Throwable throwable);
 
   /**
-   * When an indexing job is started.
+   * When an error occurred during to an indexing job.
    *
-   * @param job the job that just started
-   */
-  void startJob(IndexJob job);
-
-  /**
-   * When an indexing job was completed.
+   * @deprecated Use logger or {@link #error(IndexJob, String, Throwable)} instead
    *
-   * @param job the job completed
+   * @param job       the job concerned
+   * @param message   the error message
    */
-  void finishJob(IndexJob job);
+  @Deprecated
+  void error(IndexJob job, String message);
 
 }

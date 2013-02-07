@@ -11,20 +11,22 @@ import javax.xml.transform.ErrorListener;
 import javax.xml.transform.TransformerException;
 
 import org.weborganic.flint.IndexJob;
-import org.weborganic.flint.log.FlintListener;
+import org.weborganic.flint.IndexListener;
 
 /**
  * Basic error listener for XSLT transformation in flint.
  *
  * @author Jean-Baptiste Reure
- * @version 31 May 2010
+ * @author Christophe Lauret
+ *
+ * @version 8 February 2013
  */
-public class FlintErrorListener implements ErrorListener {
+public final class FlintErrorListener implements ErrorListener {
 
   /**
    * The Flint listener to log the errors to
    */
-  private final FlintListener _listener;
+  private final IndexListener _listener;
 
   /**
    * The Job the errors belong to
@@ -34,44 +36,31 @@ public class FlintErrorListener implements ErrorListener {
   /**
    * Create a new listener.
    *
-   * @param listener the listener to log messages to
-   * @param job      the Job the errors belong to
+   * @param listener the listener to notify
+   * @param job      the job being processed
+   *
+   * @throws NullPointerException if either parameter is <code>null</code>
    */
-  public FlintErrorListener(FlintListener listener, IndexJob job) {
+  public FlintErrorListener(IndexListener listener, IndexJob job) {
+    if (listener == null) throw new NullPointerException("listener");
+    if (job == null) throw new NullPointerException("job");
     this._listener = listener;
     this._job = job;
   }
 
-  /**
-   * {@inheritDoc}
-   */
   @Override
-  public void error(TransformerException te) throws TransformerException {
-    if (this._job != null)
-      this._listener.error(this._job, "ERROR: "+te.getMessageAndLocation());
-    else
-      this._listener.error("ERROR: "+te.getMessageAndLocation());
+  public void warning(TransformerException ex) {
+    this._listener.warn(this._job, ex.getMessageAndLocation());
   }
 
-  /**
-   * {@inheritDoc}
-   */
   @Override
-  public void fatalError(TransformerException te) throws TransformerException {
-    if (this._job != null)
-      this._listener.error(this._job, "FATAL: "+te.getMessageAndLocation());
-    else
-      this._listener.error("FATAL: "+te.getMessageAndLocation());
+  public void error(TransformerException ex) {
+    this._listener.error(this._job, ex.getMessageAndLocation(), null);
   }
 
-  /**
-   * {@inheritDoc}
-   */
   @Override
-  public void warning(TransformerException te) throws TransformerException {
-    if (this._job != null)
-      this._listener.warn(this._job, "WARNING: "+te.getMessageAndLocation());
-    else
-      this._listener.warn("WARNING: "+te.getMessageAndLocation());
+  public void fatalError(TransformerException ex) {
+    this._listener.error(this._job, ex.getMessageAndLocation(), null);
   }
+
 }

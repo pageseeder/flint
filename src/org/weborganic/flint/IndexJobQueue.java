@@ -36,7 +36,7 @@ public final class IndexJobQueue {
   /**
    * The actual queue.
    */
-  private final PriorityBlockingQueue<IndexJob> queue;
+  private final PriorityBlockingQueue<IndexJob> _queue;
 
   /**
    * Simple Constructor.
@@ -45,7 +45,7 @@ public final class IndexJobQueue {
    */
   public IndexJobQueue(long pollDelay) {
     this.jobPollDelay = pollDelay;
-    this.queue = new PriorityBlockingQueue<IndexJob>();
+    this._queue = new PriorityBlockingQueue<IndexJob>();
   }
 
   // public external methods
@@ -58,7 +58,7 @@ public final class IndexJobQueue {
    */
   public void addJob(IndexJob job) {
     LOGGER.debug("Adding Index Job to Queue: {}", job.toString());
-    this.queue.put(job);
+    this._queue.put(job);
   }
 
   /**
@@ -75,7 +75,7 @@ public final class IndexJobQueue {
   public List<IndexJob> getJobsForRequester(Requester r) {
     if (r == null) return getAllJobs();
     List<IndexJob> jobs = new ArrayList<IndexJob>();
-    for (IndexJob job : this.queue) {
+    for (IndexJob job : this._queue) {
       if (job.isForRequester(r)) jobs.add(job);
     }
     return jobs;
@@ -95,7 +95,7 @@ public final class IndexJobQueue {
   public List<IndexJob> getJobsForIndex(Index i) {
     if (i == null) return getAllJobs();
     List<IndexJob> jobs = new ArrayList<IndexJob>();
-    for (IndexJob job : this.queue) {
+    for (IndexJob job : this._queue) {
       if (job.isForIndex(i)) jobs.add(job);
     }
     return jobs;
@@ -112,7 +112,7 @@ public final class IndexJobQueue {
    * @return the list of jobs waiting (never <code>null</code>)
    */
   public List<IndexJob> getAllJobs() {
-    return new ArrayList<IndexJob>(this.queue);
+    return new ArrayList<IndexJob>(this._queue);
   }
 
   /**
@@ -123,7 +123,7 @@ public final class IndexJobQueue {
    * @throws InterruptedException if the thread was interrupted when waiting for the next job
    */
   public IndexJob nextJob() throws InterruptedException {
-    return this.queue.poll(this.jobPollDelay, TimeUnit.MILLISECONDS);
+    return this._queue.poll(this.jobPollDelay, TimeUnit.MILLISECONDS);
   }
 
   /**
@@ -133,7 +133,16 @@ public final class IndexJobQueue {
    *         <code>false</code> otherwise.
    */
   public boolean isEmpty() {
-    return this.queue.isEmpty();
+    return this._queue.isEmpty();
   }
 
+  /**
+   * Indicates whether the queue is currently empty.
+   *
+   * @return <code>true</code> if there are currently no jobs;
+   *         <code>false</code> otherwise.
+   */
+  public int size() {
+    return this._queue.size();
+  }
 }

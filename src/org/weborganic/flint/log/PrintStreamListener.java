@@ -44,17 +44,11 @@ public final class PrintStreamListener implements FlintListener {
     this._stream = stream;
   }
 
-  /**
-   * {@inheritDoc}
-   */
   @Override
   public void debug(String message) {
     this._stream.println("[DEBUG] "+message);
   }
 
-  /**
-   * {@inheritDoc}
-   */
   @Override
   public void debug(String debug, Throwable throwable) {
     this._stream.println("[DEBUG] "+debug);
@@ -62,17 +56,11 @@ public final class PrintStreamListener implements FlintListener {
       throwable.printStackTrace(this._stream);
   }
 
-  /**
-   * {@inheritDoc}
-   */
   @Override
   public void info(String message) {
     this._stream.println("[INFO ] "+message);
   }
 
-  /**
-   * {@inheritDoc}
-   */
   @Override
   public void info(String info, Throwable throwable) {
     this._stream.println("[INFO] "+info);
@@ -80,17 +68,11 @@ public final class PrintStreamListener implements FlintListener {
       throwable.printStackTrace(this._stream);
   }
 
-  /**
-   * {@inheritDoc}
-   */
   @Override
   public void warn(String message) {
     this._stream.println("[WARN ] "+message);
   }
 
-  /**
-   * {@inheritDoc}
-   */
   @Override
   public void warn(String warn, Throwable throwable) {
     this._stream.println("[WARN] "+warn);
@@ -98,17 +80,11 @@ public final class PrintStreamListener implements FlintListener {
       throwable.printStackTrace(this._stream);
   }
 
-  /**
-   * {@inheritDoc}
-   */
   @Override
   public void error(String message) {
     error(message, null);
   }
 
-  /**
-   * {@inheritDoc}
-   */
   @Override
   public void error(String message, Throwable throwable) {
     this._stream.println("[ERROR] "+message);
@@ -116,17 +92,11 @@ public final class PrintStreamListener implements FlintListener {
       throwable.printStackTrace(this._stream);
   }
 
-  /**
-   * {@inheritDoc}
-   */
   @Override
   public void debug(IndexJob job, String message) {
     this._stream.println("[DEBUG] "+message+' '+job.toString());
   }
 
-  /**
-   * {@inheritDoc}
-   */
   @Override
   public void debug(IndexJob job, String message, Throwable throwable) {
     debug(job, message);
@@ -134,17 +104,11 @@ public final class PrintStreamListener implements FlintListener {
       throwable.printStackTrace(this._stream);
   }
 
-  /**
-   * {@inheritDoc}
-   */
   @Override
   public void info(IndexJob job, String message) {
     this._stream.println("[INFO ] "+message+' '+job.toString());
   }
 
-  /**
-   * {@inheritDoc}
-   */
   @Override
   public void info(IndexJob job, String message, Throwable throwable) {
     info(job, message);
@@ -152,17 +116,11 @@ public final class PrintStreamListener implements FlintListener {
       throwable.printStackTrace(this._stream);
   }
 
-  /**
-   * {@inheritDoc}
-   */
   @Override
   public void warn(IndexJob job, String message) {
     this._stream.println("[WARN ] "+message+' '+job.toString());
   }
 
-  /**
-   * {@inheritDoc}
-   */
   @Override
   public void warn(IndexJob job, String message, Throwable throwable) {
     warn(job, message);
@@ -170,17 +128,11 @@ public final class PrintStreamListener implements FlintListener {
       throwable.printStackTrace(this._stream);
   }
 
-  /**
-   * {@inheritDoc}
-   */
   @Override
   public void error(IndexJob job, String message) {
     this._stream.println("[ERROR] "+message+' '+job.toString());
   }
 
-  /**
-   * {@inheritDoc}
-   */
   @Override
   public void error(IndexJob job, String message, Throwable throwable) {
     error(job, message);
@@ -188,19 +140,23 @@ public final class PrintStreamListener implements FlintListener {
       throwable.printStackTrace(this._stream);
   }
 
-  /**
-   * {@inheritDoc}
-   */
   @Override
   public void finishJob(IndexJob job) {
     this._stream.println("[JOB END] "+job.toString());
   }
 
-  /**
-   * {@inheritDoc}
-   */
   @Override
   public void startJob(IndexJob job) {
     this._stream.println("[JOB START] "+job.toString());
+  }
+
+  @Override
+  public void startBatch() {
+    this._stream.println("[JOB START] ");
+  }
+
+  @Override
+  public void endBatch() {
+    this._stream.println("[BATCH END] ");
   }
 }
