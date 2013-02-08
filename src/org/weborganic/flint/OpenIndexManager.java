@@ -17,7 +17,8 @@ import org.slf4j.LoggerFactory;
 
 /**
  * Manager for open indexes.
- * Handles closing of indexes that have been opened for a long time if there are too many open ones.
+ *
+ * <p>Handles closing of indexes that have been opened for a long time if there are too many open ones.
  *
  * @author Jean-Baptiste Reure
  * @version 26 February 2010
@@ -34,9 +35,6 @@ public final class OpenIndexManager {
    */
   private static final Comparator<IndexIOReadWrite> OPEN_INDEX_COMPARATOR = new Comparator<IndexIOReadWrite>() {
 
-    /**
-     * {@inheritdoc}
-     */
     @Override
     public int compare(IndexIOReadWrite o1, IndexIOReadWrite o2) {
       return o1.getLastTimeUsed() < o2.getLastTimeUsed() ? 1 : o1.getLastTimeUsed() == o2.getLastTimeUsed() ? 0 : -1;
@@ -51,15 +49,15 @@ public final class OpenIndexManager {
     new ConcurrentHashMap<Integer, IndexIOReadWrite>();
 
   /**
+   * The max number of opened reader allowed at all times
+   */
+  private static int maxOpenedIndexes = 50;
+
+  /**
    * Utility class.
    */
   private OpenIndexManager() {
   }
-
-  /**
-   * The max number of opened reader allowed at all times
-   */
-  private static int maxOpenedIndexes = 50;
 
   /**
    * @param val the new max number of opened reaer allowed at all times
