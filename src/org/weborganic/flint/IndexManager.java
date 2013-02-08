@@ -623,14 +623,16 @@ public final class IndexManager implements Runnable {
           this._listener.endJob(job);
           this._lastActivity = System.currentTimeMillis();
         }
-      } else if (started) {
+      } else {
         // check the number of opened readers then
         OpenIndexManager.closeOldReaders();
         // no jobs available, optimise if not needed
         checkForCommit();
         // Notify the end of the batch
-        started = false;
-        this._listener.endBatch();
+        if (started) {
+          started = false;
+          this._listener.endBatch();
+        }
       }
       // clear the job
       job = null;
