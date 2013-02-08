@@ -146,6 +146,11 @@ public final class PrintStreamListener implements FlintListener {
   }
 
   @Override
+  public void endJob(IndexJob job) {
+    this._stream.println("[JOB END] "+job.toString());
+  }
+
+  @Override
   public void startJob(IndexJob job) {
     this._stream.println("[JOB START] "+job.toString());
   }

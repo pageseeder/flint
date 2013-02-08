@@ -89,13 +89,6 @@ public interface IndexListener {
    *
    * @param job the job completed
    */
-  void finishJob(IndexJob job);
-
-  /**
-   * When an indexing job is started.
-   *
-   * @param job the job that just started
-   */
-//  void start(IndexJob job);
+  void endJob(IndexJob job);
 
 }

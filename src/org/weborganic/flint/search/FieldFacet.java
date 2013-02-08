@@ -87,7 +87,8 @@ public final class FieldFacet implements XMLWritable, Facet {
     for (TermQuery t : this._queries) {
       if (value.equals(t.getTerm().text())) return t;
     }
-    return null;
+    // Why null?
+    return new TermQuery(new Term(this._name, value));
   }
 
   /**
@@ -155,9 +156,6 @@ public final class FieldFacet implements XMLWritable, Facet {
     this._bucket = bucket;
   }
 
-  /**
-   * {@inheritDoc}
-   */
   @Override
   public void toXML(XMLWriter xml) throws IOException {
     xml.openElement("facet", true);

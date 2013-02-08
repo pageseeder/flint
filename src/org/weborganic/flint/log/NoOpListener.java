@@ -128,6 +128,15 @@ public final class NoOpListener implements FlintListener {
    * {@inheritDoc}
    */
   @Override
+  public void endJob(IndexJob job) {
+  }
+
+  /**
+   * Do nothing.
+   *
+   * {@inheritDoc}
+   */
+  @Override
   public void startJob(IndexJob job) {
   }
 

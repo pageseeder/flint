@@ -131,6 +131,11 @@ public final class SLF4JListener implements FlintListener {
 
   @Override
   public void finishJob(IndexJob job) {
+    endJob(job);
+  }
+
+  @Override
+  public void endJob(IndexJob job) {
     this._batchSize++;
     this._logger.debug("Done! [Job:{}]", job.toString());
   }

@@ -259,7 +259,7 @@ public final class IndexIOReadWrite extends IndexIO {
    * @throws IndexException Wrapping an {@link CorruptIndexException} or an {@link IOException}.
    */
   public void start() throws IOException {
-    // Lucene 3.1+:
+    // TODO: Handle Lucene 3.1+:
     // IndexWriterConfig config = new IndexWriterConfig(Version.LUCENE_30, this._index.getAnalyzer());
     // config.setMergeScheduler(new ConcurrentMergeScheduler());
     // config.setMergePolicy(new BalancedSegmentMergePolicy());

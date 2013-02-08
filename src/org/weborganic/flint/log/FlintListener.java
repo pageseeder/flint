@@ -142,6 +142,16 @@ public interface FlintListener extends IndexListener {
   void warn(IndexJob job, String message, Throwable throwable);
 
   /**
+   * When an indexing job was completed.
+   *
+   * @deprecated replaced endJob
+   *
+   * @param job the job completed
+   */
+  @Deprecated
+  public void finishJob(IndexJob job);
+
+  /**
    * When an error occurred.
    *
    * @deprecated Use logger instead

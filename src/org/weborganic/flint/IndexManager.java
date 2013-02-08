@@ -620,7 +620,7 @@ public final class IndexManager implements Runnable {
           this._listener.error(job, "Unkown error: " + ex.getMessage(), ex);
         } finally {
           job.finish();
-          this._listener.finishJob(job);
+          this._listener.endJob(job);
           this._lastActivity = System.currentTimeMillis();
         }
       } else if (started) {
