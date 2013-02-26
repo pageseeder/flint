@@ -55,7 +55,6 @@ import org.weborganic.flint.log.NoOpListener;
 import org.weborganic.flint.query.SearchPaging;
 import org.weborganic.flint.query.SearchQuery;
 import org.weborganic.flint.query.SearchResults;
-import org.weborganic.flint.util.FlintEntityResolver;
 import org.weborganic.flint.util.FlintErrorListener;
 import org.xml.sax.InputSource;
 
@@ -743,10 +742,6 @@ public final class IndexManager implements Runnable {
       // prepare transformer
       Transformer t = templates.newTransformer();
       if (errorListener != null) t.setErrorListener(errorListener);
-      if (t.getOutputProperty("doctype-public") == null) {
-        t.setOutputProperty("doctype-public", FlintEntityResolver.PUBLIC_ID_PREFIX + "Index Documents Compatibility//EN");
-        t.setOutputProperty("doctype-system", "http://weborganic.org/schema/flint/index-documents-compatibility.dtd");
-      }
       // retrieve parameters
       Map<String, String> parameters = config.getParameters(type, mediatype, content.getConfigID());
       if (parameters != null && params != null) {
