@@ -82,7 +82,8 @@ public final class LocalIndex implements Index {
     ensureHasDirectory();
     long modified = 0;
     try {
-      modified = IndexReader.lastModified(this._directory);
+      if (IndexReader.indexExists(this._directory))
+        modified = IndexReader.lastModified(this._directory);
     } catch (IOException ex) {
       LOGGER.error("Unable to retrieve the last modified date of local index", ex);
     }
@@ -160,7 +161,7 @@ public final class LocalIndex implements Index {
    */
   private void ensureHasDirectory() {
     try {
-      if (this._directory != null)
+      if (this._directory == null)
         this._directory = FSDirectory.open(this._location);
     } catch (IOException ex) {
       LOGGER.error("Unable to return a directory on local index", ex);
