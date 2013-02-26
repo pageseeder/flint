@@ -573,6 +573,7 @@ public final class IndexManager implements Runnable {
       try {
         job = this._indexQueue.nextJob();
       } catch (InterruptedException ex) {
+        this._listener.error(job, "Interrupted indexing: " + ex.getMessage(), ex);
         // the thread was shutdown, let's die then
         return;
       }
