@@ -16,13 +16,13 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.weborganic.flint.Index;
+import org.weborganic.flint.api.Index;
 
 /**
  * A basic implementation of a local index.
  *
  * @author Christophe Lauret
- * @version 18 October 2012
+ * @version 27 February 2013
  */
 public final class LocalIndex implements Index {
 

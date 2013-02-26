@@ -16,12 +16,14 @@ import java.util.Collections;
 import java.util.List;
 
 import org.weborganic.flint.IndexException;
+import org.weborganic.flint.api.Content;
+import org.weborganic.flint.api.ContentTranslator;
 
 /**
  * A simple translator implementation allows XML Media types to be simply forwarded without translation.
  *
  * @author Jean-Baptiste Reure
- * @version 10 March 2010
+ * @version 27 February 2013
  */
 public final class SourceForwarder implements ContentTranslator {
 

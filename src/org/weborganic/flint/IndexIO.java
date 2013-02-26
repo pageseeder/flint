@@ -17,20 +17,21 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
+import org.weborganic.flint.api.Index;
 import org.weborganic.flint.content.DeleteRule;
 
 /**
  * Provides a set of utility methods to deal with IO operations on an Index.
  *
- * <p>
- * This class is useful to centralise all operations on an index because it will
+ * <p>This class is useful to centralise all operations on an index because it will
  * create one writer and share it with other classes if needed.
  *
- * <p>
- * This is a lower level API.
+ * <p>This is a lower level API.
  *
  * @author Jean-Baptiste Reure
- * @version 26 February 2010
+ * @author Christophe Lauret
+ *
+ * @version 27 February 2013
  */
 public abstract class IndexIO {
 

@@ -14,14 +14,14 @@ import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
-import org.weborganic.flint.Index;
 import org.weborganic.flint.IndexManager;
+import org.weborganic.flint.api.Index;
 
 /**
  * Implementation of Index, uses a File object to build a Lucene index.
  *
  * @author Jean-Baptiste Reure
- * @version 26 February 2010
+ * @version 27 February 2013
  */
 public class DirectoryIndex implements Index {
 

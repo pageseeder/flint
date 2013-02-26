@@ -9,6 +9,7 @@ package org.weborganic.flint;
 
 import java.io.IOException;
 
+import org.apache.lucene.index.FilterIndexReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.search.IndexSearcher;
@@ -132,6 +133,7 @@ public class SearcherManager {
     release(this.currentSearcher);
     this.currentSearcher = newSearcher;
   }
+
   /**
    * Check if the reader provided is not current and not used anymore in which case it is closed.
    *
@@ -154,8 +156,6 @@ public class SearcherManager {
       }
     }
   }
-
-  // ------------------ public methods -----------------------------
 
   /**
    * Close this searcher by closing the current searcher and its current reader.
@@ -220,4 +220,32 @@ public class SearcherManager {
     // check if we should close an old one
     closeIfDirty(reader);
   }
+
+  /**
+   * An index reader implementation which overrides some methods to protect the reader from
+   * being tempered with by different threads and therefore make it safe to share.
+   *
+   * @author Christophe Lauret
+   * @version 27 February 2013
+   */
+  private static final class SafeIndexReader extends FilterIndexReader {
+
+    /**
+     * Simply wraps the supplied index reader
+     *
+     * @param reader The reader to wrap.
+     */
+    public SafeIndexReader(IndexReader reader) {
+      super(reader);
+    }
+
+    @Override
+    protected void doClose() throws IOException {
+      StackTraceElement[] stacktrace = Thread.currentThread().getStackTrace();
+      String caller = stacktrace.length > 0? stacktrace[0].toString() : null;
+      LOGGER.warn("{} tried to close the IndexReader for", caller);
+    }
+
+  }
+
 }

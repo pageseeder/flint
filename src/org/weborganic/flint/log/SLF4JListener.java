@@ -9,6 +9,7 @@ package org.weborganic.flint.log;
 
 import org.slf4j.Logger;
 import org.weborganic.flint.IndexJob;
+import org.weborganic.flint.api.IndexListener;
 
 
 /**
@@ -17,9 +18,9 @@ import org.weborganic.flint.IndexJob;
  * <p>This implementation simply wraps a {@link Logger} instance.
  *
  * @author Christophe Lauret
- * @version 30 January 2012
+ * @version 27 February 2013
  */
-public final class SLF4JListener implements FlintListener {
+public final class SLF4JListener implements IndexListener {
 
   /**
    * The format string used for all SLF4J.
@@ -46,92 +47,14 @@ public final class SLF4JListener implements FlintListener {
   }
 
   @Override
-  public void debug(String message) {
-    this._logger.debug(message);
-  }
-
-  @Override
-  public void debug(String debug, Throwable throwable) {
-    this._logger.debug(debug, throwable);
-  }
-
-  @Override
-  public void info(String message) {
-    this._logger.info(message);
-  }
-
-  @Override
-  public void info(String info, Throwable throwable) {
-    this._logger.info(info, throwable);
-  }
-
-  @Override
-  public void warn(String message) {
-    this._logger.warn(message);
-  }
-
-  @Override
-  public void warn(String warn, Throwable throwable) {
-    this._logger.warn(warn, throwable);
-  }
-
-  @Override
-  public void error(String message) {
-    error(message, null);
-  }
-
-  @Override
-  public void error(String message, Throwable throwable) {
-    this._logger.error(message, throwable);
-  }
-
-  @Override
-  public void debug(IndexJob job, String message) {
-    this._logger.debug(FORMAT_STRING, message, job.toString());
-  }
-
-  @Override
-  public void debug(IndexJob job, String message, Throwable throwable) {
-    this._logger.debug(FORMAT_STRING, message, job.toString());
-    this._logger.debug(message, throwable);
-  }
-
-  @Override
-  public void info(IndexJob job, String message) {
-    this._logger.info(FORMAT_STRING, message, job.toString());
-  }
-
-  @Override
-  public void info(IndexJob job, String message, Throwable throwable) {
-    this._logger.info(FORMAT_STRING, message, job.toString());
-    this._logger.info(message, throwable);
-  }
-
-  @Override
   public void warn(IndexJob job, String message) {
     this._logger.warn(FORMAT_STRING, message, job.toString());
-  }
-
-  @Override
-  public void warn(IndexJob job, String message, Throwable throwable) {
-    this._logger.warn(FORMAT_STRING, message, job.toString());
-    this._logger.warn(message, throwable);
-  }
-
-  @Override
-  public void error(IndexJob job, String message) {
-    this._logger.error(FORMAT_STRING, message, job.toString());
   }
 
   @Override
   public void error(IndexJob job, String message, Throwable throwable) {
     this._logger.error(FORMAT_STRING, message, job.toString());
     this._logger.error(message, throwable);
-  }
-
-  @Override
-  public void finishJob(IndexJob job) {
-    endJob(job);
   }
 
   @Override

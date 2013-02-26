@@ -5,11 +5,12 @@
  * A copy of this licence can also be found at
  *   http://www.opensource.org/licenses/artistic-license-2.0.php
  */
-package org.weborganic.flint.content;
+package org.weborganic.flint.api;
 
 import java.io.InputStream;
 
 import org.weborganic.flint.IndexException;
+import org.weborganic.flint.content.DeleteRule;
 
 /**
  * This class provides a way for the IndexManager to fetch the content to add to the index.

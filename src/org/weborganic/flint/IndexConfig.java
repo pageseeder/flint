@@ -21,7 +21,7 @@ import javax.xml.transform.stream.StreamSource;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.weborganic.flint.content.ContentType;
+import org.weborganic.flint.api.ContentType;
 import org.weborganic.flint.util.Beta;
 
 /**

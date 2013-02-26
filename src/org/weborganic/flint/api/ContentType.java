@@ -5,7 +5,7 @@
  * A copy of this licence can also be found at
  *   http://www.opensource.org/licenses/artistic-license-2.0.php
  */
-package org.weborganic.flint.content;
+package org.weborganic.flint.api;
 
 /**
  * Objects implementing this interface define a content type.

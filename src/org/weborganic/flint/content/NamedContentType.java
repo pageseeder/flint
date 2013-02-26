@@ -7,6 +7,7 @@
  */
 package org.weborganic.flint.content;
 
+import org.weborganic.flint.api.ContentType;
 import org.weborganic.flint.util.Beta;
 
 /**
@@ -17,7 +18,7 @@ import org.weborganic.flint.util.Beta;
  * <p>The name string can be interned to enable strict equality comparison.
  *
  * @author Christophe Lauret
- * @version 29 July 2010
+ * @version 27 February 2013
  */
 @Beta public final class NamedContentType implements ContentType {
 

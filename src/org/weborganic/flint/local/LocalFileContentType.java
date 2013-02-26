@@ -7,13 +7,13 @@
  */
 package org.weborganic.flint.local;
 
-import org.weborganic.flint.content.ContentType;
+import org.weborganic.flint.api.ContentType;
 
 /**
  * A content type provided for convenience that corresponds to a local file.
  *
  * @author Christophe Lauret
- * @version 18 October 2012
+ * @version 27 February 2013
  */
 public final class LocalFileContentType implements ContentType {
 
@@ -21,6 +21,10 @@ public final class LocalFileContentType implements ContentType {
    * Sole instance.
    */
   public static final LocalFileContentType SINGLETON = new LocalFileContentType();
+
+  /** Use singleton instance. */
+  private LocalFileContentType() {
+  }
 
   /**
    * Always returns "LocalFile".

@@ -10,8 +10,10 @@ package org.weborganic.flint;
 import java.util.Collections;
 import java.util.Map;
 
-import org.weborganic.flint.content.ContentId;
-import org.weborganic.flint.content.ContentType;
+import org.weborganic.flint.api.ContentId;
+import org.weborganic.flint.api.ContentType;
+import org.weborganic.flint.api.Index;
+import org.weborganic.flint.api.Requester;
 
 /**
  * A job to run by the IndexManager.

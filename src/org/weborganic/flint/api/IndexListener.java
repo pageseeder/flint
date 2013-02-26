@@ -5,43 +5,17 @@
  * A copy of this licence can also be found at
  *   http://www.opensource.org/licenses/artistic-license-2.0.php
  */
-package org.weborganic.flint;
+package org.weborganic.flint.api;
+
+import org.weborganic.flint.IndexJob;
 
 /**
  * A listener to report on indexing events.
  *
  * @author Christophe Lauret
- *
  * @version 8 February 2013
  */
 public interface IndexListener {
-
-  // Index lifecycle
-  // ----------------------------------------------------------------------------------------------
-
-  /**
-   * When an error occurred.
-   *
-   * @param error the error message
-   * @param throwable the exception
-   */
-//  void start(Index index);
-
-  /**
-   * When an error occurred.
-   *
-   * @param error the error message
-   * @param throwable the exception
-   */
-//  void error(Index index, String error, Throwable throwable);
-
-  /**
-   * When an error occurred.
-   *
-   * @param error the error message
-   * @param throwable the exception
-   */
-//  void stop(Index index);
 
   // Index job lifecycle
   // ----------------------------------------------------------------------------------------------

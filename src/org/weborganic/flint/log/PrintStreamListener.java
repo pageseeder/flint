@@ -10,6 +10,7 @@ package org.weborganic.flint.log;
 import java.io.PrintStream;
 
 import org.weborganic.flint.IndexJob;
+import org.weborganic.flint.api.IndexListener;
 
 /**
  * A logger implementation that reports events to a <code>PrintStream</code>.
@@ -28,7 +29,7 @@ import org.weborganic.flint.IndexJob;
  * @author Christophe Lauret
  * @version 27 May 2010
  */
-public final class PrintStreamListener implements FlintListener {
+public final class PrintStreamListener implements IndexListener {
 
   /**
    * Sole instance.
@@ -45,104 +46,15 @@ public final class PrintStreamListener implements FlintListener {
   }
 
   @Override
-  public void debug(String message) {
-    this._stream.println("[DEBUG] "+message);
-  }
-
-  @Override
-  public void debug(String debug, Throwable throwable) {
-    this._stream.println("[DEBUG] "+debug);
-    if (throwable != null)
-      throwable.printStackTrace(this._stream);
-  }
-
-  @Override
-  public void info(String message) {
-    this._stream.println("[INFO ] "+message);
-  }
-
-  @Override
-  public void info(String info, Throwable throwable) {
-    this._stream.println("[INFO] "+info);
-    if (throwable != null)
-      throwable.printStackTrace(this._stream);
-  }
-
-  @Override
-  public void warn(String message) {
-    this._stream.println("[WARN ] "+message);
-  }
-
-  @Override
-  public void warn(String warn, Throwable throwable) {
-    this._stream.println("[WARN] "+warn);
-    if (throwable != null)
-      throwable.printStackTrace(this._stream);
-  }
-
-  @Override
-  public void error(String message) {
-    error(message, null);
-  }
-
-  @Override
-  public void error(String message, Throwable throwable) {
-    this._stream.println("[ERROR] "+message);
-    if (throwable != null)
-      throwable.printStackTrace(this._stream);
-  }
-
-  @Override
-  public void debug(IndexJob job, String message) {
-    this._stream.println("[DEBUG] "+message+' '+job.toString());
-  }
-
-  @Override
-  public void debug(IndexJob job, String message, Throwable throwable) {
-    debug(job, message);
-    if (throwable != null)
-      throwable.printStackTrace(this._stream);
-  }
-
-  @Override
-  public void info(IndexJob job, String message) {
-    this._stream.println("[INFO ] "+message+' '+job.toString());
-  }
-
-  @Override
-  public void info(IndexJob job, String message, Throwable throwable) {
-    info(job, message);
-    if (throwable != null)
-      throwable.printStackTrace(this._stream);
-  }
-
-  @Override
   public void warn(IndexJob job, String message) {
     this._stream.println("[WARN ] "+message+' '+job.toString());
   }
 
   @Override
-  public void warn(IndexJob job, String message, Throwable throwable) {
-    warn(job, message);
-    if (throwable != null)
-      throwable.printStackTrace(this._stream);
-  }
-
-  @Override
-  public void error(IndexJob job, String message) {
-    this._stream.println("[ERROR] "+message+' '+job.toString());
-  }
-
-  @Override
   public void error(IndexJob job, String message, Throwable throwable) {
-    error(job, message);
+    this._stream.println("[ERROR] "+message+' '+job.toString());
     if (throwable != null)
       throwable.printStackTrace(this._stream);
-  }
-
-  @Override
-  public void finishJob(IndexJob job) {
-    this._stream.println("[JOB END] "+job.toString());
   }
 
   @Override

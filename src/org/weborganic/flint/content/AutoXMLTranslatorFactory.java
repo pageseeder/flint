@@ -11,13 +11,16 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
+import org.weborganic.flint.api.ContentTranslator;
+import org.weborganic.flint.api.ContentTranslatorFactory;
+
 /**
  * Simple translator factory that only handles XML Media types by simply forwarding the content
  * without translation.
  *
  * <p>This translator will automatically add new XML media types.
  *
- * <p>THey include by default:
+ * <p>They include by default:
  * <ul>
  *   <li><code>text/xml</code></li>
  *   <li><code>application/xml</code></li>
@@ -30,7 +33,7 @@ import java.util.List;
  * @author Jean-Baptiste Reure
  * @author Christophe Lauret
  *
- * @version 18 October 2012
+ * @version 27 February 2013
  */
 public class AutoXMLTranslatorFactory implements ContentTranslatorFactory {
 

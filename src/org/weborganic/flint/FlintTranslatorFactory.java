@@ -11,8 +11,8 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-import org.weborganic.flint.content.ContentTranslator;
-import org.weborganic.flint.content.ContentTranslatorFactory;
+import org.weborganic.flint.api.ContentTranslator;
+import org.weborganic.flint.api.ContentTranslatorFactory;
 import org.weborganic.flint.content.SourceForwarder;
 
 /**

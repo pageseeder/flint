@@ -6,6 +6,7 @@
  *   http://www.opensource.org/licenses/artistic-license-2.0.php
  */
 /**
- * A basic set of Flint implementations for a simple local file-based indexes.
+ * This package contains the interfaces that may want to implement in order to use
+ * the Flint indexer.
  */
-package org.weborganic.flint.local;
+package org.weborganic.flint.api;

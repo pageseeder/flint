@@ -10,8 +10,8 @@ package org.weborganic.flint.local;
 import java.io.File;
 import java.io.IOException;
 
-import org.weborganic.flint.content.ContentId;
-import org.weborganic.flint.content.ContentType;
+import org.weborganic.flint.api.ContentId;
+import org.weborganic.flint.api.ContentType;
 
 /**
  * A basic implementation of the Flint's ContentId interface for uses by local system files.
@@ -19,7 +19,7 @@ import org.weborganic.flint.content.ContentType;
  * <p>The ID for each file is their canonical path.
  *
  * @author Christophe Lauret
- * @version 18 October 2012
+ * @version 27 February 2013
  */
 public final class LocalFileContentId implements ContentId {
 

@@ -11,7 +11,7 @@ import javax.xml.transform.ErrorListener;
 import javax.xml.transform.TransformerException;
 
 import org.weborganic.flint.IndexJob;
-import org.weborganic.flint.IndexListener;
+import org.weborganic.flint.api.IndexListener;
 
 /**
  * Basic error listener for XSLT transformation in flint.

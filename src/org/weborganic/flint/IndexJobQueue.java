@@ -14,6 +14,8 @@ import java.util.concurrent.TimeUnit;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.weborganic.flint.api.Index;
+import org.weborganic.flint.api.Requester;
 
 /**
  * The queue containing Index Jobs.
@@ -69,14 +71,14 @@ public final class IndexJobQueue {
    *
    * <p>The list will never be <code>null</code>.
    *
-   * @param r the Requester
+   * @param requester the Requester
    * @return the list of jobs (never <code>null</code>)
    */
-  public List<IndexJob> getJobsForRequester(Requester r) {
-    if (r == null) return getAllJobs();
+  public List<IndexJob> getJobsForRequester(Requester requester) {
+    if (requester == null) return getAllJobs();
     List<IndexJob> jobs = new ArrayList<IndexJob>();
     for (IndexJob job : this._queue) {
-      if (job.isForRequester(r)) jobs.add(job);
+      if (job.isForRequester(requester)) jobs.add(job);
     }
     return jobs;
   }
@@ -89,14 +91,14 @@ public final class IndexJobQueue {
    *
    * <p>The list will never be <code>null</code>.
    *
-   * @param i the index
+   * @param index the index
    * @return the list of jobs (never <code>null</code>)
    */
-  public List<IndexJob> getJobsForIndex(Index i) {
-    if (i == null) return getAllJobs();
+  public List<IndexJob> getJobsForIndex(Index index) {
+    if (index == null) return getAllJobs();
     List<IndexJob> jobs = new ArrayList<IndexJob>();
     for (IndexJob job : this._queue) {
-      if (job.isForIndex(i)) jobs.add(job);
+      if (job.isForIndex(index)) jobs.add(job);
     }
     return jobs;
   }

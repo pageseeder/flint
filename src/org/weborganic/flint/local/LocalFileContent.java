@@ -15,7 +15,7 @@ import java.io.InputStream;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.weborganic.flint.content.Content;
+import org.weborganic.flint.api.Content;
 
 /**
  * Content from a file.
@@ -29,7 +29,7 @@ import org.weborganic.flint.content.Content;
  * </ol>
  *
  * @author Christophe Lauret
- * @version 18 October 2012
+ * @version 27 February 2013
  */
 public abstract class LocalFileContent implements Content {
 

@@ -16,6 +16,7 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.search.IndexSearcher;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.weborganic.flint.api.Index;
 import org.weborganic.flint.content.DeleteRule;
 
 /**
@@ -29,7 +30,7 @@ import org.weborganic.flint.content.DeleteRule;
  * @author Jean-Baptiste Reure
  * @version 26 February 2010
  */
-public final class IndexIOReadOnly extends IndexIO {
+final class IndexIOReadOnly extends IndexIO {
 
   /**
    * Logger.
