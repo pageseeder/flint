@@ -70,6 +70,13 @@ public final class IndexIOReadOnly extends IndexIO {
    * Does nothing.
    */
   @Override
+  protected void maybeReopen() throws IndexException {
+  }
+
+  /**
+   * Does nothing.
+   */
+  @Override
   public void maybeCommit() {
   }
 

@@ -71,7 +71,11 @@ public final class IndexIOReadWrite extends IndexIO {
     start();
   }
 
-  private void maybeReopen() {
+  /**
+   * Attempts to reopen the readers.
+   */
+  @Override
+  protected void maybeReopen() {
     if (this.state != State.NEEDS_REOPEN) return;
     try {
       LOGGER.debug("Reopen searcher");
@@ -96,7 +100,7 @@ public final class IndexIOReadWrite extends IndexIO {
   public void maybeCommit() throws IndexException {
     if (this.state != State.NEEDS_COMMIT || this.writer == null) return;
     try {
-      LOGGER.debug("Committing");
+      LOGGER.debug("Committing index changes");
       this.writer.commit();
       this.searcherManager.maybeReopen();
       this.state = State.NEEDS_OPTIMISE;

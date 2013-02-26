@@ -59,7 +59,7 @@ public abstract class IndexIO {
   /**
    * State of this index.
    */
-  IndexIO.State state = State.CLEAN;
+  volatile IndexIO.State state = State.CLEAN;
 
   /**
    * ID of the current index.
@@ -83,6 +83,13 @@ public abstract class IndexIO {
   public final String indexID() {
     return this.indexID;
   }
+
+  /**
+   * Commit any changes if the state of the index requires it.
+   *
+   * @throws IndexException should any error be thrown by Lucene while committing.
+   */
+  protected abstract void maybeReopen() throws IndexException;
 
   /**
    * Commit any changes if the state of the index requires it.

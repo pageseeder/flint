@@ -627,7 +627,7 @@ public final class IndexManager implements Runnable {
       } else {
         // check the number of opened readers then
         OpenIndexManager.closeOldReaders();
-        // no jobs available, optimise if not needed
+        // no jobs available, commit if possible
         checkForCommit();
         // Notify the end of the batch
         if (started) {
@@ -806,6 +806,7 @@ public final class IndexManager implements Runnable {
     List<IndexIO> ios = new ArrayList<IndexIO>(this._indexes.values());
     for (IndexIO io : ios) {
       try {
+        io.maybeReopen(); // XXX: We seem to need to check whether we need to reopen...
         io.maybeCommit();
       } catch (IndexException ex) {
         LOGGER.error("Failed to perform commit", ex);
