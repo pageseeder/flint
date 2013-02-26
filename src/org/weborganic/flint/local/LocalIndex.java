@@ -42,6 +42,11 @@ public final class LocalIndex implements Index {
   private final Analyzer _analyzer;
 
   /**
+   * This index's directory.
+   */
+  private volatile Directory _directory;
+
+  /**
    * Create a new local index.
    *
    * @param location The location of the local index.
@@ -61,14 +66,10 @@ public final class LocalIndex implements Index {
   }
 
   @Override
-  public Directory getIndexDirectory() {
-    ensureExists(this._location);
-    try {
-      return FSDirectory.open(this._location);
-    } catch (IOException ex) {
-      LOGGER.error("Unable to return a directory on local index", ex);
-      return null;
-    }
+  public synchronized Directory getIndexDirectory() {
+    ensureFolderExists(this._location);
+    ensureHasDirectory();
+    return this._directory;
   }
 
   /**
@@ -76,15 +77,12 @@ public final class LocalIndex implements Index {
    *
    * @return When this index was last modified.
    */
-  public long getLastModified() {
-    if (!this._location.exists()) return 0;
+  public synchronized long getLastModified() {
+    if (!this._location.exists()) return -1;
+    ensureHasDirectory();
     long modified = 0;
-    // Get the last modified from the index
     try {
-      Directory directory = FSDirectory.open(this._location);
-      if (IndexReader.indexExists(directory))
-        modified = IndexReader.lastModified(directory);
-      directory.close();
+      modified = IndexReader.lastModified(this._directory);
     } catch (IOException ex) {
       LOGGER.error("Unable to retrieve the last modified date of local index", ex);
     }
@@ -160,7 +158,23 @@ public final class LocalIndex implements Index {
    *
    * @param folder The folder to created.
    */
-  private static void ensureExists(File folder) {
+  private void ensureHasDirectory() {
+    try {
+      if (this._directory != null)
+        this._directory = FSDirectory.open(this._location);
+    } catch (IOException ex) {
+      LOGGER.error("Unable to return a directory on local index", ex);
+    }
+  }
+
+  /**
+   * Ensures that the specified folder exists by creating the folder if it does not.
+   *
+   * <p>This method will log any creation problem as a warning.
+   *
+   * @param folder The folder to created.
+   */
+  private static void ensureFolderExists(File folder) {
     if (!folder.exists()) {
       boolean created = folder.mkdirs();
       if (!created) {
