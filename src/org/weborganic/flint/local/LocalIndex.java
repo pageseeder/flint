@@ -101,6 +101,58 @@ public final class LocalIndex implements Index {
     return this.getIndexID();
   }
 
+  // Utility methods for public usage
+  // ----------------------------------------------------------------------------------------------
+
+  /**
+   * Indicates whether the folder exists and is a valid Lucene index.
+   *
+   * <p>This method uses the Lucene {@link IndexReader} to check whether the folder corresponds to a valid Lucene Index.
+   *
+   * @param location the folder where the index is located.
+   * @return <code>true</code> if the folder exists and is a Lucene index; <code>false</code> otherwise
+   */
+  public static boolean exists(File location) {
+    if (!location.exists() || !location.isDirectory()) return false;
+    boolean exists = false;
+    // Get the last modified from the index
+    try {
+      Directory directory = FSDirectory.open(location);
+      exists = IndexReader.indexExists(directory);
+      directory.close();
+    } catch (IOException ex) {
+      LOGGER.error("Unable to retrieve the last modified date of local index", ex);
+    }
+    return exists;
+  }
+
+  /**
+   * Returns when an index was last modified.
+   *
+   * <p>This method uses the Lucene {@link IndexReader} to check whether the folder corresponds to a valid
+   * Lucene Index and to read the last modified date stamp from the segments.
+   *
+   * @param location the folder where the index is located.
+   * @return When this index was last modified or -1 if the folder or index does not exist.
+   */
+  public static long getLastModified(File location) {
+    if (!location.exists() || !location.isDirectory()) return -1;
+    long modified = 0;
+    // Get the last modified from the index
+    try {
+      Directory directory = FSDirectory.open(location);
+      if (IndexReader.indexExists(directory))
+        modified = IndexReader.lastModified(directory);
+      directory.close();
+    } catch (IOException ex) {
+      LOGGER.error("Unable to retrieve the last modified date of local index", ex);
+    }
+    return modified;
+  }
+
+  // private helpers
+  // ----------------------------------------------------------------------------------------------
+
   /**
    * Ensures that the specified folder exists by creating the folder if it does not.
    *
