@@ -152,7 +152,7 @@ final class SearcherManager {
     try {
       if (!this._reader.isCurrent()) {
         // if not current, we need to re-open it
-        IndexReader newReader = this._reader.reopen();
+        IndexReader newReader = this._reader.original().reopen();
         LOGGER.debug("Swapping reader from {} to {}", this._reader.hashCode(), newReader.hashCode());
         set(newReader);
       } else {
