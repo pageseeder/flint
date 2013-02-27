@@ -22,6 +22,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.atomic.AtomicLong;
 
 import javax.xml.transform.Templates;
 import javax.xml.transform.Transformer;
@@ -72,7 +73,7 @@ import org.xml.sax.InputSource;
  * @author Jean-Baptiste Reure
  * @authro Christophe Lauret
  *
- * @version 8 February 2013
+ * @version 27 February 2013
  */
 public final class IndexManager implements Runnable {
 
@@ -87,14 +88,14 @@ public final class IndexManager implements Runnable {
   public static final Version LUCENE_VERSION = Version.LUCENE_30;
 
   /**
-   * Inactive time before indexes get optimised
+   * Inactive time before indexes get optimised - set to 30 minutes.
    */
-  private static final long INACTIVE_OPTIMISE_TIME = 1 * 3600 * 1000; // 1 hour
+  private static final long INACTIVE_OPTIMISE_TIME = 1 * 1800 * 1000;
 
   /**
-   * Delay between each job poll
+   * Delay between each job poll - set to 1 second
    */
-  private static final long INDEX_JOB_POLL_DELAY = 1 * 1000; // 1 second
+  private static final long INDEX_JOB_POLL_DELAY = 1 * 1000;
 
   /**
    * Listens to any problem reported by the indexer.
@@ -124,7 +125,7 @@ public final class IndexManager implements Runnable {
   /**
    * Time since the last activity on this manager.
    */
-  private long _lastActivity;
+  private final AtomicLong _lastActivity = new AtomicLong(0);
 
   /**
    * Priority of the thread, default to NORM_PRIORITY (5)
@@ -165,7 +166,7 @@ public final class IndexManager implements Runnable {
     // Register default XML factory
     this.translatorFactories = new ConcurrentHashMap<String, ContentTranslatorFactory>(16, 0.8f, 2);
     registerTranslatorFactory(new FlintTranslatorFactory());
-    this._lastActivity = System.currentTimeMillis();
+    this._lastActivity.set(System.currentTimeMillis());
   }
 
   // Public external methods
@@ -579,7 +580,9 @@ public final class IndexManager implements Runnable {
         // the thread was shutdown, let's die then
         return;
       }
+      // We've got a job to handle
       if (job != null) {
+        // New batch?
         if (!started) {
           this._listener.startBatch();
           started = true;
@@ -620,11 +623,11 @@ public final class IndexManager implements Runnable {
             }
           }
         } catch (Throwable ex) {
-          this._listener.error(job, "Unkown error: " + ex.getMessage(), ex);
+          this._listener.error(job, "Unknown error: " + ex.getMessage(), ex);
         } finally {
           job.finish();
           this._listener.endJob(job);
-          this._lastActivity = System.currentTimeMillis();
+          this._lastActivity.set(System.currentTimeMillis());
         }
       } else {
         // check the number of opened readers then
@@ -813,7 +816,7 @@ public final class IndexManager implements Runnable {
       if (!this._indexQueue.isEmpty()) return;
     }
     // ok optimise now?
-    if ((System.currentTimeMillis() - this._lastActivity) > INACTIVE_OPTIMISE_TIME) {
+    if ((System.currentTimeMillis() - this._lastActivity.longValue()) > INACTIVE_OPTIMISE_TIME) {
       ios = new ArrayList<IndexIO>(this._indexes.values());
       // loop through the indexes and optimise
       for (IndexIO io : ios) {

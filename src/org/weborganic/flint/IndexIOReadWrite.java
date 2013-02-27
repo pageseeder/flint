@@ -8,6 +8,7 @@ package org.weborganic.flint;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicLong;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.BalancedSegmentMergePolicy;
@@ -45,6 +46,11 @@ final class IndexIOReadWrite extends IndexIO {
   private final Index _index;
 
   /**
+   * The last time this reader was used
+   */
+  private final AtomicLong lastTimeUsed = new AtomicLong(0);
+
+  /**
    * The underlying index writer used by Flint for this index (there should only be one).
    */
   private IndexWriter writer;
@@ -53,11 +59,6 @@ final class IndexIOReadWrite extends IndexIO {
    * A search manager using this writer.
    */
   private SearcherManager searcherManager;
-
-  /**
-   * The last time this reader was used
-   */
-  private long lastTimeUsed;
 
   /**
    * Sole constructor.
@@ -220,7 +221,7 @@ final class IndexIOReadWrite extends IndexIO {
     if (this.searcherManager != null) {
       this.searcherManager.release(searcher);
     }
-    this.lastTimeUsed = System.currentTimeMillis();
+    this.lastTimeUsed.set(System.currentTimeMillis());
   }
 
   @Override
@@ -236,14 +237,19 @@ final class IndexIOReadWrite extends IndexIO {
     if (this.searcherManager != null) {
       this.searcherManager.releaseReader(reader);
     }
-    this.lastTimeUsed = System.currentTimeMillis();
+    this.lastTimeUsed.set(System.currentTimeMillis());
+  }
+
+  @Override
+  protected int countBookedReaders() {
+    return this.searcherManager.getRefCount();
   }
 
   /**
    * @return the lastTimeUsed
    */
   public long getLastTimeUsed() {
-    return this.lastTimeUsed;
+    return this.lastTimeUsed.longValue();
   }
 
   /**
@@ -255,7 +261,7 @@ final class IndexIOReadWrite extends IndexIO {
     if (this.writer == null) {
       start();
     }
-    this.lastTimeUsed = System.currentTimeMillis();
+    this.lastTimeUsed.set(System.currentTimeMillis());
   }
 
   /**
@@ -272,7 +278,7 @@ final class IndexIOReadWrite extends IndexIO {
     this.writer.setMergeScheduler(new ConcurrentMergeScheduler());
     this.writer.setMergePolicy(new BalancedSegmentMergePolicy(this.writer));
     this.searcherManager = new SearcherManager(this.writer);
-    this.lastTimeUsed = System.currentTimeMillis();
+    this.lastTimeUsed.set(System.currentTimeMillis());
     OpenIndexManager.add(this);
   }
 
@@ -289,10 +295,10 @@ final class IndexIOReadWrite extends IndexIO {
       this.writer.close();
       this.writer = null;
       OpenIndexManager.remove(this);
-    } catch (final CorruptIndexException e) {
-      throw new IndexException("Failed to close Index because it is corrupted", e);
-    } catch (final IOException e) {
-      throw new IndexException("Failed to close Index because of an I/O error", e);
+    } catch (final CorruptIndexException ex) {
+      throw new IndexException("Failed to close Index because it is corrupted", ex);
+    } catch (final IOException ex) {
+      throw new IndexException("Failed to close Index because of an I/O error", ex);
     }
   }
 }

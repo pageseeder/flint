@@ -161,4 +161,9 @@ final class IndexIOReadOnly extends IndexIO {
     this.searcherManager.releaseReader(reader);
   }
 
+  @Override
+  protected int countBookedReaders() {
+    return this.searcherManager.getRefCount();
+  }
+
 }

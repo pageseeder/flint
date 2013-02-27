@@ -196,17 +196,25 @@ public abstract class IndexIO {
   protected abstract void releaseReader(IndexReader reader) throws IOException;
 
   /**
+   * Returns the number of booked readers.
+   */
+  protected abstract int countBookedReaders();
+
+  /**
    * Closes the writer on this index.
    *
    * @throws IndexException Wrapping an {@link CorruptIndexException} or an {@link IOException}.
    */
   public abstract void stop() throws IndexException;
 
+  // static helpers
+  // ----------------------------------------------------------------------------------------------
+
   /**
-   * Generate the appropriate IndexIO implementation to use.
+   * Generate the appropriate IndexIO implementation to use based on the underlying {@link Directory}
+   * used.
    *
-   * <p>
-   * This method will try to return a read/write IndexIO instance if possible;
+   * <p>This method will try to return a read/write IndexIO instance if possible;
    * otherwise it will return a read only instance.
    *
    * @param index The index object.

@@ -77,7 +77,7 @@ public final class OpenIndexManager {
       IndexIOReadWrite or = Collections.max(OPEN_INDEXES.values(), OPEN_INDEX_COMPARATOR);
       // ok try to close it
       try {
-        LOGGER.debug("Closing index {}", or.hashCode());
+        LOGGER.debug("Closing IO for index {}", or.hashCode());
         or.stop();
       } catch (AlreadyClosedException ex) {
         // good then
