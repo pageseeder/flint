@@ -203,7 +203,8 @@ final class SearcherManager {
   private void closeIfDirty(IndexReader reader) throws IOException {
     // check if we should close an old one
     if (this._reader != reader && reader instanceof SafeIndexReader) {
-      if (reader.getRefCount() == 1) {
+      // XXX: this condition may never occur
+      if (reader.getRefCount() == 0) {
         LOGGER.debug("Closing reader {}", reader.hashCode());
         try {
           ((SafeIndexReader)reader).original().close();
