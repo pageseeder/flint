@@ -51,7 +51,7 @@ public final class OpenIndexManager {
   /**
    * The max number of opened reader allowed at all times
    */
-  private static int maxOpenedIndexes = 50;
+  private static int maxOpenedIndexes = 100;
 
   /**
    * Utility class.
