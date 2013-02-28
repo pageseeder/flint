@@ -18,10 +18,15 @@ import org.weborganic.flint.api.Index;
 import org.weborganic.flint.api.Requester;
 
 /**
- * The queue containing Index Jobs.
+ * The queue containing index jobs.
+ *
+ * <p>This class uses a {@link PriorityBlockingQueue} so that when the queue is empty,
+ * the calling thread will be delayed.
  *
  * @author Jean-Baptiste Reure
- * @version 14 May 2010
+ * @author Christophe Lauret
+ *
+ * @version 28 February 2013
  */
 public final class IndexJobQueue {
 
@@ -33,7 +38,7 @@ public final class IndexJobQueue {
   /**
    * Delay between each job poll in milliseconds.
    */
-  private final long jobPollDelay;
+  private final long _jobPollDelay;
 
   /**
    * The actual queue.
@@ -46,7 +51,7 @@ public final class IndexJobQueue {
    * @param pollDelay the poll delay on the queue (in milliseconds)
    */
   public IndexJobQueue(long pollDelay) {
-    this.jobPollDelay = pollDelay;
+    this._jobPollDelay = pollDelay;
     this._queue = new PriorityBlockingQueue<IndexJob>();
   }
 
@@ -84,6 +89,23 @@ public final class IndexJobQueue {
   }
 
   /**
+   * Returns the number of jobs for the specified provided.
+   *
+   * <p>Not that some job have have been processed by the time this method returns.
+   *
+   * @param index the index
+   * @return the number of jobs for the specified provided.
+   */
+  public int countJobsForRequester(Requester requester) {
+    if (requester == null) return this._queue.size();
+    int count = 0;
+    for (IndexJob job : this._queue) {
+      if (job.isForRequester(requester)) count++;
+    }
+    return count;
+  }
+
+  /**
    * Returns the list of jobs for the index provided.
    *
    * <p>Note that by the time each job is checked, they might have run already so the method
@@ -101,6 +123,23 @@ public final class IndexJobQueue {
       if (job.isForIndex(index)) jobs.add(job);
     }
     return jobs;
+  }
+
+  /**
+   * Returns the number of jobs for the specified index provided.
+   *
+   * <p>Not that some job have have been processed by the time this method returns.
+   *
+   * @param index the index
+   * @return the number of jobs for the specified provided.
+   */
+  public int countJobsForIndex(Index index) {
+    if (index == null) return this._queue.size();
+    int count = 0;
+    for (IndexJob job : this._queue) {
+      if (job.isForIndex(index)) count++;
+    }
+    return count;
   }
 
   /**
@@ -125,7 +164,7 @@ public final class IndexJobQueue {
    * @throws InterruptedException if the thread was interrupted when waiting for the next job
    */
   public IndexJob nextJob() throws InterruptedException {
-    return this._queue.poll(this.jobPollDelay, TimeUnit.MILLISECONDS);
+    return this._queue.poll(this._jobPollDelay, TimeUnit.MILLISECONDS);
   }
 
   /**
