@@ -63,22 +63,22 @@ public class IndexJob implements Comparable<IndexJob> {
   /**
    * The Content ID.
    */
-  private final ContentId contentID;
+  private final ContentId _contentID;
 
   /**
    * The Config.
    */
-  private final IndexConfig config;
+  private final IndexConfig _config;
 
   /**
    * Job's priority.
    */
-  private final Priority priority;
+  private final Priority _priority;
 
   /**
    * Index to run the job on.
    */
-  private final Index index;
+  private final Index _index;
 
   /**
    * Dynamic XSLT parameters
@@ -88,7 +88,7 @@ public class IndexJob implements Comparable<IndexJob> {
   /**
    * The initial job's requester.
    */
-  private final Requester requester;
+  private final Requester _requester;
 
   /**
    * Internal flag to know if the job is finished.
@@ -115,11 +115,11 @@ public class IndexJob implements Comparable<IndexJob> {
    * @param r       the job's requester
    */
   private IndexJob(ContentId id, IndexConfig conf, Index i, Priority p, Requester r, Map<String, String> params) {
-    this.contentID = id;
-    this.config = conf;
-    this.priority = p;
-    this.requester = r;
-    this.index = i;
+    this._contentID = id;
+    this._config = conf;
+    this._priority = p;
+    this._requester = r;
+    this._index = i;
     if (params != null) this.parameters = params;
     else this.parameters = Collections.emptyMap();
     this.jobId = System.currentTimeMillis() + '-' + id.toString() + '-' + (conf == null ? "" : conf.hashCode()) + '-'
@@ -141,7 +141,7 @@ public class IndexJob implements Comparable<IndexJob> {
    * @return the content ID.
    */
   public ContentId getContentID() {
-    return this.contentID;
+    return this._contentID;
   }
 
   /**
@@ -150,7 +150,7 @@ public class IndexJob implements Comparable<IndexJob> {
    * @return the config
    */
   public IndexConfig getConfig() {
-    return this.config;
+    return this._config;
   }
 
   /**
@@ -159,7 +159,7 @@ public class IndexJob implements Comparable<IndexJob> {
    * @return the Index that this job is to be run on.
    */
   public Index getIndex() {
-    return this.index;
+    return this._index;
   }
 
   /**
@@ -168,7 +168,7 @@ public class IndexJob implements Comparable<IndexJob> {
    * @return the original job's requester.
    */
   public Requester getRequester() {
-    return this.requester;
+    return this._requester;
   }
 
   /**
@@ -183,23 +183,25 @@ public class IndexJob implements Comparable<IndexJob> {
   /**
    * Return true if this job was launched by the Requester provided.
    *
-   * @param req the Requester to check.
+   * @param request the Requester to check.
    * @return <code>true</code> if this job was launched by the Requester provided;
    *         <code>false</code> otherwise.
    */
-  public boolean isForRequester(Requester req) {
-    return this.requester.getRequesterID().equals(req.getRequesterID());
+  public boolean isForRequester(Requester request) {
+    if (this._requester == request) return true;
+    return this._requester.getRequesterID().equals(request.getRequesterID());
   }
 
   /**
    * Return <code>true</code> if this job is running on the provided index.
    *
-   * @param ind the Index to check
+   * @param index the Index to check
    * @return <code>true</code> if this job is running on the provided index;
    *         <code>false</code> otherwise.
    */
-  public boolean isForIndex(Index ind) {
-    return this.index != null && this.index.getIndexID().equals(ind.getIndexID());
+  public boolean isForIndex(Index index) {
+    if (this._index == index) return true;
+    return this._index != null && this._index.getIndexID().equals(index.getIndexID());
   }
 
   /**
@@ -214,7 +216,7 @@ public class IndexJob implements Comparable<IndexJob> {
    */
   @Override
   public int compareTo(IndexJob job) {
-    return this.priority == job.priority? 0 : this.priority == Priority.HIGH ? -1 : 1;
+    return this._priority == job._priority? 0 : this._priority == Priority.HIGH ? -1 : 1;
   }
 
   /**
@@ -253,14 +255,13 @@ public class IndexJob implements Comparable<IndexJob> {
     return this.success;
   }
 
-
   /**
    * Returns a string with each class attribute value - useful when debugging and logging.
    */
   @Override
   public String toString() {
-    return "[IndexJob - contentid:" + this.contentID + " priority:"
-        + this.priority + " index:" + this.index + " finished:" + this.finished + " success:" + this.success + "]";
+    return "[IndexJob - contentid:" + this._contentID + " priority:"
+        + this._priority + " index:" + this._index + " finished:" + this.finished + " success:" + this.success + "]";
   }
 
   /**
