@@ -85,9 +85,9 @@
 
   <!-- generate the documentation -->
   <target name="javadoc" depends="compile" description="generate the java documentation">
-    <mkdir dir="${dir.doc}"/>
+    <mkdir dir="${dir.doc}/${ivy.revision}"/>
     <ivy:findrevision organisation="weborganic" module="${name.short}" revision="latest.milestone"/>
-    <javadoc destdir="${dir.doc}" access="public"
+    <javadoc destdir="${dir.doc}/${ivy.revision}" access="public"
                                   use="true"
                                   notree="false"
                                   nonavbar="false"
@@ -106,9 +106,9 @@
         </fileset>
       </classpath>
       <link href="http://www.slf4j.org/apidocs/" />
-      <link href="http://java.sun.com/javase/6/docs/api/" />
-      <link href="http://lucene.apache.org/java/3_0_1/api/all/"/>
-      <link href="http://www.weborganic.org/apidoc/diffx/core/"/>
+      <link href="http://docs.oracle.com/javase/6/docs/api/" />
+      <link href="http://lucene.apache.org/core/3_0_3/api/all/"/>
+      <link href="http://pageseeder.org/apidocs/diffx/latest/"/>
     </javadoc>
   </target>
 
