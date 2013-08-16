@@ -472,8 +472,9 @@ public final class SearchResults implements XMLWritable {
   /**
    * An iterator over the documents in these results.
    *
-   * @author christophe Lauret
-   * @version 6 October 2011
+   * @author Christophe Lauret
+   * @author Jean-Baptiste Reure
+   * @version 16 August 2013
    */
   private final class DocIterator implements Iterator<Document> {
 
@@ -488,18 +489,13 @@ public final class SearchResults implements XMLWritable {
     private final ScoreDoc[] scoredocs = SearchResults.this._scoredocs;
 
     /**
-     * The max number results.
-     */
-    private final int count = SearchResults.this.totalNbOfResults;
-
-    /**
      * The current index for this iterator.
      */
     private int index = 0;
 
     @Override
     public boolean hasNext() {
-      return this.index < this.count;
+      return this.index < this.scoredocs.length;
     }
 
     @Override
