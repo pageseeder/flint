@@ -574,74 +574,78 @@ public final class IndexManager implements Runnable {
     // Processed since last batch.
     while (true) {
       try {
-        job = this._indexQueue.nextJob();
-      } catch (InterruptedException ex) {
-        this._listener.error(job, "Interrupted indexing: " + ex.getMessage(), ex);
-        // the thread was shutdown, let's die then
-        return;
-      }
-      // We've got a job to handle
-      if (job != null) {
-        // New batch?
-        if (!started) {
-          this._listener.startBatch();
-          started = true;
-        }
-        this._listener.startJob(job);
         try {
-          // OK launch the job then load the IO for this job
-          IndexIO io;
-          try {
-            io = getIndexIO(job.getIndex());
-          } catch (Exception ex) {
-            this._listener.error(job, "Failed to retrieve Index: " + ex.getMessage(), ex);
-            continue;
+          job = this._indexQueue.nextJob();
+        } catch (InterruptedException ex) {
+          this._listener.error(job, "Interrupted indexing: " + ex.getMessage(), ex);
+          // the thread was shutdown, let's die then
+          return;
+        }
+        // We've got a job to handle
+        if (job != null) {
+          // New batch?
+          if (!started) {
+            this._listener.startBatch();
+            started = true;
           }
-          if (job.isClearJob()) {
+          this._listener.startJob(job);
+          try {
+            // OK launch the job then load the IO for this job
+            IndexIO io;
             try {
-              job.setSuccess(io.clearIndex());
+              io = getIndexIO(job.getIndex());
             } catch (Exception ex) {
-              this._listener.error(job, "Failed to clear index", ex);
-            }
-          } else {
-            // retrieve content
-            Content content;
-            try {
-              content = this._fetcher.getContent(job.getContentID());
-            } catch (Exception ex) {
-              this._listener.error(job, "Failed to retrieve Source content", ex);
+              this._listener.error(job, "Failed to retrieve Index: " + ex.getMessage(), ex);
               continue;
             }
-            if (content == null) {
-              this._listener.error(job, "Failed to retrieve Source content", null);
+            if (job.isClearJob()) {
+              try {
+                job.setSuccess(io.clearIndex());
+              } catch (Exception ex) {
+                this._listener.error(job, "Failed to clear index", ex);
+              }
             } else {
-              // check if we should delete the document
-              if (content.isDeleted())
-                job.setSuccess(deleteJob(job, content, io));
-              else
-                job.setSuccess(updateJob(job, content, io));
+              // retrieve content
+              Content content;
+              try {
+                content = this._fetcher.getContent(job.getContentID());
+              } catch (Exception ex) {
+                this._listener.error(job, "Failed to retrieve Source content", ex);
+                continue;
+              }
+              if (content == null) {
+                this._listener.error(job, "Failed to retrieve Source content", null);
+              } else {
+                // check if we should delete the document
+                if (content.isDeleted())
+                  job.setSuccess(deleteJob(job, content, io));
+                else
+                  job.setSuccess(updateJob(job, content, io));
+              }
             }
+          } catch (Throwable ex) {
+            this._listener.error(job, "Unknown error: " + ex.getMessage(), ex);
+          } finally {
+            job.finish();
+            this._listener.endJob(job);
+            this._lastActivity.set(System.currentTimeMillis());
           }
-        } catch (Throwable ex) {
-          this._listener.error(job, "Unknown error: " + ex.getMessage(), ex);
-        } finally {
-          job.finish();
-          this._listener.endJob(job);
-          this._lastActivity.set(System.currentTimeMillis());
+        } else {
+          // check the number of opened readers then
+          OpenIndexManager.closeOldReaders();
+          // no jobs available, commit if possible
+          checkForCommit();
+          // Notify the end of the batch
+          if (started) {
+            started = false;
+            this._listener.endBatch();
+          }
         }
-      } else {
-        // check the number of opened readers then
-        OpenIndexManager.closeOldReaders();
-        // no jobs available, commit if possible
-        checkForCommit();
-        // Notify the end of the batch
-        if (started) {
-          started = false;
-          this._listener.endBatch();
-        }
+        // clear the job
+        job = null;
+      } catch (Throwable ex) {
+        this._listener.error(job, "Unexpected general error: " + ex.getMessage(), ex);
       }
-      // clear the job
-      job = null;
     }
   };
 
