@@ -16,6 +16,7 @@ import org.apache.lucene.index.ConcurrentMergeScheduler;
 import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.index.SerialMergeScheduler;
 import org.apache.lucene.search.IndexSearcher;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -275,7 +276,8 @@ final class IndexIOReadWrite extends IndexIO {
     // config.setMergeScheduler(new ConcurrentMergeScheduler());
     // config.setMergePolicy(new BalancedSegmentMergePolicy());
     this.writer = new IndexWriter(this._index.getIndexDirectory(), this._index.getAnalyzer(), IndexWriter.MaxFieldLength.LIMITED);
-    this.writer.setMergeScheduler(new ConcurrentMergeScheduler());
+    SerialMergeScheduler sms = new SerialMergeScheduler();
+    this.writer.setMergeScheduler(sms);
     this.writer.setMergePolicy(new BalancedSegmentMergePolicy(this.writer));
     this.searcherManager = new SearcherManager(this.writer);
     this.lastTimeUsed.set(System.currentTimeMillis());
