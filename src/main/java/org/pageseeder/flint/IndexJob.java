@@ -99,6 +99,11 @@ public class IndexJob implements Comparable<IndexJob> {
   private final Requester _requester;
 
   /**
+   * When the job was created.
+   */
+  private final long created;
+
+  /**
    * Internal flag to know if the job is finished.
    */
   private boolean finished = false;
@@ -128,12 +133,10 @@ public class IndexJob implements Comparable<IndexJob> {
     this._priority = p;
     this._requester = r;
     this._index = i;
-    if (params != null) {
-      this.parameters = params;
-    } else {
-      this.parameters = Collections.emptyMap();
-    }
-    this.jobId = System.currentTimeMillis() + '-' + id.toString() + '-' + (conf == null ? "" : conf.hashCode()) + '-'
+    if (params != null) this.parameters = params;
+    else this.parameters = Collections.emptyMap();
+    this.created = System.nanoTime();
+    this.jobId = this.created + '-' + id.toString() + '-' + (conf == null ? "" : conf.hashCode()) + '-'
         + i.getIndexID() + '-' + r.getRequesterID() + '-' + p.toString();
   }
 
@@ -227,7 +230,7 @@ public class IndexJob implements Comparable<IndexJob> {
    */
   @Override
   public int compareTo(IndexJob job) {
-    return this._priority == job._priority? 0 : this._priority == Priority.HIGH ? -1 : 1;
+    return this._priority == job._priority? Long.compare(this.created, job.created) : this._priority == Priority.HIGH ? -1 : 1;
   }
 
   /**
@@ -282,7 +285,7 @@ public class IndexJob implements Comparable<IndexJob> {
    *         <code>false</code> otherwise.
    */
   public boolean isClearJob() {
-    return getContentID().equals(CLEAR_CONTENT_ID);
+    return this.getContentID().equals(CLEAR_CONTENT_ID);
   }
 
   // static factory methods ========================================================================
