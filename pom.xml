@@ -2,7 +2,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>org.pageseeder.flint</groupId>
   <artifactId>pso-flint</artifactId>
-  <version>1.10.1-SNAPSHOT</version>
+  <version>4.9.0-SNAPSHOT</version>
   <name>Flint</name>
   <description>Tools to help XML and Lucene work better together</description>
   
@@ -17,6 +17,12 @@
     <developer>
       <name>Christophe Lauret</name>
       <email>clauret@weborganic.com</email>
+      <organization>Allette Systems</organization>
+      <organizationUrl>http://www.allette.com.au</organizationUrl>
+    </developer>
+    <developer>
+      <name>Jean-Baptiste Reure</name>
+      <email>jbreure@weborganic.com</email>
       <organization>Allette Systems</organization>
       <organizationUrl>http://www.allette.com.au</organizationUrl>
     </developer>
@@ -57,13 +63,13 @@
     <dependency>
       <groupId>org.apache.lucene</groupId>
       <artifactId>lucene-core</artifactId>
-      <version>3.0.3</version>
+      <version>5.2.1</version>
     </dependency>
 
     <dependency>
       <groupId>org.apache.lucene</groupId>
       <artifactId>lucene-misc</artifactId>
-      <version>3.0.3</version>
+      <version>5.2.1</version>
     </dependency>
 
     <dependency>
@@ -81,6 +87,16 @@
       <scope>test</scope>
     </dependency>
 
+    <dependency>
+      <groupId>org.apache.lucene</groupId>
+      <artifactId>lucene-analyzers-common</artifactId>
+      <version>5.2.1</version>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.lucene</groupId>
+      <artifactId>lucene-queryparser</artifactId>
+      <version>5.2.1</version>
+    </dependency>
   </dependencies>
   
   <build>
