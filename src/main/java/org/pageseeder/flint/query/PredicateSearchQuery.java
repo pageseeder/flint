@@ -19,12 +19,12 @@ import java.io.IOException;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
-import org.apache.lucene.queryParser.ParseException;
-import org.apache.lucene.queryParser.QueryParser;
+import org.apache.lucene.queryparser.classic.ParseException;
+import org.apache.lucene.queryparser.classic.QueryParser;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.SortField;
-import org.pageseeder.flint.IndexManager;
+import org.apache.lucene.search.SortField.Type;
 import org.pageseeder.xmlwriter.XMLWriter;
 
 /**
@@ -69,7 +69,7 @@ public final class PredicateSearchQuery implements SearchQuery {
    * @throws IllegalArgumentException If the predicate is <code>null</code>.
    */
   public PredicateSearchQuery(String predicate, String sortField) throws IllegalArgumentException {
-    this(predicate, sortField == null ? Sort.INDEXORDER : new Sort(new SortField(sortField, SortField.STRING)));
+    this(predicate, sortField == null ? Sort.INDEXORDER : new Sort(new SortField(sortField, Type.STRING)));
   }
 
   /**
@@ -82,7 +82,7 @@ public final class PredicateSearchQuery implements SearchQuery {
    * @throws IllegalArgumentException If the predicate is <code>null</code>.
    */
   public PredicateSearchQuery(String predicate, Analyzer analyzer, String sortField) throws IllegalArgumentException {
-    this(predicate, analyzer, sortField == null ? Sort.INDEXORDER : new Sort(new SortField(sortField, SortField.STRING)));
+    this(predicate, analyzer, sortField == null ? Sort.INDEXORDER : new Sort(new SortField(sortField, Type.STRING)));
   }
 
   /**
@@ -117,7 +117,7 @@ public final class PredicateSearchQuery implements SearchQuery {
    * @throws IllegalArgumentException If the predicate is <code>null</code>.
    */
   public PredicateSearchQuery(String predicate, Sort sort) throws IllegalArgumentException {
-    this(predicate, new StandardAnalyzer(IndexManager.LUCENE_VERSION), sort);
+    this(predicate, new StandardAnalyzer(), sort);
   }
 
   /**
@@ -181,7 +181,7 @@ public final class PredicateSearchQuery implements SearchQuery {
     if (this._predicate == null)
       return null;
     try {
-      QueryParser parser = new QueryParser(IndexManager.LUCENE_VERSION, getField(), this._analyser);
+      QueryParser parser = new QueryParser(getField(), this._analyser);
       parser.setAllowLeadingWildcard(this._allowLeadingWildcard);
       return parser.parse(this._predicate);
     } catch (ParseException ex) {

@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.io.InputStream;
 
 import org.pageseeder.flint.api.Content;
+import org.pageseeder.flint.api.ContentType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -60,14 +61,14 @@ public abstract class LocalFileContent implements Content {
     this._f = f;
   }
 
-  /**
-   * Always <code>null</code>.
-   *
-   * {@inheritDoc}
-   */
   @Override
-  public String getConfigID() {
-    return null;
+  public ContentType getContentType() {
+    return LocalFileContentType.SINGLETON;
+  }
+
+  @Override
+  public String getContentID() {
+    return this._f.getAbsolutePath();
   }
 
   /**
@@ -98,5 +99,9 @@ public abstract class LocalFileContent implements Content {
    */
   public File file() {
     return this._f;
+  }
+
+  public static String getContentID(File f) {
+    return f.getAbsolutePath();
   }
 }

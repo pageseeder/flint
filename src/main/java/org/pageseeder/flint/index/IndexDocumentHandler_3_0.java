@@ -32,14 +32,14 @@ import org.xml.sax.SAXException;
 import org.xml.sax.helpers.DefaultHandler;
 
 /**
- * The handler for the Flint Index Documents format version 2.
+ * The handler for the Flint Index Documents format version 3.
  *
- * @see <a href="http://weborganic.org/code/flint/schema/index-documents-2.0.dtd">Index Documents 2.0 Schema</a>
+ * @see <a href="http://weborganic.org/code/flint/schema/index-documents-3.0.dtd">Index Documents 3.0 Schema</a>
  *
- * @author Christophe Lauret
- * @version 10 September 2010
+ * @author Jean-Baptiste Reure
+ * @version 1 September 2015
  */
-final class IndexDocumentHandler_2_0 extends DefaultHandler implements IndexDocumentHandler {
+final class IndexDocumentHandler_3_0 extends DefaultHandler implements IndexDocumentHandler {
 
   /**
    * Use the GMT time zone.
@@ -49,7 +49,7 @@ final class IndexDocumentHandler_2_0 extends DefaultHandler implements IndexDocu
   /**
    * The logger for this class.
    */
-  private static final Logger LOGGER = LoggerFactory.getLogger(IndexDocumentHandler_2_0.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(IndexDocumentHandler_3_0.class);
 
   // class attributes
   // -------------------------------------------------------------------------------------------
@@ -116,7 +116,7 @@ final class IndexDocumentHandler_2_0 extends DefaultHandler implements IndexDocu
    */
   @Override
   public void startDocument() {
-    LOGGER.debug("Start processing iXML document (version 2.0)");
+    LOGGER.debug("Start processing iXML document (version 3.0)");
     this.documents = new ArrayList<Document>();
   }
 
@@ -222,8 +222,7 @@ final class IndexDocumentHandler_2_0 extends DefaultHandler implements IndexDocu
    * @param atts The attributes to handles.
    */
   private void startFieldElement(Attributes atts) {
-    this.builder.name(atts.getValue("name"));
-    indexAttribute(atts.getValue("index"));
+    this.builder.name(atts.getValue("name")).index(atts.getValue("index"));
     // handle compression
     if ("compress".equals(atts.getValue("store"))) {
       this._isCompressed = true;
@@ -233,7 +232,10 @@ final class IndexDocumentHandler_2_0 extends DefaultHandler implements IndexDocu
       this.builder.store(atts.getValue("store"));
     }
     // Optional attributes
-    termVectorAttribute(atts.getValue("term-vector"));
+    this.builder.termVector(atts.getValue("term-vector"));
+    this.builder.termVectorPositions(atts.getValue("term-vector-positions"));
+    this.builder.termVectorOffsets(atts.getValue("term-vector-offsets"));
+    this.builder.termVectorPayloads(atts.getValue("term-vector-payloads"));
     this.builder.boost(atts.getValue("boost"));
     // Date handling
     this.builder.dateFormat(toDateFormat(atts.getValue("date-format")));
@@ -350,52 +352,4 @@ final class IndexDocumentHandler_2_0 extends DefaultHandler implements IndexDocu
     return false;
   }
 
-  /**
-   * Handle the index attribute on fields, support lucene 3 values.
-   * 
-   * @param index the value of the index attribute
-   */
-  private void indexAttribute(String index) {
-    if (index != null) {
-      switch (index.toLowerCase()) {
-        case "analyzed":
-          this.builder.index(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS).omitNorms(false);
-        case "not-analyzed":
-          this.builder.index(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS).omitNorms(false);
-        case "analyzed-no-norms":
-          this.builder.index(IndexOptions.DOCS_AND_FREQS).omitNorms(true);
-        case "not-analyzed-no-norms":
-          this.builder.index(IndexOptions.DOCS).omitNorms(true);
-        case "no":
-          this.builder.index(IndexOptions.NONE).omitNorms(true);
-        default:
-          LOGGER.warn("Invalid field index value: {}", index);
-      }
-    }
-  }
-
-  /**
-   * Handle the term-vector attribute on fields, support lucene 3 values.
-   * 
-   * @param vector the value of the term-vector attribute
-   */
-
-  private void termVectorAttribute(String vector) {
-    if (vector != null) {
-      switch (vector.toLowerCase()) {
-        case "YES":
-          this.builder.termVector(true).termVectorOffsets(false).termVectorPositions(false);
-        case "WITH-OFFSETS":
-          this.builder.termVector(true).termVectorOffsets(true).termVectorPositions(false);
-        case "WITH-POSITIONS":
-          this.builder.termVector(true).termVectorOffsets(false).termVectorPositions(true);
-        case "WITH-POSITIONS-OFFSETS":
-          this.builder.termVector(true).termVectorOffsets(true).termVectorPositions(true);
-        case "NO":
-          this.builder.termVector(false).termVectorOffsets(false).termVectorPositions(false);
-        default:
-          LOGGER.warn("Invalid term vector value: {}", vector);
-      }
-    }
-  }
 }

@@ -14,9 +14,8 @@
  * limitations under the License.
  */
 package org.pageseeder.flint.search;
-import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.search.Collector;
-import org.apache.lucene.search.Scorer;
+import org.apache.lucene.document.Document;
+import org.apache.lucene.search.SimpleCollector;
 
 
 /**
@@ -37,7 +36,7 @@ import org.apache.lucene.search.Scorer;
  * @author Christophe Lauret
  * @version 2 August 2010
  */
-public final class DocumentCounter extends Collector {
+public final class DocumentCounter extends SimpleCollector {
 
   /**
    * The number of documents collected (counted).
@@ -51,21 +50,12 @@ public final class DocumentCounter extends Collector {
   }
 
   /**
-   * Does nothing - the scorer is irrelevant when counting documents.
-   * @param scorer the scorer.
-   */
-  @Override
-  public void setScorer(Scorer scorer) {
-    // ignore scorer
-  }
-
-  /**
    * Accept documents out of order - the order is irrelevant when counting.
-   * @return always <code>true</code>.
+   * @return always <code>false</code>.
    */
   @Override
-  public boolean acceptsDocsOutOfOrder() {
-    return true;
+  public boolean needsScores() {
+    return false;
   }
 
   /**
@@ -76,16 +66,6 @@ public final class DocumentCounter extends Collector {
   @Override
   public void collect(int doc) {
     this.count++;
-  }
-
-  /**
-   * Does nothing - the scorer is irrelevant when counting documents.
-   *
-   * @param reader  the next index reader
-   * @param docbase used to re-base document ids for the index.
-   */
-  @Override
-  public void setNextReader(IndexReader reader, int docbase) {
   }
 
   /**

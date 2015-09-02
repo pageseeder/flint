@@ -17,6 +17,7 @@ package org.pageseeder.flint;
 
 import java.io.IOException;
 
+import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.search.IndexSearcher;
@@ -48,6 +49,11 @@ public class SearcherManager {
   private static final Logger LOGGER = LoggerFactory.getLogger(SearcherManager.class);
 
   /**
+   * The current reader used to run searches on the index
+   */
+  private DirectoryReader reader;
+
+  /**
    * The current searcher used to run searches on the index
    */
   private IndexSearcher currentSearcher;
@@ -59,9 +65,9 @@ public class SearcherManager {
    * @throws IOException If thrown while trying to get the reader.
    */
   public SearcherManager(IndexWriter writer) throws IOException {
-    IndexReader reader = writer.getReader();
+    this.reader = DirectoryReader.open(writer, true);
     // Lucene 3.1+: IndexReader.open(writer, true);
-    this.currentSearcher = new IndexSearcher(reader);
+    this.currentSearcher = new IndexSearcher(this.reader);
   }
 
   /**
@@ -116,11 +122,10 @@ public class SearcherManager {
     try {
       final IndexSearcher searcher = get();
       try {
-        if (!this.currentSearcher.getIndexReader().isCurrent()) {
-          // if not current, we need to re-open it
-          IndexReader newReader = this.currentSearcher.getIndexReader().reopen();
-          IndexSearcher newSearcher = new IndexSearcher(newReader);
-          swapSearcher(newSearcher);
+        DirectoryReader another = DirectoryReader.openIfChanged(this.reader);
+        if (another != this.reader) {
+          this.reader = another;
+          swapSearcher(new IndexSearcher(this.reader));
         } else {
           LOGGER.debug("Reader is still current so no need to re-open it");
         }
@@ -176,8 +181,6 @@ public class SearcherManager {
   protected final void close() throws IOException {
     // close reader
     this.currentSearcher.getIndexReader().close();
-    // then searcher
-    this.currentSearcher.close();
   }
 
   /**

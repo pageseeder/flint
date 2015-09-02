@@ -22,17 +22,18 @@ package org.pageseeder.flint.api;
  * <p>Content is identified by its ContentID and its ContentType.
  *
  * @author Jean-Baptiste Reure
- * @version 1 March 2010
+ * @version 1 September 2015
  */
 public interface ContentFetcher {
 
   /**
    * Load the Content.
    *
-   * @param id  the ContentID
+   * @param id    the Content ID
+   * @param ctype the Content Type
    *
    * @return the source where the Content is read from
    */
-  Content getContent(ContentId id);
+  Content getContent(String id, ContentType ctype);
 
 }

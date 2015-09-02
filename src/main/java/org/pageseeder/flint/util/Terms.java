@@ -22,9 +22,6 @@ import java.util.List;
 
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.index.TermEnum;
-import org.apache.lucene.search.FuzzyTermEnum;
-import org.apache.lucene.search.PrefixTermEnum;
 import org.pageseeder.flint.util.Bucket.Entry;
 import org.pageseeder.xmlwriter.XMLWriter;
 
@@ -126,14 +123,14 @@ public final class Terms {
    * @throws IOException If an error is thrown by the fuzzy term enumeration.
    */
   public static void fuzzy(IndexReader reader, List<Term> terms, Term term) throws IOException {
-    FuzzyTermEnum e = new FuzzyTermEnum(reader, term);
-    do {
-      Term t = e.term();
-      if (t != null) {
-        terms.add(t);
-      }
-    } while (e.next());
-    e.close();
+//    FuzzyTermEnum e = new FuzzyTermEnum(reader, term);
+//    do {
+//      Term t = e.term();
+//      if (t != null) {
+//        terms.add(t);
+//      }
+//    } while (e.next());
+//    e.close();
   }
 
   /**
@@ -146,14 +143,14 @@ public final class Terms {
    * @throws IOException If an error is thrown by the fuzzy term enumeration.
    */
   @Beta public static void fuzzy(IndexReader reader, Bucket<Term> terms, Term term) throws IOException {
-    FuzzyTermEnum e = new FuzzyTermEnum(reader, term);
-    do {
-      Term t = e.term();
-      if (t != null) {
-        terms.add(t, e.docFreq());
-      }
-    } while (e.next());
-    e.close();
+//    FuzzyTermEnum e = new FuzzyTermEnum(reader, term);
+//    do {
+//      Term t = e.term();
+//      if (t != null) {
+//        terms.add(t, e.docFreq());
+//      }
+//    } while (e.next());
+//    e.close();
   }
 
   /**
@@ -166,35 +163,16 @@ public final class Terms {
    * @throws IOException If an error is thrown by the prefix term enumeration.
    */
   public static void prefix(IndexReader reader, List<Term> terms, Term term) throws IOException {
-    PrefixTermEnum e = new PrefixTermEnum(reader, term);
-    do {
-      Term t = e.term();
-      if (t != null && !terms.contains(t)) {
-        terms.add(t);
-      }
-    } while (e.next());
-    e.close();
+//    PrefixTermEnum e = new PrefixTermEnum(reader, term);
+//    do {
+//      Term t = e.term();
+//      if (t != null && !terms.contains(t)) {
+//        terms.add(t);
+//      }
+//    } while (e.next());
+//    e.close();
   }
 
-  /**
-   * Loads all the prefix terms in the list of terms given the reader.
-   *
-   * @param reader Index reader to use.
-   * @param terms  The list of terms to load.
-   * @param term   The term to use.
-   *
-   * @throws IOException If an error is thrown by the prefix term enumeration.
-   */
-  @Beta public static void prefix(IndexReader reader, Bucket<Term> terms, Term term) throws IOException {
-    PrefixTermEnum e = new PrefixTermEnum(reader, term);
-    do {
-      Term t = e.term();
-      if (t != null) {
-        terms.add(t, e.docFreq());
-      }
-    } while (e.next());
-    e.close();
-  }
 
   /**
    * Returns the list of terms for the specified field.
@@ -207,23 +185,23 @@ public final class Terms {
    * @throws IOException should any IO error be reported by the {@link IndexReader#terms(Term)} method.
    */
   @Beta public static List<Term> terms(IndexReader reader, String field) throws IOException {
-    TermEnum e = null;
     List<Term> terms = new ArrayList<Term>();
-    try {
-      e = reader.terms(new Term(field, ""));
-      if (e.term() != null) {
-        while (field.equals(e.term().field())) {
-          terms.add(e.term());
-          if (!e.next()) {
-            break;
-          }
-        }
-      }
-    } finally {
-      if (e != null) {
-        e.close();
-      }
-    }
+//    TermEnum e = null;
+//    try {
+//      e = reader.terms(new Term(field, ""));
+//      if (e.term() != null) {
+//        while (field.equals(e.term().field())) {
+//          terms.add(e.term());
+//          if (!e.next()) {
+//            break;
+//          }
+//        }
+//      }
+//    } finally {
+//      if (e != null) {
+//        e.close();
+//      }
+//    }
     return terms;
   }
 
@@ -239,22 +217,22 @@ public final class Terms {
    */
   @Beta public List<String> values(IndexReader reader, String field) throws IOException {
     List<String> values = new ArrayList<String>();
-    TermEnum e = null;
-    try {
-      e = reader.terms(new Term(field, ""));
-      if (e.term() != null) {
-        while (field.equals(e.term().field())) {
-          values.add(e.term().text());
-          if (!e.next()) {
-            break;
-          }
-        }
-      }
-    } finally {
-      if (e != null) {
-        e.close();
-      }
-    }
+//    TermEnum e = null;
+//    try {
+//      e = reader.terms(new Term(field, ""));
+//      if (e.term() != null) {
+//        while (field.equals(e.term().field())) {
+//          values.add(e.term().text());
+//          if (!e.next()) {
+//            break;
+//          }
+//        }
+//      }
+//    } finally {
+//      if (e != null) {
+//        e.close();
+//      }
+//    }
     return values;
   }
 

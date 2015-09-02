@@ -24,7 +24,8 @@ import java.util.regex.Pattern;
 import java.util.zip.DataFormatException;
 
 import org.apache.lucene.document.CompressionTools;
-import org.apache.lucene.document.Fieldable;
+import org.apache.lucene.index.IndexableField;
+import org.apache.lucene.util.BytesRef;
 import org.slf4j.LoggerFactory;
 
 /**
@@ -125,12 +126,13 @@ public final class Fields {
    * @param f The field
    * @return The value of the field as a string.
    */
-  public static String toString(Fieldable f) {
+  public static String toString(IndexableField f) {
     String value = f.stringValue();
     // is it a compressed field?
-    if (value == null && f.getBinaryLength() > 0) {
-      try {
-        value = CompressionTools.decompressString(f.getBinaryValue());
+    if (value == null) {
+      BytesRef binary = f.binaryValue();
+      if (binary != null) try {
+        value = CompressionTools.decompressString(binary);
       } catch (DataFormatException ex) {
         // strange but true, unable to decompress
         LoggerFactory.getLogger(Fields.class).error("Failed to decompress field value", ex);

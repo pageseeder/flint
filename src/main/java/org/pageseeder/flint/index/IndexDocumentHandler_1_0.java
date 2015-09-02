@@ -24,9 +24,7 @@ import java.util.Map;
 import java.util.TimeZone;
 
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
-import org.apache.lucene.document.Field.Index;
-import org.apache.lucene.document.Field.Store;
+import org.apache.lucene.index.IndexOptions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.xml.sax.Attributes;
@@ -207,17 +205,17 @@ final class IndexDocumentHandler_1_0 extends DefaultHandler implements IndexDocu
    */
   private void startFieldElement(Attributes atts) {
     this.builder.name(atts.getValue("name"));
-    this.builder.index(toFieldIndex(atts.getValue("index")));
+    indexAttribute(atts.getValue("index"));
     // handle compression
     if ("compress".equals(atts.getValue("store"))) {
       this._isCompressed = true;
-      this.builder.store(Store.NO);
+      this.builder.store(false);
     } else {
       this._isCompressed = false;
       this.builder.store(atts.getValue("store"));
     }
     // Optional attributes
-    this.builder.termVector(atts.getValue("term-vector"));
+    termVectorAttribute(atts.getValue("term-vector"));
     this.builder.boost(atts.getValue("boost"));
     // Date handling
     this.builder.dateFormat(toDateFormat(atts.getValue("date-format")));
@@ -237,7 +235,7 @@ final class IndexDocumentHandler_1_0 extends DefaultHandler implements IndexDocu
 
       // compressed field
       if (this._isCompressed) {
-        if (this.builder.index() == Index.NO) {
+        if (this.builder.index() == IndexOptions.NONE) {
           this._document.add(this.builder.buildCompressed());
         } else {
           this._document.add(this.builder.build());
@@ -314,16 +312,43 @@ final class IndexDocumentHandler_1_0 extends DefaultHandler implements IndexDocu
    * @param index The field index value.
    * @return the Lucene 3 field index values corresponding to the specified string.
    */
-  private Field.Index toFieldIndex(String index) {
-    if (index == null) return null;
+  private void indexAttribute(String index) {
+    if (index == null) return;
     // Lucene 2 values
-    if ("tokenised".equals(index)) return Field.Index.ANALYZED;
-    if ("un-tokenised".equals(index)) return Field.Index.NOT_ANALYZED;
-    if ("tokenized".equals(index)) return Field.Index.ANALYZED;
-    if ("un-tokenized".equals(index)) return Field.Index.NOT_ANALYZED;
-    if ("no-norms".equals(index)) return Field.Index.NOT_ANALYZED_NO_NORMS;
+    // by default it's indexed
+    this.builder.index(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS);
+    if ("tokenised".equals(index))    { this.builder.tokenize(true); }
+    if ("un-tokenised".equals(index)) { this.builder.tokenize(false); }
+    if ("tokenized".equals(index))    { this.builder.tokenize(true); }
+    if ("un-tokenized".equals(index)) { this.builder.tokenize(false); }
+    if ("no-norms".equals(index))     { this.builder.omitNorms(true); }
     // Accept Lucene 3 values
-    return FieldBuilder.toFieldIndex(index);
+    this.builder.index(index);
+  }
+
+  /**
+   * Handle the term-vector attribute on fields, support lucene 3 values.
+   * 
+   * @param vector the value of the term-vector attribute
+   */
+
+  private void termVectorAttribute(String vector) {
+    if (vector != null) {
+      switch (vector.toLowerCase()) {
+        case "YES":
+          this.builder.termVector(true).termVectorOffsets(false).termVectorPositions(false);
+        case "WITH-OFFSETS":
+          this.builder.termVector(true).termVectorOffsets(true).termVectorPositions(false);
+        case "WITH-POSITIONS":
+          this.builder.termVector(true).termVectorOffsets(false).termVectorPositions(true);
+        case "WITH-POSITIONS-OFFSETS":
+          this.builder.termVector(true).termVectorOffsets(true).termVectorPositions(true);
+        case "NO":
+          this.builder.termVector(false).termVectorOffsets(false).termVectorPositions(false);
+        default:
+          LOGGER.warn("Invalid term vector value: {}", vector);
+      }
+    }
   }
 
 }

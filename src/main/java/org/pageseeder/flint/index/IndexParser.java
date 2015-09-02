@@ -23,7 +23,6 @@ import java.util.Collections;
 import java.util.List;
 
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
 import org.pageseeder.flint.IndexException;
 import org.pageseeder.flint.util.FlintEntityResolver;
 import org.xml.sax.Attributes;
@@ -33,7 +32,7 @@ import org.xml.sax.XMLReader;
 import org.xml.sax.helpers.DefaultHandler;
 
 /**
- * This handler makes a Lucene 2 Document out of a properly formatted XML document.
+ * This handler makes a Lucene 5 Document out of a properly formatted XML document.
  *
  * <p>The XML document must validate the Lucene Index Document DTD.
  *
@@ -57,10 +56,12 @@ import org.xml.sax.helpers.DefaultHandler;
  *
  * @see <a href="http://www.weborganic.org/code/flint/schema/index-documents-1.0.dtd">Index Documents 1.0 Schema</a>
  * @see <a href="http://www.weborganic.org/code/flint/schema/index-documents-2.0.dtd">Index Documents 2.0 Schema</a>
+ * @see <a href="http://www.weborganic.org/code/flint/schema/index-documents-2.0.dtd">Index Documents 3.0 Schema</a>
  *
- * @author Christophe Lauret (Weborganic)
+ * @author Christophe Lauret
+ * @author Jean-Baptiste Reure
  *
- * @version 1 March 2010
+ * @version 1 September 2015
  */
 public final class IndexParser {
 
@@ -81,28 +82,6 @@ public final class IndexParser {
   }
 
 // public static methods -----------------------------------------------------------------------
-
-  /**
-   * Returns the Lucene2 Field Store from the attribute value.
-   *
-   * @param store The store flag as a string.
-   *
-   * @return The corresponding Lucene2 constant.
-   */
-  public static Field.Store toFieldStore(String store) {
-    return FieldBuilder.toFieldStore(store);
-  }
-
-  /**
-   * Returns the Lucene2 Field Index from the attribute value.
-   *
-   * @param index The index flag as a string.
-   *
-   * @return The corresponding Lucene2 constant.
-   */
-  public static Field.Index toFieldIndex(String index) {
-    return FieldBuilder.toFieldIndex(index);
-  }
 
   /**
    * Make a collection Lucene documents to be indexed from the XML file given.
@@ -192,8 +171,11 @@ public final class IndexParser {
     public void startElement(String uri, String localName, String qName, Attributes atts) throws SAXException {
       if ("documents".equals(qName) || "documents".equals(localName)) {
         String version = atts.getValue("version");
+        // Version 3.0
+        if ("3.0".equals(version)) {
+          this._handler = new IndexDocumentHandler_3_0();
         // Version 2.0
-        if ("2.0".equals(version)) {
+        } else if ("2.0".equals(version)) {
           this._handler = new IndexDocumentHandler_2_0();
         // Assume version 1.0
         } else {

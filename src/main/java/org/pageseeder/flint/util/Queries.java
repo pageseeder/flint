@@ -17,6 +17,7 @@ package org.pageseeder.flint.util;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -118,11 +119,9 @@ public final class Queries {
    * @throws IOException If thrown by the reader while extracting fuzzy terms.
    */
   @Beta
-  public static List<Query> similar(Query query, IndexReader reader) throws IOException {
+  public static List<Query> similar(Query query, Collection<Term> terms, IndexReader reader) throws IOException {
     List<Query> similar = new ArrayList<Query>();
     // Extract the list of similar terms
-    Set<Term> terms = new HashSet<Term>();
-    query.extractTerms(terms);
     for (Term t : terms) {
       List<Term> fuzzy = Terms.fuzzy(reader, t);
       for (Term f : fuzzy) {

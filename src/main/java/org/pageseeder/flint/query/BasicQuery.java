@@ -180,7 +180,7 @@ public class BasicQuery<T extends SearchParameter> implements FlintQuery, Search
         for (SortField sf : this._sort.getSort()) {
           xml.openElement("sortfield");
           xml.attribute("field", sf.getField());
-          xml.attribute("type", sf.getType());
+          xml.attribute("type", sf.getType().toString().toLowerCase());
           xml.attribute("reverse", Boolean.toString(sf.getReverse()));
           xml.closeElement();
         }

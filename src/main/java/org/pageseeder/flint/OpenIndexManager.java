@@ -41,10 +41,10 @@ public final class OpenIndexManager {
   /**
    * How to compare opened readers: the "highest" is the one that was used the least recently
    */
-  private static final Comparator<IndexIOReadWrite> OPEN_INDEX_COMPARATOR = new Comparator<IndexIOReadWrite>() {
+  private static final Comparator<IndexIO> OPEN_INDEX_COMPARATOR = new Comparator<IndexIO>() {
 
     @Override
-    public int compare(IndexIOReadWrite o1, IndexIOReadWrite o2) {
+    public int compare(IndexIO o1, IndexIO o2) {
       return o1.getLastTimeUsed() < o2.getLastTimeUsed() ? 1 : o1.getLastTimeUsed() == o2.getLastTimeUsed() ? 0 : -1;
     }
 
@@ -53,8 +53,8 @@ public final class OpenIndexManager {
   /**
    * The list of all opened readers
    */
-  private static final ConcurrentHashMap<Integer, IndexIOReadWrite> OPEN_INDEXES =
-    new ConcurrentHashMap<Integer, IndexIOReadWrite>();
+  private static final ConcurrentHashMap<Integer, IndexIO> OPEN_INDEXES =
+    new ConcurrentHashMap<Integer, IndexIO>();
 
   /**
    * The max number of opened reader allowed at all times
@@ -82,7 +82,7 @@ public final class OpenIndexManager {
 //    LOGGER.debug("Currently {} opened reader(s): {}", openedIndexes.size(), openedIndexes);
     while (OPEN_INDEXES.size() > maxOpenedIndexes) {
       // get the oldest one
-      IndexIOReadWrite or = Collections.max(OPEN_INDEXES.values(), OPEN_INDEX_COMPARATOR);
+      IndexIO or = Collections.max(OPEN_INDEXES.values(), OPEN_INDEX_COMPARATOR);
       // ok try to close it
       try {
         LOGGER.debug("Closing IO for index {}", or.hashCode());
@@ -98,7 +98,7 @@ public final class OpenIndexManager {
   /**
    * @param index a new opened index to store
    */
-  public static void add(IndexIOReadWrite index) {
+  public static void add(IndexIO index) {
     LOGGER.debug("Adding new index {}", index.hashCode());
     OPEN_INDEXES.put(index.hashCode(), index);
   }
@@ -106,7 +106,7 @@ public final class OpenIndexManager {
   /**
    * @param index the index to remove from the list
    */
-  public static void remove(IndexIOReadWrite index) {
+  public static void remove(IndexIO index) {
     if (OPEN_INDEXES.remove(index.hashCode()) != null) {
       LOGGER.debug("Removing index {}", index.hashCode());
     }

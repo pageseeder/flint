@@ -34,6 +34,10 @@ import org.pageseeder.flint.content.DeleteRule;
  */
 public interface Content {
 
+  String getContentID();
+
+  ContentType getContentType();
+
   /**
    * Returns the content as a stream, ready to be translated.
    *
@@ -57,12 +61,6 @@ public interface Content {
    */
   String getMediaType() throws IndexException;
 
-  /**
-   * Return the config ID to use when transforming the content, null if no ID needed.
-   *
-   * @return the config ID to use when transforming the content, null if no ID needed.
-   */
-  String getConfigID();
 
   /**
    * Return <code>true</code> if the content should be deleted from the index.

@@ -25,8 +25,8 @@ import java.util.Set;
 import java.util.TimeZone;
 
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Fieldable;
 import org.apache.lucene.index.CorruptIndexException;
+import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.ScoreDoc;
@@ -270,7 +270,7 @@ public final class SearchResults implements XMLWritable {
         TermExtractable q = (TermExtractable)this._query;
         Set<Term> terms = new HashSet<Term>();
         q.extractTerms(terms);
-        for (Fieldable f : doc.getFields()) {
+        for (IndexableField f : doc.getFields()) {
           for (Term t : terms) {
             if (t.field().equals(f.name())) {
               String extract = Documents.extract(Fields.toString(f), t.text(), 200);
@@ -286,7 +286,7 @@ public final class SearchResults implements XMLWritable {
       }
 
       // display the value of each field
-      for (Fieldable f : doc.getFields()) {
+      for (IndexableField f : doc.getFields()) {
         // Retrieve the value
         String value = Fields.toString(f);
         ValueType type = ValueType.STRING;

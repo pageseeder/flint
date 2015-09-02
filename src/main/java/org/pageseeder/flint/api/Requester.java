@@ -19,15 +19,31 @@ package org.pageseeder.flint.api;
  * A Job Requester.
  *
  * @author Jean-Baptiste Reure
- * @version 26 February 2010
+ * @version 2 September 2015
  */
-public interface Requester {
+public class Requester {
+
+  /**
+   * The ID for this requester.
+   */
+  private final String _id;
+
+  /**
+   * Create a new requester.
+   * 
+   * @param id the ID for this requester.
+   */
+  public Requester(String id) {
+    this._id = id;
+  }
 
   /**
    * Return the ID for this requester.
    *
    * @return the ID for this requester.
    */
-  String getRequesterID();
+  public String getRequesterID() {
+    return this._id;
+  }
 
 }

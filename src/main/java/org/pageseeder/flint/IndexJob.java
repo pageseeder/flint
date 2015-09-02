@@ -15,10 +15,10 @@
  */
 package org.pageseeder.flint;
 
-import java.util.Collections;
+import java.util.Collection;
+import java.util.HashMap;
 import java.util.Map;
 
-import org.pageseeder.flint.api.ContentId;
 import org.pageseeder.flint.api.ContentType;
 import org.pageseeder.flint.api.Index;
 import org.pageseeder.flint.api.Requester;
@@ -36,20 +36,11 @@ public class IndexJob implements Comparable<IndexJob> {
   /**
    * Pseudo-type to indicate that the index needs to be cleared.
    */
-  private static final ContentType CLEAR_CONTENT = new ContentType() {
+  private static final ContentType CLEAR_CONTENT_TYPE = new ContentType() {
     @Override
     public String toString() { return "CLEAR"; };
   };
-
-  /**
-   * Pseudo content ID used for the index clear job.
-   */
-  private static final ContentId CLEAR_CONTENT_ID = new ContentId() {
-    @Override
-    public ContentType getContentType() { return CLEAR_CONTENT; }
-    @Override
-    public String getID() { return "Clear Index"; }
-  };
+  private static final String CLEAR_CONTENT_ID = "CLEAR";
 
   /**
    * A list of priorities for IndexJobs.
@@ -68,15 +59,9 @@ public class IndexJob implements Comparable<IndexJob> {
 
   };
 
-  /**
-   * The Content ID.
-   */
-  private final ContentId _contentID;
+  private final String _contentid;
 
-  /**
-   * The Config.
-   */
-  private final IndexConfig _config;
+  private final ContentType _contenttype;
 
   /**
    * Job's priority.
@@ -89,9 +74,9 @@ public class IndexJob implements Comparable<IndexJob> {
   private final Index _index;
 
   /**
-   * Dynamic XSLT parameters
+   * List of contents to index
    */
-  private final Map<String, String> parameters;
+  private final Map<String, ContentType> _batchContents;
 
   /**
    * The initial job's requester.
@@ -101,7 +86,7 @@ public class IndexJob implements Comparable<IndexJob> {
   /**
    * When the job was created.
    */
-  private final long created;
+  private final long _created;
 
   /**
    * Internal flag to know if the job is finished.
@@ -121,23 +106,41 @@ public class IndexJob implements Comparable<IndexJob> {
   /**
    * Private constructor, to build a job, use one of the static methods newAddJob(), newUpdateJob() or newDeleteJob().
    *
-   * @param id      The Content ID
-   * @param conf    The Config
+   * @param cid     The Content ID
+   * @param ctype   The Content type
    * @param i       The Index
    * @param p       The job's priority
    * @param r       the job's requester
    */
-  private IndexJob(ContentId id, IndexConfig conf, Index i, Priority p, Requester r, Map<String, String> params) {
-    this._contentID = id;
-    this._config = conf;
+  private IndexJob(Map<String, ContentType> contents, Index i, Priority p, Requester r) {
+    this._batchContents = new HashMap<>(contents);
+    this._contentid = null;
+    this._contenttype = null;
     this._priority = p;
     this._requester = r;
     this._index = i;
-    if (params != null) this.parameters = params;
-    else this.parameters = Collections.emptyMap();
-    this.created = System.nanoTime();
-    this.jobId = this.created + '-' + id.toString() + '-' + (conf == null ? "" : conf.hashCode()) + '-'
-        + i.getIndexID() + '-' + r.getRequesterID() + '-' + p.toString();
+    this._created = System.nanoTime();
+    this.jobId = this._created + "-batch-" + '-' + i.getIndexID() + '-' + r.getRequesterID() + '-' + p.toString();
+  }
+
+  /**
+   * Private constructor, to build a job, use one of the static methods newAddJob(), newUpdateJob() or newDeleteJob().
+   *
+   * @param cid     The Content ID
+   * @param ctype   The Content type
+   * @param i       The Index
+   * @param p       The job's priority
+   * @param r       the job's requester
+   */
+  private IndexJob(String cid, ContentType ctype, Index i, Priority p, Requester r) {
+    this._batchContents = null;
+    this._contentid = cid;
+    this._contenttype = ctype;
+    this._priority = p;
+    this._requester = r;
+    this._index = i;
+    this._created = System.nanoTime();
+    this.jobId = this._created + '-' + cid + '-' + ctype + '-' + i.getIndexID() + '-' + r.getRequesterID() + '-' + p.toString();
   }
 
   /**
@@ -149,22 +152,24 @@ public class IndexJob implements Comparable<IndexJob> {
     return this.jobId;
   }
 
-  /**
-   * Return the content ID used to retrieve the content and the config.
-   *
-   * @return the content ID.
-   */
-  public ContentId getContentID() {
-    return this._contentID;
+  public boolean isBatch() {
+    return this._batchContents != null;
   }
 
-  /**
-   * Return the config.
-   *
-   * @return the config
-   */
-  public IndexConfig getConfig() {
-    return this._config;
+  public String getContentID() {
+    return this._contentid;
+  }
+
+  public ContentType getContentType() {
+    return this._contenttype;
+  }
+
+  public Collection<String> getBatchContentIDs() {
+    return this._batchContents == null ? null : this._batchContents.keySet();
+  }
+
+  public ContentType getBatchContentType(String contentid) {
+    return this._batchContents == null ? null : this._batchContents.get(contentid);
   }
 
   /**
@@ -183,15 +188,6 @@ public class IndexJob implements Comparable<IndexJob> {
    */
   public Requester getRequester() {
     return this._requester;
-  }
-
-  /**
-   * Return the dynamic XSLT parameters for this job (unmodifiable list, never <code>null</code>).
-   *
-   * @return the dynamic XSLT parameters for this job
-   */
-  public Map<String, String> getParameters() {
-    return Collections.unmodifiableMap(this.parameters);
   }
 
   /**
@@ -230,7 +226,7 @@ public class IndexJob implements Comparable<IndexJob> {
    */
   @Override
   public int compareTo(IndexJob job) {
-    return this._priority == job._priority? Long.compare(this.created, job.created) : this._priority == Priority.HIGH ? -1 : 1;
+    return this._priority == job._priority? Long.compare(this._created, job._created) : this._priority == Priority.HIGH ? -1 : 1;
   }
 
   /**
@@ -274,7 +270,7 @@ public class IndexJob implements Comparable<IndexJob> {
    */
   @Override
   public String toString() {
-    return "[IndexJob - contentid:" + this._contentID + " priority:"
+    return "[IndexJob - contentid:" + this._contentid + " priority:"
         + this._priority + " index:" + this._index + " finished:" + this.finished + " success:" + this.success + "]";
   }
 
@@ -285,10 +281,25 @@ public class IndexJob implements Comparable<IndexJob> {
    *         <code>false</code> otherwise.
    */
   public boolean isClearJob() {
-    return this.getContentID().equals(CLEAR_CONTENT_ID);
+    return this._contentid.equals(CLEAR_CONTENT_ID) && this._contenttype.equals(CLEAR_CONTENT_TYPE);
   }
 
   // static factory methods ========================================================================
+
+  /**
+   * Used to build a new batch job.
+   *
+   * @param id     The Content ID
+   * @param config The Config ID (can be <code>null</code>)
+   * @param i      The Index
+   * @param p      The job's priority
+   * @param r      The job's requester
+   *
+   * @return the new job
+   */
+  public static IndexJob newBatchJob(Map<String, ContentType> contents, Index i, Priority p, Requester r) {
+    return new IndexJob(contents, i, p, r);
+  }
 
   /**
    * Used to build a new job.
@@ -298,12 +309,11 @@ public class IndexJob implements Comparable<IndexJob> {
    * @param i      The Index
    * @param p      The job's priority
    * @param r      The job's requester
-   * @param params Parameters for use with the job (can be <code>null</code>)
    *
    * @return the new job
    */
-  public static IndexJob newJob(ContentId id, IndexConfig config, Index i, Priority p, Requester r, Map<String, String> params) {
-    return new IndexJob(id, config, i, p, r, params);
+  public static IndexJob newJob(String contentid, ContentType ctype, Index i, Priority p, Requester r) {
+    return new IndexJob(contentid, ctype, i, p, r);
   }
 
   /**
@@ -316,7 +326,7 @@ public class IndexJob implements Comparable<IndexJob> {
    * @return the new job
    */
   public static IndexJob newClearJob(Index index, Priority priority, Requester requester) {
-    return new IndexJob(CLEAR_CONTENT_ID, null, index, priority, requester, null);
+    return new IndexJob(CLEAR_CONTENT_ID, CLEAR_CONTENT_TYPE, index, priority, requester);
   }
 
 }

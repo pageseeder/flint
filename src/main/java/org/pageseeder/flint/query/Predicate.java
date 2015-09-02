@@ -16,27 +16,19 @@
 package org.pageseeder.flint.query;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.Set;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
-import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.Term;
-import org.apache.lucene.queryParser.MultiFieldQueryParser;
-import org.apache.lucene.queryParser.ParseException;
+import org.apache.lucene.queryparser.classic.MultiFieldQueryParser;
+import org.apache.lucene.queryparser.classic.ParseException;
 import org.apache.lucene.search.Query;
-import org.pageseeder.flint.IndexManager;
 import org.pageseeder.flint.util.Beta;
 import org.pageseeder.flint.util.Fields;
-import org.pageseeder.flint.util.Queries;
-import org.pageseeder.flint.util.Terms;
 import org.pageseeder.xmlwriter.XMLWritable;
 import org.pageseeder.xmlwriter.XMLWriter;
 
@@ -147,7 +139,7 @@ public final class Predicate implements SearchParameter, XMLWritable {
    */
   private void compute(Analyzer analyzer) throws ParseException {
     String[] fields = this._fields.keySet().toArray(new String[]{});
-    MultiFieldQueryParser parser = new MultiFieldQueryParser(IndexManager.LUCENE_VERSION, fields, analyzer);
+    MultiFieldQueryParser parser = new MultiFieldQueryParser(fields, analyzer);
     this._query = parser.parse(this._predicate);
   }
 
@@ -159,34 +151,7 @@ public final class Predicate implements SearchParameter, XMLWritable {
    * @throws ParseException If the question could not be parsed properly.
    */
   private void compute() throws ParseException {
-    compute(new StandardAnalyzer(IndexManager.LUCENE_VERSION));
-  }
-
-  /**
-   * Returns a list of predicates which are considered similar, that where one term was substituted
-   * for a similar term.
-   *
-   * @param reader the reader to use to extract the similar (fuzzy) terms.
-   *
-   * @return a list of similar predicates.
-   *
-   * @throws IOException If thrown by the reader while getting the fuzzy terms.
-   */
-  public List<Predicate> similar(IndexReader reader) throws IOException {
-    List<Predicate> similar = new ArrayList<Predicate>();
-    // Extract the list of similar terms
-    Set<Term> terms = new HashSet<Term>();
-    this._query.extractTerms(terms);
-    for (Term t : terms) {
-      List<Term> fuzzy = Terms.fuzzy(reader, t);
-      for (Term f : fuzzy) {
-        Query sq = Queries.substitute(this._query, t, f);
-        Predicate sqn = new Predicate(this._fields, sq.toString());
-        sqn._query = sq;
-        similar.add(sqn);
-      }
-    }
-    return similar;
+    compute(new StandardAnalyzer());
   }
 
 

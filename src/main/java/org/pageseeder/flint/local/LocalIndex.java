@@ -19,10 +19,13 @@ import java.io.File;
 import java.io.IOException;
 
 import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.standard.StandardAnalyzer;
+import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
 import org.pageseeder.flint.api.Index;
+import org.pageseeder.flint.api.Index.ParametersBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -32,7 +35,7 @@ import org.slf4j.LoggerFactory;
  * @author Christophe Lauret
  * @version 27 February 2013
  */
-public final class LocalIndex implements Index {
+public final class LocalIndex {
 
   /**
    * A logger for this class and to provide for Flint.
@@ -45,14 +48,21 @@ public final class LocalIndex implements Index {
   private final File _location;
 
   /**
-   * This index's analyser.
+   * This index.
    */
-  private final Analyzer _analyzer;
+  private final Index _index;
 
   /**
-   * This index's directory.
+   * Create a new local index.
+   *
+   * @param location The location of the local index.
+   * @param analyzer The analyzer of the local index.
+   *
+   * @throws NullPointerException if the location is <code>null</code>.
    */
-  private volatile Directory _directory;
+  public LocalIndex(File location) {
+    this(location, new StandardAnalyzer());
+  }
 
   /**
    * Create a new local index.
@@ -65,48 +75,22 @@ public final class LocalIndex implements Index {
   public LocalIndex(File location, Analyzer analyzer) {
     if (location == null) throw new NullPointerException("location");
     this._location = location;
-    this._analyzer = analyzer;
-  }
-
-  @Override
-  public String getIndexID() {
-    return this._location.getName();
-  }
-
-  @Override
-  public synchronized Directory getIndexDirectory() {
     ensureFolderExists(this._location);
-    ensureHasDirectory();
-    return this._directory;
-  }
-
-  /**
-   * Returns when this index was last modified.
-   *
-   * @return When this index was last modified.
-   */
-  public synchronized long getLastModified() {
-    if (!this._location.exists()) return -1;
-    ensureHasDirectory();
-    long modified = 0;
+    Directory dir;
     try {
-      if (IndexReader.indexExists(this._directory)) {
-        modified = IndexReader.lastModified(this._directory);
-      }
+      dir = FSDirectory.open(this._location.toPath());
     } catch (IOException ex) {
-      LOGGER.error("Unable to retrieve the last modified date of local index", ex);
+      throw new IllegalArgumentException("Unable to return a directory on local index "+this._location.getName(), ex);
     }
-    return modified;
+    this._index = new Index(this._location.getName(), dir, analyzer);
   }
 
-  @Override
-  public Analyzer getAnalyzer() {
-    return this._analyzer;
+  public void setParameterBuilder(ParametersBuilder builder) {
+    this._index.setParametersBuilder(builder);
   }
 
-  @Override
-  public String toString() {
-    return getIndexID();
+  public Index getIndex() {
+    return this._index;
   }
 
   // Utility methods for public usage
@@ -125,8 +109,8 @@ public final class LocalIndex implements Index {
     boolean exists = false;
     // Get the last modified from the index
     try {
-      Directory directory = FSDirectory.open(location);
-      exists = IndexReader.indexExists(directory);
+      Directory directory = FSDirectory.open(location.toPath());
+      exists = DirectoryReader.indexExists(directory);
       directory.close();
     } catch (IOException ex) {
       LOGGER.error("Unable to retrieve the last modified date of local index", ex);
@@ -134,50 +118,8 @@ public final class LocalIndex implements Index {
     return exists;
   }
 
-  /**
-   * Returns when an index was last modified.
-   *
-   * <p>This method uses the Lucene {@link IndexReader} to check whether the folder corresponds to a valid
-   * Lucene Index and to read the last modified date stamp from the segments.
-   *
-   * @param location the folder where the index is located.
-   * @return When this index was last modified or -1 if the folder or index does not exist.
-   */
-  public static long getLastModified(File location) {
-    if (!location.exists() || !location.isDirectory()) return -1;
-    long modified = 0;
-    // Get the last modified from the index
-    try {
-      Directory directory = FSDirectory.open(location);
-      if (IndexReader.indexExists(directory)) {
-        modified = IndexReader.lastModified(directory);
-      }
-      directory.close();
-    } catch (IOException ex) {
-      LOGGER.error("Unable to retrieve the last modified date of local index", ex);
-    }
-    return modified;
-  }
-
   // private helpers
   // ----------------------------------------------------------------------------------------------
-
-  /**
-   * Ensures that the specified folder exists by creating the folder if it does not.
-   *
-   * <p>This method will log any creation problem as a warning.
-   *
-   * @param folder The folder to created.
-   */
-  private void ensureHasDirectory() {
-    try {
-      if (this._directory == null) {
-        this._directory = FSDirectory.open(this._location);
-      }
-    } catch (IOException ex) {
-      LOGGER.error("Unable to return a directory on local index", ex);
-    }
-  }
 
   /**
    * Ensures that the specified folder exists by creating the folder if it does not.
@@ -194,4 +136,5 @@ public final class LocalIndex implements Index {
       }
     }
   }
+
 }

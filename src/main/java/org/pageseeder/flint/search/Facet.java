@@ -16,8 +16,8 @@
 package org.pageseeder.flint.search;
 import java.io.IOException;
 
+import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
-import org.apache.lucene.search.Searcher;
 import org.pageseeder.flint.util.Beta;
 import org.pageseeder.xmlwriter.XMLWritable;
 
@@ -54,6 +54,6 @@ public interface Facet extends XMLWritable {
    *
    * @throws IOException should it be reported by the searcher.
    */
-  void compute(Searcher searcher, Query base) throws IOException;
+  void compute(IndexSearcher searcher, Query base) throws IOException;
 
 }

@@ -38,18 +38,16 @@ import javax.xml.transform.stream.StreamResult;
 import javax.xml.transform.stream.StreamSource;
 
 import org.apache.lucene.document.Document;
-import org.apache.lucene.index.CorruptIndexException;
+import org.apache.lucene.index.DirectoryReader;
+import org.apache.lucene.index.IndexCommit;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.TopFieldCollector;
-import org.apache.lucene.store.LockObtainFailedException;
-import org.apache.lucene.util.Version;
 import org.pageseeder.flint.IndexJob.Priority;
 import org.pageseeder.flint.api.Content;
 import org.pageseeder.flint.api.ContentFetcher;
-import org.pageseeder.flint.api.ContentId;
 import org.pageseeder.flint.api.ContentTranslator;
 import org.pageseeder.flint.api.ContentTranslatorFactory;
 import org.pageseeder.flint.api.ContentType;
@@ -89,11 +87,6 @@ public final class IndexManager implements Runnable {
    * Logger will receive debugging and low-level data, use the listener to capture specific indexing operations.
    */
   private static final Logger LOGGER = LoggerFactory.getLogger(IndexManager.class);
-
-  /**
-   * The lucene version with which this manager is compatible.
-   */
-  public static final Version LUCENE_VERSION = Version.LUCENE_30;
 
   /**
    * Inactive time before indexes get optimised - set to 30 minutes.
@@ -234,18 +227,28 @@ public final class IndexManager implements Runnable {
   }
 
   /**
-   * Add a new update job to the indexing queue.
+   * Add a new batch update job to the indexing queue.
    *
-   * @param id       the ID of the Content
-   * @param i        the Index to add the Content to
-   * @param config   the Config to use
+   * @param contents the batch contents
    * @param r        the Requester calling this method (used for logging)
    * @param p        the Priority of this job
    * @param params   the dynamic XSLT parameters
    */
-  public void index(ContentId id, Index i, IndexConfig config, Requester r, Priority p, Map<String, String> params) {
-    IndexJob job = IndexJob.newJob(id, config, i, p, r, params);
-    this._indexQueue.addJob(job);
+  public void indexBatch(Map<String, ContentType> contents, Index i, Requester r, Priority p) {
+    this._indexQueue.addJob(IndexJob.newBatchJob(contents, i, p, r));
+  }
+
+  /**
+   * Add a new update job to the indexing queue.
+   *
+   * @param content  the ID of the Content
+   * @param i        the Index to add the Content to
+   * @param r        the Requester calling this method (used for logging)
+   * @param p        the Priority of this job
+   * @param params   the dynamic XSLT parameters
+   */
+  public void index(String contentid, ContentType type, Index i, Requester r, Priority p) {
+    this._indexQueue.addJob(IndexJob.newJob(contentid, type, i, p, r));
   }
 
   /**
@@ -328,16 +331,7 @@ public final class IndexManager implements Runnable {
    */
   public SearchResults query(Index index, SearchQuery query, SearchPaging paging) throws IndexException {
     IndexIO io = getIndexIO(index);
-    IndexSearcher searcher = null;
-    try {
-      searcher = io.bookSearcher();
-    } catch (CorruptIndexException ex) {
-      throw new IndexException("Failed getting a Searcher to perform a query because the Index is corrupted", ex);
-    } catch (LockObtainFailedException ex) {
-      throw new IndexException("Failed getting a lock on the Index to perform a query", ex);
-    } catch (IOException ex) {
-      throw new IndexException("Failed getting a searcher to perform a query on the Index because of an I/O problem", ex);
-    }
+    IndexSearcher searcher = io.bookSearcher();
     if (searcher != null) {
       try {
         Query lquery = query.toQuery();
@@ -355,7 +349,7 @@ public final class IndexManager implements Runnable {
           sort = Sort.INDEXORDER;
         }
         // load the scores
-        TopFieldCollector tfc = TopFieldCollector.create(sort, paging.getHitsPerPage() * paging.getPage(), true, true, false, true);
+        TopFieldCollector tfc = TopFieldCollector.create(sort, paging.getHitsPerPage() * paging.getPage(), true, true, false);
         searcher.search(lquery, tfc);
         return new SearchResults(query, tfc.topDocs().scoreDocs, tfc.getTotalHits(), paging, io, searcher);
       } catch (IOException e) {
@@ -393,11 +387,7 @@ public final class IndexManager implements Runnable {
    * @throws IndexException If an IO error occurred when getting the reader.
    */
   public IndexReader grabReader(Index index) throws IndexException {
-    try {
-      return getIndexIO(index).bookReader();
-    } catch (IOException ex) {
-      throw new IndexException("Failed getting a reader on the Index because of an I/O problem", ex);
-    }
+    return getIndexIO(index).bookReader();
   }
 
   /**
@@ -463,16 +453,8 @@ public final class IndexManager implements Runnable {
    * @throws IndexException If an IO error occurred when getting the reader.
    */
   public IndexSearcher grabSearcher(Index index) throws IndexException {
-    try {
-      IndexIO io = getIndexIO(index);
-      return io.bookSearcher();
-    } catch (CorruptIndexException ex) {
-      throw new IndexException("Failed getting a Searcher to perform a query because the Index is corrupted", ex);
-    } catch (LockObtainFailedException ex) {
-      throw new IndexException("Failed getting a lock on the Index to perform a query", ex);
-    } catch (IOException ex) {
-      throw new IndexException("Failed getting a searcher to perform a query on the Index because of an I/O problem", ex);
-    }
+    IndexIO io = getIndexIO(index);
+    return io.bookSearcher();
   }
 
   /**
@@ -529,10 +511,26 @@ public final class IndexManager implements Runnable {
    * @param out     the Writer to write the result to
    * @throws IndexException if anything went wrong
    */
-  public void translateContent(ContentType type, IndexConfig config, Content content, Map<String, String> params, Writer out) throws IndexException {
-    translateContent(null, type, config, content, params, out);
+  public void translateContent(Index index, Content content, Map<String, String> params, Writer out) throws IndexException {
+    translateContent(null, index, content, params, out);
   }
 
+  public long getLastTimeUsed(Index index) {
+    if (index == null) return -1;
+    // get index IO if used
+    if (this._indexes.contains(index.getIndexID()))
+      return this._indexes.get(index.getIndexID()).getLastTimeUsed();
+    // get last commit data then
+    try {
+      List<IndexCommit> commits = DirectoryReader.listCommits(index.getIndexDirectory());
+      if (commits == null || commits.isEmpty()) return -1;
+      String lastCommitDate = commits.get(commits.size()-1).getUserData().get(IndexIO.LAST_COMMIT_DATE);
+      if (lastCommitDate != null) return Long.parseLong(lastCommitDate);
+    } catch (IOException ex) {
+      LOGGER.error("Failed to load last index commit date for "+index.getIndexID(), ex);
+    }
+    return -1;
+  }
   // thread related methods
   // ----------------------------------------------------------------------------------------------
 
@@ -608,31 +606,24 @@ public final class IndexManager implements Runnable {
               this._listener.error(job, "Failed to retrieve Index: " + ex.getMessage(), ex);
               continue;
             }
+            // clear job
             if (job.isClearJob()) {
               try {
                 job.setSuccess(io.clearIndex());
               } catch (Exception ex) {
                 this._listener.error(job, "Failed to clear index", ex);
               }
+            // batch job
+            } else if (job.isBatch()) {
+              boolean success = true;
+              for (String contentid : job.getBatchContentIDs()) {
+                success = success && indexContent(contentid, job.getBatchContentType(contentid), job, io);
+              }
+              job.setSuccess(success);
+            // single content
             } else {
               // retrieve content
-              Content content;
-              try {
-                content = this._fetcher.getContent(job.getContentID());
-              } catch (Exception ex) {
-                this._listener.error(job, "Failed to retrieve Source content", ex);
-                continue;
-              }
-              if (content == null) {
-                this._listener.error(job, "Failed to retrieve Source content", null);
-              } else {
-                // check if we should delete the document
-                if (content.isDeleted()) {
-                  job.setSuccess(deleteJob(job, content, io));
-                } else {
-                  job.setSuccess(updateJob(job, content, io));
-                }
-              }
+              job.setSuccess(indexContent(job.getContentID(), job.getContentType(), job, io));
             }
           } catch (Throwable ex) {
             this._listener.error(job, "Unknown error: " + ex.getMessage(), ex);
@@ -663,6 +654,24 @@ public final class IndexManager implements Runnable {
   // private methods
   // ----------------------------------------------------------------------------------------------
 
+  private boolean indexContent(String contentid, ContentType contenttype, IndexJob job, IndexIO io) throws IndexException {
+    // retrieve content
+    Content content;
+    try {
+      content = this._fetcher.getContent(contentid, contenttype);
+    } catch (Exception ex) {
+      this._listener.error(job, "Failed to retrieve Source content", ex);
+      return false;
+    }
+    if (content == null) {
+      this._listener.error(job, "Failed to retrieve Source content", null);
+      return false;
+    }
+    // check if we should delete the document
+    if (content.isDeleted()) return deleteJob(job, content, io);
+    // run an update job then
+    return updateJob(job, content, io);
+  }
   /**
    * Add or update a document in an index
    *
@@ -675,7 +684,7 @@ public final class IndexManager implements Runnable {
     // translate content
     StringWriter xsltResult = new StringWriter();
     try {
-      translateContent(new FlintErrorListener(this._listener, job), job.getContentID().getContentType(), job.getConfig(), content, job.getParameters(), xsltResult);
+      translateContent(new FlintErrorListener(this._listener, job), job.getIndex(), content, null, xsltResult);
     } catch (IndexException ex) {
       this._listener.error(job, ex.getMessage(), ex);
       return false;
@@ -729,7 +738,7 @@ public final class IndexManager implements Runnable {
    * @param out             where the result should be written to
    * @throws IndexException if anything went wrong
    */
-  public void translateContent(FlintErrorListener errorListener, ContentType type, IndexConfig config, Content content, Map<String, String> params, Writer out) throws IndexException {
+  public void translateContent(FlintErrorListener errorListener, Index index, Content content, Map<String, String> params, Writer out) throws IndexException {
     String mediatype = content.getMediaType();
     // no MIME type found
     if (mediatype == null)
@@ -752,7 +761,7 @@ public final class IndexManager implements Runnable {
     if (source == null)
       throw new IndexException("Failed to translate Content as the Translator returned a null result.", null);
     // retrieve XSLT script
-    Templates templates = config.getTemplates(type, mediatype, content.getConfigID());
+    Templates templates = index.getTemplates(content.getContentType(), mediatype);
     if (templates == null)
       throw new IndexException("Failed to load XSLT script for Content.", null);
     // run XSLT script
@@ -763,7 +772,7 @@ public final class IndexManager implements Runnable {
         t.setErrorListener(errorListener);
       }
       // retrieve parameters
-      Map<String, String> parameters = config.getParameters(type, mediatype, content.getConfigID());
+      Map<String, String> parameters = index.getParameters(content.getContentID(), content.getContentType(), mediatype);
       if (parameters != null && params != null) {
         parameters = new HashMap<String, String>(parameters);
         parameters.putAll(params);
@@ -799,18 +808,7 @@ public final class IndexManager implements Runnable {
     IndexIO io = index == null ? null : this._indexes.get(index.getIndexID());
     if (io == null) {
       LOGGER.debug("Creating a new IndexIO for {}", index);
-      try {
-        io = IndexIO.newInstance(index);
-      } catch (CorruptIndexException ex) {
-        throw new IndexException("Failed creating an Index I/O object for " + index.toString() + " because the Index is corrupted", ex);
-      } catch (LockObtainFailedException ex) {
-        // ok maybe it's because the IO object was created in the meantime
-        io = this._indexes.get(index.getIndexID());
-        if (io != null) return io;
-        throw new IndexException("Failed getting a lock on the Index to create an Index I/O object for " + index.toString(), ex);
-      } catch (IOException ex) {
-        throw new IndexException("Failed creating an Index I/O object for " + index.toString() + " because of an I/O problem", ex);
-      }
+      io = new IndexIO(index);
       this._indexes.put(index.getIndexID(), io);
     }
     return io;
@@ -833,19 +831,19 @@ public final class IndexManager implements Runnable {
       if (!this._indexQueue.isEmpty()) return;
     }
     // ok optimise now?
-    if ((System.currentTimeMillis() - this._lastActivity.longValue()) > INACTIVE_OPTIMISE_TIME) {
-      ios = new ArrayList<IndexIO>(this._indexes.values());
-      // loop through the indexes and optimise
-      for (IndexIO io : ios) {
-        try {
-          io.maybeOptimise();
-        } catch (IndexException ex) {
-          LOGGER.error("Failed to perform optimise", ex);
-        }
-        // make sure there's no job waiting
-        if (!this._indexQueue.isEmpty()) return;
-      }
-    }
+//    if ((System.currentTimeMillis() - this._lastActivity.longValue()) > INACTIVE_OPTIMISE_TIME) {
+//      ios = new ArrayList<IndexIO>(this._indexes.values());
+//      // loop through the indexes and optimise
+//      for (IndexIO io : ios) {
+//        try {
+//          io.maybeOptimise();
+//        } catch (IndexException ex) {
+//          LOGGER.error("Failed to perform optimise", ex);
+//        }
+//        // make sure there's no job waiting
+//        if (!this._indexQueue.isEmpty()) return;
+//      }
+//    }
   }
 
 }

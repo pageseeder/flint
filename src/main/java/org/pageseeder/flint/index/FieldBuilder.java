@@ -22,11 +22,11 @@ import java.util.Date;
 import org.apache.lucene.document.CompressionTools;
 import org.apache.lucene.document.DateTools;
 import org.apache.lucene.document.Field;
-import org.apache.lucene.document.Field.Index;
 import org.apache.lucene.document.Field.Store;
-import org.apache.lucene.document.Field.TermVector;
-import org.apache.lucene.document.Fieldable;
-import org.apache.lucene.document.NumericField;
+import org.apache.lucene.document.FieldType;
+import org.apache.lucene.document.FieldType.NumericType;
+import org.apache.lucene.index.IndexOptions;
+import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.util.NumericUtils;
 import org.pageseeder.flint.util.Dates;
 import org.slf4j.Logger;
@@ -42,11 +42,6 @@ import org.slf4j.LoggerFactory;
  * @version 10 February 2012
  */
 public final class FieldBuilder {
-
-  /**
-   * Possible number type for a numeric field.
-   */
-  protected static enum NumericType { FLOAT, INT, DOUBLE, LONG };
 
   /**
    * The default boost value for the term.
@@ -66,17 +61,42 @@ public final class FieldBuilder {
   /**
    * The 'store' flag of the field to build.
    */
-  private Field.Store _store;
+  private boolean _store;
+
+  /**
+   * The 'tokenize' flag of the field to build.
+   */
+  private boolean _tokenize;
 
   /**
    * The 'index' attribute of the field to build.
    */
-  private Field.Index _index;
+  private IndexOptions _index;
 
   /**
-   * The 'termVector' attribute of the field to build.
+   * If norms are omitted.
    */
-  private Field.TermVector _vector;
+  private boolean _omitNorms;
+
+  /**
+   * The vector flag of the field to build.
+   */
+  private boolean _vector;
+
+  /**
+   * The vector positions of the field to build.
+   */
+  private boolean _vectorPositions;
+
+  /**
+   * The vector payloads of the field to build.
+   */
+  private boolean _vectorPayloads;
+
+  /**
+   * The vector offsets of the field to build.
+   */
+  private boolean _vectorOffsets;
 
   /**
    * Date format to use (only if the value is a date)
@@ -139,7 +159,7 @@ public final class FieldBuilder {
    * @param store The field store for the field to build.
    * @return this builder.
    */
-  public FieldBuilder store(Field.Store store) {
+  public FieldBuilder store(boolean store) {
     this._store = store;
     return this;
   }
@@ -147,13 +167,33 @@ public final class FieldBuilder {
   /**
    * Set the field store for the field to build.
    *
-   * @see #toFieldStore(String)
-   *
    * @param store The field store for the field to build as a string.
    * @return this builder.
    */
   public FieldBuilder store(String store) {
-    this._store = toFieldStore(store);
+    this._store = store != null && Boolean.parseBoolean(store);
+    return this;
+  }
+
+  /**
+   * Set the field tokenize for the field to build.
+   *
+   * @param tokenize The field tokenize for the field to build.
+   * @return this builder.
+   */
+  public FieldBuilder tokenize(boolean tokenize) {
+    this._tokenize = tokenize;
+    return this;
+  }
+
+  /**
+   * Set the field tokenize for the field to build.
+   *
+   * @param tokenize The field tokenize for the field to build as a string.
+   * @return this builder.
+   */
+  public FieldBuilder tokenize(String tokenize) {
+    this._tokenize = tokenize != null && Boolean.parseBoolean(tokenize);
     return this;
   }
 
@@ -163,8 +203,20 @@ public final class FieldBuilder {
    * @param index The field index for the field to build.
    * @return this builder.
    */
-  public FieldBuilder index(Field.Index index) {
+  public FieldBuilder index(IndexOptions index) {
     this._index = index;
+    return this;
+  }
+
+  /**
+   * Set the omit norms flag.
+   * 
+   * @param omit the new value
+   * 
+   * @return this builder.
+   */
+  public FieldBuilder omitNorms(boolean omit) {
+    this._omitNorms = omit;
     return this;
   }
 
@@ -177,31 +229,95 @@ public final class FieldBuilder {
    * @return this builder.
    */
   public FieldBuilder index(String index) {
-    this._index = toFieldIndex(index);
+    this._index = toIndexOptions(index);
     return this;
   }
 
   /**
    * Sets the term vector.
    *
-   * @param vector The term vector for the field to build.
+   * @param vector The term vector for the field to build as a string.
    * @return this builder.
    */
-  public FieldBuilder termVector(Field.TermVector vector) {
+  public FieldBuilder termVector(boolean vector) {
     this._vector = vector;
     return this;
   }
 
   /**
-   * Sets the term vector.
+   * Sets the term vector offsets flag.
    *
-   * @see FieldBuilder#toTermVector(String)
+   * @param vectorOffsets The term vector offsets flag for the field to build as a string.
+   * @return this builder.
+   */
+  public FieldBuilder termVectorOffsets(boolean vectorOffsets) {
+    this._vectorOffsets = vectorOffsets;
+    return this;
+  }
+
+  /**
+   * Sets the term vector positions flag.
+   *
+   * @param vectorPositions The term vector positions flag for the field to build as a string.
+   * @return this builder.
+   */
+  public FieldBuilder termVectorPositions(boolean vectorPositions) {
+    this._vectorPositions = vectorPositions;
+    return this;
+  }
+
+  /**
+   * Sets the term vector payloads flag.
+   *
+   * @param vectorPayloads The term vector payloads flag for the field to build as a string.
+   * @return this builder.
+   */
+  public FieldBuilder termVectorPayloads(boolean vectorPayloads) {
+    this._vectorPayloads = vectorPayloads;
+    return this;
+  }
+
+  /**
+   * Sets the term vector.
    *
    * @param vector The term vector for the field to build as a string.
    * @return this builder.
    */
   public FieldBuilder termVector(String vector) {
-    this._vector = toTermVector(vector);
+    this._vector = Boolean.parseBoolean(vector);
+    return this;
+  }
+
+  /**
+   * Sets the term vector offsets flag.
+   *
+   * @param vectorOffsets The term vector offsets flag for the field to build as a string.
+   * @return this builder.
+   */
+  public FieldBuilder termVectorOffsets(String vectorOffsets) {
+    this._vectorOffsets = Boolean.parseBoolean(vectorOffsets);
+    return this;
+  }
+
+  /**
+   * Sets the term vector positions flag.
+   *
+   * @param vectorPositions The term vector positions flag for the field to build as a string.
+   * @return this builder.
+   */
+  public FieldBuilder termVectorPositions(String vectorPositions) {
+    this._vectorPositions = Boolean.parseBoolean(vectorPositions);
+    return this;
+  }
+
+  /**
+   * Sets the term vector payloads flag.
+   *
+   * @param vectorPayloads The term vector payloads flag for the field to build as a string.
+   * @return this builder.
+   */
+  public FieldBuilder termVectorPayloads(String vectorPayloads) {
+    this._vectorPayloads = Boolean.parseBoolean(vectorPayloads);
     return this;
   }
 
@@ -343,8 +459,17 @@ public final class FieldBuilder {
    *
    * @return The field store for the field to build.
    */
-  public Field.Store store() {
+  public boolean store() {
     return this._store;
+  }
+
+  /**
+   * Returns the field tokenize for the field to build.
+   *
+   * @return The field tokenize for the field to build.
+   */
+  public boolean tokenize() {
+    return this._tokenize;
   }
 
   /**
@@ -352,17 +477,8 @@ public final class FieldBuilder {
    *
    * @return The field index for the field to build.
    */
-  public Field.Index index() {
+  public IndexOptions index() {
     return this._index;
-  }
-
-  /**
-   * Returns the term vector.
-   *
-   * @return The term vector for the field to build.
-   */
-  public Field.TermVector termVector() {
-    return this._vector;
   }
 
   /**
@@ -392,7 +508,7 @@ public final class FieldBuilder {
    *        <code>false</code> otherwise;
    */
   public boolean isReady() {
-    return (this._name != null && this._index != null && this._store != null && this._value != null);
+    return (this._name != null && this._index != null && this._value != null);
   }
 
   /**
@@ -402,8 +518,13 @@ public final class FieldBuilder {
    */
   public void reset() {
     this._index = null;
-    this._store = null;
-    this._vector = null;
+    this._omitNorms = false;
+    this._store = false;
+    this._tokenize = false;
+    this._vector = false;
+    this._vectorOffsets = false;
+    this._vectorPositions = false;
+    this._vectorPayloads = false;
     this._name = null;
     this._value = null;
     this._boost = DEFAULT_BOOST_VALUE;
@@ -420,41 +541,30 @@ public final class FieldBuilder {
    *
    * @throws IllegalStateException If the builder is not ready.
    */
-  public Fieldable build() throws IllegalStateException {
+  public IndexableField build() throws IllegalStateException {
     checkReady();
-    // construct the field
-    Fieldable field = null;
+    // get value
     String value = this._value.toString();
-    // a numeric field
-    if (this._numeric != null) {
-      NumericField nf = new NumericField(this._name, this._precisionStep, this._store, this._index != Index.NO);
-      // handle dates
-      if (this._dateformat != null) {
-        Date date = toDate(value, this._dateformat);
-        if (date != null) {
-          field = setValue(nf, this._numeric, Dates.toNumber(date, this._resolution));
-        }
-      }
-      if (field == null) {
-        field = setValue(nf, this._numeric, value);
-      }
-
-    // normal field (string-based)
-    } else {
-      if (this._dateformat != null) {
-        Date date = toDate(value, this._dateformat);
-        value = (date != null)? Dates.toString(date, this._resolution) : "";
-      }
-      if (this._vector != null) {
-        field = new Field(this._name, value, this._store, this._index, this._vector);
-      } else {
-        field = new Field(this._name, value, this._store, this._index);
-      }
+    if (this._dateformat != null) {
+      Date date = toDate(value, this._dateformat);
+      value = (date != null)? Dates.toString(date, this._resolution) : "";
     }
+    // construct the field type
+    FieldType type = new FieldType();
+    type.setNumericType(this._numeric);
+    type.setNumericPrecisionStep(this. _precisionStep);
+    type.setStored(this._store);
+    type.setTokenized(this._tokenize);
+    type.setIndexOptions(this._index);
+    type.setOmitNorms(this._omitNorms);
+    type.setStoreTermVectors(this._vector);
+    type.setStoreTermVectorOffsets(this._vectorOffsets);
+    type.setStoreTermVectorPositions(this._vectorPositions);
+    type.setStoreTermVectorPayloads(this._vectorPayloads);
+    // build field
+    Field field = new Field(this._name, value, type);
     // Sets the boost if necessary
-    if (this._boost != 1.0f) {
-      field.setBoost(this._boost);
-    }
+    if (this._boost != 1.0f) field.setBoost(this._boost);
     return field;
   }
 
@@ -469,7 +579,9 @@ public final class FieldBuilder {
     checkReady();
     // Generate a compressed field
     byte[] value = CompressionTools.compressString(this._value.toString());
-    Field field = new Field(this._name, value, Field.Store.YES);
+    FieldType type = new FieldType();
+    type.setStored(true);
+    Field field = new Field(this._name, value, type);
     if (this._boost != 1.0f) {
       field.setBoost(this._boost);
     }
@@ -486,8 +598,6 @@ public final class FieldBuilder {
       throw new IllegalStateException("Unable to build field, field name not set");
     if (this._index == null)
       throw new IllegalStateException("Unable to build field, field index not set");
-    if (this._store == null)
-      throw new IllegalStateException("Unable to build field, field store not set");
     if (this._value == null)
       throw new IllegalStateException("Unable to build field, field value not set");
   }
@@ -496,55 +606,20 @@ public final class FieldBuilder {
   // ----------------------------------------------------------------------------------------------
 
   /**
-   * Returns the Lucene 3 Field Store matching the specified value.
+   * Returns the resolution for date.
    *
-   * @see Field.Store
+   * @see DateTools.Resolution
    *
-   * @param store The store flag as a string.
+   * @param resolution The date tools resolution.
    *
-   * @return The corresponding Lucene 3 constant or <code>null</code> if none matches.
+   * @return The corresponding Lucene 3 constant.
    */
-  public static Store toFieldStore(String store) {
-    if ("no".equals(store))  return Field.Store.NO;
-    if ("yes".equals(store)) return Field.Store.YES;
-    LOGGER.warn("Invalid field store value: {}", store);
-    return null;
-  }
-
-  /**
-   * Returns the Lucene 3 Field Index matching the specified value.
-   *
-   * @see Field.Index
-   *
-   * @param index The index flag as a string.
-   *
-   * @return The corresponding Lucene 3 constant or <code>null</code> if none matches.
-   */
-  public static Index toFieldIndex(String index) {
+  public static IndexOptions toIndexOptions(String index) {
     if (index == null) return null;
     try {
-      return Index.valueOf(index.toUpperCase().replace('-', '_'));
+      return IndexOptions.valueOf(index.toUpperCase().replace('-', '_'));
     } catch (IllegalArgumentException ex) {
-      LOGGER.warn("Invalid field index value: {}", index);
-      return null;
-    }
-  }
-
-  /**
-   * Returns the Lucene 3 Field Index from the attribute value.
-   *
-   * @see TermVector
-   *
-   * @param vector The term vector.
-   *
-   * @return The corresponding Lucene 3 constant or <code>null</code> if none matches.
-   */
-  public static TermVector toTermVector(String vector) {
-    if (vector == null) return null;
-    try {
-      return TermVector.valueOf(vector.toUpperCase().replace('-', '_'));
-    } catch (IllegalArgumentException ex) {
-      LOGGER.warn("Invalid term vector value: {}, defaulting to Field.TermVector.NO", vector);
+      LOGGER.warn("Invalid index option: {}", index);
       return null;
     }
   }
@@ -611,59 +686,6 @@ public final class FieldBuilder {
 
   // Private helpers
   // ----------------------------------------------------------------------------------------------
-
-  /**
-   * Sets the value of the numeric field.
-   *
-   * @param nf      The Lucene numeric field
-   * @param numeric The numeric type (float, int, double or long)
-   * @param value   The actual value as a number
-   *
-   * @return the numeric field from the values in this builder; or <code>null</code>
-   *
-   * @throws IllegalStateException If the builder is not ready.
-   */
-  private static NumericField setValue(NumericField nf, NumericType numeric, String value) throws IllegalStateException {
-    try {
-      switch (numeric) {
-        case FLOAT:  return nf.setFloatValue(Float.parseFloat(value));
-        case INT:    return nf.setIntValue(Integer.parseInt(value));
-        case DOUBLE: return nf.setDoubleValue(Double.parseDouble(value));
-        case LONG:   return nf.setLongValue(Long.parseLong(value));
-        default: throw new IllegalArgumentException("Unknown numeric type:"+numeric);
-      }
-    } catch (NumberFormatException ex) {
-      LOGGER.error("Failed to parse {} as a {}", value.toString(), numeric);
-      return null;
-    }
-  }
-
-  /**
-   * Sets the value of the numeric field.
-   *
-   * @param nf      The Lucene numeric field
-   * @param numeric The numeric type (float, int, double or long)
-   * @param value   The actual value as a number
-   *
-   * @return the numeric field from the values in this builder; or <code>null</code>
-   *
-   * @throws IllegalStateException If the builder is not ready.
-   */
-  private static NumericField setValue(NumericField nf, NumericType numeric, Number value)
-      throws IllegalStateException {
-    try {
-      switch (numeric) {
-        case FLOAT:  return nf.setFloatValue(value.floatValue());
-        case INT:    return nf.setIntValue(value.intValue());
-        case DOUBLE: return nf.setDoubleValue(value.doubleValue());
-        case LONG:   return nf.setLongValue(value.longValue());
-        default: throw new IllegalArgumentException("Unknown numeric type:"+numeric);
-      }
-    } catch (NumberFormatException ex) {
-      LOGGER.error("Failed to parse {} as a {}", value.toString(), numeric);
-      return null;
-    }
-  }
 
   /**
    * Return the string value used by Lucene 3 for dates.

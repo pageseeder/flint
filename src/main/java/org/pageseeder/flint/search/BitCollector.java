@@ -15,11 +15,12 @@
  */
 package org.pageseeder.flint.search;
 
+import java.io.IOException;
 import java.util.BitSet;
 
-import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.search.Collector;
-import org.apache.lucene.search.Scorer;
+import org.apache.lucene.document.Document;
+import org.apache.lucene.index.LeafReaderContext;
+import org.apache.lucene.search.SimpleCollector;
 
 /**
  * Collects Lucene search results into a bit set.
@@ -30,7 +31,7 @@ import org.apache.lucene.search.Scorer;
  * @author Christophe Lauret
  * @version 2 August 2010
  */
-public final class BitCollector extends Collector {
+public final class BitCollector extends SimpleCollector {
 
   /**
    * The document ID for the reader in use.
@@ -63,23 +64,13 @@ public final class BitCollector extends Collector {
   }
 
   /**
-   * Does nothing - the scorer is irrelevant when populating {@link BitSet}s.
-   * @param scorer the scorer.
-   */
-  @Override
-  public void setScorer(Scorer scorer) {
-    // ignore scorer
-  }
-
-  /**
    * Accept documents out of order - the order is irrelevant when populating {@link BitSet}s.
-   * @return always <code>true</code>.
+   * @return always <code>false</code>.
    */
   @Override
-  public boolean acceptsDocsOutOfOrder() {
-    return true;
+  public boolean needsScores() {
+    return false;
   }
-
   /**
    * Updates the {@link BitSet} to include the collected document.
    *
@@ -97,8 +88,10 @@ public final class BitCollector extends Collector {
    * @param docbase used to re-base document ids for the index.
    */
   @Override
-  public void setNextReader(IndexReader reader, int docbase) {
-    this._docbase = docbase;
+  protected void doSetNextReader(LeafReaderContext context) throws IOException {
+    // TODO Auto-generated method stub
+    super.doSetNextReader(context);
+    this._docbase = context.docBase;
   }
 
   /**

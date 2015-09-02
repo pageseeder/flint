@@ -19,11 +19,9 @@ import java.io.IOException;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.util.zip.DataFormatException;
 
-import org.apache.lucene.document.CompressionTools;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Fieldable;
+import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.pageseeder.flint.search.DocumentCounter;
@@ -74,8 +72,8 @@ public final class Documents {
   public static void toXML(XMLWriter xml, Document doc, List<Terms> terms, int extractLength) throws IOException {
     xml.openElement("document", true);
     // display the value of each field
-    for (Fieldable f : doc.getFields()) {
-      String value = toValue(f);
+    for (IndexableField f : doc.getFields()) {
+      String value = Fields.toString(f);
       // TODO: date formatting
 
       // Unnecessary to return the full value of long fields
@@ -102,8 +100,8 @@ public final class Documents {
   public static void toXML(XMLWriter xml, Document doc) throws IOException {
     xml.openElement("document", true);
     // display the value of each field
-    for (Fieldable f : doc.getFields()) {
-      String value = toValue(f);
+    for (IndexableField f : doc.getFields()) {
+      String value = Fields.toString(f);
       // TODO: date formatting
 
       // unnecessary to return the full value of long fields
@@ -186,24 +184,5 @@ public final class Documents {
    */
   private static String asXML(String text) {
     return XMLEscapeUTF8.UTF8_ESCAPE.toElementText(text);
-  }
-
-  /**
-   * Returns the value of the specified field decompressing it if required.
-   *
-   * @param f The field
-   * @return its value
-   */
-  private static String toValue(Fieldable f) {
-    String value = f.stringValue();
-    // is it a compressed field?
-    if (value == null && f.getBinaryLength() > 0) {
-      try {
-        value = CompressionTools.decompressString(f.getBinaryValue());
-      } catch (DataFormatException ex) {
-        value = null;
-      }
-    }
-    return value;
   }
 }

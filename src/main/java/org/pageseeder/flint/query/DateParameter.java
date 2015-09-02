@@ -22,6 +22,7 @@ import org.apache.lucene.document.DateTools.Resolution;
 import org.apache.lucene.search.NumericRangeQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermRangeQuery;
+import org.apache.lucene.util.BytesRef;
 import org.pageseeder.flint.util.Dates;
 import org.pageseeder.xmlwriter.XMLWriter;
 
@@ -179,7 +180,7 @@ public final class DateParameter implements SearchParameter {
   private static TermRangeQuery toTermRangeQuery(String field, Date from, Date to, Resolution resolution) {
     String min = from != null? Dates.toString(from, resolution) : null;
     String max = to != null? Dates.toString(to, resolution) : null;
-    return new TermRangeQuery(field, min, max, true, true);
+    return new TermRangeQuery(field, new BytesRef(min.getBytes()), new BytesRef(max.getBytes()), true, true);
   }
 
   /**
