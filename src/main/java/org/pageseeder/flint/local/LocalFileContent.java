@@ -21,8 +21,10 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 
+import org.pageseeder.flint.IndexException;
 import org.pageseeder.flint.api.Content;
 import org.pageseeder.flint.api.ContentType;
+import org.pageseeder.flint.content.DeleteRule;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -40,7 +42,7 @@ import org.slf4j.LoggerFactory;
  * @author Christophe Lauret
  * @version 27 February 2013
  */
-public abstract class LocalFileContent implements Content {
+public class LocalFileContent implements Content {
 
   /**
    * Logger for this class.
@@ -69,6 +71,18 @@ public abstract class LocalFileContent implements Content {
   @Override
   public String getContentID() {
     return this._f.getAbsolutePath();
+  }
+
+  @Override
+  public String getMediaType() throws IndexException {
+    String name = this._f.getName();
+    int lastDot = name.lastIndexOf('.');
+    return lastDot == -1 ? "" : name.substring(lastDot+1);
+  }
+
+  @Override
+  public DeleteRule getDeleteRule() {
+    return new DeleteRule("path", this._f.getAbsolutePath());
   }
 
   /**

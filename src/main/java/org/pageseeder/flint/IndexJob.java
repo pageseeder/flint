@@ -114,13 +114,13 @@ public class IndexJob implements Comparable<IndexJob> {
    */
   private IndexJob(Map<String, ContentType> contents, Index i, Priority p, Requester r) {
     this._batchContents = new HashMap<>(contents);
-    this._contentid = null;
+    this._contentid = "batch-"+contents.hashCode();
     this._contenttype = null;
     this._priority = p;
     this._requester = r;
     this._index = i;
     this._created = System.nanoTime();
-    this.jobId = this._created + "-batch-" + '-' + i.getIndexID() + '-' + r.getRequesterID() + '-' + p.toString();
+    this.jobId = this._created + "-batch-" + contents.hashCode() + '-' + i.getIndexID() + '-' + r.getRequesterID() + '-' + p.toString();
   }
 
   /**
@@ -281,7 +281,7 @@ public class IndexJob implements Comparable<IndexJob> {
    *         <code>false</code> otherwise.
    */
   public boolean isClearJob() {
-    return this._contentid.equals(CLEAR_CONTENT_ID) && this._contenttype.equals(CLEAR_CONTENT_TYPE);
+    return CLEAR_CONTENT_ID.equals(this._contentid) && CLEAR_CONTENT_TYPE.equals(this._contenttype);
   }
 
   // static factory methods ========================================================================

@@ -22,6 +22,7 @@ import java.io.StringWriter;
 import java.io.Writer;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -41,10 +42,12 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexCommit;
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.MultiReader;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.TopFieldCollector;
+import org.apache.lucene.search.TopFieldDocs;
 import org.pageseeder.flint.IndexJob.Priority;
 import org.pageseeder.flint.api.Content;
 import org.pageseeder.flint.api.ContentFetcher;
@@ -60,6 +63,8 @@ import org.pageseeder.flint.log.NoOpListener;
 import org.pageseeder.flint.query.SearchPaging;
 import org.pageseeder.flint.query.SearchQuery;
 import org.pageseeder.flint.query.SearchResults;
+import org.pageseeder.flint.search.Facet;
+import org.pageseeder.flint.search.FieldFacet;
 import org.pageseeder.flint.util.FlintErrorListener;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -87,11 +92,6 @@ public final class IndexManager implements Runnable {
    * Logger will receive debugging and low-level data, use the listener to capture specific indexing operations.
    */
   private static final Logger LOGGER = LoggerFactory.getLogger(IndexManager.class);
-
-  /**
-   * Inactive time before indexes get optimised - set to 30 minutes.
-   */
-  private static final long INACTIVE_OPTIMISE_TIME = 1 * 1800 * 1000;
 
   /**
    * Delay between each job poll - set to 1 second
@@ -336,11 +336,7 @@ public final class IndexManager implements Runnable {
       try {
         Query lquery = query.toQuery();
         if (lquery == null) {
-          try {
-            io.releaseSearcher(searcher);
-          } catch (IOException ex) {
-            LOGGER.error("Failed releasing a Searcher after performing a query because of an I/O problem", ex);
-          }
+          io.releaseSearcher(searcher);
           throw new IndexException("Failed performing a query on the Index because the query is null", new NullPointerException("Null query"));
         }
         LOGGER.debug("Performing search [{}] on index {}", query, index);
@@ -353,15 +349,180 @@ public final class IndexManager implements Runnable {
         searcher.search(lquery, tfc);
         return new SearchResults(query, tfc.topDocs().scoreDocs, tfc.getTotalHits(), paging, io, searcher);
       } catch (IOException e) {
-        try {
-          io.releaseSearcher(searcher);
-        } catch (IOException ioe) {
-          LOGGER.error("Failed releasing a Searcher after performing a query on the Index because of an I/O problem", ioe);
-        }
+        io.releaseSearcher(searcher);
         throw new IndexException("Failed performing a query on the Index because of an I/O problem", e);
       }
     }
     return null;
+  }
+
+  /**
+   * Run a search on the given Indexes.
+   *
+   * @param indexes the Indexes to run the search on
+   * @param query   the query to run
+   * 
+   * @return the search results
+   * 
+   * @throws IndexException if any error occurred while performing the search
+   */
+  public SearchResults query(List<Index> indexes, SearchQuery query) throws IndexException {
+    return query(indexes, query, new SearchPaging());
+  }
+
+  /**
+   * Run a search on the given Indexes.
+   *
+   * @param indexes  the Indexes to run the search on
+   * @param query    the query to run
+   * @param paging   paging details (can be <code>null</code>)
+   *
+   * @return the search results
+   *
+   * @throws IndexException if any error occurred while performing the search
+   */
+  public SearchResults query(List<Index> indexes, SearchQuery query, SearchPaging paging) throws IndexException {
+    Query lquery = query.toQuery();
+    if (lquery == null)
+      throw new IndexException("Failed performing a query because the query is null", new NullPointerException("Null query"));
+    Map<IndexIO, IndexReader> readersMap = new HashMap<>();
+    IndexReader[] readers = new IndexReader[indexes.size()];
+    // grab a reader for each indexes
+    for (int i = 0; i < indexes.size(); i++) {
+      IndexIO io = getIndexIO(indexes.get(i));
+      // make sure index has been setup
+      if (io != null) {
+        // grab what we need
+        IndexReader reader = io.bookReader();
+        readers[i] = reader;
+        readersMap.put(io, reader);
+      }
+    }
+    try {
+      MultiReader reader = new MultiReader(readers);
+      IndexSearcher searcher = new IndexSearcher(reader);
+      LOGGER.debug("Performing search [{}] on {} indexes", query, readers.length);
+      Sort sort = query.getSort();
+      if (sort == null) sort = Sort.INDEXORDER;
+      // load the scores
+      TopFieldDocs results = searcher.search(lquery, paging.getHitsPerPage() * paging.getPage(), sort);
+      return new SearchResults(query, results, paging, readersMap, searcher);
+    } catch (IOException e) {
+      for (IndexIO io : readersMap.keySet())
+        io.releaseReader(readersMap.get(io));
+      throw new IndexException("Failed performing a query on the Index because of an I/O problem", e);
+    }
+  }
+
+  /**
+   * Returns the list of term and how frequently they are used by performing a fuzzy match on the
+   * specified term.
+   *
+   * @param field  the field to use as a facet
+   * @param upTo   the max number of values to return
+   * @param query  a predicate to apply on the facet (can be null or empty)
+   *
+   * @return the facte instance.
+   *
+   * @throws IOException    if there was an error reading the index or creating the condition query
+   * @throws IndexException if there was an error getting the reader or searcher.
+   */
+  public Facet getFacet(String field, int upTo, Query query, Index index) throws IndexException, IOException {
+    FieldFacet facet = null;
+    IndexReader reader = null;
+    IndexSearcher searcher = null;
+    try {
+      // Retrieve all terms for the field
+      reader = grabReader(index);
+      facet = FieldFacet.newFacet(field, reader);
+
+      // search
+      searcher = grabSearcher(index);
+      facet.compute(searcher, query, upTo);
+
+    } finally {
+      releaseQuietly(index, reader);
+      releaseQuietly(index, searcher);
+    }
+    return facet;
+  }
+
+  /**
+   * Returns the list of term and how frequently they are used by performing a fuzzy match on the
+   * specified term.
+   *
+   * @param fields the fields to use as facets
+   * @param upTo   the max number of values to return
+   * @param query  a predicate to apply on the facet (can be null or empty)
+   *
+   * @throws IndexException if there was an error reading the indexes or creating the condition query
+   * @throws IllegalStateException If one of the indexes is not initialised
+   */
+  public List<Facet> getFacets(List<String> fields, int upTo, Query query, Index index) throws IOException, IndexException {
+    // parameter checks
+    if (fields == null || fields.isEmpty() || index == null)
+      return Collections.emptyList();
+    List<Facet> facets = new ArrayList<Facet>();
+    for (String field : fields) {
+      if (field.length() > 0) {
+        facets.add(getFacet(field, upTo, query, index));
+      }
+    }
+    return facets;
+  }
+
+  /**
+   * Returns the list of term and how frequently they are used by performing a fuzzy match on the
+   * specified term.
+   *
+   * @param fields the fields to use as facets
+   * @param upTo   the max number of values to return
+   * @param query  a predicate to apply on the facet (can be null or empty)
+   *
+   * @throws IndexException if there was an error reading the indexes or creating the condition query
+   * @throws IllegalStateException If one of the indexes is not initialised
+   */
+  public List<Facet> getFacets(List<String> fields, int upTo, Query query, List<Index> indexes) throws IOException, IndexException {
+    // parameter checks
+    if (fields == null || fields.isEmpty() || indexes.isEmpty())
+      return Collections.emptyList();
+    // check for one index only
+    if (indexes.size() == 1)
+      return getFacets(fields, upTo, query, indexes.get(0));
+    // retrieve all searchers and readers
+    IndexReader[] readers = new IndexReader[indexes.size()];
+    IndexIO[] ios = new IndexIO[indexes.size()];
+    // grab a reader for each indexes
+    for (int i = 0; i < indexes.size(); i++) {
+      Index index = indexes.get(i);
+      ios[i] = getIndexIO(index);
+      readers[i] = grabReader(index);
+    }
+    List<Facet> facets = new ArrayList<Facet>();
+    try {
+      // Retrieve all terms for the field
+      IndexReader multiReader = new MultiReader(readers);
+      IndexSearcher multiSearcher = new IndexSearcher(multiReader);
+      for (String field : fields) {
+        if (field.length() > 0) {
+          FieldFacet facet = FieldFacet.newFacet(field, multiReader);
+          // search
+          facet.compute(multiSearcher, query, upTo);
+          // store it
+          facets.add(facet);
+        }
+      }
+    } finally {
+      // now release everything we used
+      for (int i = 0; i < ios.length; i++)  {
+        ios[i].releaseReader(readers[i]);
+      }
+    }
+    return facets;
+  }
+
+  public MultipleIndexReader getMultipleIndexReader(List<Index> indexes) {
+    return new MultipleIndexReader(this, indexes);
   }
 
   // Lower level API providing access to Lucene objects
@@ -404,11 +565,7 @@ public final class IndexManager implements Runnable {
    */
   public void release(Index index, IndexReader reader) throws IndexException {
     if (reader == null) return;
-    try {
-      getIndexIO(index).releaseReader(reader);
-    } catch (IOException ex) {
-      throw new IndexException("Failed to release a reader because of an I/O problem", ex);
-    }
+    getIndexIO(index).releaseReader(reader);
   }
 
   /**
@@ -426,8 +583,6 @@ public final class IndexManager implements Runnable {
     if (reader == null) return;
     try {
       getIndexIO(index).releaseReader(reader);
-    } catch (IOException ex) {
-      LOGGER.error("Failed to release a reader because of an I/O problem", ex);
     } catch (IndexException ex) {
       LOGGER.error("Failed to release a reader because of an Index problem", ex);
     }
@@ -471,12 +626,8 @@ public final class IndexManager implements Runnable {
    */
   public void release(Index index, IndexSearcher searcher) throws IndexException {
     if (searcher == null) return;
-    try {
-      IndexIO io = getIndexIO(index);
-      io.releaseSearcher(searcher);
-    } catch (IOException ex) {
-      throw new IndexException("Failed to release a searcher", ex);
-    }
+    IndexIO io = getIndexIO(index);
+    io.releaseSearcher(searcher);
   }
 
   /**
@@ -494,8 +645,6 @@ public final class IndexManager implements Runnable {
     if (searcher == null) return;
     try {
       getIndexIO(index).releaseSearcher(searcher);
-    } catch (IOException ex) {
-      LOGGER.error("Failed to release a searcher - quietly ignoring", ex);
     } catch (IndexException ex) {
       LOGGER.error("Failed to release a searcher - quietly ignoring", ex);
     }
@@ -617,13 +766,13 @@ public final class IndexManager implements Runnable {
             } else if (job.isBatch()) {
               boolean success = true;
               for (String contentid : job.getBatchContentIDs()) {
-                success = success && indexContent(contentid, job.getBatchContentType(contentid), job, io);
+                success = success && indexContent(job, contentid, job.getBatchContentType(contentid), io);
               }
               job.setSuccess(success);
             // single content
             } else {
               // retrieve content
-              job.setSuccess(indexContent(job.getContentID(), job.getContentType(), job, io));
+              job.setSuccess(indexContent(job, job.getContentID(), job.getContentType(), io));
             }
           } catch (Throwable ex) {
             this._listener.error(job, "Unknown error: " + ex.getMessage(), ex);
@@ -654,7 +803,7 @@ public final class IndexManager implements Runnable {
   // private methods
   // ----------------------------------------------------------------------------------------------
 
-  private boolean indexContent(String contentid, ContentType contenttype, IndexJob job, IndexIO io) throws IndexException {
+  private boolean indexContent(IndexJob job, String contentid, ContentType contenttype, IndexIO io) throws IndexException {
     // retrieve content
     Content content;
     try {
@@ -684,7 +833,8 @@ public final class IndexManager implements Runnable {
     // translate content
     StringWriter xsltResult = new StringWriter();
     try {
-      translateContent(new FlintErrorListener(this._listener, job), job.getIndex(), content, null, xsltResult);
+      translateContent(new FlintErrorListener(this._listener, job),
+          job.getIndex(), content, job.getRequester().getParameters(job.getContentID(), job.getContentType()), xsltResult);
     } catch (IndexException ex) {
       this._listener.error(job, ex.getMessage(), ex);
       return false;
@@ -698,6 +848,7 @@ public final class IndexManager implements Runnable {
       this._listener.error(job, "Failed to create Lucene Documents from Index XML", ex);
       return false;
     }
+    LOGGER.debug("Found {} documents to update", documents.size());
     try {
       // add docs to index index
       io.updateDocuments(content.getDeleteRule(), documents);
@@ -772,7 +923,7 @@ public final class IndexManager implements Runnable {
         t.setErrorListener(errorListener);
       }
       // retrieve parameters
-      Map<String, String> parameters = index.getParameters(content.getContentID(), content.getContentType(), mediatype);
+      Map<String, String> parameters = index.getParameters(content.getContentType(), mediatype);
       if (parameters != null && params != null) {
         parameters = new HashMap<String, String>(parameters);
         parameters.putAll(params);
@@ -804,7 +955,7 @@ public final class IndexManager implements Runnable {
    * @return
    * @throws IndexException
    */
-  private IndexIO getIndexIO(Index index) throws IndexException {
+  public IndexIO getIndexIO(Index index) throws IndexException {
     IndexIO io = index == null ? null : this._indexes.get(index.getIndexID());
     if (io == null) {
       LOGGER.debug("Creating a new IndexIO for {}", index);
@@ -822,7 +973,7 @@ public final class IndexManager implements Runnable {
     List<IndexIO> ios = new ArrayList<IndexIO>(this._indexes.values());
     for (IndexIO io : ios) {
       try {
-        io.maybeReopen(); // XXX: We seem to need to check whether we need to reopen...
+        io.maybeReopen();
         io.maybeCommit();
       } catch (IndexException ex) {
         LOGGER.error("Failed to perform commit", ex);
@@ -830,20 +981,6 @@ public final class IndexManager implements Runnable {
       // make sure there's no job waiting
       if (!this._indexQueue.isEmpty()) return;
     }
-    // ok optimise now?
-//    if ((System.currentTimeMillis() - this._lastActivity.longValue()) > INACTIVE_OPTIMISE_TIME) {
-//      ios = new ArrayList<IndexIO>(this._indexes.values());
-//      // loop through the indexes and optimise
-//      for (IndexIO io : ios) {
-//        try {
-//          io.maybeOptimise();
-//        } catch (IndexException ex) {
-//          LOGGER.error("Failed to perform optimise", ex);
-//        }
-//        // make sure there's no job waiting
-//        if (!this._indexQueue.isEmpty()) return;
-//      }
-//    }
   }
 
 }

@@ -1,0 +1,7 @@
+<?xml version="1.0"?>
+<documents version="3.0">
+  <document>
+    <field name="id" store="true" index="docs">doc3</field>
+    <field name="field1" store="true" index="docs-and-freqs-and-positions-and-offsets">value1 value2 value3</field>
+  </document>
+</documents>

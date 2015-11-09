@@ -18,9 +18,7 @@ package org.pageseeder.flint.util;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 import java.util.regex.Pattern;
 
 import org.apache.lucene.index.IndexReader;
@@ -31,6 +29,7 @@ import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.PhraseQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermQuery;
+import org.pageseeder.flint.api.Index;
 
 /**
  * A set of utility methods related to query objects in Lucene.
@@ -119,13 +118,13 @@ public final class Queries {
    * @throws IOException If thrown by the reader while extracting fuzzy terms.
    */
   @Beta
-  public static List<Query> similar(Query query, Collection<Term> terms, IndexReader reader) throws IOException {
+  public static List<Query> similar(Query query, Collection<Term> terms, Index index, IndexReader reader) throws IOException {
     List<Query> similar = new ArrayList<Query>();
     // Extract the list of similar terms
     for (Term t : terms) {
-      List<Term> fuzzy = Terms.fuzzy(reader, t);
-      for (Term f : fuzzy) {
-        Query sq = substitute(query, t, f);
+      List<String> fuzzy = Terms.fuzzy(index, reader, t);
+      for (String f : fuzzy) {
+        Query sq = substitute(query, t, new Term(t.field(), f));
         similar.add(sq);
       }
     }

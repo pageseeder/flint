@@ -31,6 +31,7 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.Query;
+import org.pageseeder.flint.api.Index;
 import org.pageseeder.flint.util.Beta;
 import org.pageseeder.flint.util.Fields;
 import org.pageseeder.flint.util.Queries;
@@ -176,7 +177,7 @@ public final class Question implements SearchParameter, XMLWritable {
    *
    * @throws IOException If thrown by the reader while getting the fuzzy terms.
    */
-  public List<Question> similar(IndexReader reader) throws IOException {
+  public List<Question> similar(Index index, IndexReader reader) throws IOException {
     List<Question> similar = new ArrayList<Question>();
     // If the question contains a phrase, try removing the phrase
     if (this._question.indexOf('"') >= 0) {
@@ -191,9 +192,8 @@ public final class Question implements SearchParameter, XMLWritable {
         Set<String> fuzzy = new HashSet<String>();
         // collect fuzzy terms based on index
         for (String field : this._fields.keySet()) {
-          for (Term t : Terms.fuzzy(reader, new Term(field, value))) {
-            fuzzy.add(t.text());
-          }
+          List<String> fuzzies = Terms.fuzzy(index, reader, new Term(field, value));
+          if (fuzzies != null) fuzzy.addAll(fuzzies);
         }
         // rewrite question
         for (String x : fuzzy) {

@@ -1,0 +1,11 @@
+<?xml version="1.0"?>
+<documents version="3.0">
+  <document>
+    <field name="field1" store="true" index="docs-and-freqs">value1</field>
+    <field name="field2" store="true" index="docs-and-freqs">value2</field>
+    <field name="field3" store="true" index="docs-and-freqs">value3</field>
+    <field name="field4" store="true" index="docs-and-freqs">value4</field>
+    <field name="field5" store="true" index="docs-and-freqs">value5</field>
+    <field name="field6" store="true" index="docs-and-freqs">value6</field>
+  </document>
+</documents>

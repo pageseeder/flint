@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  This file contains the logback configuration for this project in production mode.
+-->
+<configuration debug="false" scan="false">
+
+  <!-- Application -->
+  <contextName>JUnitTests</contextName>
+
+  <!-- Sends logs to Logback's Beagle Eclipse plugin -->
+  <consolePlugin />
+
+  <!-- Console appender -->
+  <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+    <encoder>
+      <pattern>%-4relative [%thread] %-5level %logger{35} - %msg %n</pattern>
+    </encoder>
+  </appender>
+
+  <!-- Individual logs -->
+  <logger name="org.pageseeder.flint" level="DEBUG" />
+
+  <root level="DEBUG">
+    <appender-ref ref="STDOUT"/>
+  </root>
+
+</configuration>

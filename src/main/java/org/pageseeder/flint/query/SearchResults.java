@@ -18,14 +18,17 @@ package org.pageseeder.flint.query;
 import java.io.IOException;
 import java.text.ParseException;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Set;
 import java.util.TimeZone;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.CorruptIndexException;
+import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.IndexSearcher;
@@ -113,7 +116,7 @@ public final class SearchResults implements XMLWritable {
   /**
    * The index I/O.
    */
-  private final IndexIO _indexIO;
+  private final SearchReaders readers;
 
   /**
    * The total number of results.
@@ -135,6 +138,22 @@ public final class SearchResults implements XMLWritable {
 
   // Constructors
   // ---------------------------------------------------------------------------------------------
+
+  /**
+   * Creates a new SearchResults.
+   *
+   * @param query    The search query that was used to produce these results.
+   * @param docs     The actual search results from Lucene in TopFieldDocs.
+   * @param paging   The paging configuration.
+   * @param io       The IndexIO object, used to release the searcher when terminated
+   * @param searcher The Lucene searcher.
+   *
+   * @throws IndexException if the documents could not be retrieved from the Index
+   */
+  public SearchResults(SearchQuery query, TopFieldDocs docs, SearchPaging paging, Map<IndexIO, IndexReader> readers, IndexSearcher searcher)
+      throws IndexException {
+    this(query, docs.scoreDocs, docs.fields, docs.totalHits, paging, readers, searcher);
+  }
 
   /**
    * Creates a new SearchResults.
@@ -179,14 +198,43 @@ public final class SearchResults implements XMLWritable {
    *
    * @throws IndexException if the documents could not be retrieved from the Index
    */
-  private SearchResults(SearchQuery query, ScoreDoc[] hits, SortField[] sortf, int totalResults, SearchPaging paging, IndexIO io,
-      IndexSearcher searcher) throws IndexException {
+  private SearchResults(SearchQuery query, ScoreDoc[] hits, SortField[] sortf, int totalResults,
+      SearchPaging paging, IndexIO io, IndexSearcher searcher) throws IndexException {
     this._query = query;
     this._scoredocs = hits;
     this._sortfields = sortf;
     this._paging = paging != null? paging : new SearchPaging();
     this._searcher = searcher;
-    this._indexIO = io;
+    this.readers = new SearchReaders(io);
+    this.totalNbOfResults = totalResults;
+    // default timezone is the server's
+    TimeZone tz = TimeZone.getDefault();
+    this.timezoneOffset = tz.getRawOffset();
+    // take daylight savings into account
+    if (tz.inDaylightTime(new Date())) {
+      this.timezoneOffset += ONE_HOUR_IN_MS;
+    }
+  }
+
+  /**
+   * Creates a new SearchResults.
+   *
+   * @param hits The actual search results from Lucene in ScoreDoc.
+   * @param sortf The Field used to sort the results
+   * @param paging The paging configuration.
+   * @param io The IndexIO object, used to release the searcher when terminated
+   * @param searcher The Lucene searcher.
+   *
+   * @throws IndexException if the documents could not be retrieved from the Index
+   */
+  private SearchResults(SearchQuery query, ScoreDoc[] hits, SortField[] sortf, int totalResults,
+      SearchPaging paging, Map<IndexIO, IndexReader> readers, IndexSearcher searcher) throws IndexException {
+    this._query = query;
+    this._scoredocs = hits;
+    this._sortfields = sortf;
+    this._paging = paging != null? paging : new SearchPaging();
+    this._searcher = searcher;
+    this.readers = new SearchReaders(readers);
     this.totalNbOfResults = totalResults;
     // default timezone is the server's
     TimeZone tz = TimeZone.getDefault();
@@ -238,9 +286,6 @@ public final class SearchResults implements XMLWritable {
   @Override
   public void toXML(XMLWriter xml) throws IOException {
     xml.openElement("search-results", true);
-    if (this._indexIO != null) {
-      xml.attribute("index", this._indexIO.indexID());
-    }
     int firsthit = this._paging.getFirstHit();
     int lasthit = this._paging.getLastHit(this.totalNbOfResults);
 
@@ -382,16 +427,9 @@ public final class SearchResults implements XMLWritable {
    * @throws IndexException Will wrap any IO error thrown when trying to release the searcher.
    */
   public void terminate() throws IndexException {
-    if (this._indexIO == null) return;
     if (this._terminated) return;
-    try {
-      this._indexIO.releaseSearcher(this._searcher);
-      this._terminated = true;
-    } catch (IOException ex) {
-      String msg = "Failed releasing a Searcher after performing a query on the Index because of an I/O problem";
-      LOGGER.error(msg, ex);
-      throw new IndexException(msg, ex);
-    }
+    this.readers.release(this._searcher);
+    this._terminated = true;
   }
 
   /**
@@ -401,9 +439,7 @@ public final class SearchResults implements XMLWritable {
    */
   @Override
   protected void finalize() throws Throwable {
-    if (!this._terminated) {
-      terminate();
-    }
+    if (!this._terminated) terminate();
     super.finalize();
   }
 
@@ -509,7 +545,7 @@ public final class SearchResults implements XMLWritable {
     /**
      * The current index for this iterator.
      */
-    private int index = 0;
+    private int index = 0; // TODO what about pagination!
 
     @Override
     public boolean hasNext() {
@@ -535,4 +571,20 @@ public final class SearchResults implements XMLWritable {
     }
   }
 
+  private static class SearchReaders {
+    private final IndexIO _single;
+    private final Map<IndexIO, IndexReader> _readers = new HashMap<>();
+    public SearchReaders(Map<IndexIO, IndexReader> readers) {
+      this._readers.putAll(readers);
+      this._single = null;
+    }
+    public SearchReaders(IndexIO io) {
+      this._single = io;
+    }
+    public void release(IndexSearcher searcher) {
+      if (this._single != null) this._single.releaseSearcher(searcher);
+      for (IndexIO io : this._readers.keySet())
+        io.releaseReader(this._readers.get(io));
+    }
+  }
 }

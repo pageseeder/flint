@@ -20,10 +20,21 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 
+import org.apache.lucene.index.Fields;
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.MultiFields;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.index.TermsEnum;
+import org.apache.lucene.search.FuzzyTermsEnum;
+import org.apache.lucene.search.spell.LuceneDictionary;
+import org.apache.lucene.search.suggest.Lookup.LookupResult;
+import org.apache.lucene.search.suggest.analyzing.FuzzySuggester;
+import org.apache.lucene.util.BytesRef;
+import org.pageseeder.flint.api.Index;
 import org.pageseeder.flint.util.Bucket.Entry;
 import org.pageseeder.xmlwriter.XMLWriter;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * A collection of utility methods to manipulate and extract terms.
@@ -32,6 +43,11 @@ import org.pageseeder.xmlwriter.XMLWriter;
  * @version 18 March 2011
  */
 public final class Terms {
+
+  /**
+   * private logger
+   */
+  private final static Logger LOGGER = LoggerFactory.getLogger(Terms.class);
 
   /**
    * Compares terms using their text value instead of their field value.
@@ -89,10 +105,10 @@ public final class Terms {
    *
    * @throws IOException If an error is thrown by the fuzzy term enumeration.
    */
-  public static List<Term> fuzzy(IndexReader reader, Term term) throws IOException {
-    List<Term> terms = new ArrayList<Term>();
-    fuzzy(reader, terms, term);
-    return terms;
+  public static List<String> fuzzy(Index index, IndexReader reader, Term term) throws IOException {
+    List<String> values = new ArrayList<String>();
+    fuzzy(index, reader, values, term);
+    return values;
   }
 
   /**
@@ -117,20 +133,21 @@ public final class Terms {
    * Loads all the fuzzy terms in the list of terms given the reader.
    *
    * @param reader Index reader to use.
-   * @param terms  The list of terms to load.
+   * @param values The list of terms to load.
    * @param term   The term to use.
    *
    * @throws IOException If an error is thrown by the fuzzy term enumeration.
    */
-  public static void fuzzy(IndexReader reader, List<Term> terms, Term term) throws IOException {
-//    FuzzyTermEnum e = new FuzzyTermEnum(reader, term);
-//    do {
-//      Term t = e.term();
-//      if (t != null) {
-//        terms.add(t);
-//      }
-//    } while (e.next());
-//    e.close();
+  public static void fuzzy(Index index, IndexReader reader, List<String> values, Term term) throws IOException {
+    FuzzySuggester suggester = new FuzzySuggester(index.getAnalyzer());
+    suggester.build(new LuceneDictionary(reader, term.field()));
+    List<LookupResult> results = suggester.lookup(term.text(), false, 10);
+    if (results == null) return;
+    for (LookupResult result : results) {
+      String key = result.key.toString();
+      if (key == null) break;
+      values.add(key);
+    }
   }
 
   /**
@@ -143,14 +160,14 @@ public final class Terms {
    * @throws IOException If an error is thrown by the fuzzy term enumeration.
    */
   @Beta public static void fuzzy(IndexReader reader, Bucket<Term> terms, Term term) throws IOException {
-//    FuzzyTermEnum e = new FuzzyTermEnum(reader, term);
-//    do {
-//      Term t = e.term();
-//      if (t != null) {
-//        terms.add(t, e.docFreq());
-//      }
-//    } while (e.next());
-//    e.close();
+    org.apache.lucene.index.Terms ts = MultiFields.getTerms(reader, term.field());
+    FuzzyTermsEnum e = new FuzzyTermsEnum(ts, null, term, 0.5f, term.bytes().utf8ToString().length(), true);
+    if (e == TermsEnum.EMPTY) return;
+    while (e.next() != null) {
+      BytesRef t = e.term();
+      if (t == null) break;
+      terms.add(new Term(term.field(), t), e.docFreq());
+    }
   }
 
   /**
@@ -163,6 +180,15 @@ public final class Terms {
    * @throws IOException If an error is thrown by the prefix term enumeration.
    */
   public static void prefix(IndexReader reader, List<Term> terms, Term term) throws IOException {
+//    PrefixQuery query = new PrefixQuery(term);
+//    TermsEnum e = new PrefixQuery(term).
+//    org.apache.lucene.index.Terms ts = MultiFields.getTerms(reader, term.field());
+//    PrefixTermsEnum e = new PrefixTermsEnum(ts, null, term, 0.5f, term.bytes().utf8ToString().length(), true);
+//    while (e.next() != null) {
+//      BytesRef t = e.term();
+//      if (t == null) break;
+//      terms.add(new Term(term.field(), t), e.docFreq());
+    
 //    PrefixTermEnum e = new PrefixTermEnum(reader, term);
 //    do {
 //      Term t = e.term();
@@ -185,24 +211,19 @@ public final class Terms {
    * @throws IOException should any IO error be reported by the {@link IndexReader#terms(Term)} method.
    */
   @Beta public static List<Term> terms(IndexReader reader, String field) throws IOException {
-    List<Term> terms = new ArrayList<Term>();
-//    TermEnum e = null;
-//    try {
-//      e = reader.terms(new Term(field, ""));
-//      if (e.term() != null) {
-//        while (field.equals(e.term().field())) {
-//          terms.add(e.term());
-//          if (!e.next()) {
-//            break;
-//          }
-//        }
-//      }
-//    } finally {
-//      if (e != null) {
-//        e.close();
-//      }
-//    }
-    return terms;
+    LOGGER.debug("Loading terms for field {}", field);
+    List<Term> termsList = new ArrayList<Term>();
+    Fields fields = MultiFields.getFields(reader);
+    org.apache.lucene.index.Terms terms = fields.terms(field);
+    if (terms == null) return termsList;
+    TermsEnum termsEnum = terms.iterator();
+    if (termsEnum == TermsEnum.EMPTY) return termsList;
+    while (termsEnum.next() != null) {
+      BytesRef t = termsEnum.term();
+      if (t == null) break;
+      termsList.add(new Term(field, BytesRef.deepCopyOf(t)));
+    }
+    return termsList;
   }
 
   /**
@@ -215,24 +236,18 @@ public final class Terms {
    *
    * @throws IOException should any IO error be reported by the {@link IndexReader#terms(Term)} method.
    */
-  @Beta public List<String> values(IndexReader reader, String field) throws IOException {
+  @Beta public static List<String> values(IndexReader reader, String field) throws IOException {
+    LOGGER.debug("Loading term values for field {}", field);
     List<String> values = new ArrayList<String>();
-//    TermEnum e = null;
-//    try {
-//      e = reader.terms(new Term(field, ""));
-//      if (e.term() != null) {
-//        while (field.equals(e.term().field())) {
-//          values.add(e.term().text());
-//          if (!e.next()) {
-//            break;
-//          }
-//        }
-//      }
-//    } finally {
-//      if (e != null) {
-//        e.close();
-//      }
-//    }
+    org.apache.lucene.index.Terms terms = MultiFields.getTerms(reader, field);
+    if (terms == null) return values;
+    TermsEnum termsEnum = terms.iterator();
+    if (termsEnum == TermsEnum.EMPTY) return values;
+    while (termsEnum.next() != null) {
+      BytesRef t = termsEnum.term();
+      if (t == null) break;
+      values.add(t.utf8ToString());
+    }
     return values;
   }
 

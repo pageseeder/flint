@@ -1,0 +1,8 @@
+<?xml version="1.0"?>
+<documents version="3.0">
+  <document>
+    <field name="field1">value1</field>
+    <field name="field2">value2 value3 value4</field>
+    <field name="fuzzy1">close clone clove glove tiger</field>
+  </document>
+</documents>

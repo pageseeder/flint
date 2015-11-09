@@ -16,6 +16,7 @@
 package org.pageseeder.flint.api;
 
 import java.io.File;
+import java.io.IOException;
 import java.net.URI;
 import java.util.Collections;
 import java.util.HashMap;
@@ -29,6 +30,7 @@ import javax.xml.transform.stream.StreamSource;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.FSDirectory;
 import org.pageseeder.flint.util.Beta;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -45,10 +47,6 @@ import org.slf4j.LoggerFactory;
  */
 public class Index {
 
-  public static interface ParametersBuilder {
-    public Map<String, String> buildParameters(String contentid);
-  }
-
   /**
    * Logger to use for this config object.
    */
@@ -64,12 +62,14 @@ public class Index {
   private final Map<ContentDefinition, Templates> _templates = new ConcurrentHashMap<ContentDefinition, Templates>();
 
   private final Analyzer _analyzer;
-
-  private ParametersBuilder parametersBuilder = null;
   /**
    * A list of parameters.
    */
   private final Map<ContentDefinition, Map<String, String>> _parameters = new ConcurrentHashMap<ContentDefinition, Map<String, String>>();
+
+  public Index(String id, File dir, Analyzer analyzer) throws IOException {
+    this(id, FSDirectory.open(dir.toPath()), analyzer);
+  }
 
   public Index(String id, Directory dir, Analyzer analyzer) {
     this._directory = dir;
@@ -97,14 +97,6 @@ public class Index {
    */
   public final Directory getIndexDirectory() {
     return this._directory;
-  }
-
-  /**
-   * Set a new parameters builder.
-   * @param builder the new builder
-   */
-  public void setParametersBuilder(ParametersBuilder builder) {
-    this.parametersBuilder = builder;
   }
 
   // Parameters management =========================================================================
@@ -180,19 +172,11 @@ public class Index {
    *
    * @return the list of parameters for the given Content definition (never <code>null</code>).
    */
-  public Map<String, String> getParameters(String contentid, ContentType type, String media) {
+  public Map<String, String> getParameters(ContentType type, String media) {
     // get parameters for the content type first
-    Map<String, String> typeParams = this._parameters.get(new ContentDefinition(type, media));
-    // then get parameters for this content
-    Map<String, String> contentParams = this.parametersBuilder == null ? null : this.parametersBuilder.buildParameters(contentid);
+    Map<String, String> params = this._parameters.get(new ContentDefinition(type, media));
     // if both null, return empty list
-    if (typeParams == null && contentParams == null) return Collections.emptyMap();
-    // if only one, return that one
-    if (typeParams == null) return Collections.unmodifiableMap(contentParams);
-    if (contentParams == null) return Collections.unmodifiableMap(typeParams);
-    // ok then ow combine them
-    Map<String, String> params = new HashMap<>(typeParams);
-    params.putAll(contentParams);
+    if (params == null) return Collections.emptyMap();
     return Collections.unmodifiableMap(params);
   }
 
@@ -300,7 +284,7 @@ public class Index {
       if (def == null) return false;
       if (this == def) return true;
       if (!this._type.equals(def._type)) return false;
-      return this._media.equals(def._media);
+      return this._media == null && def._media == null || this._media.equals(def._media);
     }
 
     /**
@@ -329,7 +313,7 @@ public class Index {
      * @return the hashcode for this object.
      */
     private static int hashCode(ContentType type, String media) {
-     return type.hashCode() * 13 + media.hashCode() * 19;
+     return type.hashCode() * 13 + (media == null ? 0 : (media.hashCode() * 19));
     }
   }
 

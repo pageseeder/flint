@@ -17,6 +17,7 @@ package org.pageseeder.flint.local;
 
 import java.io.File;
 import java.io.IOException;
+import java.net.URI;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
@@ -25,7 +26,6 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
 import org.pageseeder.flint.api.Index;
-import org.pageseeder.flint.api.Index.ParametersBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -85,12 +85,12 @@ public final class LocalIndex {
     this._index = new Index(this._location.getName(), dir, analyzer);
   }
 
-  public void setParameterBuilder(ParametersBuilder builder) {
-    this._index.setParametersBuilder(builder);
-  }
-
   public Index getIndex() {
     return this._index;
+  }
+
+  public void setTemplate(String extension, URI template) {
+    this._index.setTemplates(LocalFileContentType.SINGLETON, extension, template);
   }
 
   // Utility methods for public usage
@@ -130,8 +130,8 @@ public final class LocalIndex {
    */
   private static void ensureFolderExists(File folder) {
     if (!folder.exists()) {
-      boolean created = folder.mkdirs();
-      if (!created) {
+      folder.mkdirs();
+      if (!folder.exists()) {
         LOGGER.warn("Unable to create location {}", folder);
       }
     }

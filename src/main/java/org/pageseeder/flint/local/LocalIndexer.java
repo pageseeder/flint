@@ -33,7 +33,7 @@ import org.slf4j.LoggerFactory;
  * @author Christophe Lauret
  * @version 27 February 2013
  */
-public final class LocalIndexer {
+public final class LocalIndexer extends Requester {
 
   /**
    * A logger for this class and to provide for Flint.
@@ -43,8 +43,6 @@ public final class LocalIndexer {
   private final IndexManager _manager;
 
   private final LocalIndex _index;
-
-  private final Requester _requester;
 
   private Priority priority = Priority.LOW;
   /**
@@ -56,9 +54,9 @@ public final class LocalIndexer {
    * @throws NullPointerException if the location is <code>null</code>.
    */
   public LocalIndexer(IndexManager manager, LocalIndex index) {
+    super("Local indexer");
     this._manager = manager;
     this._index = index;
-    this._requester = new Requester("Local indexer");
   }
 
   public void setHighPriority() {
@@ -81,17 +79,34 @@ public final class LocalIndexer {
     indexDocuments(root, true, null);
   }
 
-  public void indexDocuments(File root, boolean recursive, FileFilter filter) {
+  public int indexDocuments(File root, boolean recursive, FileFilter filter) {
     // find documents to index
     Map<String, ContentType> files = new HashMap<>();
     collectDocuments(root, recursive, filter, files);
     if (files.isEmpty()) {
       LOGGER.warn("Nothing to index!");
     } else {
-      this._manager.indexBatch(files, this._index.getIndex(), this._requester, this.priority);
+      this._manager.indexBatch(files, this._index.getIndex(), this, this.priority);
     }
+    return files.size();
   }
 
+  public void clear() {
+    this._manager.clear(this._index.getIndex(), this, Priority.HIGH);
+  }
+
+  @Override
+  public Map<String, String> getParameters(String contentid, ContentType type) {
+    HashMap<String, String> params = new HashMap<>();
+    File f = new File(contentid);
+    if (f.exists() && type == LocalFileContentType.SINGLETON) {
+      params.put("path", f.getAbsolutePath());
+      params.put("file-name", f.getName());
+      params.put("last-modified", String.valueOf(f.lastModified()));
+    }
+    return params;
+  }
+  
   // -----------------------------------------------------------------------------------
   // private helpers
   private void collectDocuments(File root, boolean recursive, FileFilter filter, Map<String, ContentType> files) {

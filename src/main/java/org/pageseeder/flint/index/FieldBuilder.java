@@ -61,42 +61,42 @@ public final class FieldBuilder {
   /**
    * The 'store' flag of the field to build.
    */
-  private boolean _store;
+  private boolean _store = true;
 
   /**
    * The 'tokenize' flag of the field to build.
    */
-  private boolean _tokenize;
+  private boolean _tokenize = true;
 
   /**
    * The 'index' attribute of the field to build.
    */
-  private IndexOptions _index;
+  private IndexOptions _index = IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS;
 
   /**
    * If norms are omitted.
    */
-  private boolean _omitNorms;
+  private boolean _omitNorms = false;
 
   /**
    * The vector flag of the field to build.
    */
-  private boolean _vector;
+  private boolean _vector = true;
 
   /**
    * The vector positions of the field to build.
    */
-  private boolean _vectorPositions;
+  private boolean _vectorPositions = true;
 
   /**
    * The vector payloads of the field to build.
    */
-  private boolean _vectorPayloads;
+  private boolean _vectorPayloads = true;
 
   /**
    * The vector offsets of the field to build.
    */
-  private boolean _vectorOffsets;
+  private boolean _vectorOffsets = true;
 
   /**
    * Date format to use (only if the value is a date)
@@ -171,7 +171,7 @@ public final class FieldBuilder {
    * @return this builder.
    */
   public FieldBuilder store(String store) {
-    this._store = store != null && Boolean.parseBoolean(store);
+    if (store != null) this._store = Boolean.parseBoolean(store);
     return this;
   }
 
@@ -193,7 +193,7 @@ public final class FieldBuilder {
    * @return this builder.
    */
   public FieldBuilder tokenize(String tokenize) {
-    this._tokenize = tokenize != null && Boolean.parseBoolean(tokenize);
+    if (tokenize != null) this._tokenize = Boolean.parseBoolean(tokenize);
     return this;
   }
 
@@ -229,7 +229,7 @@ public final class FieldBuilder {
    * @return this builder.
    */
   public FieldBuilder index(String index) {
-    this._index = toIndexOptions(index);
+    if (index != null) this._index = toIndexOptions(index);
     return this;
   }
 
@@ -284,7 +284,7 @@ public final class FieldBuilder {
    * @return this builder.
    */
   public FieldBuilder termVector(String vector) {
-    this._vector = Boolean.parseBoolean(vector);
+    if (vector != null) this._vector = Boolean.parseBoolean(vector);
     return this;
   }
 
@@ -295,7 +295,7 @@ public final class FieldBuilder {
    * @return this builder.
    */
   public FieldBuilder termVectorOffsets(String vectorOffsets) {
-    this._vectorOffsets = Boolean.parseBoolean(vectorOffsets);
+    if (vectorOffsets != null) this._vectorOffsets = Boolean.parseBoolean(vectorOffsets);
     return this;
   }
 
@@ -306,7 +306,7 @@ public final class FieldBuilder {
    * @return this builder.
    */
   public FieldBuilder termVectorPositions(String vectorPositions) {
-    this._vectorPositions = Boolean.parseBoolean(vectorPositions);
+    if (vectorPositions != null) this._vectorPositions = Boolean.parseBoolean(vectorPositions);
     return this;
   }
 
@@ -317,7 +317,7 @@ public final class FieldBuilder {
    * @return this builder.
    */
   public FieldBuilder termVectorPayloads(String vectorPayloads) {
-    this._vectorPayloads = Boolean.parseBoolean(vectorPayloads);
+    if (vectorPayloads != null) this._vectorPayloads = Boolean.parseBoolean(vectorPayloads);
     return this;
   }
 
@@ -341,7 +341,7 @@ public final class FieldBuilder {
    * @return this builder.
    */
   public FieldBuilder boost(String boost) {
-    this._boost = toBoost(boost);
+    if (boost != null) this._boost = toBoost(boost);
     return this;
   }
 
@@ -376,7 +376,7 @@ public final class FieldBuilder {
    * @return this builder.
    */
   public FieldBuilder resolution(String resolution) {
-    this._resolution = toResolution(resolution);
+    if (resolution != null) this._resolution = toResolution(resolution);
     return this;
   }
 
@@ -398,7 +398,7 @@ public final class FieldBuilder {
    * @return this builder.
    */
   public FieldBuilder numeric(String type) {
-    this._numeric = toNumeric(type);
+    if (type != null) this._numeric = toNumeric(type);
     return this;
   }
 
@@ -517,14 +517,14 @@ public final class FieldBuilder {
    * <p>Invoke this function once a field has been build or before building a new field.
    */
   public void reset() {
-    this._index = null;
+    this._index = IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS;
     this._omitNorms = false;
-    this._store = false;
-    this._tokenize = false;
-    this._vector = false;
-    this._vectorOffsets = false;
-    this._vectorPositions = false;
-    this._vectorPayloads = false;
+    this._store = true;
+    this._tokenize = true;
+    this._vector = true;
+    this._vectorOffsets = true;
+    this._vectorPositions = true;
+    this._vectorPayloads = true;
     this._name = null;
     this._value = null;
     this._boost = DEFAULT_BOOST_VALUE;

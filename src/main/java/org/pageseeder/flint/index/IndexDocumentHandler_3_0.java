@@ -237,6 +237,7 @@ final class IndexDocumentHandler_3_0 extends DefaultHandler implements IndexDocu
     this.builder.termVectorOffsets(atts.getValue("term-vector-offsets"));
     this.builder.termVectorPayloads(atts.getValue("term-vector-payloads"));
     this.builder.boost(atts.getValue("boost"));
+    this.builder.tokenize(atts.getValue("tokenize"));
     // Date handling
     this.builder.dateFormat(toDateFormat(atts.getValue("date-format")));
     this.builder.resolution(atts.getValue("date-resolution"));
