@@ -1,0 +1,20 @@
+<?xml version="1.0"?>
+<documents version="3.0">
+  <document>
+    <field name="name">electric train</field>
+    <field name="color">blue</field>
+  </document>
+  <document>
+    <field name="name">electric train</field>
+    <field name="color">yellow</field>
+  </document>
+  <document>
+    <field name="name">acoustic guitar</field>
+    <field name="color">green</field>
+  </document>
+  <document>
+    <field name="name">electric guitar</field>
+    <field name="color">red</field>
+    <field name="color">blue</field>
+  </document>
+</documents>

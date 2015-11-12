@@ -1,23 +1,26 @@
-package org.pageseeder.flint.local;
+package org.pageseeder.flint.utils;
 
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
-import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Assert;
-import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.pageseeder.flint.IndexException;
 import org.pageseeder.flint.IndexManager;
 import org.pageseeder.flint.content.SourceForwarder;
+import org.pageseeder.flint.local.LocalFileContentFetcher;
+import org.pageseeder.flint.local.LocalIndex;
+import org.pageseeder.flint.local.LocalIndexer;
+import org.pageseeder.flint.local.TestListener;
+import org.pageseeder.flint.util.Bucket;
 import org.pageseeder.flint.util.Terms;
-import org.pageseeder.flint.utils.TestUtils;
 
 public class TermsTest {
 
@@ -34,7 +37,6 @@ public class TermsTest {
     index.setTemplate("xml", template.toURI());
     manager = new IndexManager(new LocalFileContentFetcher(), new TestListener());
     manager.setDefaultTranslator(new SourceForwarder("xml", "UTF-8"));
-    manager.start();
     System.out.println("Starting manager!");
     LocalIndexer indexer = new LocalIndexer(manager, index);
     indexer.indexDocuments(documents);
@@ -88,15 +90,74 @@ public class TermsTest {
   }
 
   @Test
-  public void testFuzzy1() throws IndexException {
+  public void testPrefixValues1() throws IndexException {
+    IndexReader reader;
+    try {
+      reader = manager.grabReader(index.getIndex());
+      List<String> values = Terms.prefix(index.getIndex(), reader, new Term("prefix1", "pre"));
+      Assert.assertTrue(values.contains("president"));
+      Assert.assertTrue(values.contains("pretense"));
+      Assert.assertTrue(values.contains("pretentious"));
+      Assert.assertTrue(values.contains("preference"));
+      Assert.assertTrue(values.contains("prepare"));
+      Assert.assertTrue(values.contains("pretext"));
+      Assert.assertTrue(values.contains("pressing"));
+      values = Terms.prefix(index.getIndex(), reader, new Term("prefix1", "pret"));
+      Assert.assertTrue(values.contains("pretense"));
+      Assert.assertTrue(values.contains("pretentious"));
+      Assert.assertTrue(values.contains("pretext"));
+      values = Terms.prefix(index.getIndex(), reader, new Term("prefix1", "preten"));
+      Assert.assertTrue(values.contains("pretense"));
+      Assert.assertTrue(values.contains("pretentious"));
+      manager.release(index.getIndex(), reader);
+    } catch (IndexException | IOException ex) {
+      ex.printStackTrace();
+      Assert.fail();
+    }
+  }
+
+  @Test
+  public void testPrefixValues2() throws IndexException {
+    IndexReader reader;
+    try {
+      reader = manager.grabReader(index.getIndex());
+      List<String> values = new ArrayList<>();
+      Terms.prefix(index.getIndex(), reader, values, Collections.singletonList("prefix2"), "blue fro");
+      Assert.assertTrue(values.contains("blue frog"));
+      Assert.assertTrue(values.contains("blue front"));
+      manager.release(index.getIndex(), reader);
+    } catch (IndexException | IOException ex) {
+      ex.printStackTrace();
+      Assert.fail();
+    }
+  }
+
+  @Test
+  public void testFuzzyValues() throws IndexException {
     IndexReader reader;
     try {
       reader = manager.grabReader(index.getIndex());
       List<String> values = Terms.fuzzy(index.getIndex(), reader, new Term("fuzzy1", "clove"));
-      Assert.assertTrue(values.contains("clove"));
       Assert.assertTrue(values.contains("close"));
       Assert.assertTrue(values.contains("clone"));
       Assert.assertTrue(values.contains("glove"));
+      manager.release(index.getIndex(), reader);
+    } catch (IndexException | IOException ex) {
+      ex.printStackTrace();
+      Assert.fail();
+    }
+  }
+
+  @Test
+  public void testFuzzyTerms() throws IndexException {
+    IndexReader reader;
+    try {
+      reader = manager.grabReader(index.getIndex());
+      Bucket<Term> terms = new Bucket<>(6);
+      Terms.fuzzy(index.getIndex(), reader, terms, new Term("fuzzy1", "clove"));
+      Assert.assertEquals(1, terms.count(new Term("fuzzy1", "close")));
+      Assert.assertEquals(1, terms.count(new Term("fuzzy1", "clone")));
+      Assert.assertEquals(2, terms.count(new Term("fuzzy1", "glove")));
       manager.release(index.getIndex(), reader);
     } catch (IndexException | IOException ex) {
       ex.printStackTrace();

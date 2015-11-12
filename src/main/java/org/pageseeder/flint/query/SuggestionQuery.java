@@ -26,6 +26,7 @@ import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.TermQuery;
+import org.pageseeder.flint.api.Index;
 import org.pageseeder.flint.util.Beta;
 import org.pageseeder.flint.util.Terms;
 import org.pageseeder.xmlwriter.XMLWriter;
@@ -80,11 +81,15 @@ public final class SuggestionQuery implements SearchQuery, FlintQuery {
    * @param reader Computes the list.
    * @throws IOException should an error occurs while reading the index.
    */
-  public void compute(IndexReader reader) throws IOException {
+  public void compute(Index index, IndexReader reader) throws IOException {
     // Compute the list of terms
     List<Term> terms = new ArrayList<Term>();
     for (Term term : this._terms) {
-      Terms.prefix(reader, terms, term);
+      List<String> values = Terms.prefix(index, reader, term);
+      for (String v : values) {
+        Term t = new Term(term.field(), v);
+        if (!terms.contains(t)) terms.add(t);
+      }
     }
     // Generate the query
     BooleanQuery bq = new BooleanQuery();

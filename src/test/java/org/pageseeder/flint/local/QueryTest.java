@@ -4,6 +4,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.PrintWriter;
 
+import org.apache.lucene.search.Collector;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Sort;
@@ -39,7 +40,6 @@ public class QueryTest {
     index.setTemplate("xml", template.toURI());
     manager = new IndexManager(new LocalFileContentFetcher(), new TestListener());
     manager.setDefaultTranslator(new SourceForwarder("xml", "UTF-8"));
-    manager.start();
     System.out.println("Starting manager!");
     LocalIndexer indexer = new LocalIndexer(manager, index);
     indexer.indexDocuments(documents);
@@ -93,6 +93,21 @@ public class QueryTest {
     SearchQuery query = new PredicateSearchQuery("field1:value4");
     SearchResults results = manager.query(index.getIndex(), query);
     Assert.assertEquals(1, results.getTotalNbOfResults());
+  }
+
+  @Test
+  public void testQuery6() throws IndexException {
+    Query query = Queries.toTermOrPhraseQuery("field1", "value4");
+    TopFieldCollector results;
+    try {
+      results = TopFieldCollector.create(Sort.RELEVANCE, 10, true, true, false);
+      manager.query(index.getIndex(), query, results);
+      Assert.assertEquals(1, results.getTotalHits());
+//      Assert.assertEquals(1, results.topDocs().scoreDocs[0].doc);
+    } catch (IOException e) {
+      // TODO Auto-generated catch block
+      e.printStackTrace();
+    }
   }
 
   private void outputResults(SearchResults results) throws IOException {

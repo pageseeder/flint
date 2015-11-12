@@ -17,18 +17,21 @@ package org.pageseeder.flint.util;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
 
 import org.apache.lucene.index.Fields;
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.MultiFields;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermsEnum;
-import org.apache.lucene.search.FuzzyTermsEnum;
 import org.apache.lucene.search.spell.LuceneDictionary;
+import org.apache.lucene.search.spell.SpellChecker;
 import org.apache.lucene.search.suggest.Lookup.LookupResult;
-import org.apache.lucene.search.suggest.analyzing.FuzzySuggester;
+import org.apache.lucene.search.suggest.analyzing.AnalyzingInfixSuggester;
+import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.BytesRef;
 import org.pageseeder.flint.api.Index;
 import org.pageseeder.flint.util.Bucket.Entry;
@@ -123,9 +126,9 @@ public final class Terms {
    *
    * @throws IOException If an error is thrown by the prefix term enumeration.
    */
-  public static List<Term> prefix(IndexReader reader, Term term) throws IOException {
-    List<Term> terms = new ArrayList<Term>();
-    prefix(reader, terms, term);
+  public static List<String> prefix(Index index, IndexReader reader, Term term) throws IOException {
+    List<String> terms = new ArrayList<String>();
+    prefix(index, reader, terms, term);
     return terms;
   }
 
@@ -139,15 +142,11 @@ public final class Terms {
    * @throws IOException If an error is thrown by the fuzzy term enumeration.
    */
   public static void fuzzy(Index index, IndexReader reader, List<String> values, Term term) throws IOException {
-    FuzzySuggester suggester = new FuzzySuggester(index.getAnalyzer());
-    suggester.build(new LuceneDictionary(reader, term.field()));
-    List<LookupResult> results = suggester.lookup(term.text(), false, 10);
-    if (results == null) return;
-    for (LookupResult result : results) {
-      String key = result.key.toString();
-      if (key == null) break;
-      values.add(key);
-    }
+    SpellChecker spellchecker = new SpellChecker(new RAMDirectory());
+    spellchecker.indexDictionary(new LuceneDictionary(reader, term.field()), new IndexWriterConfig(index.getAnalyzer()), false);
+    String[] suggestions = spellchecker.suggestSimilar(term.text(), 10);
+    spellchecker.close();
+    values.addAll(Arrays.asList(suggestions));
   }
 
   /**
@@ -159,44 +158,66 @@ public final class Terms {
    *
    * @throws IOException If an error is thrown by the fuzzy term enumeration.
    */
-  @Beta public static void fuzzy(IndexReader reader, Bucket<Term> terms, Term term) throws IOException {
-    org.apache.lucene.index.Terms ts = MultiFields.getTerms(reader, term.field());
-    FuzzyTermsEnum e = new FuzzyTermsEnum(ts, null, term, 0.5f, term.bytes().utf8ToString().length(), true);
-    if (e == TermsEnum.EMPTY) return;
-    while (e.next() != null) {
-      BytesRef t = e.term();
-      if (t == null) break;
-      terms.add(new Term(term.field(), t), e.docFreq());
+  @Beta public static void fuzzy(Index index, IndexReader reader, Bucket<Term> terms, Term term) throws IOException {
+    SpellChecker spellchecker = new SpellChecker(new RAMDirectory());
+    spellchecker.indexDictionary(new LuceneDictionary(reader, term.field()), new IndexWriterConfig(index.getAnalyzer()), false);
+    String[] suggestions = spellchecker.suggestSimilar(term.text(), 10);
+    spellchecker.close();
+    for (String suggestion : suggestions) {
+      Term t = new Term(term.field(), suggestion);
+      terms.add(t, reader.docFreq(t));
     }
   }
 
   /**
    * Loads all the prefix terms in the list of terms given the reader.
    *
-   * @param reader Index reader to use.
-   * @param terms  The list of terms to load.
-   * @param term   The term to use.
+   * @param reader  Index reader to use.
+   * @param values  The list of values to load.
+   * @param term    The term to use.
    *
    * @throws IOException If an error is thrown by the prefix term enumeration.
    */
-  public static void prefix(IndexReader reader, List<Term> terms, Term term) throws IOException {
-//    PrefixQuery query = new PrefixQuery(term);
-//    TermsEnum e = new PrefixQuery(term).
-//    org.apache.lucene.index.Terms ts = MultiFields.getTerms(reader, term.field());
-//    PrefixTermsEnum e = new PrefixTermsEnum(ts, null, term, 0.5f, term.bytes().utf8ToString().length(), true);
-//    while (e.next() != null) {
-//      BytesRef t = e.term();
-//      if (t == null) break;
-//      terms.add(new Term(term.field(), t), e.docFreq());
-    
-//    PrefixTermEnum e = new PrefixTermEnum(reader, term);
-//    do {
-//      Term t = e.term();
-//      if (t != null && !terms.contains(t)) {
-//        terms.add(t);
-//      }
-//    } while (e.next());
-//    e.close();
+  public static void prefix(Index index, IndexReader reader, List<String> values, Term term) throws IOException {
+    AnalyzingInfixSuggester suggester = new AnalyzingInfixSuggester(new RAMDirectory(), index.getAnalyzer());
+    try {
+      suggester.build(new LuceneDictionary(reader, term.field()));
+      List<LookupResult> results = suggester.lookup(term.text(), false, 10);
+      if (results == null) return;
+      for (LookupResult result : results) {
+        String key = result.key.toString();
+        if (key == null) break;
+        values.add(key);
+      }
+    } finally {
+      suggester.close();
+    }
+  }
+
+  /**
+   * Loads all the prefix terms in the list of terms given the reader.
+   *
+   * @param reader  Index reader to use.
+   * @param values  The list of values to load.
+   * @param term    The term to use.
+   *
+   * @throws IOException If an error is thrown by the prefix term enumeration.
+   */
+  public static void prefix(Index index, IndexReader reader, List<String> values, List<String> fields, String text) throws IOException {
+    AnalyzingInfixSuggester suggester = new AnalyzingInfixSuggester(new RAMDirectory(), index.getAnalyzer());
+    try {
+      for (String field : fields)
+        suggester.build(new LuceneDictionary(reader, field));
+      List<LookupResult> results = suggester.lookup(text, 10, true, false);
+      if (results == null) return;
+      for (LookupResult result : results) {
+        String key = result.key.toString();
+        if (key == null) break;
+        values.add(key);
+      }
+    } finally {
+      suggester.close();
+    }
   }
 
 

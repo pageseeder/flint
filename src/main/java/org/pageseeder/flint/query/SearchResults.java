@@ -567,7 +567,7 @@ public final class SearchResults implements XMLWritable {
      */
     @Override
     public void remove() {
-      throw new UnsupportedOperationException("Cannot remove documents from searc results");
+      throw new UnsupportedOperationException("Cannot remove documents from search results");
     }
   }
 

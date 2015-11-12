@@ -3,5 +3,8 @@
   <document>
     <field name="field1">value1 value2 value3 value4 value5 value6</field>
     <field name="field2">value1 value2 value3 value4 value5</field>
+    <field name="fuzzy1">clementine glove zebra</field>
+    <field name="prefix1">pretentious president pressing</field>
+    <field name="prefix2">the blue front is less green</field>
   </document>
 </documents>

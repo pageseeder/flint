@@ -4,5 +4,7 @@
     <field name="field1">value1</field>
     <field name="field2">value2 value3 value4</field>
     <field name="fuzzy1">close clone clove glove tiger</field>
+    <field name="prefix1">pretext pretense preference prepare pretentious</field>
+    <field name="prefix2">the blue frog jumped over the green fox</field>
   </document>
 </documents>

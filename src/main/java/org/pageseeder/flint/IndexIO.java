@@ -24,6 +24,7 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.apache.lucene.document.Document;
+import org.apache.lucene.index.ConcurrentMergeScheduler;
 import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
@@ -31,7 +32,6 @@ import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.index.ReaderManager;
-import org.apache.lucene.index.SerialMergeScheduler;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.SearcherFactory;
 import org.apache.lucene.search.SearcherManager;
@@ -138,7 +138,9 @@ public final class IndexIO {
         // create writer
         Directory dir = idx.getIndexDirectory();
         IndexWriterConfig config = new IndexWriterConfig(this._index.getAnalyzer());
-        config.setMergeScheduler(new SerialMergeScheduler());
+        ConcurrentMergeScheduler merger = new ConcurrentMergeScheduler();
+//        merger.setMaxMergesAndThreads(maxMergeCount, maxThreadCount);
+        config.setMergeScheduler(merger);
         if (createIt) config.setOpenMode(OpenMode.CREATE);
         this._writer = new IndexWriter(dir, config);
         if (createIt) this._writer.commit();
