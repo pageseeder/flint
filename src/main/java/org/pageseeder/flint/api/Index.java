@@ -193,7 +193,7 @@ public class Index {
    */
   public Templates getTemplates(ContentType type, String media) {
     ContentDefinition def = new ContentDefinition(type, media);
-    LOGGER.debug("Retrieving templates for {}", def);
+//    LOGGER.debug("Retrieving templates for {}", def);
     return this._templates.get(def);
   }
   /**

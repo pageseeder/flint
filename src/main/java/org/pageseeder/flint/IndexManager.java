@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -82,11 +83,6 @@ public final class IndexManager {
   private static final Logger LOGGER = LoggerFactory.getLogger(IndexManager.class);
 
   /**
-   * Delay between each job poll - set to 1 second
-   */
-  private static final long INDEX_JOB_POLL_DELAY = 1 * 1000;
-
-  /**
    * NB of indexing threads
    */
   private static final int NB_INDEXING_THREADS = 10;
@@ -137,6 +133,11 @@ public final class IndexManager {
   private ContentTranslator _defaultTranslator = null;
 
   /**
+   * Flag to save the state.
+   */
+  private boolean checkingForCommit = false;
+
+  /**
    * Simple constructor which will use a SilentListener.
    *
    * @param cf the Content Fetcher used to retrieve the content to index.
@@ -165,9 +166,9 @@ public final class IndexManager {
   public IndexManager(ContentFetcher cf, IndexListener listener, int nbThreads) {
     this._fetcher = cf;
     this._listener = listener;
-    this._indexQueue = new IndexJobQueue(INDEX_JOB_POLL_DELAY);
+    this._indexQueue = new IndexJobQueue();
     // To initialise the map, use ideally (# of index, high load factor, # of threads writing)
-    this._indexes = new ConcurrentHashMap<String, IndexIO>();
+    this._indexes = new ConcurrentHashMap<String, IndexIO>(50, 0.75f, nbThreads);
     // Register default XML factory
     this.translatorFactories = new ConcurrentHashMap<String, ContentTranslatorFactory>(16, 0.8f, 2);
     registerTranslatorFactory(new FlintTranslatorFactory());
@@ -249,7 +250,12 @@ public final class IndexManager {
    * @param params   the dynamic XSLT parameters
    */
   public void indexBatch(Map<String, ContentType> contents, Index i, Requester r, Priority p) {
-    indexJob(IndexJob.newBatchJob(contents, i, p, r));
+    IndexJob.Batch batch = new IndexJob.Batch();
+    Iterator<String> keys = contents.keySet().iterator();
+    while (keys.hasNext()) {
+      String id = keys.next();
+      indexJob(IndexJob.newBatchJob(batch, !keys.hasNext(), id, contents.get(id), i, p, r));
+    }
   }
 
   /**
@@ -726,7 +732,9 @@ public final class IndexManager {
    * Kills the thread and close all the indexes.
    */
   public void stop() {
-    // Stop the thread
+    // empty queue
+    this._indexQueue.clear();
+    // Stop the threads
     this.threadPool.shutdown();
     // Close all indexes
     for (Entry<String, IndexIO> e : this._indexes.entrySet()) {
@@ -780,7 +788,9 @@ public final class IndexManager {
    * Start an index job.
    */
   private void indexJob(IndexJob job) {
+    // add job to queue
     this._indexQueue.addJob(job);
+    // start thread to index it
     this.threadPool.execute(new IndexingThread(this, this._listener, this._indexQueue));
   }
 
@@ -791,15 +801,13 @@ public final class IndexManager {
    * @return
    * @throws IndexException
    */
-  public IndexIO getIndexIO(Index index) throws IndexException {
-    IndexIO io;
-    synchronized (this._indexes) {
-      io = index == null ? null : this._indexes.get(index.getIndexID());
-      if (io == null) {
-        LOGGER.debug("Creating a new IndexIO for {}", index);
-        io = new IndexIO(index);
-        this._indexes.put(index.getIndexID(), io);
-      }
+  public synchronized IndexIO getIndexIO(Index index) throws IndexException {
+    if (index == null) return null;
+    IndexIO io = this._indexes.get(index.getIndexID());
+    if (io == null) {
+      LOGGER.debug("Creating a new IndexIO for {}", index.getIndexID());
+      io = new IndexIO(index);
+      this._indexes.put(index.getIndexID(), io);
     }
     return io;
   }
@@ -807,21 +815,30 @@ public final class IndexManager {
   /**
    * Loop through the index and check if any of them need committing, also checks if they can be optimized.
    */
-  private boolean checkingForCommit = false;
-  protected void checkForCommit() {
-    if (this.checkingForCommit) return;
+  public void checkForCommit() {
+    // don't do it if we're still indexing or if we're already doing it
+    if (this.checkingForCommit ||!this._indexQueue.isEmpty()) return;
+    LOGGER.debug("Checking for commits");
     this.checkingForCommit = true;
     // loop through the indexes and check which one needs committing
     List<IndexIO> ios = new ArrayList<IndexIO>(this._indexes.values());
+    List<IndexIO> closed = new ArrayList<IndexIO>();
     for (IndexIO io : ios) {
-      try {
-        io.maybeReopen();
-        io.maybeCommit();
-      } catch (IndexException ex) {
-        LOGGER.error("Failed to perform commit", ex);
+      if (io.isClosed()) {
+        closed.add(io);
+      } else {
+        try {
+          io.maybeCommit();
+        } catch (IndexException ex) {
+          LOGGER.error("Failed to perform commit", ex);
+        }
       }
       // make sure there's no job waiting
-      if (!this._indexQueue.isEmpty()) return;
+      if (!this._indexQueue.isEmpty()) break;
+    }
+    // removed closed IOs
+    for (IndexIO io : closed) {
+      this._indexes.remove(io);
     }
     this.checkingForCommit = false;
   }

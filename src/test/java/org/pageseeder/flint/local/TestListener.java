@@ -17,23 +17,23 @@ public class TestListener implements IndexListener {
 
   @Override
   public void startJob(IndexJob job) {
-    System.out.println("Starting job with content "+job.getContentID());
+    System.out.println("Starting job for "+job.getContentID());
   }
 
   @Override
   public void warn(IndexJob job, String message) {
-    System.err.println("Warning with job with content "+job.getContentID()+": "+message);
+    System.err.println("Warning with job for "+job.getContentID()+": "+message);
   }
 
   @Override
   public void error(IndexJob job, String message, Throwable throwable) {
-    System.err.println("Error with job with content "+(job == null ? "no-job" : job.getContentID())+": "+message);
+    System.err.println("Error with job for "+(job == null ? "no-job" : job.getContentID())+": "+message);
     if (throwable != null) throwable.printStackTrace();
   }
 
   @Override
   public void endJob(IndexJob job) {
-    System.out.println("Ending job with content "+job.getContentID());
+    System.out.println("Ending job for "+job.getContentID());
   }
 
 }

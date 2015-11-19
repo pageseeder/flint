@@ -101,76 +101,82 @@ public final class IndexingThread implements Runnable {
   @Override
   public void run() {
     IndexJob job = null;
-    // Processed since last batch.
-    while (true) {
+    try {
       try {
+        job = this._indexQueue.nextJob();
+      } catch (InterruptedException ex) {
+        this._listener.error(job, "Interrupted indexing: " + ex.getMessage(), ex);
+        // the thread was shutdown, let's die then
+        return;
+      }
+      // We've got a job to handle?
+      if (job == null) {
+        this._listener.error(null, "Found a null job in indexing queue.", null);
+        // the thread was shutdown, let's die then
+        return;
+      }
+      // Tell listener?
+      if (job.isBatch()) {
+        if (!job.getBatch().isStarted()) {
+          job.getBatch().start();
+          this._listener.startBatch();
+        }
+      } else {
+        this._listener.startJob(job);
+      }
+      boolean finished = false;
+      boolean success = false;
+      IndexIO io = null;
+      try {
+        // OK launch the job then load the IO for this job
         try {
-          job = this._indexQueue.nextJob();
-        } catch (InterruptedException ex) {
-          this._listener.error(job, "Interrupted indexing: " + ex.getMessage(), ex);
-          // the thread was shutdown, let's die then
+          io = this._manager.getIndexIO(job.getIndex());
+        } catch (Exception ex) {
+          this._listener.error(job, "Failed to retrieve Index: " + ex.getMessage(), ex);
           return;
         }
-        // We've got a job to handle
-        if (job != null) {
-          // New batch?
-          if (job.isBatch()) {
-            this._listener.startBatch();
-          } else {
-            this._listener.startJob(job);
-          }
+        // clear job
+        if (job.isClearJob()) {
           try {
-            // OK launch the job then load the IO for this job
-            IndexIO io;
-            try {
-              io = this._manager.getIndexIO(job.getIndex());
-            } catch (Exception ex) {
-              this._listener.error(job, "Failed to retrieve Index: " + ex.getMessage(), ex);
-              continue;
-            }
-            boolean success = false;
-            // clear job
-            if (job.isClearJob()) {
-              try {
-                success = io.clearIndex();
-              } catch (Exception ex) {
-                this._listener.error(job, "Failed to clear index", ex);
-              }
-            // batch job
-            } else if (job.isBatch()) {
-              success = true;
-              for (String contentid : job.getBatchContentIDs()) {
-                success = success && indexContent(job, contentid, job.getBatchContentType(contentid), io);
-              }
-            // single content
-            } else {
-              // retrieve content
-              success = indexContent(job, job.getContentID(), job.getContentType(), io);
-            }
-            // update index reader and searcher
-            if (success) io.maybeReopen();
-            job.setSuccess(success);
-          } catch (Throwable ex) {
-            this._listener.error(job, "Unknown error: " + ex.getMessage(), ex);
-          } finally {
-            job.finish();
-            if (job.isBatch()) {
-              this._listener.endBatch();
-            } else {
-              this._listener.endJob(job);
-            }
+            success = io.clearIndex();
+          } catch (Exception ex) {
+            this._listener.error(job, "Failed to clear index", ex);
           }
+        // normal content
         } else {
-          // check the number of opened readers then
-          OpenIndexManager.closeOldReaders();
-          // no jobs available, commit if possible
-          this._manager.checkForCommit();
+          // retrieve content
+          success = indexContent(job, job.getContentID(), job.getContentType(), io);
         }
-        // clear the job
-        job = null;
+        // set job status
+        job.setSuccess(success);
       } catch (Throwable ex) {
-        this._listener.error(job, "Unexpected general error: " + ex.getMessage(), ex);
+        this._listener.error(job, "Unknown error: " + ex.getMessage(), ex);
+      } finally {
+        // mark job
+        job.finish();
+        // update index reader and searcher
+        if (job.isBatch()) {
+          if (job.getBatch().isFinished()) {
+            if (io != null) io.maybeReopen();
+            this._listener.endBatch();
+            finished = true;
+          }
+        } else if (success) {
+          this._manager.checkForCommit();
+          if (io != null) io.maybeReopen();
+          this._listener.endJob(job);
+          finished = true;
+        }
       }
+      // check the number of opened readers then
+      OpenIndexManager.closeOldReaders();
+      // commit if queue is empty
+      if (finished && !this._indexQueue.hasJobsForIndex(job.getIndex()))
+        io.maybeCommit();
+      // clear the job
+      job = null;
+    } catch (Throwable ex) {
+      this._listener.error(job, "Unexpected general error: " + ex.getMessage(), ex);
     }
   };
 
@@ -178,27 +184,27 @@ public final class IndexingThread implements Runnable {
   // ----------------------------------------------------------------------------------------------
 
   private boolean indexContent(IndexJob job, String contentid, ContentType contenttype, IndexIO io) throws IndexException {
+
     // retrieve content
     Content content = this._manager.getContent(contentid, contenttype);
     if (content == null) {
       this._listener.error(job, "Failed to retrieve Source content", null);
       return false;
     }
+
     // check if we should delete the document
-    if (content.isDeleted()) return deleteJob(job, content, io);
-    // run an update job then
-    return updateJob(job, content, io);
-  }
-  /**
-   * Add or update a document in an index
-   *
-   * @param job
-   *
-   * @return true if the job was successful
-   */
-  private boolean updateJob(IndexJob job, Content content, IndexIO io) {
-    if (job == null || io == null || content == null) return false;
-    // translate content
+    if (content.isDeleted()) {
+      try {
+        // delete docs from index
+        io.deleteDocuments(content.getDeleteRule());
+      } catch (Exception ex) {
+        this._listener.error(job, "Failed to delete Lucene Documents from Index", ex);
+        return false;
+      }
+      return true;
+    }
+
+    // translate content then
     StringWriter xsltResult = new StringWriter();
     try {
       translateContent(this._manager, new FlintErrorListener(this._listener, job),
@@ -208,6 +214,7 @@ public final class IndexingThread implements Runnable {
       this._listener.error(job, ex.getMessage(), ex);
       return false;
     }
+
     // build Lucene documents
     List<Document> documents;
     try {
@@ -217,7 +224,8 @@ public final class IndexingThread implements Runnable {
       this._listener.error(job, "Failed to create Lucene Documents from Index XML", ex);
       return false;
     }
-    LOGGER.debug("Found {} documents to update", documents.size());
+//    LOGGER.debug("Found {} document(s) to update", documents.size());
+
     try {
       // add docs to index index
       io.updateDocuments(content.getDeleteRule(), documents);
@@ -225,26 +233,9 @@ public final class IndexingThread implements Runnable {
       this._listener.error(job, "Failed to add Lucene Documents to Index", ex);
       return false;
     }
-    return true;
-  }
 
-  /**
-   * Delete a doc from an index
-   *
-   * @param job
-   *
-   * @return true if the job was successful
-   */
-  private boolean deleteJob(IndexJob job, Content content, IndexIO io) {
-    if (job == null || io == null) return false;
-    try {
-      // delete docs from index
-      io.deleteDocuments(content.getDeleteRule());
-    } catch (Exception ex) {
-      this._listener.error(job, "Failed to delete Lucene Documents from Index", ex);
-      return false;
-    }
     return true;
+
   }
 
   /**

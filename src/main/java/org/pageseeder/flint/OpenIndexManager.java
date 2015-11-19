@@ -62,6 +62,16 @@ public final class OpenIndexManager {
   private static int maxOpenedIndexes = 100;
 
   /**
+   * Don't check for 30mn
+   */
+  private static long DELAY_BETWEEN_CHECKS = 30 * 60 * 1000;
+
+  /**
+   * Last time we checked 
+   */
+  private static long LAST_CHECK = 0;
+      
+  /**
    * Utility class.
    */
   private OpenIndexManager() {
@@ -79,19 +89,21 @@ public final class OpenIndexManager {
    * opened readers is less than the maximum allowed.
    */
   public static void closeOldReaders() {
-//    LOGGER.debug("Currently {} opened reader(s): {}", openedIndexes.size(), openedIndexes);
-    while (OPEN_INDEXES.size() > maxOpenedIndexes) {
-      // get the oldest one
-      IndexIO or = Collections.max(OPEN_INDEXES.values(), OPEN_INDEX_COMPARATOR);
-      // ok try to close it
-      try {
-        LOGGER.debug("Closing IO for index {}", or.hashCode());
-        or.stop();
-      } catch (AlreadyClosedException ex) {
-        // good then
-      } catch (IndexException ex) {
-        LOGGER.error("Failed closing an opened index {}", or.hashCode());
+    if (System.currentTimeMillis() - LAST_CHECK > DELAY_BETWEEN_CHECKS) {
+      while (OPEN_INDEXES.size() > maxOpenedIndexes) {
+        // get the oldest one
+        IndexIO or = Collections.max(OPEN_INDEXES.values(), OPEN_INDEX_COMPARATOR);
+        // ok try to close it
+        try {
+          LOGGER.debug("Closing IO for index {}", or.hashCode());
+          or.stop();
+        } catch (AlreadyClosedException ex) {
+          // good then
+        } catch (IndexException ex) {
+          LOGGER.error("Failed closing an opened index {}", or.hashCode());
+        }
       }
+      DELAY_BETWEEN_CHECKS = System.currentTimeMillis();
     }
   }
 

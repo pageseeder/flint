@@ -72,10 +72,7 @@ public final class IndexIO {
     CLEAN,
 
     /** The index needs to be opened again. */
-    NEEDS_REOPEN,
-
-    /** The index has been modified but changes have not been committed. */
-    NEEDS_COMMIT,
+    DIRTY,
 
     /** The index is closed. */
     CLOSED
@@ -129,7 +126,7 @@ public final class IndexIO {
       boolean readonly = isReadOnly(this._index);
       // find directory
       if (readonly && createIt)
-        throw new IndexException("Cannot create index at location fopr index "+idx.getIndexID(), new InvalidParameterException());
+        throw new IndexException("Cannot create index location for index "+idx.getIndexID(), new InvalidParameterException());
       if (readonly) {
         this._writer = null;
         this._reader = new ReaderManager(this._index.getIndexDirectory());
@@ -179,6 +176,8 @@ public final class IndexIO {
   public synchronized void stop() throws IndexException {
     if (this._writer == null) return;
     LOGGER.debug("Stopping IO");
+    // try to commit if needed
+    maybeCommit();
     try {
       this._writer.close();
       this._searcher.close();
@@ -194,17 +193,22 @@ public final class IndexIO {
   }
 
   /**
-   * Commit any changes if the state of the index requires it.
-   *
-   * @throws IndexException should any error be thrown by Lucene while committing.
+   * @return <code>true</code> if closed.
    */
-  protected synchronized void maybeReopen() throws IndexException {
-    if (this._writer == null || this.state != State.NEEDS_REOPEN) return;
+  public boolean isClosed() {
+    return this.state == State.CLOSED;
+  }
+
+  /**
+   * Commit any changes if the state of the index requires it.
+   */
+  protected synchronized void maybeReopen() {
+    if (this._writer == null || this.state != State.DIRTY) return;
     try {
-      LOGGER.debug("Reopen searcher");
+      LOGGER.debug("Reopen reader and searcher");
       this._reader.maybeRefresh();
       this._searcher.maybeRefresh();
-      this.state = State.NEEDS_COMMIT;
+      this.state = State.CLEAN;
     } catch (final IOException ex) {
       LOGGER.error("Failed to reopen Index Searcher because of an I/O error", ex);
     }
@@ -216,8 +220,8 @@ public final class IndexIO {
    * @throws IndexException should any error be thrown by Lucene while committing.
    */
   public synchronized void maybeCommit() throws IndexException {
-    if (this._writer == null || this.state != State.NEEDS_COMMIT ||
-        !this._writer.hasUncommittedChanges()) return;
+    if (this._writer == null || !this._writer.hasUncommittedChanges() || this.state != State.CLEAN)
+      return;
     try {
       LOGGER.debug("Committing index changes");
       long now = System.currentTimeMillis();
@@ -226,7 +230,6 @@ public final class IndexIO {
       this._writer.setCommitData(commitUserData);
       this._writer.commit();
       this.lastTimeUsed.set(now);
-      this.state = State.CLEAN;
     } catch (final CorruptIndexException ex) {
       throw new IndexException("Failed to commit Index because it is corrupted", ex);
     } catch (final IOException ex) {
@@ -248,7 +251,7 @@ public final class IndexIO {
     try {
       this._writer.deleteAll();
       this.lastTimeUsed.set(System.currentTimeMillis());
-      this.state = State.NEEDS_REOPEN;
+      this.state = State.DIRTY;
     } catch (IOException ex) {
       throw new IndexException("Failed to clear Index", ex);
     }
@@ -275,7 +278,7 @@ public final class IndexIO {
         this._writer.deleteDocuments(rule.toQuery());
       }
       this.lastTimeUsed.set(System.currentTimeMillis());
-      this.state = State.NEEDS_REOPEN;
+      this.state = State.DIRTY;
     } catch (IOException ex) {
       throw new IndexException("Failed to clear Index", ex);
     }
@@ -301,18 +304,22 @@ public final class IndexIO {
     if (this._writer == null) return true;
     if (this.state == State.CLOSED) return false;
     try {
+      // delete?
       if (rule != null) {
         if (rule.useTerm()) {
-          this._writer.deleteDocuments(rule.toTerm());
+          // use update
+          this._writer.updateDocuments(rule.toTerm(), documents);
         } else {
+          // delete then add
           this._writer.deleteDocuments(rule.toQuery());
+          this._writer.addDocuments(documents);
         }
-      }
-      for (final Document doc : documents) {
-        this._writer.addDocument(doc);
+      } else {
+        // add
+        this._writer.addDocuments(documents);
       }
       this.lastTimeUsed.set(System.currentTimeMillis());
-      this.state = State.NEEDS_REOPEN;
+      this.state = State.DIRTY;
     } catch (final IOException e) {
       throw new IndexException("Failed to update document in Index because of an I/O error", e);
     }
@@ -341,6 +348,7 @@ public final class IndexIO {
   public IndexReader bookReader() {
     if (this.state == State.CLOSED) return null;
     try {
+      LOGGER.debug("Getting reader");
       return this._reader.acquire();
     } catch (IOException ex) {
       LOGGER.error("Failed to book reader", ex);
@@ -353,6 +361,7 @@ public final class IndexIO {
     if (!(reader instanceof DirectoryReader))
       throw new IllegalArgumentException("Reader must be a DirectoryReader");
     try {
+      LOGGER.debug("Releasing reader");
       this._reader.release((DirectoryReader) reader);
     } catch (IOException ex) {
       LOGGER.error("Failed to release reader", ex);

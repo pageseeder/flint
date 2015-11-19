@@ -76,7 +76,7 @@ public final class LocalIndexer extends Requester {
   }
 
   public void indexDocuments(File root, FileFilter filter) {
-    indexDocuments(root, true, null);
+    indexDocuments(root, true, filter);
   }
 
   public int indexDocuments(File root, boolean recursive, FileFilter filter) {

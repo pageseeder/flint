@@ -18,12 +18,9 @@ package org.pageseeder.flint;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.PriorityBlockingQueue;
-import java.util.concurrent.TimeUnit;
 
 import org.pageseeder.flint.api.Index;
 import org.pageseeder.flint.api.Requester;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * The queue containing index jobs.
@@ -38,15 +35,6 @@ import org.slf4j.LoggerFactory;
  */
 public final class IndexJobQueue {
 
-  /**
-   * An internal logger.
-   */
-  private static final Logger LOGGER = LoggerFactory.getLogger(IndexJobQueue.class);
-
-  /**
-   * Delay between each job poll in milliseconds.
-   */
-  private final long _jobPollDelay;
 
   /**
    * The actual queue.
@@ -58,8 +46,7 @@ public final class IndexJobQueue {
    *
    * @param pollDelay the poll delay on the queue (in milliseconds)
    */
-  public IndexJobQueue(long pollDelay) {
-    this._jobPollDelay = pollDelay;
+  public IndexJobQueue() {
     this._queue = new PriorityBlockingQueue<IndexJob>();
   }
 
@@ -72,7 +59,6 @@ public final class IndexJobQueue {
    * @param job The job to add to this queue.
    */
   public void addJob(IndexJob job) {
-    LOGGER.debug("Adding Index Job to Queue: {}", job.toString());
     this._queue.put(job);
   }
 
@@ -140,6 +126,21 @@ public final class IndexJobQueue {
   }
 
   /**
+   * <p>Not that some job have have been processed by the time this method returns.
+   *
+   * @param index the index
+   * @return <code>true</code> if there is at least one job for the index provided.
+   */
+  public boolean hasJobsForIndex(Index index) {
+    if (index != null) {
+      for (IndexJob job : this._queue) {
+        if (job.isForIndex(index)) return true;
+      }
+    }
+    return false;
+  }
+
+  /**
    * Returns the number of jobs for the specified index provided.
    *
    * <p>Not that some job have have been processed by the time this method returns.
@@ -180,7 +181,7 @@ public final class IndexJobQueue {
    * @throws InterruptedException if the thread was interrupted when waiting for the next job
    */
   public IndexJob nextJob() throws InterruptedException {
-    return this._queue.poll(this._jobPollDelay, TimeUnit.MILLISECONDS);
+    return this._queue.take();
   }
 
   /**
@@ -201,5 +202,12 @@ public final class IndexJobQueue {
    */
   public int size() {
     return this._queue.size();
+  }
+
+  /**
+   * Empty the queue.
+   */
+  public void clear() {
+    this._queue.clear();
   }
 }

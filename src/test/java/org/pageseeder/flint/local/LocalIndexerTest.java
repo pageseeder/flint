@@ -1,6 +1,8 @@
 package org.pageseeder.flint.local;
 
 import java.io.File;
+import java.util.ArrayList;
+import java.util.List;
 
 import org.apache.lucene.index.IndexReader;
 import org.junit.After;
@@ -15,9 +17,10 @@ import org.pageseeder.flint.content.SourceForwarder;
 
 public class LocalIndexerTest {
 
-  private static File template  = new File("src/test/resources/template.xsl");
-  private static File indexing  = new File("src/test/resources/indexing");
-  private static File indexRoot = new File("tmp/index");
+  private static File template     = new File("src/test/resources/template.xsl");
+  private static File templatePSML = new File("src/test/resources/psml-template.xsl");
+  private static File indexing     = new File("src/test/resources/indexing");
+  private static File indexRoot    = new File("tmp/index");
 
   private LocalIndex index;
   private IndexManager manager;
@@ -26,8 +29,12 @@ public class LocalIndexerTest {
   public void init() {
     this.index = new LocalIndex(indexRoot);
     this.index.setTemplate("xml", template.toURI());
+    this.index.setTemplate("psml", templatePSML.toURI());
     this.manager = new IndexManager(new LocalFileContentFetcher(), new TestListener(), 3);
-    this.manager.setDefaultTranslator(new SourceForwarder("xml", "UTF-8"));
+    List<String> types = new ArrayList<>();
+    types.add("xml");
+    types.add("psml");
+    this.manager.setDefaultTranslator(new SourceForwarder(types, "UTF-8"));
     System.out.println("Starting manager!");
   }
 

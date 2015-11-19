@@ -15,10 +15,6 @@
  */
 package org.pageseeder.flint;
 
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.Map;
-
 import org.pageseeder.flint.api.ContentType;
 import org.pageseeder.flint.api.Index;
 import org.pageseeder.flint.api.Requester;
@@ -32,7 +28,6 @@ import org.pageseeder.flint.api.Requester;
  * @version 26 February 2010
  */
 public class IndexJob implements Comparable<IndexJob> {
-
   /**
    * Pseudo-type to indicate that the index needs to be cleared.
    */
@@ -41,6 +36,21 @@ public class IndexJob implements Comparable<IndexJob> {
     public String toString() { return "CLEAR"; };
   };
   private static final String CLEAR_CONTENT_ID = "CLEAR";
+
+  public static class Batch {
+    private String lastContentID = null;
+    private boolean started = false;
+    private boolean finished = false;
+    public void start() {
+      this.started = true;
+    }
+    public boolean isStarted() {
+      return this.started;
+    }
+    public boolean isFinished() {
+      return this.finished;
+    }
+  }
 
   /**
    * A list of priorities for IndexJobs.
@@ -59,8 +69,14 @@ public class IndexJob implements Comparable<IndexJob> {
 
   };
 
+  /**
+   * The content ID
+   */
   private final String _contentid;
 
+  /**
+   * The content type
+   */
   private final ContentType _contenttype;
 
   /**
@@ -72,11 +88,6 @@ public class IndexJob implements Comparable<IndexJob> {
    * Index to run the job on.
    */
   private final Index _index;
-
-  /**
-   * List of contents to index
-   */
-  private final Map<String, ContentType> _batchContents;
 
   /**
    * The initial job's requester.
@@ -99,6 +110,11 @@ public class IndexJob implements Comparable<IndexJob> {
   private final String jobId;
 
   /**
+   * The job's ID, generated in the constructor.
+   */
+  private final Batch batch;
+
+  /**
    * Internal flag to know if the job succeeded.
    */
   private boolean success = false;
@@ -112,15 +128,8 @@ public class IndexJob implements Comparable<IndexJob> {
    * @param p       The job's priority
    * @param r       the job's requester
    */
-  private IndexJob(Map<String, ContentType> contents, Index i, Priority p, Requester r) {
-    this._batchContents = new HashMap<>(contents);
-    this._contentid = "batch-"+contents.hashCode();
-    this._contenttype = null;
-    this._priority = p;
-    this._requester = r;
-    this._index = i;
-    this._created = System.nanoTime();
-    this.jobId = this._created + "-batch-" + contents.hashCode() + '-' + i.getIndexID() + '-' + r.getRequesterID() + '-' + p.toString();
+  private IndexJob(String cid, ContentType ctype, Index i, Priority p, Requester r) {
+    this(null, cid, ctype, i, p, r);
   }
 
   /**
@@ -132,9 +141,9 @@ public class IndexJob implements Comparable<IndexJob> {
    * @param p       The job's priority
    * @param r       the job's requester
    */
-  private IndexJob(String cid, ContentType ctype, Index i, Priority p, Requester r) {
-    this._batchContents = null;
+  private IndexJob(Batch b, String cid, ContentType ctype, Index i, Priority p, Requester r) {
     this._contentid = cid;
+    this.batch = b;
     this._contenttype = ctype;
     this._priority = p;
     this._requester = r;
@@ -153,7 +162,11 @@ public class IndexJob implements Comparable<IndexJob> {
   }
 
   public boolean isBatch() {
-    return this._batchContents != null;
+    return this.batch != null;
+  }
+
+  public Batch getBatch() {
+    return this.batch;
   }
 
   public String getContentID() {
@@ -162,14 +175,6 @@ public class IndexJob implements Comparable<IndexJob> {
 
   public ContentType getContentType() {
     return this._contenttype;
-  }
-
-  public Collection<String> getBatchContentIDs() {
-    return this._batchContents == null ? null : this._batchContents.keySet();
-  }
-
-  public ContentType getBatchContentType(String contentid) {
-    return this._batchContents == null ? null : this._batchContents.get(contentid);
   }
 
   /**
@@ -230,10 +235,13 @@ public class IndexJob implements Comparable<IndexJob> {
   }
 
   /**
-   * Set the flag to signify that the job is finished.
+   * Set the flag to signify that the job (and batch if last) is finished.
    */
   public void finish() {
     this.finished = true;
+    if (this.batch != null) {
+      this.batch.finished = this.batch.lastContentID != null && this.batch.lastContentID.equals(this._contentid);
+    }
   }
 
   /**
@@ -297,8 +305,9 @@ public class IndexJob implements Comparable<IndexJob> {
    *
    * @return the new job
    */
-  public static IndexJob newBatchJob(Map<String, ContentType> contents, Index i, Priority p, Requester r) {
-    return new IndexJob(contents, i, p, r);
+  public static IndexJob newBatchJob(Batch b, boolean last, String contentid, ContentType ctype, Index i, Priority p, Requester r) {
+    if (last) b.lastContentID = contentid;
+    return new IndexJob(b, contentid, ctype, i, p, r);
   }
 
   /**

@@ -43,6 +43,8 @@ public class AutoSuggest {
 
   private boolean built = false;
   
+  RAMDirectory directory;
+  
   private AutoSuggest(Index index, Directory dir, boolean useTerms, ObjectBuilder objectBuilder) throws IndexException {
     this._useTerms = useTerms;
     this._objectBuilder = objectBuilder;
@@ -52,6 +54,7 @@ public class AutoSuggest {
       LOGGER.error("Failed to build autosuggest", ex);
       throw new IndexException("Failed to build autosuggest", ex);
     }
+    this.directory = (RAMDirectory) dir;
   }
 
   public void addSearchField(String field) {
@@ -151,6 +154,7 @@ public class AutoSuggest {
   }
 
   public List<Suggestion> suggest(String text, Collection<String> criteria, int nb) {
+    System.out.println(this.directory.ramBytesUsed());
     List<Suggestion> suggestions = new ArrayList<>();
     if (!this.built) return suggestions;
     Set<BytesRef> contexts = null;
