@@ -21,7 +21,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -250,11 +249,9 @@ public final class IndexManager {
    * @param params   the dynamic XSLT parameters
    */
   public void indexBatch(Map<String, ContentType> contents, Index i, Requester r, Priority p) {
-    IndexJob.Batch batch = new IndexJob.Batch();
-    Iterator<String> keys = contents.keySet().iterator();
-    while (keys.hasNext()) {
-      String id = keys.next();
-      indexJob(IndexJob.newBatchJob(batch, !keys.hasNext(), id, contents.get(id), i, p, r));
+    IndexJob.Batch batch = new IndexJob.Batch(contents.size());
+    for (String key : contents.keySet()) {
+      indexJob(IndexJob.newBatchJob(batch, key, contents.get(key), i, p, r));
     }
   }
 

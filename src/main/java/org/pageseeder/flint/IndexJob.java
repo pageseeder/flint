@@ -38,17 +38,23 @@ public class IndexJob implements Comparable<IndexJob> {
   private static final String CLEAR_CONTENT_ID = "CLEAR";
 
   public static class Batch {
-    private String lastContentID = null;
+    private final int totalCount;
     private boolean started = false;
-    private boolean finished = false;
-    public void start() {
+    private int currentCount = 0;
+    public Batch(int total) {
+      this.totalCount = total;
+    }
+    public synchronized void start() {
       this.started = true;
     }
-    public boolean isStarted() {
+    public synchronized void increase() {
+      this.currentCount++;
+    }
+    public synchronized boolean isStarted() {
       return this.started;
     }
-    public boolean isFinished() {
-      return this.finished;
+    public synchronized boolean isFinished() {
+      return this.currentCount >= this.totalCount;
     }
   }
 
@@ -238,10 +244,8 @@ public class IndexJob implements Comparable<IndexJob> {
    * Set the flag to signify that the job (and batch if last) is finished.
    */
   public void finish() {
+    if (this.batch != null) batch.increase();
     this.finished = true;
-    if (this.batch != null) {
-      this.batch.finished = this.batch.lastContentID != null && this.batch.lastContentID.equals(this._contentid);
-    }
   }
 
   /**
@@ -305,8 +309,7 @@ public class IndexJob implements Comparable<IndexJob> {
    *
    * @return the new job
    */
-  public static IndexJob newBatchJob(Batch b, boolean last, String contentid, ContentType ctype, Index i, Priority p, Requester r) {
-    if (last) b.lastContentID = contentid;
+  public static IndexJob newBatchJob(Batch b, String contentid, ContentType ctype, Index i, Priority p, Requester r) {
     return new IndexJob(b, contentid, ctype, i, p, r);
   }
 
