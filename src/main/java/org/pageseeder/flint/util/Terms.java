@@ -19,6 +19,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
+import java.util.Iterator;
 import java.util.List;
 
 import org.apache.lucene.index.Fields;
@@ -218,6 +219,28 @@ public final class Terms {
     } finally {
       suggester.close();
     }
+  }
+
+
+  /**
+   * Returns the list of field names for the specified reader.
+   *
+   * @param reader The index reader
+   *
+   * @return the list of field names
+   *
+   * @throws IOException should any IO error be reported by the {@link MultiFields#getFields(IndexReader)} method.
+   */
+  @Beta public static List<String> fields(IndexReader reader) throws IOException {
+    LOGGER.debug("Loading fields");
+    List<String> fieldnames = new ArrayList<>();
+    Fields fields = MultiFields.getFields(reader);
+    if (fields == null) return fieldnames;
+    Iterator<String> it = fields.iterator();
+    while (it.hasNext()) {
+      fieldnames.add(it.next());
+    }
+    return fieldnames;
   }
 
 

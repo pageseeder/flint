@@ -18,7 +18,6 @@ import org.pageseeder.flint.content.SourceForwarder;
 import org.pageseeder.flint.local.LocalFileContentFetcher;
 import org.pageseeder.flint.local.LocalIndex;
 import org.pageseeder.flint.local.LocalIndexer;
-import org.pageseeder.flint.local.TestListener;
 import org.pageseeder.flint.util.Bucket;
 import org.pageseeder.flint.util.Terms;
 
@@ -42,7 +41,7 @@ public class TermsTest {
     indexer.indexDocuments(documents);
     System.out.println("Documents indexed!");
     // wait a bit
-    TestUtils.wait(2);
+    TestUtils.wait(6);
   }
 
   @AfterClass
@@ -54,6 +53,20 @@ public class TermsTest {
     for (File f : indexRoot.listFiles()) f.delete();
     indexRoot.delete();
     System.out.println("-----------------------------------");
+  }
+
+  @Test
+  public void testFields() throws IndexException {
+    IndexReader reader;
+    try {
+      reader = manager.grabReader(index.getIndex());
+      List<String> fields = Terms.fields(reader);
+      Assert.assertArrayEquals(fields.toArray(), new String[] {"field1", "field2", "fuzzy1", "prefix1", "prefix2"});
+      manager.release(index.getIndex(), reader);
+    } catch (IndexException | IOException ex) {
+      ex.printStackTrace();
+      Assert.fail();
+    }
   }
 
   @Test
@@ -122,9 +135,9 @@ public class TermsTest {
     try {
       reader = manager.grabReader(index.getIndex());
       List<String> values = new ArrayList<>();
-      Terms.prefix(index.getIndex(), reader, values, Collections.singletonList("prefix2"), "blue fro");
-      Assert.assertTrue(values.contains("blue frog"));
-      Assert.assertTrue(values.contains("blue front"));
+      Terms.prefix(index.getIndex(), reader, values, Collections.singletonList("prefix2"), "fro");
+      Assert.assertTrue(values.contains("frog"));
+      Assert.assertTrue(values.contains("fromage"));
       manager.release(index.getIndex(), reader);
     } catch (IndexException | IOException ex) {
       ex.printStackTrace();

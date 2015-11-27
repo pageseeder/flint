@@ -1,11 +1,8 @@
-package org.pageseeder.flint.local;
+package org.pageseeder.flint.utils;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.PrintWriter;
 
-import org.apache.lucene.search.Collector;
-import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.TopFieldCollector;
@@ -14,16 +11,15 @@ import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.pageseeder.flint.IndexException;
-import org.pageseeder.flint.IndexIO;
 import org.pageseeder.flint.IndexManager;
 import org.pageseeder.flint.content.SourceForwarder;
+import org.pageseeder.flint.local.LocalFileContentFetcher;
+import org.pageseeder.flint.local.LocalIndex;
+import org.pageseeder.flint.local.LocalIndexer;
 import org.pageseeder.flint.query.PredicateSearchQuery;
 import org.pageseeder.flint.query.SearchQuery;
 import org.pageseeder.flint.query.SearchResults;
 import org.pageseeder.flint.util.Queries;
-import org.pageseeder.flint.utils.TestUtils;
-import org.pageseeder.xmlwriter.XMLWriter;
-import org.pageseeder.xmlwriter.XMLWriterImpl;
 
 public class QueryTest {
 
@@ -45,7 +41,7 @@ public class QueryTest {
     indexer.indexDocuments(documents);
     System.out.println("Documents indexed");
     // wait a bit
-    TestUtils.wait(2);
+    TestUtils.wait(4);
   }
 
   @AfterClass
@@ -110,9 +106,9 @@ public class QueryTest {
     }
   }
 
-  private void outputResults(SearchResults results) throws IOException {
-    XMLWriter xml = new XMLWriterImpl(new PrintWriter(System.out));
-    results.toXML(xml);
-    xml.close();
-  }
+//  private void outputResults(SearchResults results) throws IOException {
+//    XMLWriter xml = new XMLWriterImpl(new PrintWriter(System.out));
+//    results.toXML(xml);
+//    xml.close();
+//  }
 }

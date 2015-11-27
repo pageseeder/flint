@@ -1,4 +1,4 @@
-package org.pageseeder.flint.local;
+package org.pageseeder.flint.utils;
 
 import org.pageseeder.flint.IndexJob;
 import org.pageseeder.flint.api.IndexListener;

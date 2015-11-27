@@ -32,6 +32,7 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexCommit;
+import org.apache.lucene.index.IndexNotFoundException;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.MultiReader;
 import org.apache.lucene.search.Collector;
@@ -719,6 +720,8 @@ public final class IndexManager {
       if (commits == null || commits.isEmpty()) return -1;
       String lastCommitDate = commits.get(commits.size()-1).getUserData().get(IndexIO.LAST_COMMIT_DATE);
       if (lastCommitDate != null) return Long.parseLong(lastCommitDate);
+    } catch (IndexNotFoundException ex) {
+      return -1;
     } catch (IOException ex) {
       LOGGER.error("Failed to load last index commit date for "+index.getIndexID(), ex);
     }

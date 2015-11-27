@@ -113,7 +113,7 @@ public final class LocalIndex {
       exists = DirectoryReader.indexExists(directory);
       directory.close();
     } catch (IOException ex) {
-      LOGGER.error("Unable to retrieve the last modified date of local index", ex);
+      LOGGER.error("Unable to check if local index exists", ex);
     }
     return exists;
   }

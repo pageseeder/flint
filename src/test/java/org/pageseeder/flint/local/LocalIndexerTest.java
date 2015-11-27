@@ -14,6 +14,7 @@ import org.pageseeder.flint.IndexJob.Priority;
 import org.pageseeder.flint.IndexManager;
 import org.pageseeder.flint.api.Requester;
 import org.pageseeder.flint.content.SourceForwarder;
+import org.pageseeder.flint.utils.TestListener;
 
 public class LocalIndexerTest {
 
@@ -58,7 +59,7 @@ public class LocalIndexerTest {
     LocalIndexer indexer = new LocalIndexer(this.manager, this.index);
     indexer.indexDocuments(indexing);
     // wait a bit
-    wait(2);
+    wait(4);
     IndexReader reader;
     try {
       reader = manager.grabReader(this.index.getIndex());
@@ -81,7 +82,7 @@ public class LocalIndexerTest {
       this.manager.index(f.getAbsolutePath(), LocalFileContentType.SINGLETON, this.index.getIndex(), requester, Priority.HIGH);
     }
     // wait a bit
-    wait(2);
+    wait(4);
     IndexReader reader;
     try {
       reader = manager.grabReader(this.index.getIndex());

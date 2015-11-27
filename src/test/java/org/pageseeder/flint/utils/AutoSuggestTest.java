@@ -16,7 +16,6 @@ import org.pageseeder.flint.content.SourceForwarder;
 import org.pageseeder.flint.local.LocalFileContentFetcher;
 import org.pageseeder.flint.local.LocalIndex;
 import org.pageseeder.flint.local.LocalIndexer;
-import org.pageseeder.flint.local.TestListener;
 import org.pageseeder.flint.util.AutoSuggest;
 import org.pageseeder.flint.util.AutoSuggest.Suggestion;
 
@@ -40,7 +39,7 @@ public class AutoSuggestTest {
     indexer.indexDocuments(documents);
     System.out.println("Documents indexed!");
     // wait a bit
-    TestUtils.wait(2);
+    TestUtils.wait(6);
   }
 
   @AfterClass
