@@ -53,6 +53,10 @@ public class LocalFileContent implements Content {
    * The wrapped file to index or delete.
    */
   private final File _f;
+  /**
+   * The wrapped file to index or delete.
+   */
+  private final String _root;
 
   /**
    * Creates a new content from a given file.
@@ -61,6 +65,17 @@ public class LocalFileContent implements Content {
    */
   public LocalFileContent(File f) {
     this._f = f;
+    this._root = null;
+  }
+
+  /**
+   * Creates a new content from a given file.
+   *
+   * @param f The file
+   */
+  public LocalFileContent(File f, File root) {
+    this._f = f;
+    this._root = root.getAbsolutePath();
   }
 
   @Override
@@ -82,7 +97,10 @@ public class LocalFileContent implements Content {
 
   @Override
   public DeleteRule getDeleteRule() {
-    return new DeleteRule("path", this._f.getAbsolutePath());
+    String path = this._f.getAbsolutePath();
+    if (this._root != null && path.startsWith(this._root))
+      path = path.substring(this._root.length());
+    return new DeleteRule("_path", path.replace('\\', '/'));
   }
 
   /**

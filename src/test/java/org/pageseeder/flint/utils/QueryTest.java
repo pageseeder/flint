@@ -3,6 +3,8 @@ package org.pageseeder.flint.utils;
 import java.io.File;
 import java.io.IOException;
 
+import javax.xml.transform.TransformerException;
+
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.TopFieldCollector;
@@ -32,16 +34,20 @@ public class QueryTest {
   
   @BeforeClass
   public static void init() {
-    index = new LocalIndex(indexRoot);
-    index.setTemplate("xml", template.toURI());
+    index = new LocalIndex(indexRoot, documents);
+    try {
+      index.setTemplate("xml", template.toURI());
+    } catch (TransformerException ex) {
+      ex.printStackTrace();
+    }
     manager = new IndexManager(new LocalFileContentFetcher(), new TestListener());
     manager.setDefaultTranslator(new SourceForwarder("xml", "UTF-8"));
     System.out.println("Starting manager!");
     LocalIndexer indexer = new LocalIndexer(manager, index);
-    indexer.indexDocuments(documents);
+    indexer.index(documents);
     System.out.println("Documents indexed");
     // wait a bit
-    TestUtils.wait(4);
+    TestUtils.wait(1);
   }
 
   @AfterClass

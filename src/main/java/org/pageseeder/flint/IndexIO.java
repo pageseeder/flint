@@ -348,7 +348,6 @@ public final class IndexIO {
   public IndexReader bookReader() {
     if (this.state == State.CLOSED) return null;
     try {
-      LOGGER.debug("Getting reader");
       return this._reader.acquire();
     } catch (IOException ex) {
       LOGGER.error("Failed to book reader", ex);
@@ -361,7 +360,6 @@ public final class IndexIO {
     if (!(reader instanceof DirectoryReader))
       throw new IllegalArgumentException("Reader must be a DirectoryReader");
     try {
-      LOGGER.debug("Releasing reader");
       this._reader.release((DirectoryReader) reader);
     } catch (IOException ex) {
       LOGGER.error("Failed to release reader", ex);

@@ -109,20 +109,23 @@ public final class FieldFacet implements XMLWritable, Facet {
    */
   public void compute(IndexSearcher searcher, Query base, int size) throws IOException {
     // If the base is null, simply calculate for each query
-    if (base == null) { compute(searcher, size); }
-    if (size < 0) throw new IllegalArgumentException("size < 0");
-    // Otherwise, make a boolean query of the base AND each facet query
-    Bucket<Term> bucket = new Bucket<Term>(size);
-    DocumentCounter counter = new DocumentCounter();
-    for (TermQuery q : this._queries) {
-      BooleanQuery query = new BooleanQuery();
-      query.add(base, Occur.MUST);
-      query.add(q, Occur.MUST);
-      searcher.search(query, counter);
-      bucket.add(q.getTerm(), counter.getCount());
-      counter.reset();
+    if (base == null) {
+      compute(searcher, size);
+    } else {
+      if (size < 0) throw new IllegalArgumentException("size < 0");
+      // Otherwise, make a boolean query of the base AND each facet query
+      Bucket<Term> bucket = new Bucket<Term>(size);
+      DocumentCounter counter = new DocumentCounter();
+      for (TermQuery q : this._queries) {
+        BooleanQuery query = new BooleanQuery();
+        query.add(base, Occur.MUST);
+        query.add(q, Occur.MUST);
+        searcher.search(query, counter);
+        bucket.add(q.getTerm(), counter.getCount());
+        counter.reset();
+      }
+      this._bucket = bucket;
     }
-    this._bucket = bucket;
   }
 
   /**
@@ -182,6 +185,10 @@ public final class FieldFacet implements XMLWritable, Facet {
     xml.closeElement();
   }
 
+  public Bucket<Term> getValues() {
+    return this._bucket;
+  }
+
   // Static helpers -------------------------------------------------------------------------------
 
   /**
@@ -196,6 +203,26 @@ public final class FieldFacet implements XMLWritable, Facet {
    */
   public static FieldFacet newFacet(String field, IndexReader reader) throws IOException {
     List<Term> terms = Terms.terms(reader, field);
+    List<TermQuery> subs = new ArrayList<TermQuery>(terms.size());
+    for (Term t : terms) {
+      subs.add(new TermQuery(t));
+    }
+    return new FieldFacet(field, subs);
+  }
+
+  /**
+   * Creates a new facet for the specified field.
+   *
+   * @param field  the field for this facet.
+   * @param reader the reader to use.
+   *
+   * @return the corresponding Facet ready to use with a base query.
+   *
+   * @throws IOException if thrown by the reader.
+   */
+  public static FieldFacet newFacet(String field, IndexReader reader, int maxValues) throws IOException {
+    List<Term> terms = Terms.terms(reader, field);
+    if (terms.size() > maxValues) return null;
     List<TermQuery> subs = new ArrayList<TermQuery>(terms.size());
     for (Term t : terms) {
       subs.add(new TermQuery(t));

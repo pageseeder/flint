@@ -211,6 +211,10 @@ public class AutoSuggest {
     return new AutoSuggest(index, dir, false, null);
   }
   
+  public static AutoSuggest documents(Index index) throws IndexException {
+    return documents(index, null);
+  }
+  
   public static AutoSuggest documents(Index index, ObjectBuilder builder) throws IndexException {
     return documents(index, new RAMDirectory(), builder);
   }

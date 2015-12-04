@@ -17,24 +17,20 @@ package org.pageseeder.flint;
 
 import java.io.IOException;
 import java.io.Reader;
-import java.io.StringReader;
-import java.io.StringWriter;
-import java.io.Writer;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
+import javax.xml.transform.Result;
 import javax.xml.transform.Templates;
 import javax.xml.transform.Transformer;
-import javax.xml.transform.stream.StreamResult;
 import javax.xml.transform.stream.StreamSource;
 
 import org.apache.lucene.document.Document;
 import org.pageseeder.flint.IndexJob.Priority;
 import org.pageseeder.flint.api.Content;
 import org.pageseeder.flint.api.ContentTranslator;
-import org.pageseeder.flint.api.ContentType;
 import org.pageseeder.flint.api.Index;
 import org.pageseeder.flint.api.IndexListener;
 import org.pageseeder.flint.api.Requester;
@@ -43,7 +39,6 @@ import org.pageseeder.flint.index.IndexParserFactory;
 import org.pageseeder.flint.util.FlintErrorListener;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.xml.sax.InputSource;
 
 /**
  * Main class from Flint, applications should create one instance of this class.
@@ -119,7 +114,7 @@ public final class IndexingThread implements Runnable {
       if (job.isBatch()) {
         if (!job.getBatch().isStarted()) {
           job.getBatch().start();
-          this._listener.startBatch();
+          this._listener.startBatch(job.getBatch());
         }
       } else {
         this._listener.startJob(job);
@@ -145,7 +140,7 @@ public final class IndexingThread implements Runnable {
         // normal content
         } else {
           // retrieve content
-          success = indexContent(job, job.getContentID(), job.getContentType(), io);
+          success = indexContent(job, io);
         }
         // set job status
         job.setSuccess(success);
@@ -158,7 +153,7 @@ public final class IndexingThread implements Runnable {
         if (job.isBatch()) {
           if (job.getBatch().isFinished()) {
             if (io != null) io.maybeReopen();
-            this._listener.endBatch();
+            this._listener.endBatch(job.getBatch());
             finished = true;
           }
         } else if (success) {
@@ -183,10 +178,10 @@ public final class IndexingThread implements Runnable {
   // private methods
   // ----------------------------------------------------------------------------------------------
 
-  private boolean indexContent(IndexJob job, String contentid, ContentType contenttype, IndexIO io) throws IndexException {
+  private boolean indexContent(IndexJob job, IndexIO io) throws IndexException {
 
     // retrieve content
-    Content content = this._manager.getContent(contentid, contenttype);
+    Content content = this._manager.getContent(job);
     if (content == null) {
       this._listener.error(job, "Failed to retrieve Source content", null);
       return false;
@@ -204,26 +199,18 @@ public final class IndexingThread implements Runnable {
       return true;
     }
 
-    // translate content then
-    StringWriter xsltResult = new StringWriter();
+    // translate content directly into documents
+    IndexParser parser = IndexParserFactory.getInstanceForTransformation();
     try {
       translateContent(this._manager, new FlintErrorListener(this._listener, job),
                        job.getIndex(), content, job.getRequester().getParameters(job.getContentID(),
-                       job.getContentType()), xsltResult);
+                       job.getContentType()), parser.getResult());
     } catch (IndexException ex) {
       this._listener.error(job, ex.getMessage(), ex);
       return false;
     }
+    List<Document> documents = parser.getDocuments();
 
-    // build Lucene documents
-    List<Document> documents;
-    try {
-      IndexParser parser = IndexParserFactory.getInstance();
-      documents = parser.process(new InputSource(new StringReader(xsltResult.toString())));
-    } catch (Exception ex) {
-      this._listener.error(job, "Failed to create Lucene Documents from Index XML", ex);
-      return false;
-    }
 //    LOGGER.debug("Found {} document(s) to update", documents.size());
 
     try {
@@ -251,7 +238,7 @@ public final class IndexingThread implements Runnable {
    */
   public static void translateContent(IndexManager manager, FlintErrorListener errorListener,
                                       Index index, Content content,
-                                      Map<String, String> params, Writer out) throws IndexException {
+                                      Map<String, String> params, Result result) throws IndexException {
     String mediatype = content.getMediaType();
     // no MIME type found
     if (mediatype == null)
@@ -290,7 +277,7 @@ public final class IndexingThread implements Runnable {
         }
       }
       // run transform
-      t.transform(new StreamSource(source), new StreamResult(out));
+      t.transform(new StreamSource(source), result);
     } catch (Exception ex) {
       throw new IndexException("Failed to create Index XML from Source content.", ex);
     } finally {

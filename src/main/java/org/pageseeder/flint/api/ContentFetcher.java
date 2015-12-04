@@ -15,6 +15,7 @@
  */
 package org.pageseeder.flint.api;
 
+import org.pageseeder.flint.IndexJob;
 
 /**
  * This class provides a way for the IndexManager to fetch the content to add to the index.
@@ -29,11 +30,10 @@ public interface ContentFetcher {
   /**
    * Load the Content.
    *
-   * @param id    the Content ID
-   * @param ctype the Content Type
+   * @param job   the index job
    *
    * @return the source where the Content is read from
    */
-  Content getContent(String id, ContentType ctype);
+  Content getContent(IndexJob job);
 
 }

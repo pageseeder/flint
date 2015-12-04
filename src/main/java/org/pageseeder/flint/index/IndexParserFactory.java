@@ -41,6 +41,15 @@ public final class IndexParserFactory extends DefaultHandler {
   private static final Logger LOGGER = LoggerFactory.getLogger(IndexParserFactory.class);
 
   /**
+   * Generate an index document parser instance that can only be used for XSLT transformation.
+   *
+   * @return an index parser instance.
+   */
+  public static IndexParser getInstanceForTransformation() {
+    return new IndexParser();
+  }
+
+  /**
    * Generate an index document parser instance.
    *
    * @return an index parser instance.

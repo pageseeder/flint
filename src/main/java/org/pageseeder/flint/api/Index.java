@@ -203,17 +203,12 @@ public class Index {
    * @param media    the media type of the content (eg. "application/xml").
    * @param template the full path to the XSLT template file.
    *
-   * @throws IllegalArgumentException If the templates are invalid.
+   * @throws InvalidTemplatesException If the templates are invalid.
    */
-  public void setTemplates(ContentType type, String media, URI template) {
-    try {
-      ContentDefinition def = new ContentDefinition(type, media);
-      LOGGER.debug("Adding templates for {}", def);
-      this._templates.put(def, loadTemplates(template));
-    } catch (TransformerException ex) {
-      LOGGER.warn("Failed to load XSLT script " + template + ": " + ex.getMessageAndLocation(), ex);
-      throw new IllegalArgumentException("Invalid XSLT script " + template + ": " + ex.getMessageAndLocation());
-    }
+  public void setTemplates(ContentType type, String media, URI template) throws TransformerException {
+    ContentDefinition def = new ContentDefinition(type, media);
+    LOGGER.debug("Adding templates for {}", def);
+    this._templates.put(def, loadTemplates(template));
   }
 
   // Private helpers ==============================================================================

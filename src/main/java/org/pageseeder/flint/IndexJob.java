@@ -38,23 +38,41 @@ public class IndexJob implements Comparable<IndexJob> {
   private static final String CLEAR_CONTENT_ID = "CLEAR";
 
   public static class Batch {
+    private final String index;
     private final int totalCount;
     private boolean started = false;
     private int currentCount = 0;
-    public Batch(int total) {
+    private long startTime;
+    private long totalTime;
+    public Batch(String idx, int total) {
+      this.index = idx;
       this.totalCount = total;
     }
-    public synchronized void start() {
+    protected synchronized void start() {
       this.started = true;
+      this.startTime = System.currentTimeMillis();
     }
-    public synchronized void increase() {
+    protected synchronized void increase() {
       this.currentCount++;
+      if (isFinished()) this.totalTime = System.currentTimeMillis() - this.startTime;
     }
     public synchronized boolean isStarted() {
       return this.started;
     }
     public synchronized boolean isFinished() {
       return this.currentCount >= this.totalCount;
+    }
+    public int getCount() {
+      return this.totalCount;
+    }
+    public long getStartTime() {
+      return this.startTime;
+    }
+    public long getElapsedTime() {
+      return this.totalTime;
+    }
+    public String getIndex() {
+      return this.index;
     }
   }
 

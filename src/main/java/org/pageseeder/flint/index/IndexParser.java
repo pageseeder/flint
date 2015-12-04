@@ -22,6 +22,8 @@ import java.io.InputStreamReader;
 import java.util.Collections;
 import java.util.List;
 
+import javax.xml.transform.sax.SAXResult;
+
 import org.apache.lucene.document.Document;
 import org.pageseeder.flint.IndexException;
 import org.pageseeder.flint.util.FlintEntityResolver;
@@ -71,6 +73,16 @@ public final class IndexParser {
   private final XMLReader _reader;
 
   /**
+   * THe XML reader to use.
+   */
+  private final SAXResult _result;
+
+  /**
+   * THe XML reader to use.
+   */
+  private final IndexDocumentHandler _handler;
+
+  /**
    * Creates a new IndexParser.
    *
    * @param reader    The XML reader to use.
@@ -79,10 +91,31 @@ public final class IndexParser {
     this._reader = reader;
     this._reader.setEntityResolver(FlintEntityResolver.getInstance());
     this._reader.setErrorHandler(new FlintErrorHandler());
+    this._result = null;
+    this._handler = null;
   }
 
-// public static methods -----------------------------------------------------------------------
+  /**
+   * Creates a new IndexParser.
+   *
+   * @param result     The SAX Result to use.
+   */
+  protected IndexParser() {
+    this._reader = null;
+    this._handler = new AutoHandler();
+    this._result = new SAXResult(this._handler);
+  }
 
+  //public methods -----------------------------------------------------------------------
+
+  public SAXResult getResult() {
+    return this._result;
+  }
+
+  public List<Document> getDocuments() {
+    return this._handler == null ? null : this._handler.getDocuments();
+  }
+  
   /**
    * Make a collection Lucene documents to be indexed from the XML file given.
    *
@@ -98,7 +131,7 @@ public final class IndexParser {
    */
   public synchronized List<Document> process(InputSource source) throws IndexException {
     try {
-      IndexDocumentHandler handler = new AutoHandler(this._reader);
+      IndexDocumentHandler handler = new AutoHandler();
       this._reader.setContentHandler(handler);
       this._reader.parse(source);
       return handler.getDocuments();
@@ -144,23 +177,9 @@ public final class IndexParser {
   private static final class AutoHandler extends DefaultHandler implements IndexDocumentHandler {
 
     /**
-     * The reader in use.
-     */
-    private final XMLReader _reader;
-
-    /**
      * The handler in use.
      */
     private IndexDocumentHandler _handler;
-
-    /**
-     * Create a new auto handler for the specified XML reader.
-     *
-     * @param reader   The XML Reader in use.
-     */
-    public AutoHandler(XMLReader reader) {
-      this._reader = reader;
-    }
 
     /**
      * Once element "documents" is matched, the reader is assigned the appropriate handler.
@@ -183,12 +202,29 @@ public final class IndexParser {
         }
         // Start processing the document with the new handler
         this._handler.startDocument();
+      }
+      if (this._handler != null) {
         this._handler.startElement(uri, localName, qName, atts);
-        // Reassign the content handler
-        this._reader.setContentHandler(this._handler);
       }
     }
 
+    @Override
+    public void endElement(String uri, String localName, String qName) throws SAXException {
+      if (this._handler != null)
+        this._handler.endElement(uri, localName, qName);
+    }
+
+    @Override
+    public void characters(char[] ch, int start, int length) throws SAXException {
+      if (this._handler != null)
+        this._handler.characters(ch, start, length);
+    }
+
+    @Override
+    public void endDocument() throws SAXException {
+      if (this._handler != null)
+        this._handler.endDocument();
+    }
     /**
      * {@inheritDoc}
      */

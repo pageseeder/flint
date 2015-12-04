@@ -116,7 +116,7 @@ final class IndexDocumentHandler_3_0 extends DefaultHandler implements IndexDocu
    */
   @Override
   public void startDocument() {
-    LOGGER.debug("Start processing iXML document (version 3.0)");
+//    LOGGER.debug("Start processing iXML document (version 3.0)");
     this.documents = new ArrayList<Document>();
   }
 
@@ -125,7 +125,7 @@ final class IndexDocumentHandler_3_0 extends DefaultHandler implements IndexDocu
    */
   @Override
   public void endDocument() {
-    LOGGER.debug("End processing iXML document");
+//    LOGGER.debug("End processing iXML document");
   }
 
   /**
@@ -183,7 +183,7 @@ final class IndexDocumentHandler_3_0 extends DefaultHandler implements IndexDocu
    * @param atts The attributes to handles.
    */
   private void startDocumentsElement(Attributes atts) {
-    LOGGER.debug("Parsing index document set");
+//    LOGGER.debug("Parsing index document set");
     String timezone = atts.getValue("timezone");
     if (timezone != null) {
       LOGGER.debug("Setting timezone to");
@@ -199,7 +199,7 @@ final class IndexDocumentHandler_3_0 extends DefaultHandler implements IndexDocu
    * @param atts The attributes to handle.
    */
   private void startDocumentElement(Attributes atts) {
-    LOGGER.debug("Parsing index document");
+//    LOGGER.debug("Parsing index document");
     this._document = new Document();
   }
 
@@ -207,7 +207,7 @@ final class IndexDocumentHandler_3_0 extends DefaultHandler implements IndexDocu
    * Handles the end of a 'document' element.
    */
   private void endDocumentElement() {
-    LOGGER.debug("Storing document");
+//    LOGGER.debug("Storing document");
     if (this._document.getFields().isEmpty()) {
       LOGGER.warn("This document is empty - will not be stored");
     } else {

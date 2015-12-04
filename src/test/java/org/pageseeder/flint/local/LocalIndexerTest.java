@@ -4,6 +4,8 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 
+import javax.xml.transform.TransformerException;
+
 import org.apache.lucene.index.IndexReader;
 import org.junit.After;
 import org.junit.Assert;
@@ -28,9 +30,13 @@ public class LocalIndexerTest {
   
   @Before
   public void init() {
-    this.index = new LocalIndex(indexRoot);
-    this.index.setTemplate("xml", template.toURI());
-    this.index.setTemplate("psml", templatePSML.toURI());
+    this.index = new LocalIndex(indexRoot, indexing);
+    try {
+      this.index.setTemplate("xml", template.toURI());
+      this.index.setTemplate("psml", templatePSML.toURI());
+    } catch (TransformerException ex) {
+      ex.printStackTrace();
+    }
     this.manager = new IndexManager(new LocalFileContentFetcher(), new TestListener(), 3);
     List<String> types = new ArrayList<>();
     types.add("xml");
@@ -57,9 +63,9 @@ public class LocalIndexerTest {
   @Test
   public void testIndexing1() throws IndexException {
     LocalIndexer indexer = new LocalIndexer(this.manager, this.index);
-    indexer.indexDocuments(indexing);
+    indexer.indexFolder(indexing);
     // wait a bit
-    wait(4);
+    wait(2);
     IndexReader reader;
     try {
       reader = manager.grabReader(this.index.getIndex());
@@ -82,7 +88,7 @@ public class LocalIndexerTest {
       this.manager.index(f.getAbsolutePath(), LocalFileContentType.SINGLETON, this.index.getIndex(), requester, Priority.HIGH);
     }
     // wait a bit
-    wait(4);
+    wait(2);
     IndexReader reader;
     try {
       reader = manager.grabReader(this.index.getIndex());

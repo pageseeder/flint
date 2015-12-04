@@ -19,7 +19,6 @@ import java.io.IOException;
 import java.io.Writer;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -29,6 +28,8 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.atomic.AtomicLong;
+
+import javax.xml.transform.stream.StreamResult;
 
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexCommit;
@@ -54,8 +55,6 @@ import org.pageseeder.flint.log.NoOpListener;
 import org.pageseeder.flint.query.SearchPaging;
 import org.pageseeder.flint.query.SearchQuery;
 import org.pageseeder.flint.query.SearchResults;
-import org.pageseeder.flint.search.Facet;
-import org.pageseeder.flint.search.FieldFacet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -250,7 +249,7 @@ public final class IndexManager {
    * @param params   the dynamic XSLT parameters
    */
   public void indexBatch(Map<String, ContentType> contents, Index i, Requester r, Priority p) {
-    IndexJob.Batch batch = new IndexJob.Batch(contents.size());
+    IndexJob.Batch batch = new IndexJob.Batch(i.getIndexID(), contents.size());
     for (String key : contents.keySet()) {
       indexJob(IndexJob.newBatchJob(batch, key, contents.get(key), i, p, r));
     }
@@ -459,113 +458,6 @@ public final class IndexManager {
     }
   }
 
-  /**
-   * Returns the list of term and how frequently they are used by performing a fuzzy match on the
-   * specified term.
-   *
-   * @param field  the field to use as a facet
-   * @param upTo   the max number of values to return
-   * @param query  a predicate to apply on the facet (can be null or empty)
-   *
-   * @return the facte instance.
-   *
-   * @throws IOException    if there was an error reading the index or creating the condition query
-   * @throws IndexException if there was an error getting the reader or searcher.
-   */
-  public Facet getFacet(String field, int upTo, Query query, Index index) throws IndexException, IOException {
-    FieldFacet facet = null;
-    IndexReader reader = null;
-    IndexSearcher searcher = null;
-    try {
-      // Retrieve all terms for the field
-      reader = grabReader(index);
-      facet = FieldFacet.newFacet(field, reader);
-
-      // search
-      searcher = grabSearcher(index);
-      facet.compute(searcher, query, upTo);
-
-    } finally {
-      releaseQuietly(index, reader);
-      releaseQuietly(index, searcher);
-    }
-    return facet;
-  }
-
-  /**
-   * Returns the list of term and how frequently they are used by performing a fuzzy match on the
-   * specified term.
-   *
-   * @param fields the fields to use as facets
-   * @param upTo   the max number of values to return
-   * @param query  a predicate to apply on the facet (can be null or empty)
-   *
-   * @throws IndexException if there was an error reading the indexes or creating the condition query
-   * @throws IllegalStateException If one of the indexes is not initialised
-   */
-  public List<Facet> getFacets(List<String> fields, int upTo, Query query, Index index) throws IOException, IndexException {
-    // parameter checks
-    if (fields == null || fields.isEmpty() || index == null)
-      return Collections.emptyList();
-    List<Facet> facets = new ArrayList<Facet>();
-    for (String field : fields) {
-      if (field.length() > 0) {
-        facets.add(getFacet(field, upTo, query, index));
-      }
-    }
-    return facets;
-  }
-
-  /**
-   * Returns the list of term and how frequently they are used by performing a fuzzy match on the
-   * specified term.
-   *
-   * @param fields the fields to use as facets
-   * @param upTo   the max number of values to return
-   * @param query  a predicate to apply on the facet (can be null or empty)
-   *
-   * @throws IndexException if there was an error reading the indexes or creating the condition query
-   * @throws IllegalStateException If one of the indexes is not initialised
-   */
-  public List<Facet> getFacets(List<String> fields, int upTo, Query query, List<Index> indexes) throws IOException, IndexException {
-    // parameter checks
-    if (fields == null || fields.isEmpty() || indexes.isEmpty())
-      return Collections.emptyList();
-    // check for one index only
-    if (indexes.size() == 1)
-      return getFacets(fields, upTo, query, indexes.get(0));
-    // retrieve all searchers and readers
-    IndexReader[] readers = new IndexReader[indexes.size()];
-    IndexIO[] ios = new IndexIO[indexes.size()];
-    // grab a reader for each indexes
-    for (int i = 0; i < indexes.size(); i++) {
-      Index index = indexes.get(i);
-      ios[i] = getIndexIO(index);
-      readers[i] = grabReader(index);
-    }
-    List<Facet> facets = new ArrayList<Facet>();
-    try {
-      // Retrieve all terms for the field
-      IndexReader multiReader = new MultiReader(readers);
-      IndexSearcher multiSearcher = new IndexSearcher(multiReader);
-      for (String field : fields) {
-        if (field.length() > 0) {
-          FieldFacet facet = FieldFacet.newFacet(field, multiReader);
-          // search
-          facet.compute(multiSearcher, query, upTo);
-          // store it
-          facets.add(facet);
-        }
-      }
-    } finally {
-      // now release everything we used
-      for (int i = 0; i < ios.length; i++)  {
-        ios[i].releaseReader(readers[i]);
-      }
-    }
-    return facets;
-  }
-
   public MultipleIndexReader getMultipleIndexReader(List<Index> indexes) {
     return new MultipleIndexReader(this, indexes);
   }
@@ -706,7 +598,7 @@ public final class IndexManager {
    * @throws IndexException if anything went wrong
    */
   public void translateContent(Index index, Content content, Map<String, String> params, Writer out) throws IndexException {
-    IndexingThread.translateContent(this, null, index, content, params, out);
+    IndexingThread.translateContent(this, null, index, content, params, new StreamResult(out));
   }
 
   public long getLastTimeUsed(Index index) {
@@ -748,6 +640,21 @@ public final class IndexManager {
     }
   }
 
+  /**
+   * Close and remove the index provided from list
+   * 
+   * @param index the index to remove
+   */
+  public void closeIndex(Index index) {
+    IndexIO io = this._indexes.remove(index.getIndexID());
+    try {
+      if (io != null) io.stop();
+      OpenIndexManager.remove(io);
+    } catch (IndexException ex) {
+      LOGGER.error("Failed to close Index {}: {}", index.getIndexID(), ex.getMessage(), ex);
+    }
+  }
+
   // protected methods used by the threads
 
   /**
@@ -772,14 +679,15 @@ public final class IndexManager {
 
   /**
    * 
-   * @param contentid
-   * @param contenttype
-   * @return
+   * @param job the index job
+   * 
+   * @return the content
+   * 
    * @throws IndexException
    */
-  protected Content getContent(String contentid, ContentType contenttype) throws IndexException {
+  protected Content getContent(IndexJob job) throws IndexException {
     // retrieve content
-    return this._fetcher.getContent(contentid, contenttype);
+    return this._fetcher.getContent(job);
   }
 
   // Private helpers ==============================================================================

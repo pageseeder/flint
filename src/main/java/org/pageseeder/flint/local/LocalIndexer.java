@@ -20,6 +20,7 @@ import java.io.FileFilter;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.pageseeder.flint.IndexJob;
 import org.pageseeder.flint.IndexJob.Priority;
 import org.pageseeder.flint.IndexManager;
 import org.pageseeder.flint.api.ContentType;
@@ -67,32 +68,55 @@ public final class LocalIndexer extends Requester {
     this.priority = Priority.LOW;
   }
 
-  public void indexDocuments(File root) {
-    indexDocuments(root, null);
+  public void index(File file) {
+    if (file.isFile())
+      indexFile(file);
+    else if (file.isDirectory())
+      indexFolder(file);
   }
 
-  public void indexDocuments(File root, boolean recursive) {
-    indexDocuments(root, recursive, null);
+  public void indexFolder(File root) {
+    indexFolder(root, null);
   }
 
-  public void indexDocuments(File root, FileFilter filter) {
-    indexDocuments(root, true, filter);
+  public void indexFolder(File root, boolean recursive) {
+    indexFolder(root, recursive, null);
   }
 
-  public int indexDocuments(File root, boolean recursive, FileFilter filter) {
-    // find documents to index
-    Map<String, ContentType> files = new HashMap<>();
-    collectDocuments(root, recursive, filter, files);
-    if (files.isEmpty()) {
-      LOGGER.warn("Nothing to index!");
-    } else {
-      this._manager.indexBatch(files, this._index.getIndex(), this, this.priority);
+  public void indexFolder(File root, FileFilter filter) {
+    indexFolder(root, true, filter);
+  }
+
+  public int indexFolder(File root, boolean recursive, FileFilter filter) {
+    if (root.isDirectory()) {
+      // find documents to index
+      Map<String, ContentType> files = new HashMap<>();
+      collectDocuments(root, recursive, filter, files);
+      if (files.isEmpty()) {
+        LOGGER.warn("Nothing to index!");
+      } else {
+        this._manager.indexBatch(files, this._index.getIndex(), this, this.priority);
+      }
+      return files.size();
     }
-    return files.size();
+    LOGGER.warn("Trying to index file {} as a folder", root.getAbsolutePath());
+    return 0;
+  }
+  
+  public void indexFile(File file) {
+    if (file.isFile()) {
+      this._manager.index(file.getAbsolutePath(), LocalFileContentType.SINGLETON, this._index.getIndex(), this, IndexJob.Priority.HIGH);
+    } else {
+      LOGGER.warn("Trying to index folder {} as a file", file.getAbsolutePath());
+    }
   }
 
   public void clear() {
     this._manager.clear(this._index.getIndex(), this, Priority.HIGH);
+  }
+
+  public File getContentRoot() {
+    return this._index.getContentRoot();
   }
 
   @Override
@@ -100,9 +124,13 @@ public final class LocalIndexer extends Requester {
     HashMap<String, String> params = new HashMap<>();
     File f = new File(contentid);
     if (f.exists() && type == LocalFileContentType.SINGLETON) {
-      params.put("path", f.getAbsolutePath());
-      params.put("file-name", f.getName());
-      params.put("last-modified", String.valueOf(f.lastModified()));
+      String path = f.getAbsolutePath();
+      String root = this._index.getContentRoot().getAbsolutePath();
+      if (path.startsWith(root)) path = path.substring(root.length());
+      params.put("_path", path.replace('\\', '/'));
+      params.put("_filename", f.getName());
+      params.put("_visibility", "private");
+      params.put("_lastmodified", String.valueOf(f.lastModified()));
     }
     return params;
   }
@@ -112,6 +140,7 @@ public final class LocalIndexer extends Requester {
   private void collectDocuments(File root, boolean recursive, FileFilter filter, Map<String, ContentType> files) {
     // validate params
     if (root == null) throw new NullPointerException("root");
+    if (!root.exists()) return;
     if (!root.isDirectory()) throw new IllegalArgumentException("Not a folder");
     // load children
     File[] children = filter == null ? root.listFiles() : root.listFiles(filter);

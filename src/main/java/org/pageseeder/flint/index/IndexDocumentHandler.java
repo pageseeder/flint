@@ -26,7 +26,7 @@ import org.xml.sax.ContentHandler;
  * @author Christophe Lauret
  * @version 1 March 2010
  */
-interface IndexDocumentHandler extends ContentHandler {
+public interface IndexDocumentHandler extends ContentHandler {
 
   /**
    * Return the list of documents which were produced.

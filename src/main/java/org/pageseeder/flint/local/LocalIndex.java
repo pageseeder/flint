@@ -19,6 +19,8 @@ import java.io.File;
 import java.io.IOException;
 import java.net.URI;
 
+import javax.xml.transform.TransformerException;
+
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.index.DirectoryReader;
@@ -43,6 +45,11 @@ public final class LocalIndex {
   private static final Logger LOGGER = LoggerFactory.getLogger(LocalIndex.class);
 
   /**
+   * The location of the content.
+   */
+  private final File _content;
+
+  /**
    * The location of the index.
    */
   private final File _location;
@@ -60,8 +67,8 @@ public final class LocalIndex {
    *
    * @throws NullPointerException if the location is <code>null</code>.
    */
-  public LocalIndex(File location) {
-    this(location, new StandardAnalyzer());
+  public LocalIndex(File location, File content) {
+    this(location, content, new StandardAnalyzer());
   }
 
   /**
@@ -72,8 +79,10 @@ public final class LocalIndex {
    *
    * @throws NullPointerException if the location is <code>null</code>.
    */
-  public LocalIndex(File location, Analyzer analyzer) {
+  public LocalIndex(File location, File content, Analyzer analyzer) {
     if (location == null) throw new NullPointerException("location");
+    if (content  == null) throw new NullPointerException("content");
+    this._content = content;
     this._location = location;
     ensureFolderExists(this._location);
     Directory dir;
@@ -85,11 +94,15 @@ public final class LocalIndex {
     this._index = new Index(this._location.getName(), dir, analyzer);
   }
 
+  public File getContentRoot() {
+    return this._content;
+  }
+
   public Index getIndex() {
     return this._index;
   }
 
-  public void setTemplate(String extension, URI template) {
+  public void setTemplate(String extension, URI template) throws TransformerException {
     this._index.setTemplates(LocalFileContentType.SINGLETON, extension, template);
   }
 

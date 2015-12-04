@@ -6,6 +6,8 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
+import javax.xml.transform.TransformerException;
+
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
 import org.junit.AfterClass;
@@ -32,16 +34,20 @@ public class TermsTest {
   
   @BeforeClass
   public static void init() {
-    index = new LocalIndex(indexRoot);
-    index.setTemplate("xml", template.toURI());
+    index = new LocalIndex(indexRoot, documents);
+    try {
+      index.setTemplate("xml", template.toURI());
+    } catch (TransformerException ex) {
+      ex.printStackTrace();
+    }
     manager = new IndexManager(new LocalFileContentFetcher(), new TestListener());
     manager.setDefaultTranslator(new SourceForwarder("xml", "UTF-8"));
     System.out.println("Starting manager!");
     LocalIndexer indexer = new LocalIndexer(manager, index);
-    indexer.indexDocuments(documents);
+    indexer.index(documents);
     System.out.println("Documents indexed!");
     // wait a bit
-    TestUtils.wait(6);
+    TestUtils.wait(1);
   }
 
   @AfterClass
