@@ -34,7 +34,7 @@ public class QueryTest {
   
   @BeforeClass
   public static void init() {
-    index = new LocalIndex(indexRoot, documents);
+    index = new LocalIndex(new TestLocalIndexConfig(indexRoot, documents));
     try {
       index.setTemplate("xml", template.toURI());
     } catch (TransformerException ex) {
@@ -66,34 +66,34 @@ public class QueryTest {
   public void testQuery1() throws IndexException {
     // run searches
     SearchQuery query = new PredicateSearchQuery("field1:value0");
-    SearchResults results = manager.query(index.getIndex(), query);
+    SearchResults results = manager.query(index, query);
     Assert.assertEquals(0, results.getTotalNbOfResults());
   }
   @Test
   public void testQuery2() throws IndexException, IOException {
     SearchQuery query = new PredicateSearchQuery("field1:value1");
-    SearchResults results = manager.query(index.getIndex(), query);
+    SearchResults results = manager.query(index, query);
     Assert.assertEquals(4, results.getTotalNbOfResults());
   }
 
   @Test
   public void testQuery3() throws IndexException, IOException {
     SearchQuery query = new PredicateSearchQuery("field1:value2");
-    SearchResults results = manager.query(index.getIndex(), query);
+    SearchResults results = manager.query(index, query);
     Assert.assertEquals(3, results.getTotalNbOfResults());
   }
 
   @Test
   public void testQuery4() throws IndexException {
     SearchQuery query = new PredicateSearchQuery("field1:value3");
-    SearchResults results = manager.query(index.getIndex(), query);
+    SearchResults results = manager.query(index, query);
     Assert.assertEquals(1, results.getTotalNbOfResults());
   }
 
   @Test
   public void testQuery5() throws IndexException {
     SearchQuery query = new PredicateSearchQuery("field1:value4");
-    SearchResults results = manager.query(index.getIndex(), query);
+    SearchResults results = manager.query(index, query);
     Assert.assertEquals(1, results.getTotalNbOfResults());
   }
 
@@ -103,7 +103,7 @@ public class QueryTest {
     TopFieldCollector results;
     try {
       results = TopFieldCollector.create(Sort.RELEVANCE, 10, true, true, false);
-      manager.query(index.getIndex(), query, results);
+      manager.query(index, query, results);
       Assert.assertEquals(1, results.getTotalHits());
 //      Assert.assertEquals(1, results.topDocs().scoreDocs[0].doc);
     } catch (IOException e) {

@@ -17,6 +17,7 @@ import org.pageseeder.flint.IndexManager;
 import org.pageseeder.flint.api.Requester;
 import org.pageseeder.flint.content.SourceForwarder;
 import org.pageseeder.flint.utils.TestListener;
+import org.pageseeder.flint.utils.TestLocalIndexConfig;
 
 public class LocalIndexerTest {
 
@@ -30,7 +31,7 @@ public class LocalIndexerTest {
   
   @Before
   public void init() {
-    this.index = new LocalIndex(indexRoot, indexing);
+    this.index = new LocalIndex(new TestLocalIndexConfig(indexRoot, indexing));
     try {
       this.index.setTemplate("xml", template.toURI());
       this.index.setTemplate("psml", templatePSML.toURI());
@@ -63,14 +64,14 @@ public class LocalIndexerTest {
   @Test
   public void testIndexing1() throws IndexException {
     LocalIndexer indexer = new LocalIndexer(this.manager, this.index);
-    indexer.indexFolder(indexing);
+    indexer.indexFolder(indexing, null);
     // wait a bit
     wait(2);
     IndexReader reader;
     try {
-      reader = manager.grabReader(this.index.getIndex());
+      reader = manager.grabReader(this.index);
       Assert.assertEquals(30, reader.maxDoc());
-      manager.release(this.index.getIndex(), reader);
+      manager.release(this.index, reader);
     } catch (IndexException ex) {
       ex.printStackTrace();
       Assert.fail();
@@ -85,15 +86,15 @@ public class LocalIndexerTest {
   public void testIndexing2() throws IndexException {
     Requester requester = new Requester("Local indexer tester");
     for (File f : indexing.listFiles()) {
-      this.manager.index(f.getAbsolutePath(), LocalFileContentType.SINGLETON, this.index.getIndex(), requester, Priority.HIGH);
+      this.manager.index(f.getAbsolutePath(), LocalFileContentType.SINGLETON, this.index, requester, Priority.HIGH);
     }
     // wait a bit
     wait(2);
     IndexReader reader;
     try {
-      reader = manager.grabReader(this.index.getIndex());
+      reader = manager.grabReader(this.index);
       Assert.assertEquals(30, reader.maxDoc());
-      manager.release(this.index.getIndex(), reader);
+      manager.release(this.index, reader);
     } catch (IndexException ex) {
       ex.printStackTrace();
       Assert.fail();

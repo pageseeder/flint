@@ -10,10 +10,11 @@ public class LocalFileContentFetcher implements ContentFetcher {
 
   @Override
   public Content getContent(IndexJob job) {
-    if (job.getRequester() instanceof LocalIndexer) {
-      LocalIndexer indexer = (LocalIndexer) job.getRequester();
-      return new LocalFileContent(new File(job.getContentID()), indexer.getContentRoot());
+    if (job.getIndex() instanceof LocalIndex) {
+      LocalIndex index = (LocalIndex) job.getIndex();
+      return new LocalFileContent(new File(job.getContentID()), index.getConfig());
     }
+    // delete rule will fail!!
     return new LocalFileContent(new File(job.getContentID()));
   }
 

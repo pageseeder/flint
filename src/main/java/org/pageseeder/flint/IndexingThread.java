@@ -203,8 +203,7 @@ public final class IndexingThread implements Runnable {
     IndexParser parser = IndexParserFactory.getInstanceForTransformation();
     try {
       translateContent(this._manager, new FlintErrorListener(this._listener, job),
-                       job.getIndex(), content, job.getRequester().getParameters(job.getContentID(),
-                       job.getContentType()), parser.getResult());
+                       job.getIndex(), content, null, parser.getResult());
     } catch (IndexException ex) {
       this._listener.error(job, ex.getMessage(), ex);
       return false;
@@ -237,8 +236,7 @@ public final class IndexingThread implements Runnable {
    * @throws IndexException if anything went wrong
    */
   public static void translateContent(IndexManager manager, FlintErrorListener errorListener,
-                                      Index index, Content content,
-                                      Map<String, String> params, Result result) throws IndexException {
+                                      Index index, Content content, Map<String, String> params, Result result) throws IndexException {
     String mediatype = content.getMediaType();
     // no MIME type found
     if (mediatype == null)
@@ -266,7 +264,7 @@ public final class IndexingThread implements Runnable {
         t.setErrorListener(errorListener);
       }
       // retrieve parameters
-      Map<String, String> parameters = index.getParameters(content.getContentType(), mediatype);
+      Map<String, String> parameters = index.getParameters(content);
       if (parameters != null && params != null) {
         parameters = new HashMap<String, String>(parameters);
         parameters.putAll(params);

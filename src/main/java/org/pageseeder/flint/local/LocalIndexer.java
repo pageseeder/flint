@@ -17,6 +17,12 @@ package org.pageseeder.flint.local;
 
 import java.io.File;
 import java.io.FileFilter;
+import java.io.IOException;
+import java.nio.file.FileVisitResult;
+import java.nio.file.FileVisitor;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.attribute.BasicFileAttributes;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -34,16 +40,29 @@ import org.slf4j.LoggerFactory;
  * @author Christophe Lauret
  * @version 27 February 2013
  */
-public final class LocalIndexer extends Requester {
+public final class LocalIndexer implements FileVisitor<Path> {
 
   /**
    * A logger for this class and to provide for Flint.
    */
   private static final Logger LOGGER = LoggerFactory.getLogger(LocalIndexer.class);
-  
+
+  /**
+   * Possible action for each file.
+   */
+  public enum Action { INSERT, UPDATE, DELETE, IGNORE };
+
   private final IndexManager _manager;
 
   private final LocalIndex _index;
+  
+  private long _indexModifiedDate = -1;
+
+  private Map<File, Long> indexedFiles = null;
+
+  private FileFilter filter = null;
+
+  private final Map<File, Action> batchFiles = new HashMap<>();
 
   private Priority priority = Priority.LOW;
   /**
@@ -55,7 +74,6 @@ public final class LocalIndexer extends Requester {
    * @throws NullPointerException if the location is <code>null</code>.
    */
   public LocalIndexer(IndexManager manager, LocalIndex index) {
-    super("Local indexer");
     this._manager = manager;
     this._index = index;
   }
@@ -72,32 +90,45 @@ public final class LocalIndexer extends Requester {
     if (file.isFile())
       indexFile(file);
     else if (file.isDirectory())
-      indexFolder(file);
+      indexFolder(file, null);
   }
 
-  public void indexFolder(File root) {
-    indexFolder(root, null);
+  public void indexFolder(File root, Map<File, Long> indexed) {
+    indexFolder(root, null, indexed);
   }
 
-  public void indexFolder(File root, boolean recursive) {
-    indexFolder(root, recursive, null);
-  }
-
-  public void indexFolder(File root, FileFilter filter) {
-    indexFolder(root, true, filter);
-  }
-
-  public int indexFolder(File root, boolean recursive, FileFilter filter) {
+  public int indexFolder(File root, FileFilter filter, Map<File, Long> indexed) {
+    if (root == null) throw new NullPointerException("root");
+    if (!root.exists()) return 0;
     if (root.isDirectory()) {
+      // get last modif date of index
+      this._indexModifiedDate = indexed == null || indexed.isEmpty() ? -1 : this._manager.getLastTimeUsed(this._index);
+      // find documents already in the index
+      this.indexedFiles = indexed;
+      this.filter = filter;
       // find documents to index
-      Map<String, ContentType> files = new HashMap<>();
-      collectDocuments(root, recursive, filter, files);
-      if (files.isEmpty()) {
+      try {
+        Files.walkFileTree(root.toPath(), this);
+      } catch (IOException ex) {
+        LOGGER.warn("Failed to collect files to index from folder {}", root, ex);
+      }
+      if (this.batchFiles.isEmpty()) {
         LOGGER.warn("Nothing to index!");
       } else {
-        this._manager.indexBatch(files, this._index.getIndex(), this, this.priority);
+        // get files
+        Map<String, ContentType> toindex = new HashMap<>();
+        for (File f : this.batchFiles.keySet()) {
+          toindex.put(f.getAbsolutePath(), LocalFileContentType.SINGLETON);
+        }
+        // files to delete
+        if (this.indexedFiles != null) {
+          for (File f : this.indexedFiles.keySet()) {
+            toindex.put(f.getAbsolutePath(), LocalFileContentType.SINGLETON);
+          }
+        }
+        this._manager.indexBatch(toindex, this._index, new Requester("Local Indexer"), this.priority);
       }
-      return files.size();
+      return this.batchFiles.size();
     }
     LOGGER.warn("Trying to index file {} as a folder", root.getAbsolutePath());
     return 0;
@@ -105,60 +136,55 @@ public final class LocalIndexer extends Requester {
   
   public void indexFile(File file) {
     if (file.isFile()) {
-      this._manager.index(file.getAbsolutePath(), LocalFileContentType.SINGLETON, this._index.getIndex(), this, IndexJob.Priority.HIGH);
+      this._manager.index(file.getAbsolutePath(), LocalFileContentType.SINGLETON, this._index, new Requester("Local Indexer"), IndexJob.Priority.HIGH);
     } else {
       LOGGER.warn("Trying to index folder {} as a file", file.getAbsolutePath());
     }
   }
 
   public void clear() {
-    this._manager.clear(this._index.getIndex(), this, Priority.HIGH);
+    this._manager.clear(this._index, new Requester("Local Indexer"), Priority.HIGH);
   }
 
   public File getContentRoot() {
-    return this._index.getContentRoot();
-  }
-
-  @Override
-  public Map<String, String> getParameters(String contentid, ContentType type) {
-    HashMap<String, String> params = new HashMap<>();
-    File f = new File(contentid);
-    if (f.exists() && type == LocalFileContentType.SINGLETON) {
-      String path = f.getAbsolutePath();
-      String root = this._index.getContentRoot().getAbsolutePath();
-      if (path.startsWith(root)) path = path.substring(root.length());
-      params.put("_path", path.replace('\\', '/'));
-      params.put("_filename", f.getName());
-      params.put("_visibility", "private");
-      params.put("_lastmodified", String.valueOf(f.lastModified()));
-    }
-    return params;
+    return this._index.getConfig().getContent();
   }
   
   // -----------------------------------------------------------------------------------
   // private helpers
-  private void collectDocuments(File root, boolean recursive, FileFilter filter, Map<String, ContentType> files) {
-    // validate params
-    if (root == null) throw new NullPointerException("root");
-    if (!root.exists()) return;
-    if (!root.isDirectory()) throw new IllegalArgumentException("Not a folder");
-    // load children
-    File[] children = filter == null ? root.listFiles() : root.listFiles(filter);
-    // make sure there are children
-    if (children == null) {
-      LOGGER.warn("Cannot read files in folder "+root.getAbsolutePath());
-      return;
-    }
-    // loop through them
-    for (File child : children) {
-      // handle folders
-      if (child.isDirectory()) {
-        if (recursive) collectDocuments(child, recursive, filter, files);
-      } else {
-        // add file
-        files.put(child.getAbsolutePath(), LocalFileContentType.SINGLETON);
+
+  @Override
+  public FileVisitResult visitFile(Path path, BasicFileAttributes attrs) throws IOException {
+    File file = path.toFile();
+    Long indexModified = this.indexedFiles == null ? null : this.indexedFiles.remove(file);
+    // only files updated since last commit
+    if (this._indexModifiedDate == -1 || attrs.lastModifiedTime().toMillis() > this._indexModifiedDate) {
+      // check for filter
+      if (this.filter != null && !this.filter.accept(file))
+        return FileVisitResult.CONTINUE;
+      // check in the index to know what action to perform
+      if (indexModified == null) {
+        this.batchFiles.put(file, Action.INSERT);
+      } else if (indexModified != file.lastModified()) {
+        this.batchFiles.put(file, Action.UPDATE);
       }
     }
+    return FileVisitResult.CONTINUE;
   }
 
+  @Override
+  public FileVisitResult postVisitDirectory(Path dir, IOException exc) throws IOException {
+    return FileVisitResult.CONTINUE;
+  }
+
+  @Override
+  public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) throws IOException {
+    return FileVisitResult.CONTINUE;
+  }
+
+  @Override
+  public FileVisitResult visitFileFailed(Path file, IOException exc) throws IOException {
+    LOGGER.error("Failed to collect document {}", file, exc);
+    return FileVisitResult.CONTINUE;
+  }
 }

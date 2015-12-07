@@ -18,15 +18,15 @@ package org.pageseeder.flint.local;
 import java.io.File;
 import java.io.IOException;
 import java.net.URI;
+import java.util.Map;
 
 import javax.xml.transform.TransformerException;
 
-import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
+import org.pageseeder.flint.api.Content;
 import org.pageseeder.flint.api.Index;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -37,7 +37,7 @@ import org.slf4j.LoggerFactory;
  * @author Christophe Lauret
  * @version 27 February 2013
  */
-public final class LocalIndex {
+public final class LocalIndex extends Index {
 
   /**
    * A logger for this class and to provide for Flint.
@@ -45,19 +45,9 @@ public final class LocalIndex {
   private static final Logger LOGGER = LoggerFactory.getLogger(LocalIndex.class);
 
   /**
-   * The location of the content.
-   */
-  private final File _content;
-
-  /**
    * The location of the index.
    */
-  private final File _location;
-
-  /**
-   * This index.
-   */
-  private final Index _index;
+  private final LocalIndexConfig _config;
 
   /**
    * Create a new local index.
@@ -67,45 +57,27 @@ public final class LocalIndex {
    *
    * @throws NullPointerException if the location is <code>null</code>.
    */
-  public LocalIndex(File location, File content) {
-    this(location, content, new StandardAnalyzer());
-  }
-
-  /**
-   * Create a new local index.
-   *
-   * @param location The location of the local index.
-   * @param analyzer The analyzer of the local index.
-   *
-   * @throws NullPointerException if the location is <code>null</code>.
-   */
-  public LocalIndex(File location, File content, Analyzer analyzer) {
-    if (location == null) throw new NullPointerException("location");
-    if (content  == null) throw new NullPointerException("content");
-    this._content = content;
-    this._location = location;
-    ensureFolderExists(this._location);
-    Directory dir;
-    try {
-      dir = FSDirectory.open(this._location.toPath());
-    } catch (IOException ex) {
-      throw new IllegalArgumentException("Unable to return a directory on local index "+this._location.getName(), ex);
-    }
-    this._index = new Index(this._location.getName(), dir, analyzer);
-  }
-
-  public File getContentRoot() {
-    return this._content;
-  }
-
-  public Index getIndex() {
-    return this._index;
+  public LocalIndex(LocalIndexConfig config) {
+    super(config.getIndexLocation().getName(), ensureFolderExists(config.getIndexLocation()), config.getAnalyzer());
+    this._config = config;
   }
 
   public void setTemplate(String extension, URI template) throws TransformerException {
-    this._index.setTemplates(LocalFileContentType.SINGLETON, extension, template);
+    setTemplates(LocalFileContentType.SINGLETON, extension, template);
   }
 
+  public LocalIndexConfig getConfig() {
+    return this._config;
+  }
+
+  @Override
+  public Map<String, String> getParameters(Content content) {
+    if (content.getContentType() == LocalFileContentType.SINGLETON) {
+      return this._config.getParameters(new File(content.getContentID()));
+    }
+    return null;
+  }
+  
   // Utility methods for public usage
   // ----------------------------------------------------------------------------------------------
 
@@ -141,12 +113,17 @@ public final class LocalIndex {
    *
    * @param folder The folder to created.
    */
-  private static void ensureFolderExists(File folder) {
+  private static Directory ensureFolderExists(File folder) {
     if (!folder.exists()) {
       folder.mkdirs();
       if (!folder.exists()) {
         LOGGER.warn("Unable to create location {}", folder);
       }
+    }
+    try {
+      return FSDirectory.open(folder.toPath());
+    } catch (IOException ex) {
+      throw new IllegalArgumentException("Unable to return a directory on local index "+folder.getName(), ex);
     }
   }
 

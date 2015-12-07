@@ -32,7 +32,7 @@ public class AutoSuggestTest {
   
   @BeforeClass
   public static void init() {
-    index = new LocalIndex(indexRoot, documents);
+    index = new LocalIndex(new TestLocalIndexConfig(indexRoot, documents));
     try {
       index.setTemplate("xml", template.toURI());
     } catch (TransformerException ex) {
@@ -63,8 +63,8 @@ public class AutoSuggestTest {
   public void testAutoSuggestTerms() throws IndexException {
     IndexReader reader;
     try {
-      AutoSuggest as = AutoSuggest.terms(index.getIndex());
-      reader = manager.grabReader(index.getIndex());
+      AutoSuggest as = AutoSuggest.terms(index);
+      reader = manager.grabReader(index);
       as.addSearchField("fulltext");
       as.build(reader);
       List<Suggestion> suggestions = as.suggest("fro", 5);
@@ -77,7 +77,7 @@ public class AutoSuggestTest {
                           sug.highlight.equals("<b>fro</b>mage") ||
                           sug.highlight.equals("<b>fro</b>nt"));
       }
-      manager.release(index.getIndex(), reader);
+      manager.release(index, reader);
     } catch (IndexException ex) {
       ex.printStackTrace();
       Assert.fail();
@@ -88,8 +88,8 @@ public class AutoSuggestTest {
   public void testAutoSuggestFields() throws IndexException {
     IndexReader reader;
     try {
-      AutoSuggest as = AutoSuggest.fields(index.getIndex());
-      reader = manager.grabReader(index.getIndex());
+      AutoSuggest as = AutoSuggest.fields(index);
+      reader = manager.grabReader(index);
       as.addSearchField("name");
       as.build(reader);
       List<Suggestion> suggestions = as.suggest("elec", 5);
@@ -108,7 +108,7 @@ public class AutoSuggestTest {
         Assert.assertTrue(sug.highlight.equals("electric <b>gui</b>tar") ||
                           sug.highlight.equals("acoustic <b>gui</b>tar"));
       }
-      manager.release(index.getIndex(), reader);
+      manager.release(index, reader);
     } catch (IndexException ex) {
       ex.printStackTrace();
       Assert.fail();
@@ -119,8 +119,8 @@ public class AutoSuggestTest {
   public void testAutoSuggestFieldsWithCriteria() throws IndexException {
     IndexReader reader;
     try {
-      AutoSuggest as = AutoSuggest.fields(index.getIndex());
-      reader = manager.grabReader(index.getIndex());
+      AutoSuggest as = AutoSuggest.fields(index);
+      reader = manager.grabReader(index);
       as.addSearchField("name");
       as.setCriteriaField("color");
       as.build(reader);
@@ -148,7 +148,7 @@ public class AutoSuggestTest {
       sug = suggestions.get(0);
       Assert.assertEquals(sug.text, "electric guitar");
       Assert.assertEquals(sug.highlight, "electric <b>gui</b>tar");
-      manager.release(index.getIndex(), reader);
+      manager.release(index, reader);
     } catch (IndexException ex) {
       ex.printStackTrace();
       Assert.fail();
@@ -159,8 +159,8 @@ public class AutoSuggestTest {
   public void testAutoSuggestObjects() throws IndexException {
     IndexReader reader;
     try {
-      AutoSuggest as = AutoSuggest.documents(index.getIndex(), TOY_BUILDER);
-      reader = manager.grabReader(index.getIndex());
+      AutoSuggest as = AutoSuggest.documents(index, TOY_BUILDER);
+      reader = manager.grabReader(index);
       as.addSearchField("name");
       as.build(reader);
       List<Suggestion> suggestions = as.suggest("elec", 5);
@@ -184,7 +184,7 @@ public class AutoSuggestTest {
         Assert.assertTrue(sug.object.equals(new Toy("acoustic guitar", "green")) ||
                           sug.object.equals(new Toy("electric guitar", "red,blue")));
       }
-      manager.release(index.getIndex(), reader);
+      manager.release(index, reader);
     } catch (IndexException ex) {
       ex.printStackTrace();
       Assert.fail();

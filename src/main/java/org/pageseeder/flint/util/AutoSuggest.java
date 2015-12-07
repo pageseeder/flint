@@ -79,8 +79,7 @@ public class AutoSuggest {
           TermsEnum termsEnum = terms.iterator();
           BytesRef text;
           while ((text = termsEnum.next()) != null) {
-            Set<BytesRef> contexts = null;
-            this._suggester.add(text, contexts, 1, text);
+            this._suggester.add(text, null, 1, text);
             this.built = true;
           }
         }

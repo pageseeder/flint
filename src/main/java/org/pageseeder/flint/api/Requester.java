@@ -15,8 +15,6 @@
  */
 package org.pageseeder.flint.api;
 
-import java.util.Map;
-
 /**
  * A Job Requester.
  *
@@ -46,17 +44,5 @@ public class Requester {
    */
   public String getRequesterID() {
     return this._id;
-  }
-
-  /**
-   * Used to define parameters specific to a content.
-   * 
-   * @param contentid the content ID
-   * @param type      the content type
-   * 
-   * @return the list of parameters, <code>null</code> if none
-   */
-  public Map<String, String> getParameters(String contentid, ContentType type) {
-    return null;
   }
 }

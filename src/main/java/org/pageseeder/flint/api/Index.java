@@ -18,8 +18,6 @@ package org.pageseeder.flint.api;
 import java.io.File;
 import java.io.IOException;
 import java.net.URI;
-import java.util.Collections;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -31,7 +29,6 @@ import javax.xml.transform.stream.StreamSource;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
-import org.pageseeder.flint.util.Beta;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -62,10 +59,6 @@ public class Index {
   private final Map<ContentDefinition, Templates> _templates = new ConcurrentHashMap<ContentDefinition, Templates>();
 
   private final Analyzer _analyzer;
-  /**
-   * A list of parameters.
-   */
-  private final Map<ContentDefinition, Map<String, String>> _parameters = new ConcurrentHashMap<ContentDefinition, Map<String, String>>();
 
   public Index(String id, File dir, Analyzer analyzer) throws IOException {
     this(id, FSDirectory.open(dir.toPath()), analyzer);
@@ -102,82 +95,14 @@ public class Index {
   // Parameters management =========================================================================
 
   /**
-   * Sets the parameters to supply to the templates when indexing content with the specified content type and media
-   * type.
-   *
-   * <p>Any existing parameters for this content and media type will be discarded.
-   *
-   * @param type       the type of content to index.
-   * @param media      the media type of the content (eg. "application/xml")
-   * @param parameters the name-value map of parameters to set.
+   * Used to define parameters specific to a content (should be overwritten by sub-classes).
+   * 
+   * @param content the actual content
+   * 
+   * @return the list of parameters, <code>null</code> if none
    */
-  public void setParameters(ContentType type, String media, Map<String, String> parameters) {
-    ContentDefinition def = new ContentDefinition(type, media);
-    LOGGER.debug("Adding {} parameters for {}", parameters.size(), def);
-    this._parameters.put(def, parameters);
-  }
-
-  /**
-   * Adds parameters to the parameters to supply to the templates when indexing content with the specified content
-   * type and media type.
-   *
-   * <p>Any existing parameters with the same name for this content and media type will be discarded.
-   *
-   * <p>Note: This method will add to existing parameters, to set parameters, use
-   * {@link #setParameters(ContentType, String, Map)} instead.
-   *
-   * @param type       the type of content to index.
-   * @param media      the media type of the content (eg. "application/xml")
-   * @param parameters the name-value map of parameters to add.
-   */
-  @Beta public void addParameters(ContentType type, String media, Map<String, String> parameters) {
-    ContentDefinition def = new ContentDefinition(type, media);
-    Map<String, String> p = this._parameters.get(def);
-    if (p == null) {
-      p = new HashMap<String, String>();
-      this._parameters.put(def, p);
-    }
-    p.putAll(parameters);
-    LOGGER.debug("Adding {} parameters for {}", parameters.size(), def);
-  }
-
-  /**
-   * Adds a single parameter to the parameters to supply to the templates when indexing content with the specified
-   * content type and media type.
-   *
-   * <p>Any existing parameter with the same name for this content and media type will be discarded.
-   *
-   * @param type  the type of content to index.
-   * @param media the media type of the content (eg. "application/xml")
-   * @param name  the name of the parameter to add
-   * @param value the value of the parameter to add
-   */
-  public void addParameter(ContentType type, String media, String name, String value) {
-    ContentDefinition def = new ContentDefinition(type, media);
-    Map<String, String> p = this._parameters.get(def);
-    if (p == null) {
-      p = new HashMap<String, String>();
-      this._parameters.put(def, p);
-    }
-    p.put(name, value);
-    LOGGER.debug("Adding parameter {} for {}", name, def);
-  }
-
-  /**
-   * Returns an unmodifiable list of parameters for the given content type and media type and matching a specific
-   * configuration ID.
-   *
-   * @param type     the type of content to index.
-   * @param media    the media type of the content (eg. "application/xml")
-   *
-   * @return the list of parameters for the given Content definition (never <code>null</code>).
-   */
-  public Map<String, String> getParameters(ContentType type, String media) {
-    // get parameters for the content type first
-    Map<String, String> params = this._parameters.get(new ContentDefinition(type, media));
-    // if both null, return empty list
-    if (params == null) return Collections.emptyMap();
-    return Collections.unmodifiableMap(params);
+  public Map<String, String> getParameters(Content content) {
+    return null;
   }
 
   // Templates management =========================================================================
