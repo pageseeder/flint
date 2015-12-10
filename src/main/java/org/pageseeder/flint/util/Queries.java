@@ -16,6 +16,7 @@
 package org.pageseeder.flint.util;
 
 import java.io.IOException;
+import java.io.StringReader;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
@@ -24,6 +25,9 @@ import java.util.Set;
 import java.util.regex.Pattern;
 
 import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
+import org.apache.lucene.analysis.tokenattributes.TermAttribute;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BooleanClause;
@@ -72,10 +76,7 @@ public final class Queries {
     boolean isPhrase = IS_A_PHRASE.matcher(text).matches();
     if (isPhrase) {
       PhraseQuery phrase = new PhraseQuery();
-      List<String> terms = Fields.toTerms(field, text, analyzer);
-      for (String t : terms) {
-        phrase.add(new Term(field, t));
-      }
+      addTermsToPhrase(field, text.substring(1, text.length()-1), analyzer, phrase);
       return Collections.singletonList((Query)phrase);
     } else {
       List<Query> q = new ArrayList<Query>();
@@ -112,6 +113,37 @@ public final class Queries {
       return phrase;
     } else return new TermQuery(new Term(field, text));
   }
+
+  /**
+   * Returns the terms for a field
+   *
+   * @param field    The field
+   * @param text     The text to analyze
+   * @param analyzer The analyzer
+   *
+   * @return the corresponding list of terms produced by the analyzer.
+   *
+   * @throws IOException
+   */
+  private static void addTermsToPhrase(String field, String text, Analyzer analyzer, PhraseQuery phrase) {
+    StringReader r = new StringReader(text);
+    TokenStream stream = analyzer.tokenStream(field, r);
+    PositionIncrementAttribute increment = stream.addAttribute(PositionIncrementAttribute.class);
+    TermAttribute attribute = stream.addAttribute(TermAttribute.class);
+    try {
+      int position = -1;
+      stream.reset();
+      while (stream.incrementToken()) {
+        position += increment.getPositionIncrement();
+        Term term = new Term(field, attribute.term());
+        phrase.add(term, position);
+      }
+    } catch (IOException ex) {
+      // Should not occur since we use a StringReader
+      ex.printStackTrace();
+    }
+  }
+
 
   /**
    * Returns a boolean query combining all the specified queries in {@link Occur#MUST} clauses

@@ -143,9 +143,9 @@ public final class Question implements SearchParameter, XMLWritable {
   private void compute(Analyzer analyzer) {
     List<String> values = Fields.toValues(this._question);
     BooleanQuery query = new BooleanQuery();
-    for (String value : values) {
+    for (Entry<String, Float> e : this._fields.entrySet()) {
       BooleanQuery sub = new BooleanQuery();
-      for (Entry<String, Float> e : this._fields.entrySet()) {
+      for (String value : values) {
         for(Query q : Queries.toTermOrPhraseQueries(e.getKey(), value, analyzer)) {
           q.setBoost(e.getValue());
           sub.add(q, Occur.SHOULD);
