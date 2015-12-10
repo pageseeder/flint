@@ -17,11 +17,13 @@ package org.pageseeder.flint.util;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.regex.Pattern;
 
+import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BooleanClause;
@@ -48,6 +50,40 @@ public final class Queries {
    * Prevents creation of instances.
    */
   private Queries() {
+  }
+
+  /**
+   * Returns the term or phrase query corresponding to the specified text.
+   *
+   * <p>If the text is surrounded by double quotes, this method will
+   * return a {@link PhraseQuery} otherwise, it will return a simple {@link TermQuery}.
+   *
+   * <p>Note: Quotation marks are thrown away.
+   *
+   * @param field the field to construct the terms.
+   * @param text  the text to construct the query from.
+   *
+   * @return the corresponding query.
+   */
+  @Beta
+  public static List<Query> toTermOrPhraseQueries(String field, String text, Analyzer analyzer) {
+    if (field == null) throw new NullPointerException("field");
+    if (text == null) throw new NullPointerException("text");
+    boolean isPhrase = IS_A_PHRASE.matcher(text).matches();
+    if (isPhrase) {
+      PhraseQuery phrase = new PhraseQuery();
+      List<String> terms = Fields.toTerms(field, text, analyzer);
+      for (String t : terms) {
+        phrase.add(new Term(field, t));
+      }
+      return Collections.singletonList((Query)phrase);
+    } else {
+      List<Query> q = new ArrayList<Query>();
+      for (String t : Fields.toTerms(field, text, analyzer)) {
+        q.add(new TermQuery(new Term(field, t)));
+      }
+      return q;
+    }
   }
 
   /**
