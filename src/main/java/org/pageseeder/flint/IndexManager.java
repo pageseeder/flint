@@ -77,9 +77,7 @@ import org.xml.sax.InputSource;
  * </ul>
  *
  * @author Jean-Baptiste Reure
- * @authro Christophe Lauret
- *
- * @version 27 February 2013
+ * @author Christophe Lauret
  */
 public final class IndexManager implements Runnable {
 
@@ -565,7 +563,7 @@ public final class IndexManager implements Runnable {
   public void stop() {
     this.shouldStop = true;
     // Stop the thread
-    this.threadPool.shutdown();
+    this.threadPool.shutdownNow();
     // Close all indexes
     for (Entry<String, IndexIO> e : this._indexes.entrySet()) {
       String id = e.getKey();
