@@ -120,6 +120,12 @@ public final class SearchResults implements XMLWritable {
    */
   private final int totalNbOfResults;
 
+  /**
+   * The field value will not be returned if its length is longer than or equal
+   * _maxFieldValueLength.
+   */
+  private final int _maxFieldValueLength;
+
   // State variables
   // ---------------------------------------------------------------------------------------------
 
@@ -149,7 +155,29 @@ public final class SearchResults implements XMLWritable {
    */
   public SearchResults(SearchQuery query, TopFieldDocs docs, SearchPaging paging, IndexIO io, IndexSearcher searcher)
       throws IndexException {
-    this(query, docs.scoreDocs, docs.fields, docs.totalHits, paging, io, searcher);
+    this(query, docs, paging, io, searcher, MAX_FIELD_VALUE_LENGTH);
+  }
+
+  /**
+   * Creates a new SearchResults.
+   *
+   * @param query               The search query that was used to produce these
+   *                            results.
+   * @param docs                The actual search results from Lucene in
+   *                            TopFieldDocs.
+   * @param paging              The paging configuration.
+   * @param io                  The IndexIO object, used to release the searcher
+   *                            when terminated
+   * @param searcher            The Lucene searcher.
+   * @param maxFieldValueLength The field value will not be returned if its
+   *                            length is longer than or equal
+   *                            maxFieldValueLength.
+   *
+   * @throws IndexException if the documents could not be retrieved from the Index
+   */
+  public SearchResults(SearchQuery query, TopFieldDocs docs, SearchPaging paging, IndexIO io, IndexSearcher searcher, int maxFieldValueLength)
+      throws IndexException {
+    this(query, docs.scoreDocs, docs.fields, docs.totalHits, paging, io, searcher, maxFieldValueLength);
   }
 
   /**
@@ -165,7 +193,29 @@ public final class SearchResults implements XMLWritable {
    */
   public SearchResults(SearchQuery query, ScoreDoc[] docs, int totalHits, SearchPaging paging, IndexIO io, IndexSearcher searcher)
       throws IndexException {
-    this(query, docs, null, totalHits, paging, io, searcher);
+    this(query, docs, totalHits, paging, io, searcher, MAX_FIELD_VALUE_LENGTH);
+  }
+
+  /**
+   * Creates a new SearchResults.
+   *
+   * @param query               The search query that was used to produce these
+   *                            results.
+   * @param docs                The actual search results from Lucene in
+   *                            ScoreDoc.
+   * @param paging              The paging configuration.
+   * @param io                  The IndexIO object, used to release the searcher
+   *                            when terminated
+   * @param searcher            The Lucene searcher.
+   * @param maxFieldValueLength The field value will not be returned if its
+   *                            length is longer than or equal
+   *                            maxFieldValueLength.
+   *
+   * @throws IndexException if the documents could not be retrieved from the Index
+   */
+  public SearchResults(SearchQuery query, ScoreDoc[] docs, int totalHits, SearchPaging paging, IndexIO io, IndexSearcher searcher, int maxFieldValueLength)
+      throws IndexException {
+    this(query, docs, null, totalHits, paging, io, searcher, maxFieldValueLength);
   }
 
   /**
@@ -180,7 +230,7 @@ public final class SearchResults implements XMLWritable {
    * @throws IndexException if the documents could not be retrieved from the Index
    */
   private SearchResults(SearchQuery query, ScoreDoc[] hits, SortField[] sortf, int totalResults, SearchPaging paging, IndexIO io,
-      IndexSearcher searcher) throws IndexException {
+      IndexSearcher searcher, int maxFieldValueLength) throws IndexException {
     this._query = query;
     this._scoredocs = hits;
     this._sortfields = sortf;
@@ -195,6 +245,11 @@ public final class SearchResults implements XMLWritable {
     if (tz.inDaylightTime(new Date())) {
       this.timezoneOffset += ONE_HOUR_IN_MS;
     }
+    if(maxFieldValueLength > 0){
+      this._maxFieldValueLength = maxFieldValueLength;
+    } else if(maxFieldValueLength == 0) {
+      this._maxFieldValueLength = MAX_FIELD_VALUE_LENGTH;
+    } else throw new IllegalArgumentException("Max field value length cannot be negative.");
   }
 
   // Basic public methods
@@ -307,7 +362,7 @@ public final class SearchResults implements XMLWritable {
           }
         }
         // unnecessary to return the full value of long fields
-        if (value != null && value.length() < MAX_FIELD_VALUE_LENGTH) {
+        if (value != null && value.length() < this._maxFieldValueLength) {
           xml.openElement("field");
           xml.attribute("name", f.name());
           // Display the correct attributes so that we know we can format the date
