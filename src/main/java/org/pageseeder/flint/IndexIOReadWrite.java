@@ -40,7 +40,6 @@ import org.slf4j.LoggerFactory;
  * <p>This is a lower level API.
  *
  * @author Jean-Baptiste Reure
- * @version 26 February 2010
  */
 final class IndexIOReadWrite extends IndexIO {
 
@@ -283,7 +282,7 @@ final class IndexIOReadWrite extends IndexIO {
     // IndexWriterConfig config = new IndexWriterConfig(Version.LUCENE_30, this._index.getAnalyzer());
     // config.setMergeScheduler(new ConcurrentMergeScheduler());
     // config.setMergePolicy(new BalancedSegmentMergePolicy());
-    this.writer = new IndexWriter(this._index.getIndexDirectory(), this._index.getAnalyzer(), IndexWriter.MaxFieldLength.LIMITED);
+    this.writer = new IndexWriter(this._index.getIndexDirectory(), this._index.getAnalyzer(), IndexWriter.MaxFieldLength.UNLIMITED);
     SerialMergeScheduler sms = new SerialMergeScheduler();
     this.writer.setMergeScheduler(sms);
     this.writer.setMergePolicy(new BalancedSegmentMergePolicy(this.writer));
