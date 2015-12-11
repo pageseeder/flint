@@ -17,8 +17,8 @@ package org.pageseeder.flint.log;
 
 import java.io.PrintStream;
 
+import org.pageseeder.flint.IndexBatch;
 import org.pageseeder.flint.IndexJob;
-import org.pageseeder.flint.IndexJob.Batch;
 import org.pageseeder.flint.api.IndexListener;
 
 /**
@@ -78,12 +78,12 @@ public final class PrintStreamListener implements IndexListener {
   }
 
   @Override
-  public void startBatch(Batch batch) {
+  public void startBatch(IndexBatch batch) {
     this._stream.println("[BATCH START] ");
   }
 
   @Override
-  public void endBatch(Batch batch) {
-    this._stream.println("[BATCH END] "+batch.getCount()+" documents");
+  public void endBatch(IndexBatch batch) {
+    this._stream.println("[BATCH END] "+batch.getTotalDocuments()+" documents");
   }
 }

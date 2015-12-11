@@ -15,8 +15,8 @@
  */
 package org.pageseeder.flint.log;
 
+import org.pageseeder.flint.IndexBatch;
 import org.pageseeder.flint.IndexJob;
-import org.pageseeder.flint.IndexJob.Batch;
 import org.pageseeder.flint.api.IndexListener;
 import org.slf4j.Logger;
 
@@ -72,11 +72,11 @@ public final class SLF4JListener implements IndexListener {
   }
 
   @Override
-  public void startBatch(Batch batch) {
+  public void startBatch(IndexBatch batch) {
   }
 
   @Override
-  public void endBatch(Batch batch) {
-    this._logger.debug("Indexed {} files", batch.getCount());
+  public void endBatch(IndexBatch batch) {
+    this._logger.debug("Indexed {} files", batch.getTotalDocuments());
   }
 }

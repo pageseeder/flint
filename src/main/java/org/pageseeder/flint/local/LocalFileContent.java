@@ -63,15 +63,6 @@ public class LocalFileContent implements Content {
    *
    * @param f The file
    */
-  public LocalFileContent(File f) {
-    this(f, null);
-  }
-
-  /**
-   * Creates a new content from a given file.
-   *
-   * @param f The file
-   */
   public LocalFileContent(File f, LocalIndexConfig config) {
     this._f = f;
     this._config = config;
@@ -96,9 +87,7 @@ public class LocalFileContent implements Content {
 
   @Override
   public DeleteRule getDeleteRule() {
-    if (this._config != null)
-      return this._config.getDeleteRule(this._f);
-    return new DeleteRule("_path", this._f.getAbsolutePath().replace('\\', '/'));
+    return this._config.getDeleteRule(this._f);
   }
 
   /**

@@ -15,8 +15,8 @@
  */
 package org.pageseeder.flint.api;
 
+import org.pageseeder.flint.IndexBatch;
 import org.pageseeder.flint.IndexJob;
-import org.pageseeder.flint.IndexJob.Batch;
 
 /**
  * A listener to report on indexing events.
@@ -34,14 +34,14 @@ public interface IndexListener {
    *
    * <p>This event is thrown when at least one new job has been found in the job queue.
    */
-  void startBatch(Batch batch);
+  void startBatch(IndexBatch batch);
 
   /**
    * Indicates that indexer has just finished a batch of jobs.
    *
    * <p>This event is thrown if the queue is empty after a job is finished.
    */
-  void endBatch(Batch batch);
+  void endBatch(IndexBatch batch);
 
   /**
    * When an indexing job is started.

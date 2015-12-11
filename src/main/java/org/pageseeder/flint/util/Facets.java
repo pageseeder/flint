@@ -143,7 +143,7 @@ public final class Facets {
       // loop through fields
       List<String> loopfields = fields == null ? Terms.fields(reader) : fields;
       for (String field : loopfields) {
-        if (field.length() > 0) {
+        if (field.length() > 0 && field.charAt(0) != '_') {
           FieldFacet facet = FieldFacet.newFacet(field, reader, maxValues);
           if (facet != null) {
             facet.compute(searcher, null, maxValues);

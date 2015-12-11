@@ -43,8 +43,6 @@ public class AutoSuggest {
 
   private boolean built = false;
   
-  RAMDirectory directory;
-  
   private AutoSuggest(Index index, Directory dir, boolean useTerms, ObjectBuilder objectBuilder) throws IndexException {
     this._useTerms = useTerms;
     this._objectBuilder = objectBuilder;
@@ -54,7 +52,6 @@ public class AutoSuggest {
       LOGGER.error("Failed to build autosuggest", ex);
       throw new IndexException("Failed to build autosuggest", ex);
     }
-    this.directory = (RAMDirectory) dir;
   }
 
   public void addSearchField(String field) {
@@ -84,7 +81,8 @@ public class AutoSuggest {
           }
         }
       } else {
-        for (int i = 0; i < reader.maxDoc(); i++) {
+        int max = reader.numDocs();
+        for (int i = 0; i < max; i++) {
           Document doc = reader.document(i);
           // load criteria values
           Set<BytesRef> contexts = null;
@@ -153,7 +151,6 @@ public class AutoSuggest {
   }
 
   public List<Suggestion> suggest(String text, Collection<String> criteria, int nb) {
-    System.out.println(this.directory.ramBytesUsed());
     List<Suggestion> suggestions = new ArrayList<>();
     if (!this.built) return suggestions;
     Set<BytesRef> contexts = null;
@@ -190,6 +187,13 @@ public class AutoSuggest {
     return suggestions;
   }
 
+  public void close() {
+    try {
+      this._suggester.close();
+    } catch (IOException ex) {
+      LOGGER.error("Failed to close autosuggestor", ex);
+    }
+  }
   // --------------------------------------------------------------------------------------
   // static business
   // --------------------------------------------------------------------------------------

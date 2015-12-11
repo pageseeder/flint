@@ -1,6 +1,7 @@
 package org.pageseeder.flint.utils;
 
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -15,9 +16,12 @@ import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.pageseeder.flint.IndexException;
+import org.pageseeder.flint.IndexJob.Priority;
 import org.pageseeder.flint.IndexManager;
+import org.pageseeder.flint.api.Requester;
 import org.pageseeder.flint.content.SourceForwarder;
 import org.pageseeder.flint.local.LocalFileContentFetcher;
+import org.pageseeder.flint.local.LocalFileContentType;
 import org.pageseeder.flint.local.LocalIndex;
 import org.pageseeder.flint.local.LocalIndexer;
 import org.pageseeder.flint.util.Bucket;
@@ -44,7 +48,7 @@ public class TermsTest {
     manager.setDefaultTranslator(new SourceForwarder("xml", "UTF-8"));
     System.out.println("Starting manager!");
     LocalIndexer indexer = new LocalIndexer(manager, index);
-    indexer.index(documents);
+    indexer.indexFolder(documents, null);
     System.out.println("Documents indexed!");
     // wait a bit
     TestUtils.wait(1);
@@ -67,11 +71,65 @@ public class TermsTest {
     try {
       reader = manager.grabReader(index);
       List<String> fields = Terms.fields(reader);
-      Assert.assertArrayEquals(fields.toArray(), new String[] {"field1", "field2", "fuzzy1", "prefix1", "prefix2"});
+      Assert.assertArrayEquals(fields.toArray(), new String[] {"_path", "field1", "field2", "fuzzy1", "prefix1", "prefix2"});
+      Assert.assertEquals(2, reader.getDocCount("_path"));
+      Assert.assertEquals(2, reader.getDocCount("field1"));
+      Assert.assertEquals(2, reader.getDocCount("field2"));
+      Assert.assertEquals(2, reader.getDocCount("fuzzy1"));
+      Assert.assertEquals(2, reader.getDocCount("prefix1"));
+      Assert.assertEquals(2, reader.getDocCount("prefix2"));
       manager.release(index, reader);
     } catch (IndexException | IOException ex) {
       ex.printStackTrace();
       Assert.fail();
+    }
+  }
+
+  @Test
+  public void testFields2() throws IndexException {
+    IndexReader reader;
+    File doc3 = null;
+    try {
+      // index new doc
+      doc3 = createFile("doc3.xml", "<documents version=\"3.0\"><document><field name=\"field3\">value3</field></document></documents>");
+      manager.index(doc3.getAbsolutePath(), LocalFileContentType.SINGLETON, index, new Requester("doc3 indexing"), Priority.HIGH);
+      // wait a bit
+      TestUtils.wait(1);
+      // check fields
+      reader = manager.grabReader(index);
+      List<String> fields = Terms.fields(reader);
+      Assert.assertArrayEquals(fields.toArray(), new String[] {"_path", "field1", "field2", "field3", "fuzzy1", "prefix1", "prefix2"});
+      Assert.assertEquals(3, reader.getDocCount("_path"));
+      Assert.assertEquals(2, reader.getDocCount("field1"));
+      Assert.assertEquals(2, reader.getDocCount("field2"));
+      Assert.assertEquals(1, reader.getDocCount("field3"));
+      Assert.assertEquals(2, reader.getDocCount("fuzzy1"));
+      Assert.assertEquals(2, reader.getDocCount("prefix1"));
+      Assert.assertEquals(2, reader.getDocCount("prefix2"));
+      manager.release(index, reader);
+      // delete doc3
+      doc3.delete();
+      manager.index(doc3.getAbsolutePath(), LocalFileContentType.SINGLETON, index, new Requester("doc3 deleting"), Priority.HIGH);
+      // wait a bit
+      TestUtils.wait(1);
+      // check fields
+      reader = manager.grabReader(index);
+      fields = Terms.fields(reader);
+      Assert.assertArrayEquals(fields.toArray(), new String[] {"_path", "field1", "field2", "fuzzy1", "prefix1", "prefix2"});
+      Assert.assertEquals(2, reader.getDocCount("_path"));
+      Assert.assertEquals(2, reader.getDocCount("field1"));
+      Assert.assertEquals(2, reader.getDocCount("field2"));
+      Assert.assertEquals(0, reader.getDocCount("field3"));
+      Assert.assertEquals(2, reader.getDocCount("fuzzy1"));
+      Assert.assertEquals(2, reader.getDocCount("prefix1"));
+      Assert.assertEquals(2, reader.getDocCount("prefix2"));
+      manager.release(index, reader);
+    } catch (IndexException | IOException ex) {
+      ex.printStackTrace();
+      Assert.fail();
+    } finally {
+      // cleanup
+      if (doc3 != null && doc3.exists()) doc3.delete();
     }
   }
 
@@ -105,6 +163,50 @@ public class TermsTest {
     } catch (IndexException | IOException ex) {
       ex.printStackTrace();
       Assert.fail();
+    }
+  }
+
+  @Test
+  public void testTerms2() throws IndexException {
+    IndexReader reader;
+    File doc3 = null;
+    try {
+      // index new doc
+      doc3 = createFile("doc3.xml", "<documents version=\"3.0\"><document><field name=\"field2\">value3 value5</field></document></documents>");
+      manager.index(doc3.getAbsolutePath(), LocalFileContentType.SINGLETON, index, new Requester("doc3 indexing"), Priority.HIGH);
+      // wait a bit
+      TestUtils.wait(1);
+      // check terms
+      reader = manager.grabReader(index);
+      List<String> values = Terms.values(reader, "field2");
+      Assert.assertArrayEquals(values.toArray(), new String[] {"value1", "value2", "value3", "value4", "value5"});
+      Assert.assertEquals(1, reader.docFreq(new Term("field2", "value1")));
+      Assert.assertEquals(2, reader.docFreq(new Term("field2", "value2")));
+      Assert.assertEquals(3, reader.docFreq(new Term("field2", "value3")));
+      Assert.assertEquals(2, reader.docFreq(new Term("field2", "value4")));
+      Assert.assertEquals(2, reader.docFreq(new Term("field2", "value5")));
+      manager.release(index, reader);
+      // delete doc3
+      doc3.delete();
+      manager.index(doc3.getAbsolutePath(), LocalFileContentType.SINGLETON, index, new Requester("doc3 deleting"), Priority.HIGH);
+      // wait a bit
+      TestUtils.wait(1);
+      // check terms
+      reader = manager.grabReader(index);
+      values = Terms.values(reader, "field2");
+      Assert.assertArrayEquals(values.toArray(), new String[] {"value1", "value2", "value3", "value4", "value5"});
+      Assert.assertEquals(1, reader.docFreq(new Term("field2", "value1")));
+      Assert.assertEquals(2, reader.docFreq(new Term("field2", "value2")));
+      Assert.assertEquals(2, reader.docFreq(new Term("field2", "value3")));
+      Assert.assertEquals(2, reader.docFreq(new Term("field2", "value4")));
+      Assert.assertEquals(1, reader.docFreq(new Term("field2", "value5")));
+      manager.release(index, reader);
+    } catch (IndexException | IOException ex) {
+      ex.printStackTrace();
+      Assert.fail();
+    } finally {
+      // cleanup
+      if (doc3 != null && doc3.exists()) doc3.delete();
     }
   }
 
@@ -184,4 +286,12 @@ public class TermsTest {
     }
   }
 
+  private File createFile(String name, String content) throws IOException {
+    File doc = new File(documents, name);
+    doc.createNewFile();
+    FileOutputStream out = new FileOutputStream(doc);
+    out.write(content.getBytes("UTF-8"));
+    out.close();
+    return doc;
+  }
 }

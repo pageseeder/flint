@@ -26,10 +26,10 @@ import java.nio.file.attribute.BasicFileAttributes;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.pageseeder.flint.IndexBatch;
 import org.pageseeder.flint.IndexJob;
 import org.pageseeder.flint.IndexJob.Priority;
 import org.pageseeder.flint.IndexManager;
-import org.pageseeder.flint.api.ContentType;
 import org.pageseeder.flint.api.Requester;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -62,7 +62,11 @@ public final class LocalIndexer implements FileVisitor<Path> {
 
   private FileFilter filter = null;
 
-  private final Map<File, Action> batchFiles = new HashMap<>();
+  private IndexBatch batch = null;
+
+  private final Requester _requester = new Requester("Local Indexer");
+
+  private final Map<File, Action> resultFiles = new HashMap<>();
 
   private Priority priority = Priority.LOW;
   /**
@@ -86,72 +90,50 @@ public final class LocalIndexer implements FileVisitor<Path> {
     this.priority = Priority.LOW;
   }
 
-  public void index(File file) {
-    if (file.isFile())
-      indexFile(file);
-    else if (file.isDirectory())
-      indexFolder(file, null);
+  public void setFileFilter(FileFilter filter) {
+    this.filter = filter;
   }
 
-  public void indexFolder(File root, Map<File, Long> indexed) {
-    indexFolder(root, null, indexed);
-  }
-
-  public int indexFolder(File root, FileFilter filter, Map<File, Long> indexed) {
+  public int indexFolder(File root, Map<File, Long> indexed) {
     if (root == null) throw new NullPointerException("root");
     if (!root.exists()) return 0;
     if (root.isDirectory()) {
       // get last modif date of index
       this._indexModifiedDate = indexed == null || indexed.isEmpty() ? -1 : this._manager.getLastTimeUsed(this._index);
-      // find documents already in the index
+      // create batch object
+      this.batch = new IndexBatch(this._index.getIndexID());
+      // find documents to modify/add to index
       this.indexedFiles = indexed;
-      this.filter = filter;
-      // find documents to index
       try {
         Files.walkFileTree(root.toPath(), this);
       } catch (IOException ex) {
         LOGGER.warn("Failed to collect files to index from folder {}", root, ex);
       }
-      if (this.batchFiles.isEmpty()) {
-        LOGGER.warn("Nothing to index!");
-      } else {
-        // get files
-        Map<String, ContentType> toindex = new HashMap<>();
-        for (File f : this.batchFiles.keySet()) {
-          toindex.put(f.getAbsolutePath(), LocalFileContentType.SINGLETON);
+      // get files to remove
+      if (this.indexedFiles != null) {
+        for (File f : this.indexedFiles.keySet()) {
+          this.resultFiles.put(f, Action.DELETE);
+          this.batch.increaseTotal();
+          this._manager.indexBatch(this.batch, f.getAbsolutePath(), LocalFileContentType.SINGLETON, this._index, this._requester, this.priority);
         }
-        // files to delete
-        if (this.indexedFiles != null) {
-          for (File f : this.indexedFiles.keySet()) {
-            toindex.put(f.getAbsolutePath(), LocalFileContentType.SINGLETON);
-          }
-        }
-        this._manager.indexBatch(toindex, this._index, new Requester("Local Indexer"), this.priority);
       }
-      return this.batchFiles.size();
+      this.batch.setComputed();
+      return this.resultFiles.size();
     }
     LOGGER.warn("Trying to index file {} as a folder", root.getAbsolutePath());
     return 0;
   }
-  
-  public void indexFile(File file) {
-    if (file.isFile()) {
-      this._manager.index(file.getAbsolutePath(), LocalFileContentType.SINGLETON, this._index, new Requester("Local Indexer"), IndexJob.Priority.HIGH);
-    } else {
-      LOGGER.warn("Trying to index folder {} as a file", file.getAbsolutePath());
-    }
+
+  public IndexBatch getBatch() {
+    return this.batch;
   }
 
-  public void clear() {
-    this._manager.clear(this._index, new Requester("Local Indexer"), Priority.HIGH);
+  public Map<File, Action> getIndexedFiles() {
+    return this.resultFiles;
   }
 
-  public File getContentRoot() {
-    return this._index.getConfig().getContent();
-  }
-  
   // -----------------------------------------------------------------------------------
-  // private helpers
+  // File walking methods
 
   @Override
   public FileVisitResult visitFile(Path path, BasicFileAttributes attrs) throws IOException {
@@ -164,10 +146,13 @@ public final class LocalIndexer implements FileVisitor<Path> {
         return FileVisitResult.CONTINUE;
       // check in the index to know what action to perform
       if (indexModified == null) {
-        this.batchFiles.put(file, Action.INSERT);
+        this.resultFiles.put(file, Action.INSERT);
       } else if (indexModified != file.lastModified()) {
-        this.batchFiles.put(file, Action.UPDATE);
+        this.resultFiles.put(file, Action.UPDATE);
       }
+      // index
+      this.batch.increaseTotal();
+      this._manager.indexBatch(this.batch, file.getAbsolutePath(), LocalFileContentType.SINGLETON, this._index, this._requester, IndexJob.Priority.HIGH);
     }
     return FileVisitResult.CONTINUE;
   }

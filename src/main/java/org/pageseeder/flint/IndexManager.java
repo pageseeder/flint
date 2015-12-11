@@ -17,7 +17,6 @@ package org.pageseeder.flint;
 
 import java.io.IOException;
 import java.io.Writer;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
@@ -132,11 +131,6 @@ public final class IndexManager {
   private ContentTranslator _defaultTranslator = null;
 
   /**
-   * Flag to save the state.
-   */
-  private boolean checkingForCommit = false;
-
-  /**
    * Simple constructor which will use a SilentListener.
    *
    * @param cf the Content Fetcher used to retrieve the content to index.
@@ -243,13 +237,27 @@ public final class IndexManager {
   /**
    * Add a new batch update job to the indexing queue.
    *
+   * @param batch     the batch job
+   * @param contentid the ID of the content
+   * @param type      the type of the content
+   * @param i         the Index to add the Content to
+   * @param r         the Requester calling this method (used for logging)
+   * @param p         the Priority of this job
+   */
+  public void indexBatch(IndexBatch batch, String contentid, ContentType type, Index i, Requester r, Priority p) {
+    indexJob(IndexJob.newBatchJob(batch, contentid, type, i, p, r));
+  }
+
+  /**
+   * Add a new batch update job to the indexing queue.
+   *
    * @param contents the batch contents
    * @param r        the Requester calling this method (used for logging)
    * @param p        the Priority of this job
    * @param params   the dynamic XSLT parameters
    */
   public void indexBatch(Map<String, ContentType> contents, Index i, Requester r, Priority p) {
-    IndexJob.Batch batch = new IndexJob.Batch(i.getIndexID(), contents.size());
+    IndexBatch batch = new IndexBatch(i.getIndexID(), contents.size());
     for (String key : contents.keySet()) {
       indexJob(IndexJob.newBatchJob(batch, key, contents.get(key), i, p, r));
     }
@@ -258,11 +266,11 @@ public final class IndexManager {
   /**
    * Add a new update job to the indexing queue.
    *
-   * @param content  the ID of the Content
-   * @param i        the Index to add the Content to
-   * @param r        the Requester calling this method (used for logging)
-   * @param p        the Priority of this job
-   * @param params   the dynamic XSLT parameters
+   * @param contentid the ID of the content
+   * @param type      the type of the content
+   * @param i         the Index to add the Content to
+   * @param r         the Requester calling this method (used for logging)
+   * @param p         the Priority of this job
    */
   public void index(String contentid, ContentType type, Index i, Requester r, Priority p) {
     indexJob(IndexJob.newJob(contentid, type, i, p, r));
@@ -718,37 +726,6 @@ public final class IndexManager {
       this._indexes.put(index.getIndexID(), io);
     }
     return io;
-  }
-
-  /**
-   * Loop through the index and check if any of them need committing, also checks if they can be optimized.
-   */
-  public void checkForCommit() {
-    // don't do it if we're still indexing or if we're already doing it
-    if (this.checkingForCommit ||!this._indexQueue.isEmpty()) return;
-    LOGGER.debug("Checking for commits");
-    this.checkingForCommit = true;
-    // loop through the indexes and check which one needs committing
-    List<IndexIO> ios = new ArrayList<IndexIO>(this._indexes.values());
-    List<IndexIO> closed = new ArrayList<IndexIO>();
-    for (IndexIO io : ios) {
-      if (io.isClosed()) {
-        closed.add(io);
-      } else {
-        try {
-          io.maybeCommit();
-        } catch (IndexException ex) {
-          LOGGER.error("Failed to perform commit", ex);
-        }
-      }
-      // make sure there's no job waiting
-      if (!this._indexQueue.isEmpty()) break;
-    }
-    // removed closed IOs
-    for (IndexIO io : closed) {
-      this._indexes.remove(io);
-    }
-    this.checkingForCommit = false;
   }
 
 }

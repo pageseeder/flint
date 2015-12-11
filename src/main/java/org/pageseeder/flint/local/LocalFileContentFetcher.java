@@ -14,8 +14,7 @@ public class LocalFileContentFetcher implements ContentFetcher {
       LocalIndex index = (LocalIndex) job.getIndex();
       return new LocalFileContent(new File(job.getContentID()), index.getConfig());
     }
-    // delete rule will fail!!
-    return new LocalFileContent(new File(job.getContentID()));
+    throw new IllegalArgumentException("Index must be LocalIndex");
   }
 
 }

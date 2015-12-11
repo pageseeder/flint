@@ -44,7 +44,7 @@ public class QueryTest {
     manager.setDefaultTranslator(new SourceForwarder("xml", "UTF-8"));
     System.out.println("Starting manager!");
     LocalIndexer indexer = new LocalIndexer(manager, index);
-    indexer.index(documents);
+    indexer.indexFolder(documents, null);
     System.out.println("Documents indexed");
     // wait a bit
     TestUtils.wait(1);

@@ -14,8 +14,26 @@
             doctype-public="-//Weborganic//DTD::Flint Index Documents 3.0//EN"
             doctype-system="http://weborganic.org/schema/flint/index-documents-3.0.dtd"/>
 
+<!-- Send by the indexer -->
+<xsl:param name="_path" />
+
 <xsl:template match="/">
-  <xsl:sequence select="." />
+  <xsl:apply-templates />
+</xsl:template>
+
+<xsl:template match="*">
+  <xsl:copy>
+    <xsl:copy-of select="@*" />
+    <xsl:apply-templates />
+  </xsl:copy>
+</xsl:template>
+
+<xsl:template match="document">
+  <xsl:copy>
+    <xsl:copy-of select="@*" />
+    <field name="_path" tokenize="false"><xsl:value-of select="$_path"/></field>
+    <xsl:apply-templates />
+  </xsl:copy>
 </xsl:template>
 
 </xsl:stylesheet>

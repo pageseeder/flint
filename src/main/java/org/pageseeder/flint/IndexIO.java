@@ -220,10 +220,10 @@ public final class IndexIO {
    * @throws IndexException should any error be thrown by Lucene while committing.
    */
   public synchronized void maybeCommit() throws IndexException {
-    if (this._writer == null || !this._writer.hasUncommittedChanges() || this.state != State.CLEAN)
+    if (this._writer == null || !this._writer.hasUncommittedChanges())
       return;
     try {
-      LOGGER.debug("Committing index changes");
+      LOGGER.debug("Committing index changes for {}", this._index.getIndexID());
       long now = System.currentTimeMillis();
       Map<String, String> commitUserData = new HashMap<String, String>();
       commitUserData.put(LAST_COMMIT_DATE, String.valueOf(now));

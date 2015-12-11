@@ -113,13 +113,12 @@ public final class IndexingThread implements Runnable {
       // Tell listener?
       if (job.isBatch()) {
         if (!job.getBatch().isStarted()) {
-          job.getBatch().start();
+          job.getBatch().startIndexing();
           this._listener.startBatch(job.getBatch());
         }
       } else {
         this._listener.startJob(job);
       }
-      boolean finished = false;
       boolean success = false;
       IndexIO io = null;
       try {
@@ -153,21 +152,19 @@ public final class IndexingThread implements Runnable {
         if (job.isBatch()) {
           if (job.getBatch().isFinished()) {
             if (io != null) io.maybeReopen();
+            // commit if queue has no more jobs for this index
+            if (!this._indexQueue.hasJobsForIndex(job.getIndex())) io.maybeCommit();
             this._listener.endBatch(job.getBatch());
-            finished = true;
           }
         } else if (success) {
-          this._manager.checkForCommit();
           if (io != null) io.maybeReopen();
+          // commit if queue has no more jobs for this index
+          if (!this._indexQueue.hasJobsForIndex(job.getIndex())) io.maybeCommit();
           this._listener.endJob(job);
-          finished = true;
         }
       }
       // check the number of opened readers then
       OpenIndexManager.closeOldReaders();
-      // commit if queue is empty
-      if (finished && !this._indexQueue.hasJobsForIndex(job.getIndex()))
-        io.maybeCommit();
       // clear the job
       job = null;
     } catch (Throwable ex) {

@@ -1,18 +1,18 @@
 package org.pageseeder.flint.utils;
 
+import org.pageseeder.flint.IndexBatch;
 import org.pageseeder.flint.IndexJob;
-import org.pageseeder.flint.IndexJob.Batch;
 import org.pageseeder.flint.api.IndexListener;
 
 public class TestListener implements IndexListener {
 
   @Override
-  public void startBatch(Batch batch) {
+  public void startBatch(IndexBatch batch) {
     System.out.println("Starting batch job");
   }
 
   @Override
-  public void endBatch(Batch batch) {
+  public void endBatch(IndexBatch batch) {
     System.out.println("Ending batch job");
   }
 

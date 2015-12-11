@@ -16,9 +16,9 @@
             doctype-system="http://weborganic.org/schema/flint/index-documents-3.0.dtd"/>
 
 <!-- Send by the indexer -->
-<xsl:param name="path"          />
-<xsl:param name="file-name"     />
-<xsl:param name="last-modified" />
+<xsl:param name="_src" />
+<xsl:param name="_path" />
+<xsl:param name="_filename" />
 
 <!-- Matches the root -->
 <xsl:template match="/">
@@ -34,11 +34,10 @@
 <xsl:template match="document">
   <document>
     <!-- Common fields -->
-    <field name="path"          tokenize="false"><xsl:value-of select="$path"/></field>
-    <field name="file-name"     tokenize="false"><xsl:value-of select="$file-name"/></field>
-    <field name="last-modified" tokenize="false"><xsl:value-of select="$last-modified"/></field>
-    <field name="type"          tokenize="false"><xsl:value-of select="@type"/></field>
-    <field name="title"         tokenize="false"><xsl:value-of select="if (.//heading) then (.//heading)[1] else $file-name"/></field>
+    <field name="_src"  tokenize="false"><xsl:value-of select="$_src"/></field>
+    <field name="_path" tokenize="false"><xsl:value-of select="$_path"/></field>
+    <field name="type"  tokenize="false"><xsl:value-of select="@type"/></field>
+    <field name="title" tokenize="false"><xsl:value-of select="if (.//heading) then (.//heading)[1] else $_filename"/></field>
 
     <!-- Single value properties -->
     <xsl:for-each select="descendant::property[@value]">

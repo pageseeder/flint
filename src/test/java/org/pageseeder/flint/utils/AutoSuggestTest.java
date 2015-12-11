@@ -42,7 +42,7 @@ public class AutoSuggestTest {
     manager.setDefaultTranslator(new SourceForwarder("xml", "UTF-8"));
     System.out.println("Starting manager!");
     LocalIndexer indexer = new LocalIndexer(manager, index);
-    indexer.index(documents);
+    indexer.indexFolder(documents, null);
     System.out.println("Documents indexed!");
     // wait a bit
     TestUtils.wait(1);
@@ -92,6 +92,7 @@ public class AutoSuggestTest {
       reader = manager.grabReader(index);
       as.addSearchField("name");
       as.build(reader);
+      manager.release(index, reader);
       List<Suggestion> suggestions = as.suggest("elec", 5);
       Assert.assertEquals(2, suggestions.size());
       for (Suggestion sug : suggestions) {
@@ -108,7 +109,7 @@ public class AutoSuggestTest {
         Assert.assertTrue(sug.highlight.equals("electric <b>gui</b>tar") ||
                           sug.highlight.equals("acoustic <b>gui</b>tar"));
       }
-      manager.release(index, reader);
+      as.close();
     } catch (IndexException ex) {
       ex.printStackTrace();
       Assert.fail();
@@ -124,6 +125,7 @@ public class AutoSuggestTest {
       as.addSearchField("name");
       as.setCriteriaField("color");
       as.build(reader);
+      manager.release(index, reader);
       List<Suggestion> suggestions = as.suggest("elec", "blue", 5);
       Assert.assertEquals(2, suggestions.size());
       Assert.assertEquals(2, suggestions.size());
@@ -148,7 +150,7 @@ public class AutoSuggestTest {
       sug = suggestions.get(0);
       Assert.assertEquals(sug.text, "electric guitar");
       Assert.assertEquals(sug.highlight, "electric <b>gui</b>tar");
-      manager.release(index, reader);
+      as.close();
     } catch (IndexException ex) {
       ex.printStackTrace();
       Assert.fail();
@@ -163,6 +165,7 @@ public class AutoSuggestTest {
       reader = manager.grabReader(index);
       as.addSearchField("name");
       as.build(reader);
+      manager.release(index, reader);
       List<Suggestion> suggestions = as.suggest("elec", 5);
       Assert.assertEquals(3, suggestions.size());
       for (Suggestion sug : suggestions) {
@@ -184,7 +187,7 @@ public class AutoSuggestTest {
         Assert.assertTrue(sug.object.equals(new Toy("acoustic guitar", "green")) ||
                           sug.object.equals(new Toy("electric guitar", "red,blue")));
       }
-      manager.release(index, reader);
+      as.close();
     } catch (IndexException ex) {
       ex.printStackTrace();
       Assert.fail();

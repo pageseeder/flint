@@ -15,8 +15,8 @@
  */
 package org.pageseeder.flint.log;
 
+import org.pageseeder.flint.IndexBatch;
 import org.pageseeder.flint.IndexJob;
-import org.pageseeder.flint.IndexJob.Batch;
 import org.pageseeder.flint.api.IndexListener;
 
 /**
@@ -68,11 +68,11 @@ public final class NoOpListener implements IndexListener {
   }
 
   @Override
-  public void startBatch(Batch batch) {
+  public void startBatch(IndexBatch batch) {
   }
 
   @Override
-  public void endBatch(Batch batch) {
+  public void endBatch(IndexBatch batch) {
   }
 
 }
