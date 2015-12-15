@@ -174,7 +174,7 @@ public final class IndexIO {
    * @throws IndexException Wrapping an {@link CorruptIndexException} or an {@link IOException}.
    */
   public synchronized void stop() throws IndexException {
-    if (this._writer == null) return;
+    if (this._writer == null || this.state == State.CLOSED) return;
     LOGGER.debug("Stopping IO");
     // try to commit if needed
     maybeCommit();

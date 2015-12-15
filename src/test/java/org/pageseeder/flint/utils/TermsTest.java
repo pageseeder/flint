@@ -91,7 +91,7 @@ public class TermsTest {
     File doc3 = null;
     try {
       // index new doc
-      doc3 = createFile("doc3.xml", "<documents version=\"3.0\"><document><field name=\"field3\">value3</field></document></documents>");
+      doc3 = TestUtils.createFile(documents, "doc3.xml", "<documents version=\"3.0\"><document><field name=\"field3\">value3</field></document></documents>");
       manager.index(doc3.getAbsolutePath(), LocalFileContentType.SINGLETON, index, new Requester("doc3 indexing"), Priority.HIGH);
       // wait a bit
       TestUtils.wait(1);
@@ -172,7 +172,7 @@ public class TermsTest {
     File doc3 = null;
     try {
       // index new doc
-      doc3 = createFile("doc3.xml", "<documents version=\"3.0\"><document><field name=\"field2\">value3 value5</field></document></documents>");
+      doc3 = TestUtils.createFile(documents, "doc3.xml", "<documents version=\"3.0\"><document><field name=\"field2\">value3 value5</field></document></documents>");
       manager.index(doc3.getAbsolutePath(), LocalFileContentType.SINGLETON, index, new Requester("doc3 indexing"), Priority.HIGH);
       // wait a bit
       TestUtils.wait(1);
@@ -284,14 +284,5 @@ public class TermsTest {
       ex.printStackTrace();
       Assert.fail();
     }
-  }
-
-  private File createFile(String name, String content) throws IOException {
-    File doc = new File(documents, name);
-    doc.createNewFile();
-    FileOutputStream out = new FileOutputStream(doc);
-    out.write(content.getBytes("UTF-8"));
-    out.close();
-    return doc;
   }
 }

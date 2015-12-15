@@ -656,8 +656,10 @@ public final class IndexManager {
   public void closeIndex(Index index) {
     IndexIO io = this._indexes.remove(index.getIndexID());
     try {
-      if (io != null) io.stop();
-      OpenIndexManager.remove(io);
+      if (io != null) {
+        io.stop();
+        OpenIndexManager.remove(io);
+      }
     } catch (IndexException ex) {
       LOGGER.error("Failed to close Index {}: {}", index.getIndexID(), ex.getMessage(), ex);
     }

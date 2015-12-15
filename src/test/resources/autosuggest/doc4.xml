@@ -1,7 +1,8 @@
 <?xml version="1.0"?>
 <documents version="3.0">
   <document>
-    <field name="name">electric train</field>
+    <field name="name">electric guitar</field>
+    <field name="color">red</field>
     <field name="color">blue</field>
   </document>
 </documents>

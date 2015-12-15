@@ -23,6 +23,7 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.BytesRef;
 import org.pageseeder.flint.IndexException;
+import org.pageseeder.flint.IndexManager;
 import org.pageseeder.flint.api.Index;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -31,9 +32,11 @@ public class AutoSuggest {
 
   private final static Logger LOGGER = LoggerFactory.getLogger(AutoSuggest.class);
   
-  private final AnalyzingInfixSuggester _suggester;
+  private AnalyzingInfixSuggester suggester;
 
   private final ObjectBuilder _objectBuilder;
+
+  private final Index _index;
 
   private final boolean _useTerms;
   
@@ -41,24 +44,29 @@ public class AutoSuggest {
 
   private String _withField = null;
 
-  private boolean built = false;
+  private long lastBuilt = -1;
   
   private AutoSuggest(Index index, Directory dir, boolean useTerms, ObjectBuilder objectBuilder) throws IndexException {
+    this._index = index;
     this._useTerms = useTerms;
     this._objectBuilder = objectBuilder;
     try {
-      this._suggester = new AnalyzingInfixSuggester(dir, index.getAnalyzer());
+      this.suggester = new AnalyzingInfixSuggester(dir, index.getAnalyzer());
     } catch (IOException ex) {
       LOGGER.error("Failed to build autosuggest", ex);
       throw new IndexException("Failed to build autosuggest", ex);
     }
   }
 
+  public List<String> getSearchFields() {
+    return this._searchFields;
+  }
+
   public void addSearchField(String field) {
     this._searchFields.add(field);
   }
 
-  public void addSearchFields(List<String> fields) {
+  public void addSearchFields(Collection<String> fields) {
     this._searchFields.addAll(fields);
   }
 
@@ -67,7 +75,15 @@ public class AutoSuggest {
     this._withField = field;
   }
 
-  public void build(IndexReader reader) {
+  public long getLastBuilt() {
+    return this.lastBuilt;
+  }
+
+  public boolean isCurrent(IndexManager mgr) {
+    return mgr.getLastTimeUsed(this._index) < this.lastBuilt;
+  }
+
+  public void build(IndexReader reader) throws IndexException {
     try {
       if (this._useTerms) {
         for (String field : this._searchFields) {
@@ -76,8 +92,7 @@ public class AutoSuggest {
           TermsEnum termsEnum = terms.iterator();
           BytesRef text;
           while ((text = termsEnum.next()) != null) {
-            this._suggester.add(text, null, 1, text);
-            this.built = true;
+            this.suggester.add(text, null, 1, text);
           }
         }
       } else {
@@ -106,15 +121,14 @@ public class AutoSuggest {
             if (texts != null) {
               for (String text : texts) {
                 BytesRef bytes = new BytesRef(text);
-                this._suggester.add(bytes, contexts, 1, payload);
-                this.built = true;
+                this.suggester.add(bytes, contexts, 1, payload);
               }
             }
           }
         }
       }
-      if (this.built)
-        this._suggester.refresh();
+      this.suggester.refresh();
+      this.lastBuilt = System.currentTimeMillis();
     } catch (IOException ex) {
       LOGGER.error("Failed to build autosuggest dictionary", ex);
     }
@@ -152,7 +166,7 @@ public class AutoSuggest {
 
   public List<Suggestion> suggest(String text, Collection<String> criteria, int nb) {
     List<Suggestion> suggestions = new ArrayList<>();
-    if (!this.built) return suggestions;
+    if (this.suggester == null) return suggestions;
     Set<BytesRef> contexts = null;
     if (criteria != null) {
       if (this._useTerms)
@@ -164,7 +178,7 @@ public class AutoSuggest {
     }
     List<LookupResult> results = null;
     try {
-      results = this._suggester.lookup(text, contexts, false, nb);
+      results = this.suggester.lookup(text, contexts, false, nb);
     } catch (IOException ex) {
       LOGGER.error("Failed to lookup autosuggest suggestions", ex);
     }
@@ -189,7 +203,7 @@ public class AutoSuggest {
 
   public void close() {
     try {
-      this._suggester.close();
+      this.suggester.close();
     } catch (IOException ex) {
       LOGGER.error("Failed to close autosuggestor", ex);
     }
@@ -197,25 +211,21 @@ public class AutoSuggest {
   // --------------------------------------------------------------------------------------
   // static business
   // --------------------------------------------------------------------------------------
-  
+
   public static AutoSuggest terms(Index index) throws IndexException {
     return terms(index, new RAMDirectory());
   }
-  
+
   public static AutoSuggest terms(Index index, Directory dir) throws IndexException {
     return new AutoSuggest(index, dir, true, null);
   }
-  
+
   public static AutoSuggest fields(Index index) throws IndexException {
     return fields(index, new RAMDirectory());
   }
   
   public static AutoSuggest fields(Index index, Directory dir) throws IndexException {
     return new AutoSuggest(index, dir, false, null);
-  }
-  
-  public static AutoSuggest documents(Index index) throws IndexException {
-    return documents(index, null);
   }
   
   public static AutoSuggest documents(Index index, ObjectBuilder builder) throws IndexException {

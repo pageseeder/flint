@@ -1,6 +1,7 @@
 package org.pageseeder.flint.utils;
 
 import java.io.File;
+import java.io.IOException;
 import java.io.Serializable;
 import java.util.List;
 
@@ -8,14 +9,19 @@ import javax.xml.transform.TransformerException;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.store.FSDirectory;
+import org.apache.lucene.store.RAMDirectory;
 import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.pageseeder.flint.IndexException;
 import org.pageseeder.flint.IndexManager;
+import org.pageseeder.flint.IndexJob.Priority;
+import org.pageseeder.flint.api.Requester;
 import org.pageseeder.flint.content.SourceForwarder;
 import org.pageseeder.flint.local.LocalFileContentFetcher;
+import org.pageseeder.flint.local.LocalFileContentType;
 import org.pageseeder.flint.local.LocalIndex;
 import org.pageseeder.flint.local.LocalIndexer;
 import org.pageseeder.flint.util.AutoSuggest;
@@ -79,6 +85,98 @@ public class AutoSuggestTest {
       }
       manager.release(index, reader);
     } catch (IndexException ex) {
+      ex.printStackTrace();
+      Assert.fail();
+    }
+  }
+
+  @Test
+  public void testAutoSuggestReuseFields() throws IndexException {
+    File tempRoot = new File("tmp/index-as");
+    IndexReader reader;
+    try {
+      AutoSuggest as = AutoSuggest.fields(index, FSDirectory.open(tempRoot.toPath()));
+      File doc5 = null;
+      try {
+        reader = manager.grabReader(index);
+        as.addSearchField("name");
+        as.build(reader);
+        manager.release(index, reader);
+        List<Suggestion> suggestions = as.suggest("elec", 5);
+        Assert.assertEquals(2, suggestions.size());
+        for (Suggestion sug : suggestions) {
+          Assert.assertTrue(sug.text.equals("electric guitar") ||
+                            sug.text.equals("electric train"));
+          Assert.assertTrue(sug.highlight.equals("<b>elec</b>tric guitar") ||
+                            sug.highlight.equals("<b>elec</b>tric train"));
+        }
+        // index new doc
+        doc5 = TestUtils.createFile(documents, "doc5.xml", "<documents version=\"3.0\"><document><field name=\"name\">electra doll</field><field name=\"color\">pink</field></document></documents>");
+        manager.index(doc5.getAbsolutePath(), LocalFileContentType.SINGLETON, index, new Requester("doc5 indexing"), Priority.HIGH);
+        // wait a bit
+        TestUtils.wait(1);
+        // test current
+        Assert.assertFalse(as.isCurrent(manager));
+      } finally {
+        as.close();
+        // clean up
+        for (File f : tempRoot.listFiles()) f.delete();
+        tempRoot.delete();
+      }
+      // try again
+      as = AutoSuggest.fields(index, FSDirectory.open(tempRoot.toPath()));
+      as.addSearchField("name");
+      try {
+        // rebuild autosuggest
+        reader = manager.grabReader(index);
+        as.build(reader);
+        manager.release(index, reader);
+        List<Suggestion> suggestions = as.suggest("elec", 5);
+        Assert.assertEquals(3, suggestions.size());
+        for (Suggestion sug : suggestions) {
+          Assert.assertTrue(sug.text.equals("electric guitar") ||
+                            sug.text.equals("electric train") ||
+                            sug.text.equals("electra doll"));
+          Assert.assertTrue(sug.highlight.equals("<b>elec</b>tric guitar") ||
+                            sug.highlight.equals("<b>elec</b>tric train") ||
+                            sug.highlight.equals("<b>elec</b>tra doll"));
+        }
+      } finally {
+        // delete doc3
+        doc5.delete();
+        manager.index(doc5.getAbsolutePath(), LocalFileContentType.SINGLETON, index, new Requester("doc5 deleting"), Priority.HIGH);
+        as.close();
+        // clean up
+        for (File f : tempRoot.listFiles()) f.delete();
+        tempRoot.delete();
+      }
+      // wait a bit
+      TestUtils.wait(1);
+      // test current
+      Assert.assertFalse(as.isCurrent(manager));
+      // try again
+      as = AutoSuggest.fields(index, FSDirectory.open(tempRoot.toPath()));
+      as.addSearchField("name");
+      try {
+        // check again
+        reader = manager.grabReader(index);
+        as.build(reader);
+        manager.release(index, reader);
+        List<Suggestion> suggestions = as.suggest("elec", 5);
+        Assert.assertEquals(2, suggestions.size());
+        for (Suggestion sug : suggestions) {
+          Assert.assertTrue(sug.text.equals("electric guitar") ||
+                            sug.text.equals("electric train"));
+          Assert.assertTrue(sug.highlight.equals("<b>elec</b>tric guitar") ||
+                            sug.highlight.equals("<b>elec</b>tric train"));
+        }
+      } finally {
+        as.close();
+        // clean up
+        for (File f : tempRoot.listFiles()) f.delete();
+        tempRoot.delete();
+      }
+    } catch (IndexException | IOException ex) {
       ex.printStackTrace();
       Assert.fail();
     }
