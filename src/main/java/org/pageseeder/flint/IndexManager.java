@@ -30,6 +30,7 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import javax.xml.transform.stream.StreamResult;
 
+import org.apache.lucene.document.Document;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexCommit;
 import org.apache.lucene.index.IndexNotFoundException;
@@ -50,6 +51,8 @@ import org.pageseeder.flint.api.ContentType;
 import org.pageseeder.flint.api.Index;
 import org.pageseeder.flint.api.IndexListener;
 import org.pageseeder.flint.api.Requester;
+import org.pageseeder.flint.index.IndexParser;
+import org.pageseeder.flint.index.IndexParserFactory;
 import org.pageseeder.flint.log.NoOpListener;
 import org.pageseeder.flint.query.SearchPaging;
 import org.pageseeder.flint.query.SearchQuery;
@@ -596,17 +599,33 @@ public final class IndexManager {
   }
 
   /**
-   * Translate content into IDX data.
+   * Translate content into iXML data.
    *
-   * @param type    the Content Type
-   * @param config  the index config, where the XSLT script is registered
+   * @param index   the index
    * @param content the actual Content to transform
    * @param params  the parameters to add to the translation
    * @param out     the Writer to write the result to
    * @throws IndexException if anything went wrong
    */
-  public void translateContent(Index index, Content content, Map<String, String> params, Writer out) throws IndexException {
+  public void contentToIXML(Index index, Content content, Map<String, String> params, Writer out) throws IndexException {
     IndexingThread.translateContent(this, null, index, content, params, new StreamResult(out));
+  }
+
+  /**
+   * Translate content into Lucene documents.
+   *
+   * @param index   the index
+   * @param content the actual Content to transform
+   * @param params  the parameters to add to the translation
+   * 
+   * @return the list of documents produced by the conversion (could be null)
+   * 
+   * @throws IndexException if anything went wrong
+   */
+  public List<Document> contentToDocuments(Index index, Content content, Map<String, String> params) throws IndexException {
+    IndexParser parser = IndexParserFactory.getInstanceForTransformation();
+    IndexingThread.translateContent(this, null, index, content, params, parser.getResult());
+    return parser.getDocuments();
   }
 
   public long getLastTimeUsed(Index index) {

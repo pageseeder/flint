@@ -40,6 +40,7 @@ import org.pageseeder.flint.IndexIO;
 import org.pageseeder.flint.util.Dates;
 import org.pageseeder.flint.util.Documents;
 import org.pageseeder.flint.util.Fields;
+import org.pageseeder.xmlwriter.XMLStringWriter;
 import org.pageseeder.xmlwriter.XMLWritable;
 import org.pageseeder.xmlwriter.XMLWriter;
 import org.slf4j.Logger;
@@ -305,11 +306,9 @@ public final class SearchResults implements XMLWritable {
 
     // Iterate over the hits
     for (int i = firsthit - 1; i < lasthit; i++) {
-      xml.openElement("document", true);
       String score = Float.toString(this._scoredocs[i].score);
-      xml.element("score", score);
       Document doc = this._searcher.doc(this._scoredocs[i].doc);
-
+      String extractXML = null;
       // Find the extract only applies to TermExtractable queries
       if (this._query instanceof TermExtractable) {
         TermExtractable q = (TermExtractable)this._query;
@@ -320,53 +319,20 @@ public final class SearchResults implements XMLWritable {
             if (t.field().equals(f.name())) {
               String extract = Documents.extract(Fields.toString(f), t.text(), 200);
               if (extract != null) {
-                xml.openElement("extract");
-                xml.attribute("from", t.field());
-                xml.writeXML(extract);
-                xml.closeElement();
+                XMLStringWriter xsw = new XMLStringWriter(false);
+                xsw.openElement("extract");
+                xsw.attribute("from", t.field());
+                xsw.writeXML(extract);
+                xsw.closeElement();
+                extractXML = xsw.toString();
               }
             }
           }
         }
       }
+      // document as XML
+      documentToXML(doc, extractXML, score, this.timezoneOffset, xml);
 
-      // display the value of each field
-      for (IndexableField f : doc.getFields()) {
-        // Retrieve the value
-        String value = Fields.toString(f);
-        ValueType type = ValueType.STRING;
-        // format dates using ISO 8601 when possible
-        if (value != null && value.length() > 0 && f.name().contains("date") && Dates.isLuceneDate(value)) {
-          try {
-            if (value.length() > 8) {
-              value = Dates.toISODateTime(value, this.timezoneOffset);
-              type = ValueType.DATETIME;
-            } else {
-              value = Dates.toISODate(value);
-              if (value.length() == 10) {
-                type = ValueType.DATE;
-              }
-            }
-          } catch (ParseException ex) {
-            LOGGER.warn("Unparseable date found {}", value);
-          }
-        }
-        // unnecessary to return the full value of long fields
-        if (value != null && value.length() < MAX_FIELD_VALUE_LENGTH) {
-          xml.openElement("field");
-          xml.attribute("name", f.name());
-          // Display the correct attributes so that we know we can format the date
-          if (type == ValueType.DATE) {
-            xml.attribute("date", value);
-          } else if (type == ValueType.DATETIME) {
-            xml.attribute("datetime", value);
-          }
-          xml.writeText(value);
-          xml.closeElement();
-        }
-      }
-      // close 'document'
-      xml.closeElement();
     }
     // close 'documents'
     xml.closeElement();
@@ -380,6 +346,56 @@ public final class SearchResults implements XMLWritable {
     } catch (IndexException ex) {
       throw new IOException("Error when terminating Search Results", ex);
     }
+  }
+
+  public static void documentToXML(Document doc, int timezoneOffset, XMLWriter xml) throws IOException {
+    documentToXML(doc, null, null, timezoneOffset, xml);
+  }
+
+  private static void documentToXML(Document doc, String extract, String score, int timezoneOffset, XMLWriter xml) throws IOException {
+    xml.openElement("document", true);
+
+    if (score != null) xml.element("score", score);
+    if (extract != null) xml.writeXML(extract);
+
+    // display the value of each field
+    for (IndexableField f : doc.getFields()) {
+      // Retrieve the value
+      String value = Fields.toString(f);
+      ValueType type = ValueType.STRING;
+      // format dates using ISO 8601 when possible
+      if (value != null && value.length() > 0 && f.name().contains("date") && Dates.isLuceneDate(value)) {
+        try {
+          if (value.length() > 8) {
+            value = Dates.toISODateTime(value, timezoneOffset);
+            type = ValueType.DATETIME;
+          } else {
+            value = Dates.toISODate(value);
+            if (value.length() == 10) {
+              type = ValueType.DATE;
+            }
+          }
+        } catch (ParseException ex) {
+          LOGGER.warn("Unparseable date found {}", value);
+        }
+      }
+      // unnecessary to return the full value of long fields
+      if (value != null && value.length() < MAX_FIELD_VALUE_LENGTH) {
+        xml.openElement("field");
+        xml.attribute("name", f.name());
+        // Display the correct attributes so that we know we can format the date
+        if (type == ValueType.DATE) {
+          xml.attribute("date", value);
+        } else if (type == ValueType.DATETIME) {
+          xml.attribute("datetime", value);
+        }
+        xml.writeText(value);
+        xml.closeElement();
+      }
+    }
+    // close 'document'
+    xml.closeElement();
+    
   }
 
   /**

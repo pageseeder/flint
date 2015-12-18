@@ -230,7 +230,7 @@ final class IndexDocumentHandler_2_0 extends DefaultHandler implements IndexDocu
       this.builder.store(false);
     } else {
       this._isCompressed = false;
-      this.builder.store(atts.getValue("store"));
+      storeAttribute(atts.getValue("store"));
     }
     // Optional attributes
     termVectorAttribute(atts.getValue("term-vector"));
@@ -351,6 +351,26 @@ final class IndexDocumentHandler_2_0 extends DefaultHandler implements IndexDocu
   }
 
   /**
+   * Handle the store attribute on fields, support lucene 3 values.
+   * 
+   * @param store the value of the store attribute
+   */
+  private void storeAttribute(String store) {
+    if (store != null) {
+      switch (store.toLowerCase()) {
+        case "true":
+        case "yes":
+          this.builder.store(true);
+          break;
+        case "false":
+        case "no":
+          this.builder.store(false);
+          break;
+      }
+    }
+  }
+
+  /**
    * Handle the index attribute on fields, support lucene 3 values.
    * 
    * @param index the value of the index attribute
@@ -359,15 +379,20 @@ final class IndexDocumentHandler_2_0 extends DefaultHandler implements IndexDocu
     if (index != null) {
       switch (index.toLowerCase()) {
         case "analyzed":
-          this.builder.index(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS).omitNorms(false);
+          this.builder.index(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS).omitNorms(false).tokenize(true);
+          break;
         case "not-analyzed":
-          this.builder.index(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS).omitNorms(false);
+          this.builder.index(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS).omitNorms(false).tokenize(false);
+          break;
         case "analyzed-no-norms":
-          this.builder.index(IndexOptions.DOCS_AND_FREQS).omitNorms(true);
+          this.builder.index(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS).omitNorms(true).tokenize(true);
+          break;
         case "not-analyzed-no-norms":
-          this.builder.index(IndexOptions.DOCS).omitNorms(true);
+          this.builder.index(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS).omitNorms(true).tokenize(false);
+          break;
         case "no":
           this.builder.index(IndexOptions.NONE).omitNorms(true);
+          break;
         default:
           LOGGER.warn("Invalid field index value: {}", index);
       }
@@ -383,15 +408,15 @@ final class IndexDocumentHandler_2_0 extends DefaultHandler implements IndexDocu
   private void termVectorAttribute(String vector) {
     if (vector != null) {
       switch (vector.toLowerCase()) {
-        case "YES":
+        case "yes":
           this.builder.termVector(true).termVectorOffsets(false).termVectorPositions(false);
-        case "WITH-OFFSETS":
+        case "with-offset":
           this.builder.termVector(true).termVectorOffsets(true).termVectorPositions(false);
-        case "WITH-POSITIONS":
+        case "with-positions":
           this.builder.termVector(true).termVectorOffsets(false).termVectorPositions(true);
-        case "WITH-POSITIONS-OFFSETS":
+        case "with-positions-offsets":
           this.builder.termVector(true).termVectorOffsets(true).termVectorPositions(true);
-        case "NO":
+        case "no":
           this.builder.termVector(false).termVectorOffsets(false).termVectorPositions(false);
         default:
           LOGGER.warn("Invalid term vector value: {}", vector);

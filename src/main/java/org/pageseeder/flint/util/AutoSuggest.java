@@ -85,6 +85,7 @@ public class AutoSuggest {
 
   public void build(IndexReader reader) throws IndexException {
     try {
+      boolean buildit = false;
       if (this._useTerms) {
         for (String field : this._searchFields) {
           org.apache.lucene.index.Terms terms = MultiFields.getTerms(reader, field);
@@ -93,6 +94,7 @@ public class AutoSuggest {
           BytesRef text;
           while ((text = termsEnum.next()) != null) {
             this.suggester.add(text, null, 1, text);
+            buildit = true;
           }
         }
       } else {
@@ -122,14 +124,17 @@ public class AutoSuggest {
               for (String text : texts) {
                 BytesRef bytes = new BytesRef(text);
                 this.suggester.add(bytes, contexts, 1, payload);
+                buildit = true;
               }
             }
           }
         }
       }
-      this.suggester.refresh();
-      this.lastBuilt = System.currentTimeMillis();
-    } catch (IOException ex) {
+      if (buildit) {
+        this.suggester.refresh();
+        this.lastBuilt = System.currentTimeMillis();
+      }
+    } catch (IOException | IllegalStateException ex) {
       LOGGER.error("Failed to build autosuggest dictionary", ex);
     }
   }
@@ -166,6 +171,10 @@ public class AutoSuggest {
 
   public List<Suggestion> suggest(String text, Collection<String> criteria, int nb) {
     List<Suggestion> suggestions = new ArrayList<>();
+    if (this.lastBuilt == -1) {
+      LOGGER.warn("Loading suggestions with empty suggester!");
+      return suggestions;
+    }
     if (this.suggester == null) return suggestions;
     Set<BytesRef> contexts = null;
     if (criteria != null) {
