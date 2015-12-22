@@ -7,17 +7,15 @@ import java.util.List;
 
 import javax.xml.transform.TransformerException;
 
-import org.apache.lucene.document.Document;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.store.FSDirectory;
-import org.apache.lucene.store.RAMDirectory;
 import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.pageseeder.flint.IndexException;
-import org.pageseeder.flint.IndexManager;
 import org.pageseeder.flint.IndexJob.Priority;
+import org.pageseeder.flint.IndexManager;
 import org.pageseeder.flint.api.Requester;
 import org.pageseeder.flint.content.SourceForwarder;
 import org.pageseeder.flint.local.LocalFileContentFetcher;
@@ -69,7 +67,7 @@ public class AutoSuggestTest {
   public void testAutoSuggestTerms() throws IndexException {
     IndexReader reader;
     try {
-      AutoSuggest as = AutoSuggest.terms(index);
+      AutoSuggest as = new AutoSuggest.Builder().index(index).useTerms(true).build();
       reader = manager.grabReader(index);
       as.addSearchField("fulltext");
       as.build(reader);
@@ -95,7 +93,7 @@ public class AutoSuggestTest {
     File tempRoot = new File("tmp/index-as");
     IndexReader reader;
     try {
-      AutoSuggest as = AutoSuggest.fields(index, FSDirectory.open(tempRoot.toPath()));
+      AutoSuggest as = new AutoSuggest.Builder().index(index).useTerms(false).directory(FSDirectory.open(tempRoot.toPath())).build();
       File doc5 = null;
       try {
         reader = manager.grabReader(index);
@@ -124,7 +122,7 @@ public class AutoSuggestTest {
         tempRoot.delete();
       }
       // try again
-      as = AutoSuggest.fields(index, FSDirectory.open(tempRoot.toPath()));
+      as = new AutoSuggest.Builder().index(index).useTerms(false).directory(FSDirectory.open(tempRoot.toPath())).build();
       as.addSearchField("name");
       try {
         // rebuild autosuggest
@@ -155,7 +153,7 @@ public class AutoSuggestTest {
       // test current
       Assert.assertFalse(as.isCurrent(manager));
       // try again
-      as = AutoSuggest.fields(index, FSDirectory.open(tempRoot.toPath()));
+      as = new AutoSuggest.Builder().index(index).useTerms(false).directory(FSDirectory.open(tempRoot.toPath())).build();
       as.addSearchField("name");
       try {
         // check again
@@ -186,7 +184,7 @@ public class AutoSuggestTest {
   public void testAutoSuggestFields() throws IndexException {
     IndexReader reader;
     try {
-      AutoSuggest as = AutoSuggest.fields(index);
+      AutoSuggest as = new AutoSuggest.Builder().index(index).useTerms(false).build();
       reader = manager.grabReader(index);
       as.addSearchField("name");
       as.build(reader);
@@ -218,7 +216,7 @@ public class AutoSuggestTest {
   public void testAutoSuggestFieldsWithCriteria() throws IndexException {
     IndexReader reader;
     try {
-      AutoSuggest as = AutoSuggest.fields(index);
+      AutoSuggest as = new AutoSuggest.Builder().index(index).useTerms(false).build();
       reader = manager.grabReader(index);
       as.addSearchField("name");
       as.setCriteriaField("color");
@@ -259,9 +257,11 @@ public class AutoSuggestTest {
   public void testAutoSuggestObjects() throws IndexException {
     IndexReader reader;
     try {
-      AutoSuggest as = AutoSuggest.documents(index, TOY_BUILDER);
+      AutoSuggest as = new AutoSuggest.Builder().index(index).useTerms(false).build();
       reader = manager.grabReader(index);
       as.addSearchField("name");
+      as.addResultField("name");
+      as.addResultField("color");
       as.build(reader);
       manager.release(index, reader);
       List<Suggestion> suggestions = as.suggest("elec", 5);
@@ -271,9 +271,19 @@ public class AutoSuggestTest {
                           sug.text.equals("electric train"));
         Assert.assertTrue(sug.highlight.equals("<b>elec</b>tric guitar") ||
                           sug.highlight.equals("<b>elec</b>tric train"));
-        Assert.assertTrue(sug.object.equals(new Toy("electric train", "blue")) ||
-                          sug.object.equals(new Toy("electric train", "yellow")) ||
-                          sug.object.equals(new Toy("electric guitar", "red,blue")));
+        Assert.assertTrue(sug.document.containsKey("name"));
+        Assert.assertTrue(sug.document.containsKey("color"));
+        Assert.assertEquals(1, sug.document.get("name").length);
+        String name = sug.document.get("name")[0];
+        if ("electric train".equals(name)) {
+          Assert.assertEquals(1, sug.document.get("color").length);
+          String color = sug.document.get("color")[0];
+          Assert.assertTrue("blue".equals(color) || "yellow".equals(color));
+        } else if ("electric guitar".equals(name)) {
+          Assert.assertArrayEquals(new String[] {"red", "blue"}, sug.document.get("color"));
+        } else {
+          Assert.fail("Found invalid suggestion with name "+name);
+        }
       }
       suggestions = as.suggest("gui", 5);
       Assert.assertEquals(2, suggestions.size());
@@ -282,8 +292,17 @@ public class AutoSuggestTest {
                           sug.text.equals("acoustic guitar"));
         Assert.assertTrue(sug.highlight.equals("electric <b>gui</b>tar") ||
                           sug.highlight.equals("acoustic <b>gui</b>tar"));
-        Assert.assertTrue(sug.object.equals(new Toy("acoustic guitar", "green")) ||
-                          sug.object.equals(new Toy("electric guitar", "red,blue")));
+        Assert.assertTrue(sug.document.containsKey("name"));
+        Assert.assertTrue(sug.document.containsKey("color"));
+        Assert.assertEquals(1, sug.document.get("name").length);
+        String name = sug.document.get("name")[0];
+        if ("acoustic guitar".equals(name)) {
+          Assert.assertArrayEquals(new String[] {"green"}, sug.document.get("color"));
+        } else if ("electric guitar".equals(name)) {
+          Assert.assertArrayEquals(new String[] {"red", "blue"}, sug.document.get("color"));
+        } else {
+          Assert.fail("Found invalid suggestion with name "+name);
+        }
       }
       as.close();
     } catch (IndexException ex) {
@@ -309,17 +328,6 @@ public class AutoSuggestTest {
     @Override
     public int hashCode() {
       return this.name.hashCode() * 3 + this.colors.hashCode() * 11;
-    }
-  };
-
-  private AutoSuggest.ObjectBuilder TOY_BUILDER = new AutoSuggest.ObjectBuilder() {
-    @Override
-    public Toy documentToObject(Document document) {
-      String[] colors = document.getValues("color");
-      StringBuilder cs = new StringBuilder();
-      for (int i = 0; i < colors.length; i++)
-        cs.append(i == 0 ? "" : ",").append(colors[i]);
-      return new Toy(document.get("name"), cs.toString());
     }
   };
 }

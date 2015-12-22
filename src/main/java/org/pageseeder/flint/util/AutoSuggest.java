@@ -5,14 +5,18 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
-import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
+import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.standard.StandardAnalyzer;
+import org.apache.lucene.analysis.util.CharArraySet;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.MultiFields;
@@ -34,7 +38,7 @@ public class AutoSuggest {
   
   private AnalyzingInfixSuggester suggester;
 
-  private final ObjectBuilder _objectBuilder;
+  private final List<String> _resultFields = new ArrayList<>();
 
   private final Index _index;
 
@@ -46,12 +50,11 @@ public class AutoSuggest {
 
   private long lastBuilt = -1;
   
-  private AutoSuggest(Index index, Directory dir, boolean useTerms, ObjectBuilder objectBuilder) throws IndexException {
+  private AutoSuggest(Index index, Directory dir, Analyzer analyzer, boolean useTerms, int minChars) throws IndexException {
     this._index = index;
     this._useTerms = useTerms;
-    this._objectBuilder = objectBuilder;
     try {
-      this.suggester = new AnalyzingInfixSuggester(dir, index.getAnalyzer());
+      this.suggester = new AnalyzingInfixSuggester(dir, index.getAnalyzer(), analyzer, minChars, false, true, true);
     } catch (IOException ex) {
       LOGGER.error("Failed to build autosuggest", ex);
       throw new IndexException("Failed to build autosuggest", ex);
@@ -63,11 +66,19 @@ public class AutoSuggest {
   }
 
   public void addSearchField(String field) {
-    this._searchFields.add(field);
+    if (field != null) this._searchFields.add(field);
   }
 
   public void addSearchFields(Collection<String> fields) {
-    this._searchFields.addAll(fields);
+    if (fields != null) this._searchFields.addAll(fields);
+  }
+
+  public void addResultField(String field) {
+    if (field != null) this._resultFields.add(field);
+  }
+
+  public void addResultFields(Collection<String> fields) {
+    if (fields != null) this._resultFields.addAll(fields);
   }
 
   public void setCriteriaField(String field) {
@@ -93,7 +104,7 @@ public class AutoSuggest {
           TermsEnum termsEnum = terms.iterator();
           BytesRef text;
           while ((text = termsEnum.next()) != null) {
-            this.suggester.add(text, null, 1, text);
+            this.suggester.add(text, null, 1, null);
             buildit = true;
           }
         }
@@ -113,11 +124,8 @@ public class AutoSuggest {
             }
           }
           // create payload
-          BytesRef payload = null;
-          if (this._objectBuilder != null) {
-            byte[] serialized = serialize(this._objectBuilder.documentToObject(doc));
-            if (serialized != null) payload = new BytesRef(serialized);
-          }
+          byte[] serialized = serialize(this._resultFields, doc);
+          BytesRef payload = serialized == null ? null : new BytesRef(serialized);
           for (String field : this._searchFields) {
             String[] texts = doc.getValues(field);
             if (texts != null) {
@@ -139,19 +147,28 @@ public class AutoSuggest {
     }
   }
 
-  private byte[] serialize(Serializable object) throws IOException {
+  private static byte[] serialize(Collection<String> fields, Document doc) throws IOException {
+    if (fields.isEmpty()) return null;
+    // build map
+    Map<String, String[]> result = new HashMap<>();
+    for (String field : fields) {
+      String[] values = doc.getValues(field);
+      if (values != null) result.put(field, values);
+    }
+    // serialize it
     ByteArrayOutputStream bos = new ByteArrayOutputStream();
     ObjectOutputStream out = new ObjectOutputStream(bos);
-    out.writeObject(object);
+    out.writeObject(result);
     out.close();
     return bos.toByteArray();
   }
 
-  private Serializable deserialize(byte[] bytes) throws IOException {
+  @SuppressWarnings("unchecked")
+  private Map<String, String[]> deserialize(byte[] bytes) throws IOException {
     ByteArrayInputStream bis = new ByteArrayInputStream(bytes);
     ObjectInputStream in = new ObjectInputStream(bis);
     try {
-      return (Serializable) in.readObject();
+      return (Map<String, String[]>) in.readObject();
     } catch (ClassNotFoundException ex) {
       throw new IOException("Class not found when deserializing", ex);
     }
@@ -196,11 +213,11 @@ public class AutoSuggest {
         Suggestion suggestion = new Suggestion();
         suggestion.text = result.key.toString();
         suggestion.highlight = result.highlightKey.toString();
-        if (this._objectBuilder != null && result.payload != null) {
+        if (result.payload != null) {
           try {
-            suggestion.object = deserialize(result.payload.bytes);
+            suggestion.document = deserialize(result.payload.bytes);
           } catch (IOException ex) {
-            LOGGER.error("Failed to deserialize object", ex);
+            LOGGER.error("Failed to deserialize suggestion payload", ex);
           }
         }
         if (!suggestions.contains(suggestion))
@@ -221,51 +238,71 @@ public class AutoSuggest {
   // static business
   // --------------------------------------------------------------------------------------
 
-  public static AutoSuggest terms(Index index) throws IndexException {
-    return terms(index, new RAMDirectory());
+  public static class Builder {
+    private Boolean _terms = null;
+    private Index _index = null;
+    private Directory _dir = null;
+    private Analyzer _analyzer = null;
+    private int _minChars = 2;
+    private Collection<String> _searchFields = new ArrayList<>();
+    private Collection<String> _resultFields = new ArrayList<>();
+    public Builder index(Index index) {
+      this._index = index;
+      return this;
+    }
+    public Builder analyzer(Analyzer analyzer) {
+      this._analyzer = analyzer;
+      return this;
+    }
+    public Builder useTerms(boolean terms) {
+      this._terms = Boolean.valueOf(terms);
+      return this;
+    }
+    public Builder directory(Directory dir) {
+      this._dir = dir;
+      return this;
+    }
+    public Builder minChars(int minChars) {
+      this._minChars = minChars;
+      return this;
+    }
+    public Builder searchFields(Collection<String> searchFields) {
+      this._searchFields = searchFields;
+      return this;
+    }
+    public Builder resultFields(Collection<String> resultFields) {
+      this._resultFields = resultFields;
+      return this;
+    }
+    public AutoSuggest build() throws IndexException {
+      if (this._terms == null) throw new IllegalStateException("missing terms");
+      if (this._index == null) throw new IllegalStateException("missing index");
+      Directory dir = this._dir == null ? new RAMDirectory() : this._dir;
+      Analyzer analyzer = this._analyzer == null ? new StandardAnalyzer(CharArraySet.EMPTY_SET) : this._analyzer;
+      AutoSuggest as = new AutoSuggest(this._index, dir, analyzer, this._terms.booleanValue(), this._minChars);
+      as.addSearchFields(this._searchFields);
+      as.addResultFields(this._resultFields);
+      return as;
+    }
   }
-
-  public static AutoSuggest terms(Index index, Directory dir) throws IndexException {
-    return new AutoSuggest(index, dir, true, null);
-  }
-
-  public static AutoSuggest fields(Index index) throws IndexException {
-    return fields(index, new RAMDirectory());
-  }
-  
-  public static AutoSuggest fields(Index index, Directory dir) throws IndexException {
-    return new AutoSuggest(index, dir, false, null);
-  }
-  
-  public static AutoSuggest documents(Index index, ObjectBuilder builder) throws IndexException {
-    return documents(index, new RAMDirectory(), builder);
-  }
-  
-  public static AutoSuggest documents(Index index, Directory dir, ObjectBuilder builder) throws IndexException {
-    return new AutoSuggest(index, dir, false, builder);
-  }
-
-  public static abstract class ObjectBuilder {
-    public abstract Serializable documentToObject(Document document);
-  };
 
   public static class Suggestion {
     public String text;
     public String highlight;
-    public Serializable object;
+    public Map<String, String[]> document;
     @Override
     public boolean equals(Object obj) {
       if (!(obj instanceof Suggestion)) return false;
       Suggestion s = (Suggestion) obj;
       return this.text.equals(s.text) &&
              this.highlight.equals(s.highlight) && 
-             ((this.object == null && s.object == null) || this.object.equals(s.object));
+             ((this.document == null && s.document == null) || this.document.equals(s.document));
     }
     @Override
     public int hashCode() {
       return this.text.hashCode() * 3 +
              this.highlight.hashCode() * 11 +
-             (this.object != null ? 17 * this.object.hashCode() : 0);
+             (this.document != null ? 17 * this.document.hashCode() : 0);
     }
   }
 }
