@@ -25,6 +25,7 @@ import java.nio.file.Path;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 import org.pageseeder.flint.IndexBatch;
 import org.pageseeder.flint.IndexJob;
@@ -66,7 +67,7 @@ public final class LocalIndexer implements FileVisitor<Path> {
 
   private final Requester _requester = new Requester("Local Indexer");
 
-  private final Map<File, Action> resultFiles = new HashMap<>();
+  private final Map<File, Action> resultFiles = new ConcurrentHashMap<>();
 
   private Priority priority = Priority.LOW;
   /**
