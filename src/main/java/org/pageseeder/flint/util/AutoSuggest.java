@@ -82,7 +82,8 @@ public class AutoSuggest {
   }
 
   public void setCriteriaField(String field) {
-    if (this._useTerms) throw new IllegalStateException("Illogical to use criteria for words suggestions!");
+    if (this._useTerms && field != null)
+      throw new IllegalStateException("Illogical to use criteria for words suggestions!");
     this._withField = field;
   }
 
@@ -243,6 +244,7 @@ public class AutoSuggest {
     private Index _index = null;
     private Directory _dir = null;
     private Analyzer _analyzer = null;
+    private String _criteria = null;
     private int _minChars = 2;
     private Collection<String> _searchFields = new ArrayList<>();
     private Collection<String> _resultFields = new ArrayList<>();
@@ -274,12 +276,17 @@ public class AutoSuggest {
       this._resultFields = resultFields;
       return this;
     }
+    public Builder criteria(String criteria) {
+      this._criteria = criteria;
+      return this;
+    }
     public AutoSuggest build() throws IndexException {
       if (this._terms == null) throw new IllegalStateException("missing terms");
       if (this._index == null) throw new IllegalStateException("missing index");
       Directory dir = this._dir == null ? new RAMDirectory() : this._dir;
       Analyzer analyzer = this._analyzer == null ? new StandardAnalyzer(CharArraySet.EMPTY_SET) : this._analyzer;
       AutoSuggest as = new AutoSuggest(this._index, dir, analyzer, this._terms.booleanValue(), this._minChars);
+      as.setCriteriaField(this._criteria);
       as.addSearchFields(this._searchFields);
       as.addResultFields(this._resultFields);
       return as;

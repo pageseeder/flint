@@ -223,6 +223,7 @@ public final class Terms {
     while ((val = prefixes.next()) != null) {
       values.add(val.utf8ToString());
     }
+    values.add(term.text());
   }
 
   /**

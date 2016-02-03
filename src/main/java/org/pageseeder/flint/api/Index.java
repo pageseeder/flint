@@ -121,6 +121,7 @@ public class Index {
 //    LOGGER.debug("Retrieving templates for {}", def);
     return this._templates.get(def);
   }
+
   /**
    * Sets the XSLT templates to use for the specified content type, media type and configuration ID.
    *

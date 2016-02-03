@@ -16,11 +16,17 @@
 package org.pageseeder.flint.util;
 
 import java.io.IOException;
+import java.io.StringReader;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.regex.Pattern;
 
+import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
+import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BooleanClause;
@@ -128,6 +134,69 @@ public final class Queries {
       }
     }
     return similar;
+  }
+
+
+  /**
+   * Returns the term or phrase query corresponding to the specified text.
+   *
+   * <p>If the text is surrounded by double quotes, this method will
+   * return a {@link PhraseQuery} otherwise, it will return a simple {@link TermQuery}.
+   *
+   * <p>Note: Quotation marks are thrown away.
+   *
+   * @param field the field to construct the terms.
+   * @param text  the text to construct the query from.
+   *
+   * @return the corresponding query.
+   */
+  @Beta
+  public static List<Query> toTermOrPhraseQueries(String field, String text, Analyzer analyzer) {
+    if (field == null) throw new NullPointerException("field");
+    if (text == null) throw new NullPointerException("text");
+    boolean isPhrase = IS_A_PHRASE.matcher(text).matches();
+    if (isPhrase) {
+      PhraseQuery phrase = new PhraseQuery();
+      addTermsToPhrase(field, text.substring(1, text.length()-1), analyzer, phrase);
+      return Collections.singletonList((Query)phrase);
+    } else {
+      List<Query> q = new ArrayList<Query>();
+      for (String t : Fields.toTerms(field, text, analyzer)) {
+        q.add(new TermQuery(new Term(field, t)));
+      }
+      return q;
+    }
+  }
+
+  /**
+   * Returns the terms for a field
+   *
+   * @param field    The field
+   * @param text     The text to analyze
+   * @param analyzer The analyzer
+   *
+   * @return the corresponding list of terms produced by the analyzer.
+   *
+   * @throws IOException
+   */
+  private static void addTermsToPhrase(String field, String text, Analyzer analyzer, PhraseQuery phrase) {
+    try {
+      TokenStream stream = analyzer.tokenStream(field, new StringReader(text));
+      PositionIncrementAttribute increment = stream.addAttribute(PositionIncrementAttribute.class);
+      CharTermAttribute attribute = stream.addAttribute(CharTermAttribute.class);
+      int position = -1;
+      stream.reset();
+      while (stream.incrementToken()) {
+        position += increment.getPositionIncrement();
+        Term term = new Term(field, attribute.toString());
+        phrase.add(term, position);
+      }
+      stream.end();
+      stream.close();
+    } catch (IOException ex) {
+      // Should not occur since we use a StringReader
+      ex.printStackTrace();
+    }
   }
 
   // Substitutions

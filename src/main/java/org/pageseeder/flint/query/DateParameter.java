@@ -178,9 +178,9 @@ public final class DateParameter implements SearchParameter {
    * @return the corresponding <code>TermRangeQuery</code>
    */
   private static TermRangeQuery toTermRangeQuery(String field, Date from, Date to, Resolution resolution) {
-    String min = from != null? Dates.toString(from, resolution) : null;
-    String max = to != null? Dates.toString(to, resolution) : null;
-    return new TermRangeQuery(field, new BytesRef(min.getBytes()), new BytesRef(max.getBytes()), true, true);
+    BytesRef min = from != null? new BytesRef(Dates.toString(from, resolution).getBytes()) : null;
+    BytesRef max = to   != null? new BytesRef(Dates.toString(to,   resolution).getBytes()) : null;
+    return new TermRangeQuery(field, min, max, true, true);
   }
 
   /**

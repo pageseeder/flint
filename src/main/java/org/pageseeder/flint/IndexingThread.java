@@ -110,15 +110,12 @@ public final class IndexingThread implements Runnable {
         // the thread was shutdown, let's die then
         return;
       }
-      // Tell listener?
-      if (job.isBatch()) {
-        if (!job.getBatch().isStarted()) {
-          job.getBatch().startIndexing();
-          this._listener.startBatch(job.getBatch());
-        }
-      } else {
-        this._listener.startJob(job);
+      // start of batch?
+      if (job.isBatch() && !job.getBatch().isStarted()) {
+        job.getBatch().startIndexing();
+        this._listener.startBatch(job.getBatch());
       }
+      this._listener.startJob(job);
       boolean success = false;
       IndexIO io = null;
       try {
@@ -148,19 +145,18 @@ public final class IndexingThread implements Runnable {
       } finally {
         // mark job
         job.finish();
+        // tell listener that the job ended
+        this._listener.endJob(job);
+        // end batch?
+        if (job.isBatch() && job.getBatch().isFinished()) {
+          this._listener.endBatch(job.getBatch());
+        }
         // update index reader and searcher
-        if (job.isBatch()) {
-          if (job.getBatch().isFinished()) {
-            if (io != null) io.maybeReopen();
-            // commit if queue has no more jobs for this index
-            if (!this._indexQueue.hasJobsForIndex(job.getIndex())) io.maybeCommit();
-            this._listener.endBatch(job.getBatch());
-          }
-        } else if (success) {
-          if (io != null) io.maybeReopen();
+        boolean updateIndex = job.isBatch() ? job.getBatch().isFinished() : success;
+        if (io != null && updateIndex) {
+          io.maybeReopen();
           // commit if queue has no more jobs for this index
           if (!this._indexQueue.hasJobsForIndex(job.getIndex())) io.maybeCommit();
-          this._listener.endJob(job);
         }
       }
       // check the number of opened readers then
@@ -200,7 +196,7 @@ public final class IndexingThread implements Runnable {
     IndexParser parser = IndexParserFactory.getInstanceForTransformation();
     try {
       translateContent(this._manager, new FlintErrorListener(this._listener, job),
-                       job.getIndex(), content, null, parser.getResult());
+                       job.getIndex(), content, job.getParameters(), parser.getResult());
     } catch (IndexException ex) {
       this._listener.error(job, ex.getMessage(), ex);
       return false;
@@ -261,15 +257,12 @@ public final class IndexingThread implements Runnable {
         t.setErrorListener(errorListener);
       }
       // retrieve parameters
-      Map<String, String> parameters = index.getParameters(content);
-      if (parameters != null && params != null) {
-        parameters = new HashMap<String, String>(parameters);
-        parameters.putAll(params);
-      }
-      if (parameters != null) {
-        for (Entry<String, String> p : parameters.entrySet()) {
-          t.setParameter(p.getKey(), p.getValue());
-        }
+      Map<String, String> parameters = new HashMap<String, String>();
+      Map<String, String> indexParams = index.getParameters(content);
+      if (indexParams != null) parameters.putAll(indexParams);
+      if (params != null)      parameters.putAll(params);
+      for (Entry<String, String> p : parameters.entrySet()) {
+        t.setParameter(p.getKey(), p.getValue());
       }
       // run transform
       t.transform(new StreamSource(source), result);

@@ -15,6 +15,9 @@
  */
 package org.pageseeder.flint;
 
+import java.util.HashMap;
+import java.util.Map;
+
 import org.pageseeder.flint.api.ContentType;
 import org.pageseeder.flint.api.Index;
 import org.pageseeder.flint.api.Requester;
@@ -95,7 +98,7 @@ public class IndexJob implements Comparable<IndexJob> {
   private final String jobId;
 
   /**
-   * The job's ID, generated in the constructor.
+   * The job's batch, if any.
    */
   private final IndexBatch batch;
 
@@ -105,17 +108,9 @@ public class IndexJob implements Comparable<IndexJob> {
   private boolean success = false;
 
   /**
-   * Private constructor, to build a job, use one of the static methods newAddJob(), newUpdateJob() or newDeleteJob().
-   *
-   * @param cid     The Content ID
-   * @param ctype   The Content type
-   * @param i       The Index
-   * @param p       The job's priority
-   * @param r       the job's requester
+   * The parameters.
    */
-  private IndexJob(String cid, ContentType ctype, Index i, Priority p, Requester r) {
-    this(null, cid, ctype, i, p, r);
-  }
+  private final Map<String, String> parameters = new HashMap<String, String>();
 
   /**
    * Private constructor, to build a job, use one of the static methods newAddJob(), newUpdateJob() or newDeleteJob().
@@ -126,7 +121,7 @@ public class IndexJob implements Comparable<IndexJob> {
    * @param p       The job's priority
    * @param r       the job's requester
    */
-  private IndexJob(IndexBatch b, String cid, ContentType ctype, Index i, Priority p, Requester r) {
+  private IndexJob(IndexBatch b, String cid, ContentType ctype, Index i, Priority p, Requester r, Map<String, String> params) {
     this._contentid = cid;
     this.batch = b;
     this._contenttype = ctype;
@@ -135,6 +130,7 @@ public class IndexJob implements Comparable<IndexJob> {
     this._index = i;
     this._created = System.nanoTime();
     this.jobId = this._created + '-' + cid + '-' + ctype + '-' + i.getIndexID() + '-' + r.getRequesterID() + '-' + p.toString();
+    if (params != null) this.parameters.putAll(params);
   }
 
   /**
@@ -257,6 +253,13 @@ public class IndexJob implements Comparable<IndexJob> {
   }
 
   /**
+   * @return the list of parameters (never null)
+   */
+  public Map<String, String> getParameters() {
+    return new HashMap<>(this.parameters);
+  }
+
+  /**
    * Returns a string with each class attribute value - useful when debugging and logging.
    */
   @Override
@@ -280,31 +283,34 @@ public class IndexJob implements Comparable<IndexJob> {
   /**
    * Used to build a new batch job.
    *
-   * @param id     The Content ID
-   * @param config The Config ID (can be <code>null</code>)
-   * @param i      The Index
-   * @param p      The job's priority
-   * @param r      The job's requester
+   * @param b         The batch
+   * @param contentid The Content ID
+   * @param ctype     The Content type
+   * @param i         The Index
+   * @param p         The job's priority
+   * @param r         The job's requester
+   * @param params    The job's parameters
    *
    * @return the new job
    */
-  public static IndexJob newBatchJob(IndexBatch b, String contentid, ContentType ctype, Index i, Priority p, Requester r) {
-    return new IndexJob(b, contentid, ctype, i, p, r);
+  public static IndexJob newBatchJob(IndexBatch b, String contentid, ContentType ctype, Index i, Priority p, Requester r, Map<String, String> params) {
+    return new IndexJob(b, contentid, ctype, i, p, r, params);
   }
 
   /**
    * Used to build a new job.
    *
-   * @param id     The Content ID
-   * @param config The Config ID (can be <code>null</code>)
-   * @param i      The Index
-   * @param p      The job's priority
-   * @param r      The job's requester
+   * @param contentid The Content ID
+   * @param ctype     The Content type
+   * @param i         The Index
+   * @param p         The job's priority
+   * @param r         The job's requester
+   * @param params    The job's parameters
    *
    * @return the new job
    */
-  public static IndexJob newJob(String contentid, ContentType ctype, Index i, Priority p, Requester r) {
-    return new IndexJob(contentid, ctype, i, p, r);
+  public static IndexJob newJob(String contentid, ContentType ctype, Index i, Priority p, Requester r, Map<String, String> params) {
+    return new IndexJob(null, contentid, ctype, i, p, r, params);
   }
 
   /**
@@ -317,7 +323,7 @@ public class IndexJob implements Comparable<IndexJob> {
    * @return the new job
    */
   public static IndexJob newClearJob(Index index, Priority priority, Requester requester) {
-    return new IndexJob(CLEAR_CONTENT_ID, CLEAR_CONTENT_TYPE, index, priority, requester);
+    return new IndexJob(null, CLEAR_CONTENT_ID, CLEAR_CONTENT_TYPE, index, priority, requester, null);
   }
 
 }

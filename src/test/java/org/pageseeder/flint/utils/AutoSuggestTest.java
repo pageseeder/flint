@@ -110,7 +110,7 @@ public class AutoSuggestTest {
         }
         // index new doc
         doc5 = TestUtils.createFile(documents, "doc5.xml", "<documents version=\"3.0\"><document><field name=\"name\">electra doll</field><field name=\"color\">pink</field></document></documents>");
-        manager.index(doc5.getAbsolutePath(), LocalFileContentType.SINGLETON, index, new Requester("doc5 indexing"), Priority.HIGH);
+        manager.index(doc5.getAbsolutePath(), LocalFileContentType.SINGLETON, index, new Requester("doc5 indexing"), Priority.HIGH, null);
         // wait a bit
         TestUtils.wait(1);
         // test current
@@ -142,7 +142,7 @@ public class AutoSuggestTest {
       } finally {
         // delete doc3
         doc5.delete();
-        manager.index(doc5.getAbsolutePath(), LocalFileContentType.SINGLETON, index, new Requester("doc5 deleting"), Priority.HIGH);
+        manager.index(doc5.getAbsolutePath(), LocalFileContentType.SINGLETON, index, new Requester("doc5 deleting"), Priority.HIGH, null);
         as.close();
         // clean up
         for (File f : tempRoot.listFiles()) f.delete();

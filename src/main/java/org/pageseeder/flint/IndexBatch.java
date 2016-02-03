@@ -13,6 +13,9 @@ public class IndexBatch {
   private long computeTime;
   private long indexTime;
   private long totalTime;
+  public IndexBatch() {
+    this(null);
+  }
   public IndexBatch(String idx) {
     this.createTime = System.currentTimeMillis();
     this.index = idx;
@@ -31,6 +34,9 @@ public class IndexBatch {
   }
   public synchronized void increaseTotal() {
     this.totalCount++;
+  }
+  public synchronized void increaseTotal(int by) {
+    this.totalCount += by;
   }
   protected synchronized void increaseCurrent() {
     this.currentCount++;
@@ -55,6 +61,9 @@ public class IndexBatch {
   }
   public int getTotalDocuments() {
     return this.totalCount;
+  }
+  public String getID() {
+    return String.valueOf(this.createTime);
   }
   public Date getCreation() {
     return new Date(this.createTime);

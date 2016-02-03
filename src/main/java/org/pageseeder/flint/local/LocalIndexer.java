@@ -23,7 +23,6 @@ import java.nio.file.FileVisitor;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.attribute.BasicFileAttributes;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -115,7 +114,7 @@ public final class LocalIndexer implements FileVisitor<Path> {
         for (File f : this.indexedFiles.keySet()) {
           this.resultFiles.put(f, Action.DELETE);
           this.batch.increaseTotal();
-          this._manager.indexBatch(this.batch, f.getAbsolutePath(), LocalFileContentType.SINGLETON, this._index, this._requester, this.priority);
+          this._manager.indexBatch(this.batch, f.getAbsolutePath(), LocalFileContentType.SINGLETON, this._index, this._requester, this.priority, null);
         }
       }
       this.batch.setComputed();
@@ -153,7 +152,7 @@ public final class LocalIndexer implements FileVisitor<Path> {
       }
       // index
       this.batch.increaseTotal();
-      this._manager.indexBatch(this.batch, file.getAbsolutePath(), LocalFileContentType.SINGLETON, this._index, this._requester, IndexJob.Priority.HIGH);
+      this._manager.indexBatch(this.batch, file.getAbsolutePath(), LocalFileContentType.SINGLETON, this._index, this._requester, IndexJob.Priority.HIGH, null);
     }
     return FileVisitResult.CONTINUE;
   }

@@ -86,7 +86,7 @@ public class LocalIndexerTest {
   public void testIndexing2() throws IndexException {
     Requester requester = new Requester("Local indexer tester");
     for (File f : indexing.listFiles()) {
-      this.manager.index(f.getAbsolutePath(), LocalFileContentType.SINGLETON, this.index, requester, Priority.HIGH);
+      this.manager.index(f.getAbsolutePath(), LocalFileContentType.SINGLETON, this.index, requester, Priority.HIGH, null);
     }
     // wait a bit
     wait(2);

@@ -246,9 +246,10 @@ public final class IndexManager {
    * @param i         the Index to add the Content to
    * @param r         the Requester calling this method (used for logging)
    * @param p         the Priority of this job
+   * @param params    some parameters
    */
-  public void indexBatch(IndexBatch batch, String contentid, ContentType type, Index i, Requester r, Priority p) {
-    indexJob(IndexJob.newBatchJob(batch, contentid, type, i, p, r));
+  public void indexBatch(IndexBatch batch, String contentid, ContentType type, Index i, Requester r, Priority p, Map<String, String> params) {
+    indexJob(IndexJob.newBatchJob(batch, contentid, type, i, p, r, params));
   }
 
   /**
@@ -262,7 +263,7 @@ public final class IndexManager {
   public void indexBatch(Map<String, ContentType> contents, Index i, Requester r, Priority p) {
     IndexBatch batch = new IndexBatch(i.getIndexID(), contents.size());
     for (String key : contents.keySet()) {
-      indexJob(IndexJob.newBatchJob(batch, key, contents.get(key), i, p, r));
+      indexJob(IndexJob.newBatchJob(batch, key, contents.get(key), i, p, r, null));
     }
   }
 
@@ -274,9 +275,10 @@ public final class IndexManager {
    * @param i         the Index to add the Content to
    * @param r         the Requester calling this method (used for logging)
    * @param p         the Priority of this job
+   * @param params    some parameters
    */
-  public void index(String contentid, ContentType type, Index i, Requester r, Priority p) {
-    indexJob(IndexJob.newJob(contentid, type, i, p, r));
+  public void index(String contentid, ContentType type, Index i, Requester r, Priority p, Map<String, String> params) {
+    indexJob(IndexJob.newJob(contentid, type, i, p, r, params));
   }
 
   /**

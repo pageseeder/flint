@@ -21,13 +21,19 @@ import java.util.Date;
 
 import org.apache.lucene.document.CompressionTools;
 import org.apache.lucene.document.DateTools;
+import org.apache.lucene.document.DoubleField;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.Field.Store;
 import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.FieldType.NumericType;
+import org.apache.lucene.document.FloatField;
+import org.apache.lucene.document.IntField;
+import org.apache.lucene.document.LongField;
+import org.apache.lucene.index.DocValuesType;
 import org.apache.lucene.index.IndexOptions;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.util.NumericUtils;
+import org.pageseeder.flint.api.Index;
 import org.pageseeder.flint.util.Dates;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -551,18 +557,45 @@ public final class FieldBuilder {
     }
     // construct the field type
     FieldType type = new FieldType();
+    type.setDocValuesType(DocValuesType.NONE);
     type.setNumericType(this._numeric);
     type.setNumericPrecisionStep(this. _precisionStep);
     type.setStored(this._store);
     type.setTokenized(this._tokenize);
     type.setIndexOptions(this._index);
-    type.setOmitNorms(this._omitNorms);
-    type.setStoreTermVectors(this._vector);
-    type.setStoreTermVectorOffsets(this._vectorOffsets);
-    type.setStoreTermVectorPositions(this._vectorPositions);
-    type.setStoreTermVectorPayloads(this._vectorPayloads);
+    if (this._index != IndexOptions.NONE) {
+      type.setOmitNorms(this._omitNorms);
+      type.setStoreTermVectors(this._vector);
+      type.setStoreTermVectorOffsets(this._vectorOffsets);
+      type.setStoreTermVectorPositions(this._vectorPositions);
+      type.setStoreTermVectorPayloads(this._vectorPayloads);
+    }
+    // compute value, using numeric type
+    Field field = null;
+    if (this._numeric != null) {
+      type.setDocValuesType(DocValuesType.NUMERIC);
+      try {
+        switch (this._numeric) {
+          case DOUBLE:
+            field = new DoubleField(this._name, Double.parseDouble(value), type);
+            break;
+          case FLOAT:
+            field = new FloatField(this._name, Float.parseFloat(value), type);
+            break;
+          case INT:
+            field = new IntField(this._name, Integer.parseInt(value), type);
+            break;
+          case LONG:
+            field = new LongField(this._name, Long.parseLong(value), type);
+            break;
+        }
+      } catch (NumberFormatException ex) {
+        LOGGER.error("Number field {} with invalid value {} will be stored as a String", this._name, value);
+      }
+    }
+    if (field == null)
+      field = new Field(this._name, value, type);
     // build field
-    Field field = new Field(this._name, value, type);
     // Sets the boost if necessary
     if (this._boost != 1.0f) field.setBoost(this._boost);
     return field;

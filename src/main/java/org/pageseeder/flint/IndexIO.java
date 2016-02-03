@@ -152,7 +152,7 @@ public final class IndexIO {
     }
     this.lastTimeUsed.set(System.currentTimeMillis());
     // add it to list of opened indexes
-    OpenIndexManager.remove(this);
+    OpenIndexManager.add(this);
   }
 
   /**

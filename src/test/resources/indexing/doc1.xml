@@ -3,6 +3,7 @@
   <document>
     <field name="field1">doc1-field1-value1</field>
     <field name="field2">doc1-field2-value1</field>
+    <field name="field3" numeric-type="int">333</field>
   </document>
   <document>
     <field name="field1">doc1-field1-value2</field>
@@ -10,6 +11,7 @@
   </document>
   <document>
     <field name="field1">doc1-field1-value3</field>
+    <field name="field2">doc1-field2-value3</field>
     <field name="field2">doc1-field2-value3</field>
   </document>
 </documents>

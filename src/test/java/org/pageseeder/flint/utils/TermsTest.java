@@ -89,7 +89,7 @@ public class TermsTest {
     try {
       // index new doc
       doc3 = TestUtils.createFile(documents, "doc3.xml", "<documents version=\"3.0\"><document><field name=\"field3\">value3</field></document></documents>");
-      manager.index(doc3.getAbsolutePath(), LocalFileContentType.SINGLETON, index, new Requester("doc3 indexing"), Priority.HIGH);
+      manager.index(doc3.getAbsolutePath(), LocalFileContentType.SINGLETON, index, new Requester("doc3 indexing"), Priority.HIGH, null);
       // wait a bit
       TestUtils.wait(1);
       // check fields
@@ -106,7 +106,7 @@ public class TermsTest {
       manager.release(index, reader);
       // delete doc3
       doc3.delete();
-      manager.index(doc3.getAbsolutePath(), LocalFileContentType.SINGLETON, index, new Requester("doc3 deleting"), Priority.HIGH);
+      manager.index(doc3.getAbsolutePath(), LocalFileContentType.SINGLETON, index, new Requester("doc3 deleting"), Priority.HIGH, null);
       // wait a bit
       TestUtils.wait(1);
       // check fields
@@ -170,7 +170,7 @@ public class TermsTest {
     try {
       // index new doc
       doc3 = TestUtils.createFile(documents, "doc3.xml", "<documents version=\"3.0\"><document><field name=\"field2\">value3 value5</field></document></documents>");
-      manager.index(doc3.getAbsolutePath(), LocalFileContentType.SINGLETON, index, new Requester("doc3 indexing"), Priority.HIGH);
+      manager.index(doc3.getAbsolutePath(), LocalFileContentType.SINGLETON, index, new Requester("doc3 indexing"), Priority.HIGH, null);
       // wait a bit
       TestUtils.wait(1);
       // check terms
@@ -185,7 +185,7 @@ public class TermsTest {
       manager.release(index, reader);
       // delete doc3
       doc3.delete();
-      manager.index(doc3.getAbsolutePath(), LocalFileContentType.SINGLETON, index, new Requester("doc3 deleting"), Priority.HIGH);
+      manager.index(doc3.getAbsolutePath(), LocalFileContentType.SINGLETON, index, new Requester("doc3 deleting"), Priority.HIGH, null);
       // wait a bit
       TestUtils.wait(1);
       // check terms

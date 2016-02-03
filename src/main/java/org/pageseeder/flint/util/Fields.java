@@ -15,6 +15,8 @@
  */
 package org.pageseeder.flint.util;
 
+import java.io.IOException;
+import java.io.StringReader;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -23,6 +25,9 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.zip.DataFormatException;
 
+import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.document.CompressionTools;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.util.BytesRef;
@@ -140,6 +145,36 @@ public final class Fields {
       }
     }
     return value;
+  }
+
+  /**
+   * Returns the terms for a field
+   *
+   * @param field    The field
+   * @param text     The text to analyze
+   * @param analyzer The analyzer
+   *
+   * @return the corresponding list of terms produced by the analyzer.
+   *
+   * @throws IOException
+   */
+  public static List<String> toTerms(String field, String text, Analyzer analyzer) {
+    List<String> terms = new ArrayList<String>();
+    try {
+      TokenStream stream = analyzer.tokenStream(field, new StringReader(text));
+      CharTermAttribute attribute = stream.addAttribute(CharTermAttribute.class);
+      stream.reset();
+      while (stream.incrementToken()) {
+        String term = attribute.toString();
+        terms.add(term);
+      }
+      stream.end();
+      stream.close();
+    } catch (IOException ex) {
+      // Should not occur since we use a StringReader
+      ex.printStackTrace();
+    }
+    return terms;
   }
 
 }
