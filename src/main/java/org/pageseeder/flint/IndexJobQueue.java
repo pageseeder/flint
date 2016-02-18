@@ -42,12 +42,18 @@ public final class IndexJobQueue {
   private final PriorityBlockingQueue<IndexJob> _queue;
 
   /**
+   * The single thread queue.
+   */
+  private final PriorityBlockingQueue<IndexJob> _singleThreadQueue;
+
+  /**
    * Simple Constructor.
    *
    * @param pollDelay the poll delay on the queue (in milliseconds)
    */
-  public IndexJobQueue() {
+  public IndexJobQueue(boolean withSingleThreadQueue) {
     this._queue = new PriorityBlockingQueue<IndexJob>();
+    this._singleThreadQueue = withSingleThreadQueue ? new PriorityBlockingQueue<IndexJob>() : null;
   }
 
   // public external methods
@@ -58,7 +64,16 @@ public final class IndexJobQueue {
    *
    * @param job The job to add to this queue.
    */
-  public void addJob(IndexJob job) {
+  public void addSingleThreadJob(IndexJob job) {
+    (this._singleThreadQueue == null ? this._queue : this._singleThreadQueue).put(job);
+  }
+
+  /**
+   * Add a new update job to the indexing queue.
+   *
+   * @param job The job to add to this queue.
+   */
+  public void addMultiThreadJob(IndexJob job) {
     this._queue.put(job);
   }
 
@@ -81,6 +96,12 @@ public final class IndexJobQueue {
         jobs.add(job);
       }
     }
+    if (this._singleThreadQueue != null)
+    for (IndexJob job : this._singleThreadQueue) {
+      if (job.isForRequester(requester)) {
+        jobs.add(job);
+      }
+    }
     return jobs;
   }
 
@@ -96,6 +117,12 @@ public final class IndexJobQueue {
     if (requester == null) return this._queue.size();
     int count = 0;
     for (IndexJob job : this._queue) {
+      if (job.isForRequester(requester)) {
+        count++;
+      }
+    }
+    if (this._singleThreadQueue != null)
+    for (IndexJob job : this._singleThreadQueue) {
       if (job.isForRequester(requester)) {
         count++;
       }
@@ -122,6 +149,12 @@ public final class IndexJobQueue {
         jobs.add(job);
       }
     }
+    if (this._singleThreadQueue != null)
+    for (IndexJob job : this._singleThreadQueue) {
+      if (job.isForIndex(index)) {
+        jobs.add(job);
+      }
+    }
     return jobs;
   }
 
@@ -134,6 +167,10 @@ public final class IndexJobQueue {
   public boolean hasJobsForIndex(Index index) {
     if (index != null) {
       for (IndexJob job : this._queue) {
+        if (job.isForIndex(index)) return true;
+      }
+      if (this._singleThreadQueue != null)
+      for (IndexJob job : this._singleThreadQueue) {
         if (job.isForIndex(index)) return true;
       }
     }
@@ -156,6 +193,12 @@ public final class IndexJobQueue {
         count++;
       }
     }
+    if (this._singleThreadQueue != null)
+    for (IndexJob job : this._singleThreadQueue) {
+      if (job.isForIndex(index)) {
+        count++;
+      }
+    }
     return count;
   }
 
@@ -170,7 +213,10 @@ public final class IndexJobQueue {
    * @return the list of jobs waiting (never <code>null</code>)
    */
   public List<IndexJob> getAllJobs() {
-    return new ArrayList<IndexJob>(this._queue);
+    ArrayList<IndexJob> list = new ArrayList<IndexJob>(this._queue);
+    if (this._singleThreadQueue != null)
+      list.addAll(this._singleThreadQueue);
+    return list;
   }
 
   /**
@@ -180,8 +226,19 @@ public final class IndexJobQueue {
    *
    * @throws InterruptedException if the thread was interrupted when waiting for the next job
    */
-  public IndexJob nextJob() throws InterruptedException {
+  public IndexJob nextMultiThreadJob() throws InterruptedException {
     return this._queue.take();
+  }
+
+  /**
+   * Poll the next job in the queue (<code>null</code> if the queue is currently empty).
+   *
+   * @return the next job in the queue (<code>null</code> if the queue is currently empty).
+   *
+   * @throws InterruptedException if the thread was interrupted when waiting for the next job
+   */
+  public IndexJob nextSingleThreadJob() throws InterruptedException {
+    return this._singleThreadQueue != null ? this._singleThreadQueue.take() : null;
   }
 
   /**
@@ -190,7 +247,7 @@ public final class IndexJobQueue {
    * @return <code>true</code> if there are currently no jobs;
    *         <code>false</code> otherwise.
    */
-  public boolean isEmpty() {
+  public boolean isMultiThreadsEmpty() {
     return this._queue.isEmpty();
   }
 
@@ -200,14 +257,17 @@ public final class IndexJobQueue {
    * @return <code>true</code> if there are currently no jobs;
    *         <code>false</code> otherwise.
    */
-  public int size() {
-    return this._queue.size();
+  public boolean isSingleThreadEmpty() {
+    return this._singleThreadQueue != null ? this._singleThreadQueue.isEmpty() : true;
   }
-
+  
   /**
-   * Empty the queue.
+   * clear all queues
    */
   public void clear() {
     this._queue.clear();
+    if (this._singleThreadQueue != null)
+      this._singleThreadQueue.clear();
   }
+
 }

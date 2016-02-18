@@ -79,15 +79,21 @@ public final class IndexingThread implements Runnable {
   private final IndexManager _manager;
 
   /**
+   * The queue were index job are waiting to be run.
+   */
+  private final boolean _singleThread;
+
+  /**
    * Simple Constructor.
    *
    * @param cf       the Content Fetcher used to retrieve the content to index.
    * @param listener an object used to record events
    */
-  public IndexingThread(IndexManager manager, IndexListener listener, IndexJobQueue queue) {
+  public IndexingThread(IndexManager manager, IndexListener listener, IndexJobQueue queue, boolean singleThread) {
     this._manager = manager;
     this._listener = listener;
     this._indexQueue = queue;
+    this._singleThread = singleThread;
   }
 
   /**
@@ -98,7 +104,7 @@ public final class IndexingThread implements Runnable {
     IndexJob job = null;
     try {
       try {
-        job = this._indexQueue.nextJob();
+        job = this._singleThread ? this._indexQueue.nextSingleThreadJob() : this._indexQueue.nextMultiThreadJob();
       } catch (InterruptedException ex) {
         this._listener.error(job, "Interrupted indexing: " + ex.getMessage(), ex);
         // the thread was shutdown, let's die then
@@ -148,15 +154,24 @@ public final class IndexingThread implements Runnable {
         // tell listener that the job ended
         this._listener.endJob(job);
         // end batch?
-        if (job.isBatch() && job.getBatch().isFinished()) {
-          this._listener.endBatch(job.getBatch());
+        IndexBatch batch = job.getBatch();
+        if (batch != null) {
+          if (batch.increaseCurrent()) {
+            this._listener.endBatch(job.getBatch());
+          }
         }
-        // update index reader and searcher
-        boolean updateIndex = job.isBatch() ? job.getBatch().isFinished() : success;
-        if (io != null && updateIndex) {
-          io.maybeReopen();
-          // commit if queue has no more jobs for this index
-          if (!this._indexQueue.hasJobsForIndex(job.getIndex())) io.maybeCommit();
+        // when to update index reader and searcher
+        if (io != null) {
+          if (job.isBatch()) {
+            // if queue has no more jobs for this index
+            if (!this._indexQueue.hasJobsForIndex(job.getIndex())) {
+              io.maybeReopen();
+              io.maybeCommit();
+            }
+          } else {
+            // for single jobs, do it if the job worked
+            if (success) io.maybeReopen();
+          }
         }
       }
       // check the number of opened readers then

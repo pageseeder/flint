@@ -8,6 +8,7 @@ public class IndexBatch {
   private boolean computed = false;
   private boolean started = false;
   private int currentCount = 0;
+  private int cancelCount = -1;
   private long createTime;
   private long startTime;
   private long computeTime;
@@ -38,13 +39,22 @@ public class IndexBatch {
   public synchronized void increaseTotal(int by) {
     this.totalCount += by;
   }
-  protected synchronized void increaseCurrent() {
+  /**
+   * Increase the current counter.
+   * @return <code>true</code> if finished, false otherwise
+   */
+  protected synchronized boolean increaseCurrent() {
     this.currentCount++;
-    if (isFinished()) {
+    boolean finished = isFinished();
+    if (finished) {
       long now = System.currentTimeMillis();
       this.indexTime = now - this.startTime;
       this.totalTime = now - this.createTime;
     }
+    return finished;
+  }
+  public synchronized void cancel(int currentCount) {
+    this.cancelCount = currentCount;
   }
   public synchronized void setComputed() {
     this.computed = true;
@@ -57,10 +67,14 @@ public class IndexBatch {
     return this.started;
   }
   public synchronized boolean isFinished() {
-    return this.computed && this.currentCount >= this.totalCount;
+    return (this.cancelCount >= 0 && this.currentCount >= this.cancelCount) ||
+           (this.computed && this.currentCount >= this.totalCount);
+  }
+  public int getCurrentCount() {
+    return this.currentCount;
   }
   public int getTotalDocuments() {
-    return this.totalCount;
+    return isFinished() ? this.currentCount :  this.totalCount; // handle cancel
   }
   public String getID() {
     return String.valueOf(this.createTime);

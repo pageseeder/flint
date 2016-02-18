@@ -219,7 +219,6 @@ public class IndexJob implements Comparable<IndexJob> {
    * Set the flag to signify that the job (and batch if last) is finished.
    */
   public void finish() {
-    if (this.batch != null) batch.increaseCurrent();
     this.finished = true;
   }
 

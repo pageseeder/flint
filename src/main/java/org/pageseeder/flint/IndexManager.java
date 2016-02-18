@@ -126,7 +126,12 @@ public final class IndexManager {
   /**
    * The thread manager.
    */
-  private ExecutorService threadPool = null;
+  private ExecutorService multiThreadExecutor = null;
+
+  /**
+   * The thread manager.
+   */
+  private ExecutorService singleThreadExecutor = null;
 
   /**
    * A default Translator, used when no Factory matches a certain MIME Type.
@@ -149,7 +154,7 @@ public final class IndexManager {
    * @param listener an object used to record events
    */
   public IndexManager(ContentFetcher cf, IndexListener listener) {
-    this(cf, listener, NB_INDEXING_THREADS);
+    this(cf, listener, NB_INDEXING_THREADS, false);
   }
 
   /**
@@ -159,18 +164,18 @@ public final class IndexManager {
    * @param listener  an object used to record events
    * @param nbThreads the number of indexing threads
    */
-  public IndexManager(ContentFetcher cf, IndexListener listener, int nbThreads) {
+  public IndexManager(ContentFetcher cf, IndexListener listener, int nbThreads, boolean withSingleThread) {
     this._fetcher = cf;
     this._listener = listener;
-    this._indexQueue = new IndexJobQueue();
+    this._indexQueue = new IndexJobQueue(withSingleThread);
     // To initialise the map, use ideally (# of index, high load factor, # of threads writing)
-    this._indexes = new ConcurrentHashMap<String, IndexIO>(50, 0.75f, nbThreads);
+    this._indexes = new ConcurrentHashMap<String, IndexIO>(100, 0.75f, nbThreads+1);
     // Register default XML factory
     this.translatorFactories = new ConcurrentHashMap<String, ContentTranslatorFactory>(16, 0.8f, 2);
     registerTranslatorFactory(new FlintTranslatorFactory());
     this._lastActivity.set(System.currentTimeMillis());
     // create the worker thread pool
-    this.threadPool = Executors.newFixedThreadPool(nbThreads, new ThreadFactory() {
+    this.multiThreadExecutor = Executors.newFixedThreadPool(nbThreads, new ThreadFactory() {
       private int threadCount = 1;
       @Override
       public Thread newThread(Runnable r) {
@@ -179,6 +184,17 @@ public final class IndexManager {
         return t;
       }
     });
+    // create separate single thread if needed
+    if (withSingleThread) {
+      this.singleThreadExecutor = Executors.newSingleThreadExecutor(new ThreadFactory() {
+        @Override
+        public Thread newThread(Runnable r) {
+          Thread t = new Thread(r, "indexing-p"+IndexManager.this.threadPriority+"-single");
+          t.setPriority(IndexManager.this.threadPriority);
+          return t;
+        }
+      });
+    }
   }
 
   // Public external methods
@@ -249,7 +265,23 @@ public final class IndexManager {
    * @param params    some parameters
    */
   public void indexBatch(IndexBatch batch, String contentid, ContentType type, Index i, Requester r, Priority p, Map<String, String> params) {
-    indexJob(IndexJob.newBatchJob(batch, contentid, type, i, p, r, params));
+    indexBatch(batch, contentid, type, i, r, p, false, params);
+  }
+
+  /**
+   * Add a new batch update job to the indexing queue.
+   *
+   * @param batch         the batch job
+   * @param contentid     the ID of the content
+   * @param type          the type of the content
+   * @param i             the Index to add the Content to
+   * @param r             the Requester calling this method (used for logging)
+   * @param p             the Priority of this job
+   * @param singleThread  if this job goes in the single thread queue
+   * @param params        some parameters
+   */
+  public void indexBatch(IndexBatch batch, String contentid, ContentType type, Index i, Requester r, Priority p, boolean singleThread, Map<String, String> params) {
+    indexJob(IndexJob.newBatchJob(batch, contentid, type, i, p, r, params), singleThread);
   }
 
   /**
@@ -263,7 +295,7 @@ public final class IndexManager {
   public void indexBatch(Map<String, ContentType> contents, Index i, Requester r, Priority p) {
     IndexBatch batch = new IndexBatch(i.getIndexID(), contents.size());
     for (String key : contents.keySet()) {
-      indexJob(IndexJob.newBatchJob(batch, key, contents.get(key), i, p, r, null));
+      indexJob(IndexJob.newBatchJob(batch, key, contents.get(key), i, p, r, null), false);
     }
   }
 
@@ -277,8 +309,22 @@ public final class IndexManager {
    * @param p         the Priority of this job
    * @param params    some parameters
    */
+  public void index(String contentid, ContentType type, Index i, Requester r, Priority p, boolean singleThread, Map<String, String> params) {
+    indexJob(IndexJob.newJob(contentid, type, i, p, r, params), singleThread);
+  }
+
+  /**
+   * Add a new update job to the indexing queue.
+   *
+   * @param contentid the ID of the content
+   * @param type      the type of the content
+   * @param i         the Index to add the Content to
+   * @param r         the Requester calling this method (used for logging)
+   * @param p         the Priority of this job
+   * @param params    some parameters
+   */
   public void index(String contentid, ContentType type, Index i, Requester r, Priority p, Map<String, String> params) {
-    indexJob(IndexJob.newJob(contentid, type, i, p, r, params));
+    index(contentid, type, i, r, p, false, params);
   }
 
   /**
@@ -289,7 +335,7 @@ public final class IndexManager {
    * @param priority   the Priority of this job
    */
   public void clear(Index index, Requester requester, Priority priority) {
-    indexJob(IndexJob.newClearJob(index, priority, requester));
+    indexJob(IndexJob.newClearJob(index, priority, requester), false);
   }
 
   /**
@@ -633,7 +679,7 @@ public final class IndexManager {
   public long getLastTimeUsed(Index index) {
     if (index == null) return -1;
     // get index IO if used
-    if (this._indexes.contains(index.getIndexID()))
+    if (this._indexes.containsKey(index.getIndexID()))
       return this._indexes.get(index.getIndexID()).getLastTimeUsed();
     // get last commit data then
     try {
@@ -656,7 +702,9 @@ public final class IndexManager {
     // empty queue
     this._indexQueue.clear();
     // Stop the threads
-    this.threadPool.shutdown();
+    this.multiThreadExecutor.shutdown();
+    if (this.singleThreadExecutor != null)
+      this.singleThreadExecutor.shutdown();
     // Close all indexes
     for (Entry<String, IndexIO> e : this._indexes.entrySet()) {
       String id = e.getKey();
@@ -726,11 +774,18 @@ public final class IndexManager {
   /**
    * Start an index job.
    */
-  private void indexJob(IndexJob job) {
-    // add job to queue
-    this._indexQueue.addJob(job);
-    // start thread to index it
-    this.threadPool.execute(new IndexingThread(this, this._listener, this._indexQueue));
+  private void indexJob(IndexJob job, boolean singleThread) {
+    if (singleThread && this.singleThreadExecutor != null) {
+      // add job to queue
+      this._indexQueue.addSingleThreadJob(job);
+      // start thread to index it
+      this.singleThreadExecutor.execute(new IndexingThread(this, this._listener, this._indexQueue, true));
+    } else {
+      // add job to queue
+      this._indexQueue.addMultiThreadJob(job);
+      // start thread to index it
+      this.multiThreadExecutor.execute(new IndexingThread(this, this._listener, this._indexQueue, false));
+    }
   }
 
   /**

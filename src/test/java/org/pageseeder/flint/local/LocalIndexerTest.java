@@ -38,7 +38,7 @@ public class LocalIndexerTest {
     } catch (TransformerException ex) {
       ex.printStackTrace();
     }
-    this.manager = new IndexManager(new LocalFileContentFetcher(), new TestListener(), 3);
+    this.manager = new IndexManager(new LocalFileContentFetcher(), new TestListener(), 3, false);
     List<String> types = new ArrayList<>();
     types.add("xml");
     types.add("psml");

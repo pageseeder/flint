@@ -141,7 +141,8 @@ public class AutoSuggestTest {
         }
       } finally {
         // delete doc3
-        doc5.delete();
+        if (!doc5.delete())
+          System.err.println("Failed to delete document "+doc5.getAbsolutePath());
         manager.index(doc5.getAbsolutePath(), LocalFileContentType.SINGLETON, index, new Requester("doc5 deleting"), Priority.HIGH, null);
         as.close();
         // clean up
