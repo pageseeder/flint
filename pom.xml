@@ -2,7 +2,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>org.pageseeder.flint</groupId>
   <artifactId>pso-flint</artifactId>
-  <version>5.0.0-alpha.2</version>
+  <version>5.0.0-alpha.3</version>
   <name>Flint</name>
   <description>Tools to help XML and Lucene work better together</description>
   
