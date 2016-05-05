@@ -90,6 +90,10 @@ public final class SuggestionQuery implements SearchQuery, FlintQuery {
         if (!terms.contains(t)) terms.add(t);
       }
     }
+    // When the number of term exceeds Max Clause Count
+    if (terms.size() >= BooleanQuery.getMaxClauseCount()) {
+      terms = terms.subList(0, BooleanQuery.getMaxClauseCount()-1);
+    }
     // Generate the query
     BooleanQuery bq = new BooleanQuery();
     for (Term t : terms) {

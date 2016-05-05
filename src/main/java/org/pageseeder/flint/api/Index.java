@@ -109,7 +109,7 @@ public class Index {
 
   /**
    * Returns the compiled XSLT templates, <code>null</code>  if there are no templates associated with
-   * this content type and media type for the specified configuration ID.
+   * this content type and media type.
    *
    * @param type   the type of content to index.
    * @param media  the media type of the content (eg. "application/xml")
@@ -123,7 +123,7 @@ public class Index {
   }
 
   /**
-   * Sets the XSLT templates to use for the specified content type, media type and configuration ID.
+   * Sets the XSLT templates to use for the specified content type, media type.
    *
    * @param type     the type of content to index.
    * @param media    the media type of the content (eg. "application/xml").
@@ -135,6 +135,24 @@ public class Index {
     ContentDefinition def = new ContentDefinition(type, media);
     LOGGER.debug("Adding templates for {}", def);
     this._templates.put(def, loadTemplates(template));
+  }
+
+  /**
+   * Remove the template linked to the content type/media specified
+   * 
+   * @param type  the content type
+   * @param media the content media type
+   */
+  public void removeTemplate(ContentType type, String media) {
+    ContentDefinition def = new ContentDefinition(type, media);
+    this._templates.remove(def);
+  }
+
+  /**
+   * Clear all templates.
+   */
+  public void clearTemplates() {
+    this._templates.clear();
   }
 
   // Private helpers ==============================================================================
