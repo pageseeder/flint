@@ -18,11 +18,13 @@ package org.pageseeder.flint.local;
 import java.io.File;
 import java.io.FileFilter;
 import java.io.IOException;
+import java.nio.file.FileVisitOption;
 import java.nio.file.FileVisitResult;
 import java.nio.file.FileVisitor;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.attribute.BasicFileAttributes;
+import java.util.Collections;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -105,7 +107,7 @@ public final class LocalIndexer implements FileVisitor<Path> {
       // find documents to modify/add to index
       this.indexedFiles = indexed;
       try {
-        Files.walkFileTree(root.toPath(), this);
+        Files.walkFileTree(root.toPath(), Collections.singleton(FileVisitOption.FOLLOW_LINKS), Integer.MAX_VALUE, this);
       } catch (IOException ex) {
         LOGGER.warn("Failed to collect files to index from folder {}", root, ex);
       }
