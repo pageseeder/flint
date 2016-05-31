@@ -225,7 +225,6 @@ public class AutoSuggestTest {
       manager.release(index, reader);
       List<Suggestion> suggestions = as.suggest("elec", "blue", 5);
       Assert.assertEquals(2, suggestions.size());
-      Assert.assertEquals(2, suggestions.size());
       for (Suggestion sug : suggestions) {
         Assert.assertTrue(sug.text.equals("electric guitar") ||
                           sug.text.equals("electric train"));
@@ -251,6 +250,69 @@ public class AutoSuggestTest {
     } catch (IndexException ex) {
       ex.printStackTrace();
       Assert.fail();
+    }
+  }
+
+  @Test
+  public void testAutoSuggestWeights() throws IndexException {
+    // search document without weighted values
+    IndexReader reader = null;
+    // then search document with weighted values
+    try {
+      reader = manager.grabReader(index);
+      // use weight1 only
+      AutoSuggest as = new AutoSuggest.Builder().index(index).useTerms(false).build();
+      as.addSearchField("weighted-search");
+      as.setWeight("weight1", 1);
+      as.build(reader);
+      List<Suggestion> suggestions = as.suggest("weig", 5);
+      Assert.assertEquals(4, suggestions.size());
+      Assert.assertEquals(1000, suggestions.get(0).weight);
+      Assert.assertEquals(300,  suggestions.get(1).weight);
+      Assert.assertEquals(100,  suggestions.get(2).weight);
+      Assert.assertEquals(50,   suggestions.get(3).weight);
+      Assert.assertEquals("weight 10 0.25",  suggestions.get(0).text);// 10
+      Assert.assertEquals("weight 3",        suggestions.get(1).text);// 3
+      Assert.assertEquals("weight",          suggestions.get(2).text);// 1
+      Assert.assertEquals("weight 0.5 2",    suggestions.get(3).text);// 0.5
+      as.close();
+      // use weight1 and weight2
+      as = new AutoSuggest.Builder().index(index).useTerms(false).build();
+      as.addSearchField("weighted-search");
+      as.setWeights("weight1:0.5,weight2:10");
+      as.build(reader);
+      suggestions = as.suggest("weig", 5);
+      Assert.assertEquals(4, suggestions.size());
+      Assert.assertEquals(2025,  suggestions.get(0).weight);
+      Assert.assertEquals(1150,  suggestions.get(1).weight);
+      Assert.assertEquals(1050,  suggestions.get(2).weight);
+      Assert.assertEquals(750,   suggestions.get(3).weight);
+      Assert.assertEquals("weight 0.5 2",    suggestions.get(0).text);// 20.25
+      Assert.assertEquals("weight 3",        suggestions.get(1).text);// 11.5
+      Assert.assertEquals("weight",          suggestions.get(2).text);// 10.5
+      Assert.assertEquals("weight 10 0.25",  suggestions.get(3).text);// 7.5
+      as.close();
+      // use weight2 only
+      as = new AutoSuggest.Builder().index(index).useTerms(false).build();
+      as.addSearchField("weighted-search");
+      as.setWeight("weight1", 0);
+      as.setWeight("weight2", 4);
+      as.build(reader);
+      suggestions = as.suggest("weig", 5);
+      Assert.assertEquals(4, suggestions.size());
+      Assert.assertEquals(800, suggestions.get(0).weight);
+      Assert.assertEquals(400, suggestions.get(1).weight);
+      Assert.assertEquals(400, suggestions.get(2).weight);
+      Assert.assertEquals(100, suggestions.get(3).weight);
+      Assert.assertEquals("weight 0.5 2",    suggestions.get(0).text);// 8
+      Assert.assertEquals("weight 3",        suggestions.get(1).text);// 4
+      Assert.assertEquals("weight",          suggestions.get(2).text);// 4
+      Assert.assertEquals("weight 10 0.25",  suggestions.get(3).text);// 1
+    } catch (IndexException ex) {
+      ex.printStackTrace();
+      Assert.fail();
+    } finally {
+      manager.release(index, reader);
     }
   }
 

@@ -12,6 +12,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
 
 import org.apache.lucene.analysis.Analyzer;
@@ -47,6 +48,8 @@ public class AutoSuggest {
   private final List<String> _searchFields = new ArrayList<>();
 
   private String _withField = null;
+
+  private Map<String, Float> _weights = new HashMap<>();
 
   private long lastBuilt = -1;
   
@@ -87,6 +90,29 @@ public class AutoSuggest {
     this._withField = field;
   }
 
+  public void setWeight(String field, float weight) {
+    this._weights.put(field, weight);
+  }
+
+  /**
+   * Comma separated list of weights:
+   *  level:2,price:10,number:0.5
+   * @param weights
+   */
+  public void setWeights(String weights) {
+    if (weights == null) return;
+    for (String weight: weights.split(",")) {
+      String[] parts = weight.split(":");
+      if (parts.length == 2) {
+        try {
+          this._weights.put(parts[0], Float.valueOf(parts[1]));
+        } catch (NumberFormatException ex) {
+          LOGGER.error("Ignoring invalid autosuggest weight for field {}: not a number! ()", parts[0], parts[1]);
+        }
+      }
+    }
+  }
+
   public long getLastBuilt() {
     return this.lastBuilt;
   }
@@ -111,8 +137,13 @@ public class AutoSuggest {
         }
       } else {
         int max = reader.numDocs();
+        Set<String> fieldsToLoad = new HashSet<>();
+        fieldsToLoad.addAll(this._resultFields);
+        fieldsToLoad.addAll(this._searchFields);
+        fieldsToLoad.addAll(this._weights.keySet());
+        if (this._withField != null) fieldsToLoad.add(this._withField);
         for (int i = 0; i < max; i++) {
-          Document doc = reader.document(i);
+          Document doc = reader.document(i, fieldsToLoad);
           // load criteria values
           Set<BytesRef> contexts = null;
           if (this._withField != null) {
@@ -124,6 +155,19 @@ public class AutoSuggest {
               }
             }
           }
+          // find doc weight
+          float weightF = 0;
+          for (Entry<String, Float> aweight : this._weights.entrySet()) {
+            String val = doc.get(aweight.getKey());
+            try {
+              // default value is 1 if missing
+              weightF += aweight.getValue() * (val == null ? 1 : Float.parseFloat(val));
+            } catch (NumberFormatException ex) {
+              LOGGER.error("Failed to compute weight as field {} is not a number! ({})", aweight.getKey(), val);
+            }
+          }
+          // mutiply by 100 to turn to long (2 decimal precision)
+          long weight = weightF == 0 ? 100 : (long) (weightF* 100);
           // create payload
           byte[] serialized = serialize(this._resultFields, doc);
           BytesRef payload = serialized == null ? null : new BytesRef(serialized);
@@ -131,8 +175,7 @@ public class AutoSuggest {
             String[] texts = doc.getValues(field);
             if (texts != null) {
               for (String text : texts) {
-                BytesRef bytes = new BytesRef(text);
-                this.suggester.add(bytes, contexts, 1, payload);
+                this.suggester.add(new BytesRef(text), contexts, weight, payload);
                 buildit = true;
               }
             }
@@ -214,6 +257,7 @@ public class AutoSuggest {
         Suggestion suggestion = new Suggestion();
         suggestion.text = result.key.toString();
         suggestion.highlight = result.highlightKey.toString();
+        suggestion.weight = result.value;
         if (result.payload != null) {
           try {
             suggestion.document = deserialize(result.payload.bytes);
@@ -245,6 +289,7 @@ public class AutoSuggest {
     private Directory _dir = null;
     private Analyzer _analyzer = null;
     private String _criteria = null;
+    private Map<String, Float> _weights = new HashMap<>();
     private int _minChars = 2;
     private Collection<String> _searchFields = new ArrayList<>();
     private Collection<String> _resultFields = new ArrayList<>();
@@ -272,6 +317,10 @@ public class AutoSuggest {
       this._searchFields = searchFields;
       return this;
     }
+    public Builder weights(Map<String, Float> weights) {
+      if (weights != null) this._weights.putAll(weights);
+      return this;
+    }
     public Builder resultFields(Collection<String> resultFields) {
       this._resultFields = resultFields;
       return this;
@@ -289,6 +338,8 @@ public class AutoSuggest {
       as.setCriteriaField(this._criteria);
       as.addSearchFields(this._searchFields);
       as.addResultFields(this._resultFields);
+      for (Entry<String, Float> w : this._weights.entrySet())
+        as.setWeight(w.getKey(), w.getValue());
       return as;
     }
   }
@@ -297,6 +348,7 @@ public class AutoSuggest {
     public String text;
     public String highlight;
     public Map<String, String[]> document;
+    public long weight;
     @Override
     public boolean equals(Object obj) {
       if (!(obj instanceof Suggestion)) return false;
@@ -310,6 +362,10 @@ public class AutoSuggest {
       return this.text.hashCode() * 3 +
              this.highlight.hashCode() * 11 +
              (this.document != null ? 17 * this.document.hashCode() : 0);
+    }
+    @Override
+    public String toString() {
+      return this.text + (weight != 100 ? "("+weight+")" : "");
     }
   }
 }

@@ -597,7 +597,9 @@ public final class FieldBuilder {
       field = new Field(this._name, value, type);
     // build field
     // Sets the boost if necessary
-    if (this._boost != 1.0f) field.setBoost(this._boost);
+    if (this._boost != DEFAULT_BOOST_VALUE) {
+      field.setBoost(this._boost);
+    }
     return field;
   }
 
