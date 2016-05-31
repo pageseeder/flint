@@ -798,7 +798,8 @@ public final class IndexManager {
   public synchronized IndexIO getIndexIO(Index index) throws IndexException {
     if (index == null) return null;
     IndexIO io = this._indexes.get(index.getIndexID());
-    if (io == null) {
+    // if not created yet or closed
+    if (io == null || io.isClosed()) {
       LOGGER.debug("Creating a new IndexIO for {}", index.getIndexID());
       io = new IndexIO(index);
       this._indexes.put(index.getIndexID(), io);
