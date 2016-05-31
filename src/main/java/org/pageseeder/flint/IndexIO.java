@@ -182,7 +182,6 @@ public final class IndexIO {
       this._writer.close();
       this._searcher.close();
       this._reader.close();
-      this._index.getIndexDirectory().close();
       this.state = State.CLOSED;
       OpenIndexManager.remove(this);
     } catch (final CorruptIndexException ex) {

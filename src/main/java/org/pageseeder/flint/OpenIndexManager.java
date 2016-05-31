@@ -103,7 +103,7 @@ public final class OpenIndexManager {
           LOGGER.error("Failed closing an opened index {}", or.hashCode());
         }
       }
-      DELAY_BETWEEN_CHECKS = System.currentTimeMillis();
+      LAST_CHECK = System.currentTimeMillis();
     }
   }
 
