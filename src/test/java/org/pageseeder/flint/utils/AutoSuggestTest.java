@@ -305,8 +305,8 @@ public class AutoSuggestTest {
       Assert.assertEquals(400, suggestions.get(2).weight);
       Assert.assertEquals(100, suggestions.get(3).weight);
       Assert.assertEquals("weight 0.5 2",    suggestions.get(0).text);// 8
-      Assert.assertEquals("weight 3",        suggestions.get(1).text);// 4
-      Assert.assertEquals("weight",          suggestions.get(2).text);// 4
+      Assert.assertTrue("weight 3".equals(suggestions.get(1).text) || "weight"  .equals(suggestions.get(1).text));// 4
+      Assert.assertTrue("weight"  .equals(suggestions.get(2).text) || "weight 3".equals(suggestions.get(2).text));// 4
       Assert.assertEquals("weight 10 0.25",  suggestions.get(3).text);// 1
     } catch (IndexException ex) {
       ex.printStackTrace();
