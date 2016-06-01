@@ -23,12 +23,11 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import javax.xml.transform.Templates;
 import javax.xml.transform.TransformerException;
-import javax.xml.transform.TransformerFactory;
-import javax.xml.transform.stream.StreamSource;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
+import org.pageseeder.flint.util.TemplatesCache;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -134,7 +133,7 @@ public class Index {
   public void setTemplates(ContentType type, String media, URI template) throws TransformerException {
     ContentDefinition def = new ContentDefinition(type, media);
     LOGGER.debug("Adding templates for {}", def);
-    this._templates.put(def, loadTemplates(template));
+    this._templates.put(def, TemplatesCache.get(template));
   }
 
   /**
@@ -156,21 +155,6 @@ public class Index {
   }
 
   // Private helpers ==============================================================================
-
-  /**
-   * Gets the stylesheet at path from the cache or if not in the cache loads it and stores it in
-   * the cache for later use.
-   *
-   * @param path Path to the XSLT templates.
-   *
-   * @return the compiled templates.
-   *
-   * @throws TransformerException if thrown by the {@link TransformerFactory} while parsing the stylesheet
-   */
-  private static Templates loadTemplates(URI path) throws TransformerException {
-    TransformerFactory factory = TransformerFactory.newInstance();
-    return factory.newTemplates(new StreamSource(new File(path)));
-  }
 
   /**
    * A simple immutable object to use as a key and optimised for fast retrieval.
