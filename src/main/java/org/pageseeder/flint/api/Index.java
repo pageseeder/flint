@@ -55,7 +55,7 @@ public class Index {
   /**
    * The XSLT script.
    */
-  private final Map<ContentDefinition, Templates> _templates = new ConcurrentHashMap<ContentDefinition, Templates>();
+  private final Map<ContentDefinition, URI> _templates = new ConcurrentHashMap<ContentDefinition, URI>();
 
   private final Analyzer _analyzer;
 
@@ -118,7 +118,12 @@ public class Index {
   public Templates getTemplates(ContentType type, String media) {
     ContentDefinition def = new ContentDefinition(type, media);
 //    LOGGER.debug("Retrieving templates for {}", def);
-    return this._templates.get(def);
+    URI uri = this._templates.get(def);
+    try {
+      return uri == null ? null : TemplatesCache.get(uri);
+    } catch (TransformerException ex) {
+      return null;
+    }
   }
 
   /**
@@ -131,9 +136,12 @@ public class Index {
    * @throws InvalidTemplatesException If the templates are invalid.
    */
   public void setTemplates(ContentType type, String media, URI template) throws TransformerException {
+    // load it in the cache to validate it
+    TemplatesCache.get(template);
+    // ok store it then
     ContentDefinition def = new ContentDefinition(type, media);
     LOGGER.debug("Adding templates for {}", def);
-    this._templates.put(def, TemplatesCache.get(template));
+    this._templates.put(def, template);
   }
 
   /**
