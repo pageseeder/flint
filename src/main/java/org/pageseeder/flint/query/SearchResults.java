@@ -72,7 +72,7 @@ public final class SearchResults implements XMLWritable {
   /**
    * Types of values formatted in the result.
    */
-  private static enum ValueType {STRING, DATE, DATETIME};
+  private static enum ValueType {STRING, DATE, DATETIME, LONG, DOUBLE, INT, FLOAT};
 
   /**
    * The maximum length for a field to expand.
@@ -363,8 +363,15 @@ public final class SearchResults implements XMLWritable {
       // Retrieve the value
       String value = Fields.toString(f);
       ValueType type = ValueType.STRING;
+      // check for numeric value
+      Number number = f.numericValue();
+      if (number != null) {
+        if (number instanceof Long)         type = ValueType.LONG;
+        else if (number instanceof Double)  type = ValueType.DOUBLE;
+        else if (number instanceof Integer) type = ValueType.INT;
+        else if (number instanceof Float)   type = ValueType.FLOAT;
       // format dates using ISO 8601 when possible
-      if (value != null && value.length() > 0 && f.name().contains("date") && Dates.isLuceneDate(value)) {
+      } else if (value != null && value.length() > 0 && f.name().contains("date") && Dates.isLuceneDate(value)) {
         try {
           if (value.length() > 8) {
             value = Dates.toISODateTime(value, timezoneOffset);
@@ -388,7 +395,16 @@ public final class SearchResults implements XMLWritable {
           xml.attribute("date", value);
         } else if (type == ValueType.DATETIME) {
           xml.attribute("datetime", value);
+        } else if (type == ValueType.LONG) {
+          xml.attribute("numeric-type", "long");
+        } else if (type == ValueType.DOUBLE) {
+          xml.attribute("numeric-type", "double");
+        } else if (type == ValueType.FLOAT) {
+          xml.attribute("numeric-type", "float");
+        } else if (type == ValueType.INT) {
+          xml.attribute("numeric-type", "int");
         }
+        if (f.binaryValue() != null) xml.attribute("compressed", "true");
         xml.writeText(value);
         xml.closeElement();
       }
