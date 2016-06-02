@@ -549,12 +549,6 @@ public final class FieldBuilder {
    */
   public IndexableField build() throws IllegalStateException {
     checkReady();
-    // get value
-    String value = this._value.toString();
-    if (this._dateformat != null) {
-      Date date = toDate(value, this._dateformat);
-      value = (date != null)? Dates.toString(date, this._resolution) : "";
-    }
     // construct the field type
     FieldType type = new FieldType();
     type.setDocValuesType(DocValuesType.NONE);
@@ -570,32 +564,49 @@ public final class FieldBuilder {
       type.setStoreTermVectorPositions(this._vectorPositions);
       type.setStoreTermVectorPayloads(this._vectorPayloads);
     }
+    // get value
+    String value = this._value.toString();
     // compute value, using numeric type
     Field field = null;
     if (this._numeric != null) {
       type.setDocValuesType(DocValuesType.NUMERIC);
-      try {
-        switch (this._numeric) {
-          case DOUBLE:
-            field = new DoubleField(this._name, Double.parseDouble(value), type);
-            break;
-          case FLOAT:
-            field = new FloatField(this._name, Float.parseFloat(value), type);
-            break;
-          case INT:
-            field = new IntField(this._name, Integer.parseInt(value), type);
-            break;
-          case LONG:
-            field = new LongField(this._name, Long.parseLong(value), type);
-            break;
+      // get date number if this is a numeric date
+      if (this._dateformat != null) {
+        Number date = Dates.toNumber(toDate(value, this._dateformat), this._resolution);
+        // only int or long possible for dates
+        if (date != null && date instanceof Long) {
+          field = new LongField(this._name, (Long) date, type);
+        } else if (date != null && date instanceof Integer) {
+          field = new IntField(this._name, (Integer) date, type);
+        } else {
+          return null;
         }
-      } catch (NumberFormatException ex) {
-        LOGGER.error("Number field {} with invalid value {} will be stored as a String", this._name, value);
+      } else {
+        try {
+          switch (this._numeric) {
+            case DOUBLE:
+              field = new DoubleField(this._name, Double.parseDouble(value), type);
+              break;
+            case FLOAT:
+              field = new FloatField(this._name, Float.parseFloat(value), type);
+              break;
+            case INT:
+              field = new IntField(this._name, Integer.parseInt(value), type);
+              break;
+            case LONG:
+              field = new LongField(this._name, Long.parseLong(value), type);
+              break;
+          }
+        } catch (NumberFormatException ex) {
+          LOGGER.error("Number field {} with invalid value {} will be stored as a String", this._name, value);
+        }
       }
-    }
-    if (field == null)
+    } else if (this._dateformat != null) {
+      Date date = toDate(value, this._dateformat);
+      field = new Field(this._name, date != null ? Dates.toString(date, this._resolution) : "", type);
+    } else {
       field = new Field(this._name, value, type);
-    // build field
+    }
     // Sets the boost if necessary
     if (this._boost != DEFAULT_BOOST_VALUE) {
       field.setBoost(this._boost);
