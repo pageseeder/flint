@@ -90,6 +90,11 @@ public class LocalFileContent implements Content {
     return this._config.getDeleteRule(this._f);
   }
 
+  @Override
+  public File getFile() throws IndexException {
+    return this._f;
+  }
+
   /**
    * Returns a new buffered <code>FileInputStream</code>.
    *

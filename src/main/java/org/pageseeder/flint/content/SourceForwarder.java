@@ -15,6 +15,10 @@
  */
 package org.pageseeder.flint.content;
 
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileReader;
+import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.Reader;
 import java.nio.charset.Charset;
@@ -118,8 +122,18 @@ public final class SourceForwarder implements ContentTranslator {
     if (content.isDeleted()) return null;
     // Check that Media type is supported
     if (!this._mediaTypes.contains(content.getMediaType())) return null;
-    // Return a new reader
-    return new InputStreamReader(content.getSource(), this._charset);
+    // get stream
+    InputStream in = content.getSource();
+    if (in != null) {
+      // Return a new reader
+      return new InputStreamReader(in, this._charset);
+    }
+    File f = content.getFile();
+    try {
+      return new FileReader(f);
+    } catch (FileNotFoundException ex) {
+      throw new IndexException("Invalid source file "+f.getAbsolutePath(), ex);
+    }
   }
 
 }

@@ -15,6 +15,7 @@
  */
 package org.pageseeder.flint.api;
 
+import java.io.File;
 import java.io.InputStream;
 
 import org.pageseeder.flint.IndexException;
@@ -34,13 +35,21 @@ import org.pageseeder.flint.content.DeleteRule;
  */
 public interface Content {
 
+  /**
+   * @return the unique ID for this content.
+   */
   String getContentID();
 
+  /**
+   * @return the content type.
+   */
   ContentType getContentType();
 
   /**
    * Returns the content as a stream, ready to be translated.
    *
+   * <p>Implementations can choose to provide the content as a stream or as a File.
+   * 
    * <p>Implementations should buffer large content.
    *
    * @return the stream where the Content is read from
@@ -48,6 +57,17 @@ public interface Content {
    * @throws IndexException Should any error occur when retrieving the source.
    */
   InputStream getSource() throws IndexException;
+
+  /**
+   * Returns the content as a file, ready to be translated.
+   *
+   * <p>Implementations can choose to provide the content as a stream or as a File.
+   *
+   * @return the file where the Content is read from
+   *
+   * @throws IndexException Should any error occur when retrieving the source.
+   */
+  File getFile() throws IndexException;
 
   /**
    * Load the media type for the content.
