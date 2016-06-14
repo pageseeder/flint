@@ -53,11 +53,11 @@ public class AutoSuggest {
 
   private long lastBuilt = -1;
   
-  private AutoSuggest(Index index, Directory dir, Analyzer analyzer, boolean useTerms, int minChars) throws IndexException {
+  private AutoSuggest(Index index, Directory dir, Analyzer indexAnalyzer, Analyzer searchAnalyzer, boolean useTerms, int minChars) throws IndexException {
     this._index = index;
     this._useTerms = useTerms;
     try {
-      this.suggester = new AnalyzingInfixSuggester(dir, index.getAnalyzer(), analyzer, minChars, false, true, true);
+      this.suggester = new AnalyzingInfixSuggester(dir, indexAnalyzer, searchAnalyzer, minChars, false, true, true);
     } catch (IOException ex) {
       LOGGER.error("Failed to build autosuggest", ex);
       throw new IndexException("Failed to build autosuggest", ex);
@@ -122,72 +122,75 @@ public class AutoSuggest {
   }
 
   public void build(IndexReader reader) throws IndexException {
-    try {
-      boolean buildit = false;
-      if (this._useTerms) {
-        for (String field : this._searchFields) {
-          org.apache.lucene.index.Terms terms = MultiFields.getTerms(reader, field);
-          if (terms == null) continue;
-          TermsEnum termsEnum = terms.iterator();
-          BytesRef text;
-          while ((text = termsEnum.next()) != null) {
-            this.suggester.add(text, null, 1, null);
-            buildit = true;
-          }
-        }
-      } else {
-        int max = reader.numDocs();
-        Set<String> fieldsToLoad = new HashSet<>();
-        fieldsToLoad.addAll(this._resultFields);
-        fieldsToLoad.addAll(this._searchFields);
-        fieldsToLoad.addAll(this._weights.keySet());
-        if (this._withField != null) fieldsToLoad.add(this._withField);
-        for (int i = 0; i < max; i++) {
-          Document doc = reader.document(i, fieldsToLoad);
-          // load criteria values
-          Set<BytesRef> contexts = null;
-          if (this._withField != null) {
-            String[] with = doc.getValues(this._withField);
-            if (with != null) {
-              contexts = new HashSet<>();
-              for (String w : with) {
-                contexts.add(new BytesRef(w));
-              }
-            }
-          }
-          // find doc weight
-          float weightF = 0;
-          for (Entry<String, Float> aweight : this._weights.entrySet()) {
-            String val = doc.get(aweight.getKey());
-            try {
-              // default value is 1 if missing
-              weightF += aweight.getValue() * (val == null ? 1 : Float.parseFloat(val));
-            } catch (NumberFormatException ex) {
-              LOGGER.error("Failed to compute weight as field {} is not a number! ({})", aweight.getKey(), val);
-            }
-          }
-          // mutiply by 100 to turn to long (2 decimal precision)
-          long weight = weightF == 0 ? 100 : (long) (weightF* 100);
-          // create payload
-          byte[] serialized = serialize(this._resultFields, doc);
-          BytesRef payload = serialized == null ? null : new BytesRef(serialized);
+    // can't search while we're building it
+    synchronized (this.suggester) {
+      try {
+        boolean buildit = false;
+        if (this._useTerms) {
           for (String field : this._searchFields) {
-            String[] texts = doc.getValues(field);
-            if (texts != null) {
-              for (String text : texts) {
-                this.suggester.add(new BytesRef(text), contexts, weight, payload);
-                buildit = true;
+            org.apache.lucene.index.Terms terms = MultiFields.getTerms(reader, field);
+            if (terms == null) continue;
+            TermsEnum termsEnum = terms.iterator();
+            BytesRef text;
+            while ((text = termsEnum.next()) != null) {
+              this.suggester.add(text, null, 1, null);
+              buildit = true;
+            }
+          }
+        } else {
+          int max = reader.numDocs();
+          Set<String> fieldsToLoad = new HashSet<>();
+          fieldsToLoad.addAll(this._resultFields);
+          fieldsToLoad.addAll(this._searchFields);
+          fieldsToLoad.addAll(this._weights.keySet());
+          if (this._withField != null) fieldsToLoad.add(this._withField);
+          for (int i = 0; i < max; i++) {
+            Document doc = reader.document(i, fieldsToLoad);
+            // load criteria values
+            Set<BytesRef> contexts = null;
+            if (this._withField != null) {
+              String[] with = doc.getValues(this._withField);
+              if (with != null) {
+                contexts = new HashSet<>();
+                for (String w : with) {
+                  contexts.add(new BytesRef(w));
+                }
+              }
+            }
+            // find doc weight
+            float weightF = 0;
+            for (Entry<String, Float> aweight : this._weights.entrySet()) {
+              String val = doc.get(aweight.getKey());
+              try {
+                // default value is 1 if missing
+                weightF += aweight.getValue() * (val == null ? 1 : Float.parseFloat(val));
+              } catch (NumberFormatException ex) {
+                LOGGER.error("Failed to compute weight as field {} is not a number! ({})", aweight.getKey(), val);
+              }
+            }
+            // mutiply by 100 to turn to long (2 decimal precision)
+            long weight = weightF == 0 ? 100 : (long) (weightF* 100);
+            // create payload
+            byte[] serialized = serialize(this._resultFields, doc);
+            BytesRef payload = serialized == null ? null : new BytesRef(serialized);
+            for (String field : this._searchFields) {
+              String[] texts = doc.getValues(field);
+              if (texts != null) {
+                for (String text : texts) {
+                  this.suggester.add(new BytesRef(text), contexts, weight, payload);
+                  buildit = true;
+                }
               }
             }
           }
         }
+        if (buildit) {
+          this.suggester.refresh();
+          this.lastBuilt = System.currentTimeMillis();
+        }
+      } catch (IOException | IllegalStateException ex) {
+        LOGGER.error("Failed to build autosuggest dictionary", ex);
       }
-      if (buildit) {
-        this.suggester.refresh();
-        this.lastBuilt = System.currentTimeMillis();
-      }
-    } catch (IOException | IllegalStateException ex) {
-      LOGGER.error("Failed to build autosuggest dictionary", ex);
     }
   }
 
@@ -247,10 +250,12 @@ public class AutoSuggest {
       }
     }
     List<LookupResult> results = null;
-    try {
-      results = this.suggester.lookup(text, contexts, false, nb);
-    } catch (IOException ex) {
-      LOGGER.error("Failed to lookup autosuggest suggestions", ex);
+    synchronized (this.suggester) {
+      try {
+        results = this.suggester.lookup(text, contexts, false, nb);
+      } catch (IOException ex) {
+        LOGGER.error("Failed to lookup autosuggest suggestions", ex);
+      }
     }
     if (results != null) {
       for (LookupResult result : results) {
@@ -287,7 +292,8 @@ public class AutoSuggest {
     private Boolean _terms = null;
     private Index _index = null;
     private Directory _dir = null;
-    private Analyzer _analyzer = null;
+    private Analyzer _indexAnalyzer = null;
+    private Analyzer _searchAnalyzer = null;
     private String _criteria = null;
     private Map<String, Float> _weights = new HashMap<>();
     private int _minChars = 2;
@@ -297,8 +303,12 @@ public class AutoSuggest {
       this._index = index;
       return this;
     }
-    public Builder analyzer(Analyzer analyzer) {
-      this._analyzer = analyzer;
+    public Builder indexAnalyzer(Analyzer analyzer) {
+      this._indexAnalyzer = analyzer;
+      return this;
+    }
+    public Builder searchAnalyzer(Analyzer analyzer) {
+      this._searchAnalyzer = analyzer;
       return this;
     }
     public Builder useTerms(boolean terms) {
@@ -333,8 +343,9 @@ public class AutoSuggest {
       if (this._terms == null) throw new IllegalStateException("missing terms");
       if (this._index == null) throw new IllegalStateException("missing index");
       Directory dir = this._dir == null ? new RAMDirectory() : this._dir;
-      Analyzer analyzer = this._analyzer == null ? new StandardAnalyzer(CharArraySet.EMPTY_SET) : this._analyzer;
-      AutoSuggest as = new AutoSuggest(this._index, dir, analyzer, this._terms.booleanValue(), this._minChars);
+      Analyzer indexAnalyzer  = this._indexAnalyzer  == null ? new StandardAnalyzer(CharArraySet.EMPTY_SET) : this._indexAnalyzer;
+      Analyzer searchAnalyzer = this._searchAnalyzer == null ? new StandardAnalyzer(CharArraySet.EMPTY_SET) : this._searchAnalyzer;
+      AutoSuggest as = new AutoSuggest(this._index, dir, indexAnalyzer, searchAnalyzer, this._terms.booleanValue(), this._minChars);
       as.setCriteriaField(this._criteria);
       as.addSearchFields(this._searchFields);
       as.addResultFields(this._resultFields);
