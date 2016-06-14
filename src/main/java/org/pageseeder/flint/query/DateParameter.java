@@ -156,6 +156,7 @@ public final class DateParameter implements SearchParameter {
   @Override
   public void toXML(XMLWriter xml) throws IOException {
     xml.openElement("date-range", false);
+    xml.attribute("field", this._field);
     if (this._from != null) {
       xml.attribute("from", Dates.format(this._from, this._resolution));
     }

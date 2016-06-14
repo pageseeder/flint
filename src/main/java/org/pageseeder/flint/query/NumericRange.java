@@ -87,6 +87,8 @@ public final class NumericRange<T extends Number> implements SearchParameter {
     this._field = field;
     this._min = min;
     this._max = max;
+    this._maxInclusive = maxInclusive;
+    this._minInclusive = minInclusive;
   }
 
   /**
@@ -171,6 +173,7 @@ public final class NumericRange<T extends Number> implements SearchParameter {
   @Override
   public void toXML(XMLWriter xml) throws IOException {
     xml.openElement("numeric-range", false);
+    xml.attribute("field", this._field);
     if (this._min != null) {
       xml.attribute("min", this._min.toString());
       xml.attribute("min-included", Boolean.toString(this._minInclusive));
