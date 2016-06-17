@@ -42,11 +42,13 @@ public final class IndexParserFactory extends DefaultHandler {
 
   /**
    * Generate an index document parser instance that can only be used for XSLT transformation.
+   * 
+   * @param catalog the catalog to add the fields to (can be <code>null</code>).
    *
    * @return an index parser instance.
    */
-  public static IndexParser getInstanceForTransformation() {
-    return new IndexParser();
+  public static IndexParser getInstanceForTransformation(String catalog) {
+    return new IndexParser(catalog);
   }
 
   /**

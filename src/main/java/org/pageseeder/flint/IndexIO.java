@@ -27,6 +27,8 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.index.ConcurrentMergeScheduler;
 import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.DirectoryReader;
+import org.apache.lucene.index.IndexCommit;
+import org.apache.lucene.index.IndexNotFoundException;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
@@ -150,7 +152,21 @@ public final class IndexIO {
     } catch (IOException ex) {
       throw new IndexException("Failed to create writer on index "+idx.getIndexID(), ex);
     }
-    this.lastTimeUsed.set(System.currentTimeMillis());
+    // get last commit data as last time used
+    try {
+      List<IndexCommit> commits = DirectoryReader.listCommits(this._index.getIndexDirectory());
+      if (commits != null && !commits.isEmpty()) {
+        String lastCommitDate = commits.get(commits.size()-1).getUserData().get(IndexIO.LAST_COMMIT_DATE);
+        if (lastCommitDate != null) {
+          this.lastTimeUsed.set(Long.parseLong(lastCommitDate));
+        }
+      }
+    } catch (IndexNotFoundException ex) {
+      // should not happen
+      LOGGER.error("Failed to load last index commit date for "+indexID(), ex);
+    } catch (IOException ex) {
+      LOGGER.error("Failed to load last index commit date for "+indexID(), ex);
+    }
     // add it to list of opened indexes
     OpenIndexManager.add(this);
   }

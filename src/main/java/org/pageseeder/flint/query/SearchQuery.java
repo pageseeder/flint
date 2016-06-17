@@ -32,26 +32,6 @@ import org.apache.lucene.search.Sort;
 public interface SearchQuery extends SearchParameter {
 
   /**
-   * Returns the predicate for this search.
-   *
-   * <p>Typically, implementations will construct the predicate. That predicate must be a valid
-   * Lucene predicate (ie. that does not throw a <code>QueryParserException</code>).
-   *
-   * @return The predicate for this search.
-   */
-  String getPredicate();
-
-  /**
-   * Returns the name of the field to search.
-   *
-   * <p>Note: even if the predicate uses other fields, a value must be returned for the search
-   * tool to fallback on a field.
-   *
-   * @return The name of the field to search.
-   */
-  String getField();
-
-  /**
    * Indicates whether the search query is empty.
    *
    * <p>A search query is considered empty when it does not contain any parameter that would

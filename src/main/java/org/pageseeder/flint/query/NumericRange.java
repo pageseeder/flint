@@ -17,8 +17,11 @@ package org.pageseeder.flint.query;
 
 import java.io.IOException;
 
+import org.apache.lucene.document.FieldType.NumericType;
 import org.apache.lucene.search.NumericRangeQuery;
 import org.apache.lucene.search.Query;
+import org.pageseeder.flint.catalog.Catalog;
+import org.pageseeder.flint.catalog.Catalogs;
 import org.pageseeder.flint.util.Beta;
 import org.pageseeder.xmlwriter.XMLWriter;
 
@@ -285,9 +288,38 @@ public final class NumericRange<T extends Number> implements SearchParameter {
    *
    * @return a new range.
    */
-  public static NumericRange<Long>  newLongRange(String field, Long min, Long max,
+  public static NumericRange<Long> newLongRange(String field, Long min, Long max,
       boolean minInclusive, boolean maxInclusive) {
     return new NumericRange<Long>(field, min, max, minInclusive, maxInclusive);
+  }
+
+  /**
+   * Factory that creates a <code>NumericRangeParameter</code>, that queries a long range using the
+   * default precisionStep.
+   *
+   * @param field        the numeric field to search
+   * @param min          the minimum value in the range (may be <code>null</code>)
+   * @param max          the maximum value in the range (may be <code>null</code>)
+   * @param minInclusive <code>true</code> to include values matching the lower limit in the range;
+   *                     <code>false</code> to exclude it.
+   * @param maxInclusive <code>true</code> to include values matching the upper limit in the range;
+   *                     <code>false</code> to exclude it.
+   *
+   * @return a new range.
+   */
+  public static NumericRange<?> newNumberRange(String field, String catalog, Number min, Number max,
+      boolean minInclusive, boolean maxInclusive) {
+    Catalog thecatalog = Catalogs.getCatalog(catalog);
+    if (thecatalog == null) return null;
+    NumericType nt = thecatalog.getSearchNumericType(field);
+    if (nt == null) return null;
+    switch (nt) {
+      case DOUBLE: return newDoubleRange(field, (Double)  min, (Double)  max, minInclusive, maxInclusive);
+      case FLOAT : return newFloatRange(field,  (Float)   min, (Float)   max, minInclusive, maxInclusive);
+      case INT   : return newIntRange(field,    (Integer) min, (Integer) max, minInclusive, maxInclusive);
+      case LONG  : return newLongRange(field,   (Long)    min, (Long)    max, minInclusive, maxInclusive);
+    }
+    return null;
   }
 
 }

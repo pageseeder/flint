@@ -34,6 +34,7 @@ import org.apache.lucene.index.IndexOptions;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.util.NumericUtils;
 import org.pageseeder.flint.api.Index;
+import org.pageseeder.flint.catalog.Catalogs;
 import org.pageseeder.flint.util.Dates;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -48,7 +49,6 @@ import org.slf4j.LoggerFactory;
  * @version 10 February 2012
  */
 public final class FieldBuilder {
-
   /**
    * The default boost value for the term.
    */
@@ -58,6 +58,11 @@ public final class FieldBuilder {
    * The logger for this class.
    */
   private static final Logger LOGGER = LoggerFactory.getLogger(FieldBuilder.class);
+
+  /**
+   * Name of the catalog this field will be added to.
+   */
+  private final String _catalog;
 
   /**
    * The name of the field currently processed.
@@ -133,6 +138,16 @@ public final class FieldBuilder {
    * The value of the field currently processed.
    */
   private float _boost = DEFAULT_BOOST_VALUE;
+
+  // Constuctor
+  // ----------------------------------------------------------------------------------------------
+
+  /**
+   * @param catalog the name of the catalog this field will be added to.
+   */
+  public FieldBuilder(String catalog) {
+    this._catalog = catalog;
+  }
 
   // Setters
   // ----------------------------------------------------------------------------------------------
@@ -496,6 +511,15 @@ public final class FieldBuilder {
     return this._boost;
   }
 
+  /**
+   * Returns the numeric type for this field.
+   * 
+   * @return the numeric type for this field.
+   */
+  public NumericType numericType() {
+    return this._numeric;
+  }
+
   // Reset and build
   // ----------------------------------------------------------------------------------------------
 
@@ -611,6 +635,9 @@ public final class FieldBuilder {
     if (this._boost != DEFAULT_BOOST_VALUE) {
       field.setBoost(this._boost);
     }
+    // add it to catalog
+    if (this._catalog != null)
+      Catalogs.newField(this._catalog, this);
     return field;
   }
 

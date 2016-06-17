@@ -17,6 +17,7 @@ package org.pageseeder.flint;
 
 import java.io.IOException;
 import java.io.Reader;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -28,6 +29,7 @@ import javax.xml.transform.Transformer;
 import javax.xml.transform.stream.StreamSource;
 
 import org.apache.lucene.document.Document;
+import org.apache.lucene.index.IndexableField;
 import org.pageseeder.flint.IndexJob.Priority;
 import org.pageseeder.flint.api.Content;
 import org.pageseeder.flint.api.ContentTranslator;
@@ -208,7 +210,7 @@ public final class IndexingThread implements Runnable {
     }
 
     // translate content directly into documents
-    IndexParser parser = IndexParserFactory.getInstanceForTransformation();
+    IndexParser parser = IndexParserFactory.getInstanceForTransformation(job.getCatalog());
     try {
       translateContent(this._manager, new FlintErrorListener(this._listener, job),
                        job.getIndex(), content, job.getParameters(), parser.getResult());
@@ -216,12 +218,22 @@ public final class IndexingThread implements Runnable {
       this._listener.error(job, ex.getMessage(), ex);
       return false;
     }
-    List<Document> documents = parser.getDocuments();
 
-//    LOGGER.debug("Found {} document(s) to update", documents.size());
+    // add custom fields
+    List<Document> documents = parser.getDocuments();
+    Collection<IndexableField> fields = job.getIndex().getFields(content);
+    if (fields != null && !fields.isEmpty()) {
+      for (Document doc : documents) {
+        for (IndexableField field : fields) {
+          // remove existing ones with same name
+          doc.removeFields(field.name());
+          doc.add(field);
+        }
+      }
+    }
 
     try {
-      // add docs to index index
+      // add docs to index
       io.updateDocuments(content.getDeleteRule(), documents);
     } catch (Exception ex) {
       this._listener.error(job, "Failed to add Lucene Documents to Index", ex);

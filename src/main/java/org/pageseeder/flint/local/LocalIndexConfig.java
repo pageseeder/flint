@@ -1,10 +1,12 @@
 package org.pageseeder.flint.local;
 
 import java.io.File;
+import java.util.Collection;
 import java.util.Map;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
+import org.apache.lucene.index.IndexableField;
 import org.pageseeder.flint.content.DeleteRule;
 
 public abstract class LocalIndexConfig {
@@ -13,7 +15,10 @@ public abstract class LocalIndexConfig {
   public abstract File getIndexLocation();
   public Map<String, String> getParameters(File file) {
     return null;
-  };
+  }
+  public Collection<IndexableField> getFields(File file) {
+    return null;
+  }
   public DeleteRule getDeleteRule(File file) {
     return null;
   }

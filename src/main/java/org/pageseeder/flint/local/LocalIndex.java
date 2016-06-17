@@ -18,12 +18,14 @@ package org.pageseeder.flint.local;
 import java.io.File;
 import java.io.IOException;
 import java.net.URI;
+import java.util.Collection;
 import java.util.Map;
 
 import javax.xml.transform.TransformerException;
 
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
 import org.pageseeder.flint.api.Content;
@@ -77,7 +79,15 @@ public final class LocalIndex extends Index {
     }
     return null;
   }
-  
+
+  @Override
+  public Collection<IndexableField> getFields(Content content) {
+    if (content.getContentType() == LocalFileContentType.SINGLETON) {
+      return this._config.getFields(new File(content.getContentID()));
+    }
+    return null;
+  }
+
   // Utility methods for public usage
   // ----------------------------------------------------------------------------------------------
 

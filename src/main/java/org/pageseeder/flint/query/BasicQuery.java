@@ -38,7 +38,7 @@ import org.pageseeder.xmlwriter.XMLWriter;
  * @version 16 August 2010
  */
 @Beta
-public class BasicQuery<T extends SearchParameter> implements FlintQuery, SearchQuery {
+public class BasicQuery<T extends SearchParameter> implements SearchQuery {
 
   /**
    * The query to use as a base.
@@ -267,22 +267,4 @@ public class BasicQuery<T extends SearchParameter> implements FlintQuery, Search
     return new BasicQuery<X>(base, unmodifiable);
   }
 
-  /**
-   * @deprecated Will be removed in future releases
-   * @return always <code>null</code>
-   */
-  @Override
-  @Deprecated public String getField() {
-    // TODO Auto-generated method stub
-    return null;
-  }
-
-  /**
-   * @deprecated Will be removed in future releases
-   * @return the predicate from the {@link Query} object
-   */
-  @Override
-  @Deprecated public String getPredicate() {
-    return this._query.toString();
-  }
 }

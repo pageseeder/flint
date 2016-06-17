@@ -671,7 +671,7 @@ public final class IndexManager {
    * @throws IndexException if anything went wrong
    */
   public List<Document> contentToDocuments(Index index, Content content, Map<String, String> params) throws IndexException {
-    IndexParser parser = IndexParserFactory.getInstanceForTransformation();
+    IndexParser parser = IndexParserFactory.getInstanceForTransformation(null);
     IndexingThread.translateContent(this, null, index, content, params, parser.getResult());
     return parser.getDocuments();
   }

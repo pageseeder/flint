@@ -37,7 +37,7 @@ import org.pageseeder.xmlwriter.XMLWriter;
  * @version 21 July 2010
  */
 @Beta
-public final class SuggestionQuery implements SearchQuery, FlintQuery {
+public final class SuggestionQuery implements SearchQuery {
 
   /**
    * The list of terms.
@@ -178,27 +178,6 @@ public final class SuggestionQuery implements SearchQuery, FlintQuery {
   @Override
   public Sort getSort() {
     return Sort.RELEVANCE;
-  }
-
-  /**
-   * Always sorts by relevance.
-   *
-   * {@inheritDoc}
-   */
-  @Override
-  public String getPredicate() {
-    return this.query != null? this.query.toString() : null;
-  }
-
-  /**
-   * Returns the field of the first entered term or <code>null</code>.
-   *
-   * {@inheritDoc}
-   */
-  @Override
-  public String getField() {
-    if (this._terms.isEmpty()) return null;
-    return this._terms.get(0).field();
   }
 
 };

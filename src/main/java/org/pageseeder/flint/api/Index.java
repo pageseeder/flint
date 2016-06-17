@@ -18,6 +18,7 @@ package org.pageseeder.flint.api;
 import java.io.File;
 import java.io.IOException;
 import java.net.URI;
+import java.util.Collection;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -25,6 +26,7 @@ import javax.xml.transform.Templates;
 import javax.xml.transform.TransformerException;
 
 import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
 import org.pageseeder.flint.util.TemplatesCache;
@@ -51,6 +53,8 @@ public class Index {
 
   private final String _id;
 
+  private String catalog = null;
+
   private final Directory _directory;
   /**
    * The XSLT script.
@@ -72,7 +76,15 @@ public class Index {
   public Analyzer getAnalyzer() {
     return this._analyzer;
   }
-  
+
+  public String getCatalog() {
+    return this.catalog;
+  }
+
+  public void setCatalog(String cat) {
+    this.catalog = cat;
+  }
+
   /**
    * Return the unique identifier for this index.
    *
@@ -89,6 +101,20 @@ public class Index {
    */
   public final Directory getIndexDirectory() {
     return this._directory;
+  }
+
+  // Fields management =========================================================================
+
+  /**
+   * Used to define lucene fields specific to a content (should be overwritten by sub-classes).
+   * Can be used to ensure that certain fields are always in the index.
+   * 
+   * @param content the actual content
+   * 
+   * @return the list of fields, <code>null</code> if none
+   */
+  public Collection<IndexableField> getFields(Content content) {
+    return null;
   }
 
   // Parameters management =========================================================================

@@ -149,26 +149,6 @@ public final class PredicateSearchQuery implements SearchQuery {
   }
 
   /**
-   * Returns <code>null</code>.
-   *
-   * @return <code>null</code>.
-   */
-  @Override
-  public String getField() {
-    return null;
-  }
-
-  /**
-   * Returns the predicate to use for this search.
-   *
-   * @return The predicate for this search.
-   */
-  @Override
-  public String getPredicate() {
-    return this._predicate;
-  }
-
-  /**
    * Returns the Lucene query instance corresponding to this object.
    *
    * <p>
@@ -181,7 +161,7 @@ public final class PredicateSearchQuery implements SearchQuery {
     if (this._predicate == null)
       return null;
     try {
-      QueryParser parser = new QueryParser(getField(), this._analyser);
+      QueryParser parser = new QueryParser(null, this._analyser);
       parser.setAllowLeadingWildcard(this._allowLeadingWildcard);
       return parser.parse(this._predicate);
     } catch (ParseException ex) {

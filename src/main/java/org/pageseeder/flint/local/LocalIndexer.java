@@ -66,6 +66,8 @@ public final class LocalIndexer implements FileVisitor<Path> {
 
   private IndexBatch batch = null;
 
+  private boolean useIndexDate = true;
+
   private final Requester _requester = new Requester("Local Indexer");
 
   private final Map<File, Action> resultFiles = new ConcurrentHashMap<>();
@@ -94,6 +96,14 @@ public final class LocalIndexer implements FileVisitor<Path> {
 
   public void setFileFilter(FileFilter filter) {
     this.filter = filter;
+  }
+
+  /**
+   * If the index last modified date is used to select which files to index
+   * @param useIndxDate
+   */
+  public void setUseIndexDate(boolean useIndxDate) {
+    this.useIndexDate = useIndxDate;
   }
 
   public int indexFolder(File root, Map<File, Long> indexed) {
@@ -142,7 +152,7 @@ public final class LocalIndexer implements FileVisitor<Path> {
     File file = path.toFile();
     Long indexModified = this.indexedFiles == null ? null : this.indexedFiles.remove(file);
     // only files updated since last commit
-    if (this._indexModifiedDate == -1 || attrs.lastModifiedTime().toMillis() > this._indexModifiedDate) {
+    if (!this.useIndexDate || this._indexModifiedDate == -1 || attrs.lastModifiedTime().toMillis() > this._indexModifiedDate) {
       // check for filter
       if (this.filter != null && !this.filter.accept(file))
         return FileVisitResult.CONTINUE;

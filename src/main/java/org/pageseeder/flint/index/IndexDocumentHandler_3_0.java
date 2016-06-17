@@ -55,6 +55,11 @@ final class IndexDocumentHandler_3_0 extends DefaultHandler implements IndexDocu
   // -------------------------------------------------------------------------------------------
 
   /**
+   * The catalog to associate with the fields.
+   */
+  private final String _catalog;
+
+  /**
    * The time zone to use when parsing dates.
    */
   private TimeZone _timezone = TimeZone.getDefault();
@@ -90,7 +95,7 @@ final class IndexDocumentHandler_3_0 extends DefaultHandler implements IndexDocu
   /**
    * The field builder.
    */
-  private FieldBuilder builder = new FieldBuilder();
+  private FieldBuilder builder = null;
 
   /**
    * The characters found within a field.
@@ -99,6 +104,10 @@ final class IndexDocumentHandler_3_0 extends DefaultHandler implements IndexDocu
 
   // constructors
   // ----------------------------------------------------------------------------------------------
+
+  public IndexDocumentHandler_3_0(String catalog) {
+    this._catalog = catalog;
+  }
 
   /**
    * {@inheritDoc}
@@ -116,16 +125,8 @@ final class IndexDocumentHandler_3_0 extends DefaultHandler implements IndexDocu
    */
   @Override
   public void startDocument() {
-//    LOGGER.debug("Start processing iXML document (version 3.0)");
     this.documents = new ArrayList<Document>();
-  }
-
-  /**
-   * {@inheritDoc}
-   */
-  @Override
-  public void endDocument() {
-//    LOGGER.debug("End processing iXML document");
+    this.builder = new FieldBuilder(this._catalog);
   }
 
   /**

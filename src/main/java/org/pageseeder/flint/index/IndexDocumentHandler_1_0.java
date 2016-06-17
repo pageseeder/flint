@@ -85,7 +85,7 @@ final class IndexDocumentHandler_1_0 extends DefaultHandler implements IndexDocu
   /**
    * The field builder.
    */
-  private FieldBuilder builder = new FieldBuilder();
+  private FieldBuilder builder = new FieldBuilder(null);
 
   /**
    * The characters found within a field.

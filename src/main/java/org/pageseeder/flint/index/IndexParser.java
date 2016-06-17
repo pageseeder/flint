@@ -100,9 +100,9 @@ public final class IndexParser {
    *
    * @param result     The SAX Result to use.
    */
-  protected IndexParser() {
+  protected IndexParser(String catalog) {
     this._reader = null;
-    this._handler = new AutoHandler();
+    this._handler = new AutoHandler(catalog);
     this._result = new SAXResult(this._handler);
   }
 
@@ -123,15 +123,16 @@ public final class IndexParser {
    *
    * <p>Ensure that the reader uses the correct encoding.
    *
-   * @param source The source to read.
+   * @param source  The source to read.
+   * @param catalog The catalog to add the fields to.
    *
    * @return A collection of Lucene documents made from the file.
    *
    * @throws IndexException Should an error occur while parsing the file.
    */
-  public synchronized List<Document> process(InputSource source) throws IndexException {
+  public synchronized List<Document> process(InputSource source, String catalog) throws IndexException {
     try {
-      IndexDocumentHandler handler = new AutoHandler();
+      IndexDocumentHandler handler = new AutoHandler(catalog);
       this._reader.setContentHandler(handler);
       this._reader.parse(source);
       return handler.getDocuments();
@@ -150,17 +151,18 @@ public final class IndexParser {
    *
    * @see #make(java.io.Reader)
    *
-   * @param f the file to be read
+   * @param f       The file to be read.
+   * @param catalog The catalog to add the fields to.
    *
    * @return A collection of Lucene documents made from the file.
    *
    * @throws IndexException Should an error occur while parsing the file.
    */
-  public synchronized List<Document> process(File f) throws IndexException {
+  public synchronized List<Document> process(File f, String catalog) throws IndexException {
     try {
       InputSource source = new InputSource(new InputStreamReader(new FileInputStream(f), "utf-8"));
       source.setSystemId(f.toURI().toURL().toExternalForm());
-      return process(source);
+      return process(source, catalog);
     } catch (IOException ex) {
       throw new IndexException("I/O error occurred while generating file input source: "+ex.getMessage(), ex);
     }
@@ -177,9 +179,21 @@ public final class IndexParser {
   private static final class AutoHandler extends DefaultHandler implements IndexDocumentHandler {
 
     /**
+     * The catalog to use.
+     */
+    private final String _catalog;
+
+    /**
      * The handler in use.
      */
     private IndexDocumentHandler _handler;
+
+    /**
+     * @param catalog the catalog to associate the fields with
+     */
+    public AutoHandler(String catalog) {
+      this._catalog = catalog;
+    }
 
     /**
      * Once element "documents" is matched, the reader is assigned the appropriate handler.
@@ -192,7 +206,7 @@ public final class IndexParser {
         String version = atts.getValue("version");
         // Version 3.0
         if ("3.0".equals(version)) {
-          this._handler = new IndexDocumentHandler_3_0();
+          this._handler = new IndexDocumentHandler_3_0(this._catalog);
         // Version 2.0
         } else if ("2.0".equals(version)) {
           this._handler = new IndexDocumentHandler_2_0();

@@ -158,6 +158,10 @@ public class IndexJob implements Comparable<IndexJob> {
     return this._contenttype;
   }
 
+  public String getCatalog() {
+    return this._index.getCatalog();
+  }
+
   /**
    * Return the Index that this job is to be run on.
    *
