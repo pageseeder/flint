@@ -192,7 +192,8 @@ public class Catalogs {
         String name = attributes.getValue("name");
         if (name != null) {
           boolean tokenized = "true".equals(attributes.getValue("tokenized"));
-          float boost = Float.parseFloat(attributes.getValue("boost"));
+          String b = attributes.getValue("boost");
+          float boost = b == null ? 1.0F : Float.parseFloat(b);
           NumericType num = FieldBuilder.toNumeric(attributes.getValue("numeric-type"));
           this.catalog.addFieldType(this.storedFields, name, tokenized, num, boost);
         }
