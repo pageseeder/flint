@@ -90,6 +90,17 @@ public class Catalogs {
   }
 
   /**
+   * Save the catalog specified in the persistent cache.
+   * Nothing happens if catalog is not found.
+   * 
+   * @param catalog the catalog name
+   */
+  public static void save(String catalog) {
+    Catalog thecatalog = CACHE.get(catalog);
+    if (thecatalog != null) saveCatalog(thecatalog);
+  }
+
+  /**
    * Save all the catalog in the persistent cache.
    */
   public static void saveAll() {
@@ -176,9 +187,6 @@ public class Catalogs {
     /** The catalog object. */
     private final Catalog catalog;
 
-    /** An internal flag. */
-    private boolean storedFields = false;
-
     /** @param name the name of the catalog. */
     public CatalogHandler(String name) {
       this.catalog = new Catalog(name);
@@ -186,16 +194,16 @@ public class Catalogs {
 
     @Override
     public void startElement(String uri, String localName, String qName, Attributes attributes) throws SAXException {
-      if ("fields".equals(localName)) {
-        this.storedFields = "stored".equals(attributes.getValue("type"));
-      } else if ("field".equals(localName)) {
+      if ("field".equals(localName)) {
         String name = attributes.getValue("name");
         if (name != null) {
+          boolean stored    = "true".equals(attributes.getValue("stored"));
+          boolean indexed   = "true".equals(attributes.getValue("indexed"));
           boolean tokenized = "true".equals(attributes.getValue("tokenized"));
           String b = attributes.getValue("boost");
           float boost = b == null ? 1.0F : Float.parseFloat(b);
           NumericType num = FieldBuilder.toNumeric(attributes.getValue("numeric-type"));
-          this.catalog.addFieldType(this.storedFields, name, tokenized, num, boost);
+          this.catalog.addFieldType(stored, indexed, name, tokenized, num, boost);
         }
       }
     }
