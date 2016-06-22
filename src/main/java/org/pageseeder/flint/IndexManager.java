@@ -335,6 +335,9 @@ public final class IndexManager {
    * @param priority   the Priority of this job
    */
   public void clear(Index index, Requester requester, Priority priority) {
+    // remove all jobs belonging to this index
+    this._indexQueue.clearJobsForIndex(index);
+    // add a new job to clear the index
     indexJob(IndexJob.newClearJob(index, priority, requester), false);
   }
 

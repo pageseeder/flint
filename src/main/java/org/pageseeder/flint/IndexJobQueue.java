@@ -131,6 +131,31 @@ public final class IndexJobQueue {
   }
 
   /**
+   * Removes the jobs for the index provided.
+   *
+   * @param index the index
+   */
+  public void clearJobsForIndex(Index index) {
+    if (index == null) return;
+    List<IndexJob> jobs = new ArrayList<IndexJob>();
+    for (IndexJob job : this._queue) {
+      if (job.isForIndex(index)) {
+        jobs.add(job);
+      }
+    }
+    this._queue.removeAll(jobs);
+    if (this._singleThreadQueue != null) {
+      jobs.clear();
+      for (IndexJob job : this._singleThreadQueue) {
+        if (job.isForIndex(index)) {
+          jobs.add(job);
+        }
+      }
+      this._singleThreadQueue.removeAll(jobs);
+    }
+  }
+
+  /**
    * Returns the list of jobs for the index provided.
    *
    * <p>Note that by the time each job is checked, they might have run already so the method
