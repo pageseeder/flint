@@ -602,6 +602,7 @@ public final class FieldBuilder {
           field = new LongField(this._name, (Long) date, type);
         } else if (date != null && date instanceof Integer) {
           field = new IntField(this._name, (Integer) date, type);
+          type.setNumericPrecisionStep(NumericUtils.PRECISION_STEP_DEFAULT_32);
         } else {
           return null;
         }
@@ -609,15 +610,19 @@ public final class FieldBuilder {
         try {
           switch (this._numeric) {
             case DOUBLE:
+              type.setNumericPrecisionStep(NumericUtils.PRECISION_STEP_DEFAULT);
               field = new DoubleField(this._name, Double.parseDouble(value), type);
               break;
             case FLOAT:
+              type.setNumericPrecisionStep(NumericUtils.PRECISION_STEP_DEFAULT_32);
               field = new FloatField(this._name, Float.parseFloat(value), type);
               break;
             case INT:
+              type.setNumericPrecisionStep(NumericUtils.PRECISION_STEP_DEFAULT_32);
               field = new IntField(this._name, Integer.parseInt(value), type);
               break;
             case LONG:
+              type.setNumericPrecisionStep(NumericUtils.PRECISION_STEP_DEFAULT);
               field = new LongField(this._name, Long.parseLong(value), type);
               break;
           }

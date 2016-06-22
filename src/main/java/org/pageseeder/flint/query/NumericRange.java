@@ -20,6 +20,7 @@ import java.io.IOException;
 import org.apache.lucene.document.FieldType.NumericType;
 import org.apache.lucene.search.NumericRangeQuery;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.util.NumericUtils;
 import org.pageseeder.flint.catalog.Catalog;
 import org.pageseeder.flint.catalog.Catalogs;
 import org.pageseeder.flint.util.Beta;
@@ -176,6 +177,7 @@ public final class NumericRange<T extends Number> implements SearchParameter {
   @Override
   public void toXML(XMLWriter xml) throws IOException {
     xml.openElement("numeric-range", false);
+    xml.attribute("type", (this._min != null ? this._min.getClass().getName() : this._max.getClass().getName()).replaceFirst("^(.+\\.)", "").toLowerCase());
     xml.attribute("field", this._field);
     if (this._min != null) {
       xml.attribute("min", this._min.toString());
@@ -204,13 +206,17 @@ public final class NumericRange<T extends Number> implements SearchParameter {
   private static NumericRangeQuery<? extends Number>
       toNumericRangeQuery(String field, Number min, Number max, boolean minInclusive, boolean maxInclusive) {
     // Long
-    if (min instanceof Long || (min == null && max instanceof Long)) return NumericRangeQuery.newLongRange(field, (Long)min, (Long)max, minInclusive, maxInclusive);
+    if (min instanceof Long || (min == null && max instanceof Long))
+      return NumericRangeQuery.newLongRange(field, NumericUtils.PRECISION_STEP_DEFAULT, (Long) min, (Long) max, minInclusive, maxInclusive);
     // Integer
-    if (min instanceof Integer || (min == null && max instanceof Integer)) return NumericRangeQuery.newIntRange(field, (Integer)min, (Integer)max, true, true);
+    if (min instanceof Integer || (min == null && max instanceof Integer))
+      return NumericRangeQuery.newIntRange(field, NumericUtils.PRECISION_STEP_DEFAULT_32, (Integer) min, (Integer) max, minInclusive, maxInclusive);
     // Double
-    if (min instanceof Double || (min == null && max instanceof Double)) return NumericRangeQuery.newDoubleRange(field, (Double)min, (Double)max, true, true);
+    if (min instanceof Double || (min == null && max instanceof Double))
+      return NumericRangeQuery.newDoubleRange(field, NumericUtils.PRECISION_STEP_DEFAULT, (Double) min, (Double) max, minInclusive, maxInclusive);
     // Float
-    if (min instanceof Float || (min == null && max instanceof Float)) return NumericRangeQuery.newFloatRange(field, (Float)min, (Float)max, true, true);
+    if (min instanceof Float || (min == null && max instanceof Float))
+      return NumericRangeQuery.newFloatRange(field, NumericUtils.PRECISION_STEP_DEFAULT_32, (Float) min, (Float) max, minInclusive, maxInclusive);
     // Should never happen
     return null;
   }
