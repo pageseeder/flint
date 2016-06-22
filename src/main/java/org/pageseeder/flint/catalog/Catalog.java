@@ -58,6 +58,7 @@ public class Catalog implements XMLWritable {
   @Override
   public void toXML(XMLWriter xml) throws IOException {
     xml.openElement("catalog");
+    xml.attribute("name", this._name);
     for (String fname : this._fields.keySet()) {
       xml.openElement("field");
       xml.attribute("name", fname);
