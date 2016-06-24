@@ -159,7 +159,7 @@ public final class LocalIndexer implements FileVisitor<Path> {
       // check in the index to know what action to perform
       if (indexModified == null) {
         this.resultFiles.put(file, Action.INSERT);
-      } else if (indexModified != file.lastModified()) {
+      } else {
         this.resultFiles.put(file, Action.UPDATE);
       }
       // index
