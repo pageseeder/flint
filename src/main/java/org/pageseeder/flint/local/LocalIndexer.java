@@ -60,7 +60,7 @@ public final class LocalIndexer implements FileVisitor<Path> {
   
   private long _indexModifiedDate = -1;
 
-  private Map<File, Long> indexedFiles = null;
+  private Map<String, Long> indexedFiles = null;
 
   private FileFilter filter = null;
 
@@ -70,7 +70,7 @@ public final class LocalIndexer implements FileVisitor<Path> {
 
   private final Requester _requester = new Requester("Local Indexer");
 
-  private final Map<File, Action> resultFiles = new ConcurrentHashMap<>();
+  private final Map<String, Action> resultFiles = new ConcurrentHashMap<>();
 
   private Priority priority = Priority.LOW;
   /**
@@ -106,7 +106,7 @@ public final class LocalIndexer implements FileVisitor<Path> {
     this.useIndexDate = useIndxDate;
   }
 
-  public int indexFolder(File root, Map<File, Long> indexed) {
+  public int indexFolder(File root, Map<String, Long> indexed) {
     if (root == null) throw new NullPointerException("root");
     if (!root.exists()) return 0;
     if (root.isDirectory()) {
@@ -123,10 +123,10 @@ public final class LocalIndexer implements FileVisitor<Path> {
       }
       // get files to remove
       if (this.indexedFiles != null) {
-        for (File f : this.indexedFiles.keySet()) {
-          this.resultFiles.put(f, Action.DELETE);
+        for (String path : this.indexedFiles.keySet()) {
+          this.resultFiles.put(path, Action.DELETE);
           this.batch.increaseTotal();
-          this._manager.indexBatch(this.batch, f.getAbsolutePath(), LocalFileContentType.SINGLETON, this._index, this._requester, this.priority, null);
+          this._manager.indexBatch(this.batch, path, LocalFileContentType.SINGLETON, this._index, this._requester, this.priority, null);
         }
       }
       this.batch.setComputed();
@@ -140,7 +140,7 @@ public final class LocalIndexer implements FileVisitor<Path> {
     return this.batch;
   }
 
-  public Map<File, Action> getIndexedFiles() {
+  public Map<String, Action> getIndexedFiles() {
     return this.resultFiles;
   }
 
@@ -150,7 +150,8 @@ public final class LocalIndexer implements FileVisitor<Path> {
   @Override
   public FileVisitResult visitFile(Path path, BasicFileAttributes attrs) throws IOException {
     File file = path.toFile();
-    Long indexModified = this.indexedFiles == null ? null : this.indexedFiles.remove(file);
+    String aspath = file.getAbsolutePath();
+    Long indexModified = this.indexedFiles == null ? null : this.indexedFiles.remove(aspath);
     // only files updated since last commit
     if (!this.useIndexDate || this._indexModifiedDate == -1 || attrs.lastModifiedTime().toMillis() > this._indexModifiedDate) {
       // check for filter
@@ -158,13 +159,13 @@ public final class LocalIndexer implements FileVisitor<Path> {
         return FileVisitResult.CONTINUE;
       // check in the index to know what action to perform
       if (indexModified == null) {
-        this.resultFiles.put(file, Action.INSERT);
+        this.resultFiles.put(aspath, Action.INSERT);
       } else {
-        this.resultFiles.put(file, Action.UPDATE);
+        this.resultFiles.put(aspath, Action.UPDATE);
       }
       // index
       this.batch.increaseTotal();
-      this._manager.indexBatch(this.batch, file.getAbsolutePath(), LocalFileContentType.SINGLETON, this._index, this._requester, IndexJob.Priority.HIGH, null);
+      this._manager.indexBatch(this.batch, aspath, LocalFileContentType.SINGLETON, this._index, this._requester, IndexJob.Priority.HIGH, null);
     }
     return FileVisitResult.CONTINUE;
   }
