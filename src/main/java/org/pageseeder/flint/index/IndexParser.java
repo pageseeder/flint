@@ -58,7 +58,7 @@ import org.xml.sax.helpers.DefaultHandler;
  *
  * @see <a href="http://www.weborganic.org/code/flint/schema/index-documents-1.0.dtd">Index Documents 1.0 Schema</a>
  * @see <a href="http://www.weborganic.org/code/flint/schema/index-documents-2.0.dtd">Index Documents 2.0 Schema</a>
- * @see <a href="http://www.weborganic.org/code/flint/schema/index-documents-2.0.dtd">Index Documents 3.0 Schema</a>
+ * @see <a href="http://www.weborganic.org/code/flint/schema/index-documents-5.0.dtd">Index Documents 5.0 Schema</a>
  *
  * @author Christophe Lauret
  * @author Jean-Baptiste Reure
@@ -204,9 +204,9 @@ public final class IndexParser {
     public void startElement(String uri, String localName, String qName, Attributes atts) throws SAXException {
       if ("documents".equals(qName) || "documents".equals(localName)) {
         String version = atts.getValue("version");
-        // Version 3.0
-        if ("3.0".equals(version)) {
-          this._handler = new IndexDocumentHandler_3_0(this._catalog);
+        // Version 5.0
+        if ("5.0".equals(version)) {
+          this._handler = new IndexDocumentHandler_5_0(this._catalog);
         // Version 2.0
         } else if ("2.0".equals(version)) {
           this._handler = new IndexDocumentHandler_2_0();

@@ -29,9 +29,14 @@ import org.apache.lucene.document.FieldType.NumericType;
 import org.apache.lucene.document.FloatField;
 import org.apache.lucene.document.IntField;
 import org.apache.lucene.document.LongField;
+import org.apache.lucene.document.NumericDocValuesField;
+import org.apache.lucene.document.SortedDocValuesField;
+import org.apache.lucene.document.SortedNumericDocValuesField;
+import org.apache.lucene.document.SortedSetDocValuesField;
 import org.apache.lucene.index.DocValuesType;
 import org.apache.lucene.index.IndexOptions;
 import org.apache.lucene.index.IndexableField;
+import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.NumericUtils;
 import org.pageseeder.flint.api.Index;
 import org.pageseeder.flint.catalog.Catalogs;
@@ -78,6 +83,11 @@ public final class FieldBuilder {
    * The 'tokenize' flag of the field to build.
    */
   private boolean _tokenize = true;
+
+  /**
+   * The 'sorted' flag of the field to build.
+   */
+  private DocValuesType _docValues = DocValuesType.NONE;
 
   /**
    * The 'index' attribute of the field to build.
@@ -132,7 +142,7 @@ public final class FieldBuilder {
   /**
    * The precision step to use for numeric field.
    */
-  private int _precisionStep = NumericUtils.PRECISION_STEP_DEFAULT;
+  private Integer _precisionStep = null;
 
   /**
    * The value of the field currently processed.
@@ -251,6 +261,29 @@ public final class FieldBuilder {
    */
   public FieldBuilder index(String index) {
     if (index != null) this._index = toIndexOptions(index);
+    return this;
+  }
+
+  /**
+   * @param docValues if the field should be indexed as doc values.
+   * @return this builder.
+   */
+  public FieldBuilder docValues(DocValuesType docValues) {
+    this._docValues = docValues == null ? DocValuesType.NONE : docValues;
+    return this;
+  }
+
+  /**
+   * Supported values are "none", "sorted" and "sorted-set".
+   * If the parameter is null, the same behaviour as "none" is applied.
+   * 
+   * @param docValues the doc values type.
+   * @param numeric   if this field is numeric
+   * 
+   * @return this builder.
+   */
+  public FieldBuilder docValues(String docValues, boolean numeric) {
+    this._docValues = toDocValues(docValues, numeric);
     return this;
   }
 
@@ -520,6 +553,15 @@ public final class FieldBuilder {
     return this._numeric;
   }
 
+  /**
+   * Returns the doc values type for this field.
+   * 
+   * @return the doc values type for this field.
+   */
+  public DocValuesType docValues() {
+    return this._docValues;
+  }
+
   // Reset and build
   // ----------------------------------------------------------------------------------------------
 
@@ -551,6 +593,7 @@ public final class FieldBuilder {
     this._omitNorms = false;
     this._store = true;
     this._tokenize = true;
+    this._docValues = null;
     this._vector = true;
     this._vectorOffsets = true;
     this._vectorPositions = true;
@@ -561,7 +604,7 @@ public final class FieldBuilder {
     this._dateformat = null;
     this._resolution = null;
     this._numeric = null;
-    this._precisionStep = NumericUtils.PRECISION_STEP_DEFAULT;
+    this._precisionStep = null;
   }
 
   /**
@@ -575,9 +618,6 @@ public final class FieldBuilder {
     checkReady();
     // construct the field type
     FieldType type = new FieldType();
-    type.setDocValuesType(DocValuesType.NONE);
-    type.setNumericType(this._numeric);
-    type.setNumericPrecisionStep(this. _precisionStep);
     type.setStored(this._store);
     type.setTokenized(this._tokenize);
     type.setIndexOptions(this._index);
@@ -593,36 +633,37 @@ public final class FieldBuilder {
     // compute value, using numeric type
     Field field = null;
     if (this._numeric != null) {
-      type.setDocValuesType(DocValuesType.NUMERIC);
+      type.setNumericType(this._numeric);
       // get date number if this is a numeric date
       if (this._dateformat != null) {
         Number date = Dates.toNumber(toDate(value, this._dateformat), this._resolution);
         // only int or long possible for dates
         if (date != null && date instanceof Long) {
           field = new LongField(this._name, (Long) date, type);
+          type.setNumericPrecisionStep(this._precisionStep != null ? this._precisionStep : NumericUtils.PRECISION_STEP_DEFAULT);
         } else if (date != null && date instanceof Integer) {
           field = new IntField(this._name, (Integer) date, type);
-          type.setNumericPrecisionStep(NumericUtils.PRECISION_STEP_DEFAULT_32);
+          type.setNumericPrecisionStep(this._precisionStep != null ? this._precisionStep : NumericUtils.PRECISION_STEP_DEFAULT_32);
         } else {
           return null;
         }
       } else {
         try {
           switch (this._numeric) {
-            case DOUBLE:
-              type.setNumericPrecisionStep(NumericUtils.PRECISION_STEP_DEFAULT);
-              field = new DoubleField(this._name, Double.parseDouble(value), type);
-              break;
             case FLOAT:
-              type.setNumericPrecisionStep(NumericUtils.PRECISION_STEP_DEFAULT_32);
+              type.setNumericPrecisionStep(this._precisionStep != null ? this._precisionStep : NumericUtils.PRECISION_STEP_DEFAULT_32);
               field = new FloatField(this._name, Float.parseFloat(value), type);
               break;
+            case DOUBLE:
+              type.setNumericPrecisionStep(this._precisionStep != null ? this._precisionStep : NumericUtils.PRECISION_STEP_DEFAULT);
+              field = new DoubleField(this._name, Double.parseDouble(value), type);
+              break;
             case INT:
-              type.setNumericPrecisionStep(NumericUtils.PRECISION_STEP_DEFAULT_32);
+              type.setNumericPrecisionStep(this._precisionStep != null ? this._precisionStep : NumericUtils.PRECISION_STEP_DEFAULT_32);
               field = new IntField(this._name, Integer.parseInt(value), type);
               break;
             case LONG:
-              type.setNumericPrecisionStep(NumericUtils.PRECISION_STEP_DEFAULT);
+              type.setNumericPrecisionStep(this._precisionStep != null ? this._precisionStep : NumericUtils.PRECISION_STEP_DEFAULT);
               field = new LongField(this._name, Long.parseLong(value), type);
               break;
           }
@@ -666,6 +707,50 @@ public final class FieldBuilder {
     return field;
   }
 
+  /**
+   * Buildsa doc values field from the values in this builder.
+   * If the field is not a doc values field, <code>null</code> is returned.
+   *
+   * @return the doc values field from the values in this builder.
+   *
+   * @throws IllegalStateException If the builder is not ready.
+   */
+  public IndexableField buildDocValues() throws IllegalStateException {
+    checkReady();
+    if (this._docValues == null) return null;
+    // check doc values
+    switch (this._docValues) {
+      case SORTED_SET:
+        return new SortedSetDocValuesField(this._name, new BytesRef(this._value));
+      case SORTED_NUMERIC:
+        switch (this._numeric) {
+          case DOUBLE:
+            return new SortedNumericDocValuesField(this._name, NumericUtils.doubleToSortableLong(Double.parseDouble(this._value.toString())));
+          case FLOAT:
+            return new SortedNumericDocValuesField(this._name, NumericUtils.floatToSortableInt(Float.parseFloat(this._value.toString())));
+          case LONG:
+            return new SortedNumericDocValuesField(this._name, Long.parseLong(this._value.toString()));
+          case INT:
+            return new SortedNumericDocValuesField(this._name, Integer.parseInt(this._value.toString()));
+        }
+      case SORTED:
+        return new SortedDocValuesField(this._name, new BytesRef(this._value));
+      default:
+        if (this._numeric != null) {
+          switch (this._numeric) {
+            case DOUBLE:
+              return new NumericDocValuesField(this._name, NumericUtils.doubleToSortableLong(Double.parseDouble(this._value.toString())));
+            case FLOAT:
+              return new NumericDocValuesField(this._name, NumericUtils.floatToSortableInt(Float.parseFloat(this._value.toString())));
+            case LONG:
+              return new NumericDocValuesField(this._name, Long.parseLong(this._value.toString()));
+            case INT:
+              return new NumericDocValuesField(this._name, Integer.parseInt(this._value.toString()));
+          }
+        }
+        return null;
+    }
+  }
   /**
    * Checks that required attributes have been set
    *
@@ -742,6 +827,25 @@ public final class FieldBuilder {
     if ("long".equals(type))   return NumericType.LONG;
     LOGGER.warn("Invalid number type : {}, defaulting to null (string)", type);
     return null;
+  }
+
+  /**
+   * Returns the doc values type.
+   *
+   * <p>If the value does not match one of the doc values types
+   * this method will return <code>null</code> and the field will be indexed as a normal field.
+   *
+   * @param type The doc values type.
+   *
+   * @return The corresponding <code>DocValuesType</code> instance or <code>null</code>.
+   */
+  public static DocValuesType toDocValues(String type, boolean numeric) {
+    if (type == null) return DocValuesType.NONE;
+    if ("sorted".equals(type))     return numeric ? DocValuesType.SORTED_NUMERIC : DocValuesType.SORTED;
+    if ("sorted-set".equals(type)) return DocValuesType.SORTED_SET;
+    if ("none".equals(type))       return numeric ? DocValuesType.NUMERIC : DocValuesType.NONE;
+    LOGGER.warn("Invalid doc values type : {}, defaulting to none", type);
+    return DocValuesType.NONE;
   }
 
   /**

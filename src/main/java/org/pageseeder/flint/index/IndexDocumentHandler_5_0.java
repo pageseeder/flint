@@ -25,6 +25,7 @@ import java.util.TimeZone;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.IndexOptions;
+import org.apache.lucene.index.IndexableField;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.xml.sax.Attributes;
@@ -32,14 +33,14 @@ import org.xml.sax.SAXException;
 import org.xml.sax.helpers.DefaultHandler;
 
 /**
- * The handler for the Flint Index Documents format version 3.
+ * The handler for the Flint Index Documents format version 5.
  *
- * @see <a href="http://weborganic.org/code/flint/schema/index-documents-3.0.dtd">Index Documents 3.0 Schema</a>
+ * @see <a href="http://weborganic.org/code/flint/schema/index-documents-5.0.dtd">Index Documents 5.0 Schema</a>
  *
  * @author Jean-Baptiste Reure
- * @version 1 September 2015
+ * @version 27 June 2016
  */
-final class IndexDocumentHandler_3_0 extends DefaultHandler implements IndexDocumentHandler {
+final class IndexDocumentHandler_5_0 extends DefaultHandler implements IndexDocumentHandler {
 
   /**
    * Use the GMT time zone.
@@ -49,7 +50,7 @@ final class IndexDocumentHandler_3_0 extends DefaultHandler implements IndexDocu
   /**
    * The logger for this class.
    */
-  private static final Logger LOGGER = LoggerFactory.getLogger(IndexDocumentHandler_3_0.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(IndexDocumentHandler_5_0.class);
 
   // class attributes
   // -------------------------------------------------------------------------------------------
@@ -105,7 +106,7 @@ final class IndexDocumentHandler_3_0 extends DefaultHandler implements IndexDocu
   // constructors
   // ----------------------------------------------------------------------------------------------
 
-  public IndexDocumentHandler_3_0(String catalog) {
+  public IndexDocumentHandler_5_0(String catalog) {
     this._catalog = catalog;
   }
 
@@ -184,7 +185,6 @@ final class IndexDocumentHandler_3_0 extends DefaultHandler implements IndexDocu
    * @param atts The attributes to handles.
    */
   private void startDocumentsElement(Attributes atts) {
-//    LOGGER.debug("Parsing index document set");
     String timezone = atts.getValue("timezone");
     if (timezone != null) {
       LOGGER.debug("Setting timezone to");
@@ -200,7 +200,6 @@ final class IndexDocumentHandler_3_0 extends DefaultHandler implements IndexDocu
    * @param atts The attributes to handle.
    */
   private void startDocumentElement(Attributes atts) {
-//    LOGGER.debug("Parsing index document");
     this._document = new Document();
   }
 
@@ -208,7 +207,6 @@ final class IndexDocumentHandler_3_0 extends DefaultHandler implements IndexDocu
    * Handles the end of a 'document' element.
    */
   private void endDocumentElement() {
-//    LOGGER.debug("Storing document");
     if (this._document.getFields().isEmpty()) {
       LOGGER.warn("This document is empty - will not be stored");
     } else {
@@ -223,7 +221,9 @@ final class IndexDocumentHandler_3_0 extends DefaultHandler implements IndexDocu
    * @param atts The attributes to handles.
    */
   private void startFieldElement(Attributes atts) {
-    this.builder.name(atts.getValue("name")).index(atts.getValue("index"));
+    // required attributes
+    this.builder.name(atts.getValue("name"))
+                .index(atts.getValue("index"));
     // handle compression
     if ("compress".equals(atts.getValue("store"))) {
       this._isCompressed = true;
@@ -232,22 +232,22 @@ final class IndexDocumentHandler_3_0 extends DefaultHandler implements IndexDocu
       this._isCompressed = false;
       this.builder.store(atts.getValue("store"));
     }
-    // Optional attributes
-    this.builder.termVector(atts.getValue("term-vector"));
-    this.builder.termVectorPositions(atts.getValue("term-vector-positions"));
-    this.builder.termVectorOffsets(atts.getValue("term-vector-offsets"));
-    this.builder.termVectorPayloads(atts.getValue("term-vector-payloads"));
-    this.builder.boost(atts.getValue("boost"));
-    this.builder.tokenize(atts.getValue("tokenize"));
-    // Date handling
-    this.builder.dateFormat(toDateFormat(atts.getValue("date-format")));
-    this.builder.resolution(atts.getValue("date-resolution"));
-    // Set attributes ready for recording content
-    String type = atts.getValue("numeric-type");
-    if (type != null) {
-      this.builder.numeric(type);
-      this.builder.precisionStep(atts.getValue("precision-step"));
+    // Numeric type
+    String numType = atts.getValue("numeric-type");
+    if (numType != null) {
+      this.builder.numeric(numType).precisionStep(atts.getValue("precision-step"));
     }
+    // Optional attributes
+    this.builder.termVector(atts.getValue("term-vector"))
+                .termVectorPositions(atts.getValue("term-vector-positions"))
+                .termVectorOffsets(atts.getValue("term-vector-offsets"))
+                .termVectorPayloads(atts.getValue("term-vector-payloads"))
+                .boost(atts.getValue("boost"))
+                .tokenize(atts.getValue("tokenize"))
+                .docValues(atts.getValue("doc-values"), numType != null);
+    // Date handling
+    this.builder.dateFormat(toDateFormat(atts.getValue("date-format")))
+                .resolution(atts.getValue("date-resolution"));
     this._isField = true;
   }
 
@@ -270,7 +270,15 @@ final class IndexDocumentHandler_3_0 extends DefaultHandler implements IndexDocu
 
       // uncompressed field
       } else  {
-        this._document.add(this.builder.build());
+        IndexableField docValues = this.builder.buildDocValues();
+        if (docValues != null) {
+          this._document.add(docValues);
+          // if stored, add normal field as well
+          if (this.builder.store())
+            this._document.add(this.builder.build());
+        } else {
+          this._document.add(this.builder.build());
+        }
       }
 
     } catch (IllegalStateException ex) {

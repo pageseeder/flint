@@ -88,6 +88,10 @@ public final class LocalIndex extends Index {
     return null;
   }
 
+  @Override
+  public String toString() {
+    return getIndexID();
+  }
   // Utility methods for public usage
   // ----------------------------------------------------------------------------------------------
 

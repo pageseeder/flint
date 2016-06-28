@@ -1,7 +1,13 @@
 <?xml version="1.0"?>
-<documents version="3.0">
+<documents version="5.0">
   <document>
     <field name="id" store="true" index="docs">doc1</field>
     <field name="field1" store="true" index="docs-and-freqs-and-positions-and-offsets">value1</field>
+    <field name="field2" store="true"  index="docs" >value2</field>
+    <field name="sorting1" store="true"  index="docs" doc-values="sorted">cccccccc</field>
+    <field name="sorting2" store="true"  index="docs" doc-values="sorted-set">hhhhhhhh</field>
+    <field name="sorting2" store="true"  index="docs" doc-values="sorted-set">bbbbbbbb</field>
+    <field name="sorting3" store="true"  index="docs" doc-values="sorted" numeric-type="int">2</field>
+    <field name="sorting4" store="false" index="docs" doc-values="sorted" numeric-type="long">0</field>
   </document>
 </documents>

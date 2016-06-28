@@ -1,9 +1,14 @@
 package org.pageseeder.flint.utils;
 
 import java.io.File;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
 
+import org.apache.lucene.document.Field;
+import org.apache.lucene.document.StringField;
+import org.apache.lucene.index.IndexableField;
 import org.pageseeder.flint.content.DeleteRule;
 import org.pageseeder.flint.local.LocalIndexConfig;
 
@@ -35,5 +40,12 @@ public class TestLocalIndexConfig extends LocalIndexConfig {
   @Override
   public Map<String, String> getParameters(File file) {
     return Collections.singletonMap("_path", file.getAbsolutePath());
+  }
+
+  @Override
+  public Collection<IndexableField> getFields(File file) {
+    Collection<IndexableField> fields = new ArrayList<>();
+    fields.add(new StringField("_path", file.getAbsolutePath(), Field.Store.YES));
+    return fields;
   }
 }

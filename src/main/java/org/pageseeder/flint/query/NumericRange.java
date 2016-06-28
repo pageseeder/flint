@@ -317,7 +317,7 @@ public final class NumericRange<T extends Number> implements SearchParameter {
       boolean minInclusive, boolean maxInclusive) {
     Catalog thecatalog = Catalogs.getCatalog(catalog);
     if (thecatalog == null) return null;
-    NumericType nt = thecatalog.getSearchNumericType(field);
+    NumericType nt = thecatalog.getNumericType(field);
     if (nt == null) return null;
     switch (nt) {
       case DOUBLE: return newDoubleRange(field, (Double)  min, (Double)  max, minInclusive, maxInclusive);

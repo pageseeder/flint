@@ -7,6 +7,7 @@ import java.io.IOException;
 import java.util.HashMap;
 
 import org.apache.lucene.document.FieldType.NumericType;
+import org.apache.lucene.index.DocValuesType;
 import org.pageseeder.flint.index.FieldBuilder;
 import org.pageseeder.xmlwriter.XMLWriter;
 import org.pageseeder.xmlwriter.XMLWriterImpl;
@@ -198,12 +199,12 @@ public class Catalogs {
         String name = attributes.getValue("name");
         if (name != null) {
           boolean stored    = "true".equals(attributes.getValue("stored"));
-          boolean indexed   = "true".equals(attributes.getValue("indexed"));
           boolean tokenized = "true".equals(attributes.getValue("tokenized"));
           String b = attributes.getValue("boost");
           float boost = b == null ? 1.0F : Float.parseFloat(b);
-          NumericType num = FieldBuilder.toNumeric(attributes.getValue("numeric-type"));
-          this.catalog.addFieldType(stored, indexed, name, tokenized, num, boost);
+          NumericType num  = FieldBuilder.toNumeric(attributes.getValue("numeric-type"));
+          DocValuesType dv = FieldBuilder.toDocValues(attributes.getValue("doc-values"), num != null);
+          this.catalog.addFieldType(stored, name, tokenized, dv, num, boost);
         }
       }
     }

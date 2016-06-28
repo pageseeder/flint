@@ -9,10 +9,10 @@
                               xmlns:xs="http://www.w3.org/2001/XMLSchema"
                               exclude-result-prefixes="#all">
 
-<!-- Standard output for Flint Documents 3.0 -->
+<!-- Standard output for Flint Documents 5.0 -->
 <xsl:output method="xml" indent="no" encoding="utf-8"
-            doctype-public="-//Weborganic//DTD::Flint Index Documents 3.0//EN"
-            doctype-system="http://weborganic.org/schema/flint/index-documents-3.0.dtd"/>
+            doctype-public="-//Weborganic//DTD::Flint Index Documents 5.0//EN"
+            doctype-system="http://weborganic.org/schema/flint/index-documents-5.0.dtd"/>
 
 <!-- Send by the indexer -->
 <xsl:param name="_path" />
@@ -31,7 +31,6 @@
 <xsl:template match="document">
   <xsl:copy>
     <xsl:copy-of select="@*" />
-    <field name="_path" tokenize="false"><xsl:value-of select="$_path"/></field>
     <xsl:apply-templates />
   </xsl:copy>
 </xsl:template>

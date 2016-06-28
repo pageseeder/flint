@@ -209,4 +209,8 @@ public final class PredicateSearchQuery implements SearchQuery {
     return this._sort;
   }
 
+  @Override
+  public String toString() {
+    return this._predicate;
+  }
 }
