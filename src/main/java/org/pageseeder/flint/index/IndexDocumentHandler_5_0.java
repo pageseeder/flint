@@ -273,9 +273,8 @@ final class IndexDocumentHandler_5_0 extends DefaultHandler implements IndexDocu
         IndexableField docValues = this.builder.buildDocValues();
         if (docValues != null) {
           this._document.add(docValues);
-          // if stored, add normal field as well
-          if (this.builder.store())
-            this._document.add(this.builder.build());
+          // add normal field as well
+          this._document.add(this.builder.build());
         } else {
           this._document.add(this.builder.build());
         }
