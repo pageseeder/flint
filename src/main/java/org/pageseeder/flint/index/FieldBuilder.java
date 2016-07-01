@@ -736,7 +736,7 @@ public final class FieldBuilder {
       case SORTED:
         return new SortedDocValuesField(this._name, new BytesRef(this._value));
       default:
-        if (this._numeric != null) {
+        if (this._numeric != null && this._dateformat == null) {
           switch (this._numeric) {
             case DOUBLE:
               return new NumericDocValuesField(this._name, NumericUtils.doubleToSortableLong(Double.parseDouble(this._value.toString())));

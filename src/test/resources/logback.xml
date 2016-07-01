@@ -19,7 +19,6 @@
 
   <!-- Individual logs -->
   <logger name="org.pageseeder.flint" level="DEBUG" />
-  <logger name="org.pageseeder.flint.index.IndexDocumentHandler_3_0" level="INFO" />
 
   <root level="DEBUG">
     <appender-ref ref="STDOUT"/>

@@ -29,8 +29,6 @@ import org.pageseeder.flint.IndexIO;
 import org.pageseeder.flint.IndexManager;
 import org.pageseeder.flint.api.Index;
 import org.pageseeder.flint.search.FieldFacet;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * A collection of utility methods to manipulate and extract terms.
@@ -40,10 +38,10 @@ import org.slf4j.LoggerFactory;
  */
 public final class Facets {
 
-  /**
-   * private logger
-   */
-  private final static Logger LOGGER = LoggerFactory.getLogger(Facets.class);
+//  /**
+//   * private logger
+//   */
+//  private final static Logger LOGGER = LoggerFactory.getLogger(Facets.class);
 
   /** Utility class. */
   private Facets() {

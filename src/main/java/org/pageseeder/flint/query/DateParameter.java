@@ -166,6 +166,12 @@ public final class DateParameter implements SearchParameter {
     xml.closeElement();
   }
 
+  @Override
+  public String toString() {
+    Query q = toQuery();
+    return q == null ? "[empty]" : q.toString();
+  }
+
   // Private helpers ------------------------------------------------------------------------------
 
   /**

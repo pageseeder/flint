@@ -24,6 +24,7 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.apache.lucene.document.Document;
+import org.apache.lucene.document.Field;
 import org.apache.lucene.index.ConcurrentMergeScheduler;
 import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.DirectoryReader;
@@ -34,6 +35,7 @@ import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.index.ReaderManager;
+import org.apache.lucene.index.Term;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.SearcherFactory;
 import org.apache.lucene.search.SearcherManager;
@@ -258,7 +260,6 @@ public final class IndexIO {
    * @return <code>true</code> if the indexed could be scheduled for clearing;
    *         <code>false</code> otherwise.
    * @throws IndexException should any error be thrown by Lucene.
-   * @throws UnsupportedOperationException If this implementation is read only.
    */
   public synchronized boolean clearIndex() throws IndexException {
     if (this._writer == null) return true;
@@ -281,9 +282,8 @@ public final class IndexIO {
    * @return <code>true</code> if the item could be be scheduled for deletion;
    *         <code>false</code>
    * @throws IndexException should any error be thrown by Lucene.
-   * @throws UnsupportedOperationException If this implementation is read only.
    */
-  public synchronized boolean deleteDocuments(DeleteRule rule) throws IndexException, UnsupportedOperationException {
+  public synchronized boolean deleteDocuments(DeleteRule rule) throws IndexException {
     if (this._writer == null) return true;
     if (this.state == State.CLOSED) return false;
     try {
@@ -313,9 +313,8 @@ public final class IndexIO {
    * @return <code>true</code> if the item could be be scheduled for update;
    *         <code>false</code>
    * @throws IndexException should any error be thrown by Lucene
-   * @throws UnsupportedOperationException If this implementation is read only.
    */
-  public synchronized boolean updateDocuments(DeleteRule rule, List<Document> documents) throws IndexException, UnsupportedOperationException {
+  public synchronized boolean updateDocuments(DeleteRule rule, List<Document> documents) throws IndexException {
     if (this._writer == null) return true;
     if (this.state == State.CLOSED) return false;
     try {
@@ -341,6 +340,33 @@ public final class IndexIO {
     return true;
   }
 
+  /**
+   * Updates documents' DocValues fields to the given values.
+   * Each field update is applied to the set of documents that are associated with the Term to the same value.
+   * All updates are atomically applied and flushed together.
+   * 
+   * @param term       the term defining the document(s) to update
+   * @param newFields  the new fields
+   * 
+   * @return <code>true</code> if the update was done successfully
+   * 
+   * @throws IndexException if updating the doc values failed
+   */
+  public synchronized boolean updateDocValues(Term term, Field... newFields) throws IndexException {
+    // check state
+    if (this._writer == null) return true;
+    if (this.state == State.CLOSED) return false;
+    try {
+      this._writer.updateDocValues(term, newFields);
+      // set state
+      this.lastTimeUsed.set(System.currentTimeMillis());
+      this.state = State.DIRTY;
+    } catch (IOException ex) {
+      throw new IndexException("Failed to update docvalues in Index because of an I/O error", ex);
+    }
+    return true;
+  }
+  
   public IndexSearcher bookSearcher() {
     if (this.state == State.CLOSED) return null;
     try {
@@ -398,8 +424,8 @@ public final class IndexIO {
    */
   private static boolean isReadOnly(Index index) {
     Directory directory = index.getIndexDirectory();
-    // not using file system? read only
-    if (!(directory instanceof FSDirectory)) return true;
+    // not using file system? not read only
+    if (!(directory instanceof FSDirectory)) return false;
     // Detect if we can write on the files.
     try {
       File f = ((FSDirectory) directory).getDirectory().toFile();

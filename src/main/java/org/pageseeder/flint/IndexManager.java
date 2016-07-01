@@ -36,6 +36,7 @@ import org.apache.lucene.index.IndexCommit;
 import org.apache.lucene.index.IndexNotFoundException;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.MultiReader;
+import org.apache.lucene.index.Term;
 import org.apache.lucene.search.Collector;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
@@ -57,6 +58,7 @@ import org.pageseeder.flint.log.NoOpListener;
 import org.pageseeder.flint.query.SearchPaging;
 import org.pageseeder.flint.query.SearchQuery;
 import org.pageseeder.flint.query.SearchResults;
+import org.pageseeder.flint.util.DocValuesUpdater;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -339,6 +341,23 @@ public final class IndexManager {
     this._indexQueue.clearJobsForIndex(index);
     // add a new job to clear the index
     indexJob(IndexJob.newClearJob(index, priority, requester), false);
+  }
+
+  /**
+   * Get a DocValues updater object.
+   * 
+   * @param index    the index.
+   * @param idField  the name of the ID field.
+   * @param idValue  the value of the ID field.
+   * 
+   * @return an object used to update one or more doc values fields.
+   * 
+   * @throws IndexException if loading the object failed
+   */
+  public DocValuesUpdater updateDocValues(Index index, String idField, String idValue) throws IndexException {
+    IndexIO io = getIndexIO(index);
+    if (io == null) return null;
+    return new DocValuesUpdater(io, new Term(idField, idValue));
   }
 
   /**
