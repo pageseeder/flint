@@ -88,6 +88,18 @@ public final class DateParameter implements SearchParameter {
   }
 
   /**
+   * Creates a new date parameter.
+   *
+   * @param field      the date field to search
+   * @param exactMatch the exact matching date
+   * @param resolution the date resolution
+   * @param numeric    whether it is a numeric field
+   */
+  public DateParameter(String field, Date exactMatch, Resolution resolution, boolean numeric) {
+    this(field, exactMatch, exactMatch, resolution, numeric);
+  }
+
+  /**
    * Returns the value of the lower limit of the date range.
    *
    * @return A date instance or <code>null</code>.
