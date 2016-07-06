@@ -113,7 +113,6 @@
                              term-vector             %BOOLEAN;                          #IMPLIED
                              term-vector-positions   %BOOLEAN;                          #IMPLIED
                              term-vector-offsets     %BOOLEAN;                          #IMPLIED
-                             term-vector-positions   %BOOLEAN;                          #IMPLIED
                              term-vector-payloads    %BOOLEAN;                          #IMPLIED
                              boost                   CDATA                              #IMPLIED
                              date-format             CDATA                              #IMPLIED
