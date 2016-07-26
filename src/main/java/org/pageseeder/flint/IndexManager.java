@@ -179,9 +179,10 @@ public final class IndexManager {
     // create the worker thread pool
     this.multiThreadExecutor = Executors.newFixedThreadPool(nbThreads, new ThreadFactory() {
       private int threadCount = 1;
+
       @Override
       public Thread newThread(Runnable r) {
-        Thread t = new Thread(r, "indexing-p"+IndexManager.this.threadPriority+"-t"+this.threadCount++);
+        Thread t = new Thread(r, "indexing-p" + IndexManager.this.threadPriority + "-t" + this.threadCount++);
         t.setPriority(IndexManager.this.threadPriority);
         return t;
       }
@@ -191,7 +192,7 @@ public final class IndexManager {
       this.singleThreadExecutor = Executors.newSingleThreadExecutor(new ThreadFactory() {
         @Override
         public Thread newThread(Runnable r) {
-          Thread t = new Thread(r, "indexing-p"+IndexManager.this.threadPriority+"-single");
+          Thread t = new Thread(r, "indexing-p" + IndexManager.this.threadPriority + "-single");
           t.setPriority(IndexManager.this.threadPriority);
           return t;
         }
@@ -224,7 +225,7 @@ public final class IndexManager {
    */
   public void setThreadPriority(int priority) {
     if (priority < 1 || priority > 10)
-      throw new IndexOutOfBoundsException("Thread priority is should be between 1 and 10 but was "+priority);
+      throw new IndexOutOfBoundsException("Thread priority is should be between 1 and 10 but was " + priority);
     this.threadPriority = priority;
   }
 
@@ -266,7 +267,8 @@ public final class IndexManager {
    * @param p         the Priority of this job
    * @param params    some parameters
    */
-  public void indexBatch(IndexBatch batch, String contentid, ContentType type, Index i, Requester r, Priority p, Map<String, String> params) {
+  public void indexBatch(IndexBatch batch, String contentid, ContentType type, Index i, Requester r, Priority p,
+      Map<String, String> params) {
     indexBatch(batch, contentid, type, i, r, p, false, params);
   }
 
@@ -282,7 +284,8 @@ public final class IndexManager {
    * @param singleThread  if this job goes in the single thread queue
    * @param params        some parameters
    */
-  public void indexBatch(IndexBatch batch, String contentid, ContentType type, Index i, Requester r, Priority p, boolean singleThread, Map<String, String> params) {
+  public void indexBatch(IndexBatch batch, String contentid, ContentType type, Index i, Requester r, Priority p,
+      boolean singleThread, Map<String, String> params) {
     indexJob(IndexJob.newBatchJob(batch, contentid, type, i, p, r, params), singleThread);
   }
 
@@ -356,7 +359,8 @@ public final class IndexManager {
    */
   public DocValuesUpdater updateDocValues(Index index, String idField, String idValue) throws IndexException {
     IndexIO io = getIndexIO(index);
-    if (io == null) return null;
+    if (io == null)
+      return null;
     return new DocValuesUpdater(io, new Term(idField, idValue));
   }
 
@@ -435,7 +439,8 @@ public final class IndexManager {
         Query lquery = query.toQuery();
         if (lquery == null) {
           io.releaseSearcher(searcher);
-          throw new IndexException("Failed performing a query on the Index because the query is null", new NullPointerException("Null query"));
+          throw new IndexException("Failed performing a query on the Index because the query is null",
+              new NullPointerException("Null query"));
         }
         LOGGER.debug("Performing search [{}] on index {}", query, index);
         Sort sort = query.getSort();
@@ -443,7 +448,8 @@ public final class IndexManager {
           sort = Sort.INDEXORDER;
         }
         // load the scores
-        TopFieldCollector tfc = TopFieldCollector.create(sort, paging.getHitsPerPage() * paging.getPage(), true, true, false);
+        TopFieldCollector tfc = TopFieldCollector.create(sort, paging.getHitsPerPage() * paging.getPage(), true, true,
+            false);
         searcher.search(lquery, tfc);
         return new SearchResults(query, tfc.topDocs().scoreDocs, tfc.getTotalHits(), paging, io, searcher);
       } catch (IOException e) {
@@ -509,7 +515,8 @@ public final class IndexManager {
   public SearchResults query(List<Index> indexes, SearchQuery query, SearchPaging paging) throws IndexException {
     Query lquery = query.toQuery();
     if (lquery == null)
-      throw new IndexException("Failed performing a query because the query is null", new NullPointerException("Null query"));
+      throw new IndexException("Failed performing a query because the query is null",
+          new NullPointerException("Null query"));
     Map<IndexIO, IndexReader> readersMap = new HashMap<>();
     IndexReader[] readers = new IndexReader[indexes.size()];
     // grab a reader for each indexes
@@ -528,7 +535,8 @@ public final class IndexManager {
       IndexSearcher searcher = new IndexSearcher(reader);
       LOGGER.debug("Performing search [{}] on {} indexes", query, readers.length);
       Sort sort = query.getSort();
-      if (sort == null) sort = Sort.INDEXORDER;
+      if (sort == null)
+        sort = Sort.INDEXORDER;
       // load the scores
       TopFieldDocs results = searcher.search(lquery, paging.getHitsPerPage() * paging.getPage(), sort);
       return new SearchResults(query, results, paging, readersMap, searcher);
@@ -582,7 +590,8 @@ public final class IndexManager {
    * @throws IndexException Wrapping any IO exception
    */
   public void release(Index index, IndexReader reader) throws IndexException {
-    if (reader == null) return;
+    if (reader == null)
+      return;
     getIndexIO(index).releaseReader(reader);
   }
 
@@ -598,7 +607,8 @@ public final class IndexManager {
    * @param reader The actual Lucene index reader.
    */
   public void releaseQuietly(Index index, IndexReader reader) {
-    if (reader == null) return;
+    if (reader == null)
+      return;
     try {
       getIndexIO(index).releaseReader(reader);
     } catch (IndexException ex) {
@@ -643,7 +653,8 @@ public final class IndexManager {
    * @throws IndexException Wrapping any IO exception
    */
   public void release(Index index, IndexSearcher searcher) throws IndexException {
-    if (searcher == null) return;
+    if (searcher == null)
+      return;
     IndexIO io = getIndexIO(index);
     io.releaseSearcher(searcher);
   }
@@ -660,7 +671,8 @@ public final class IndexManager {
    * @param searcher The actual Lucene index searcher.
    */
   public void releaseQuietly(Index index, IndexSearcher searcher) {
-    if (searcher == null) return;
+    if (searcher == null)
+      return;
     try {
       getIndexIO(index).releaseSearcher(searcher);
     } catch (IndexException ex) {
@@ -677,7 +689,8 @@ public final class IndexManager {
    * @param out     the Writer to write the result to
    * @throws IndexException if anything went wrong
    */
-  public void contentToIXML(Index index, Content content, Map<String, String> params, Writer out) throws IndexException {
+  public void contentToIXML(Index index, Content content, Map<String, String> params, Writer out)
+      throws IndexException {
     IndexingThread.translateContent(this, null, index, content, params, new StreamResult(out));
   }
 
@@ -692,27 +705,31 @@ public final class IndexManager {
    * 
    * @throws IndexException if anything went wrong
    */
-  public List<Document> contentToDocuments(Index index, Content content, Map<String, String> params) throws IndexException {
+  public List<Document> contentToDocuments(Index index, Content content, Map<String, String> params)
+      throws IndexException {
     IndexParser parser = IndexParserFactory.getInstanceForTransformation(null);
     IndexingThread.translateContent(this, null, index, content, params, parser.getResult());
     return parser.getDocuments();
   }
 
   public long getLastTimeUsed(Index index) {
-    if (index == null) return -1;
+    if (index == null)
+      return -1;
     // get index IO if used
     if (this._indexes.containsKey(index.getIndexID()))
       return this._indexes.get(index.getIndexID()).getLastTimeUsed();
     // get last commit data then
     try {
       List<IndexCommit> commits = DirectoryReader.listCommits(index.getIndexDirectory());
-      if (commits == null || commits.isEmpty()) return -1;
-      String lastCommitDate = commits.get(commits.size()-1).getUserData().get(IndexIO.LAST_COMMIT_DATE);
-      if (lastCommitDate != null) return Long.parseLong(lastCommitDate);
+      if (commits == null || commits.isEmpty())
+        return -1;
+      String lastCommitDate = commits.get(commits.size() - 1).getUserData().get(IndexIO.LAST_COMMIT_DATE);
+      if (lastCommitDate != null)
+        return Long.parseLong(lastCommitDate);
     } catch (IndexNotFoundException ex) {
       return -1;
     } catch (IOException ex) {
-      LOGGER.error("Failed to load last index commit date for "+index.getIndexID(), ex);
+      LOGGER.error("Failed to load last index commit date for " + index.getIndexID(), ex);
     }
     return -1;
   }
@@ -766,15 +783,17 @@ public final class IndexManager {
    * @throws IndexException if anything went wrong
    */
   protected ContentTranslator getTranslator(String mediatype) throws IndexException {
-    if (mediatype == null) throw new NullPointerException("mediatype");
+    if (mediatype == null)
+      throw new NullPointerException("mediatype");
     ContentTranslatorFactory factory = this.translatorFactories.get(mediatype);
     // no factory found
     if (factory == null && this._defaultTranslator == null)
-      throw new IndexException("Media Type "+mediatype+" is not supported, no Translator Factory was found and no default Translator was specified.", null);
+      throw new IndexException("Media Type " + mediatype
+          + " is not supported, no Translator Factory was found and no default Translator was specified.", null);
     // load translator
     ContentTranslator translator = factory == null ? this._defaultTranslator : factory.createTranslator(mediatype);
     if (translator == null)
-      throw new IndexException("No translator was found for MIME Type "+mediatype+".", null);
+      throw new IndexException("No translator was found for MIME Type " + mediatype + ".", null);
     return translator;
   }
 
@@ -791,7 +810,8 @@ public final class IndexManager {
     return this._fetcher.getContent(job);
   }
 
-  // Private helpers ==============================================================================
+  // Private helpers
+  // ==============================================================================
 
   /**
    * Start an index job.
@@ -818,7 +838,8 @@ public final class IndexManager {
    * @throws IndexException
    */
   public synchronized IndexIO getIndexIO(Index index) throws IndexException {
-    if (index == null) return null;
+    if (index == null)
+      return null;
     IndexIO io = this._indexes.get(index.getIndexID());
     // if not created yet or closed
     if (io == null || io.isClosed()) {
