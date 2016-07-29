@@ -18,7 +18,6 @@ package org.pageseeder.flint.query;
 import java.util.Set;
 
 import org.apache.lucene.index.Term;
-import org.pageseeder.flint.util.Beta;
 
 /**
  * Indicates that terms can be extracted from the query.
@@ -32,7 +31,7 @@ import org.pageseeder.flint.util.Beta;
  * @author Christophe Lauret
  * @version 10 September 2010
  */
-@Beta
+@Deprecated
 public interface TermExtractable {
 
   /**

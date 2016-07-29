@@ -304,28 +304,24 @@ public final class SearchResults implements XMLWritable {
     // Returned documents
     xml.openElement("documents", true);
 
-    // Iterate over the hits
+    // Iterate over the hits to find the extracts
     for (int i = firsthit - 1; i < lasthit; i++) {
       String score = Float.toString(this._scoredocs[i].score);
       Document doc = this._searcher.doc(this._scoredocs[i].doc);
       String extractXML = null;
-      // Find the extract only applies to TermExtractable queries
-      if (this._query instanceof TermExtractable) {
-        TermExtractable q = (TermExtractable)this._query;
-        Set<Term> terms = new HashSet<Term>();
-        q.extractTerms(terms);
-        for (IndexableField f : doc.getFields()) {
-          for (Term t : terms) {
-            if (t.field().equals(f.name())) {
-              String extract = Documents.extract(Fields.toString(f), t.text(), 200);
-              if (extract != null) {
-                XMLStringWriter xsw = new XMLStringWriter(false);
-                xsw.openElement("extract");
-                xsw.attribute("from", t.field());
-                xsw.writeXML(extract);
-                xsw.closeElement();
-                extractXML = xsw.toString();
-              }
+      Set<Term> terms = new HashSet<Term>();
+      this._searcher.createWeight(this._query.toQuery(), true).extractTerms(terms);
+      for (IndexableField f : doc.getFields()) {
+        for (Term t : terms) {
+          if (t.field().equals(f.name())) {
+            String extract = Documents.extract(Fields.toString(f), t.text(), 200);
+            if (extract != null) {
+              XMLStringWriter xsw = new XMLStringWriter(false);
+              xsw.openElement("extract");
+              xsw.attribute("from", t.field());
+              xsw.writeXML(extract);
+              xsw.closeElement();
+              extractXML = xsw.toString();
             }
           }
         }
