@@ -20,12 +20,15 @@ import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.analysis.util.CharArraySet;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.LeafReader;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.MultiFields;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.suggest.Lookup.LookupResult;
 import org.apache.lucene.search.suggest.analyzing.AnalyzingInfixSuggester;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.RAMDirectory;
+import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.pageseeder.flint.IndexException;
 import org.pageseeder.flint.IndexManager;
@@ -57,7 +60,7 @@ public class AutoSuggest {
     this._index = index;
     this._useTerms = useTerms;
     try {
-      this.suggester = new AnalyzingInfixSuggester(dir, indexAnalyzer, searchAnalyzer, minChars, false, true, true);
+      this.suggester = new AnalyzingInfixSuggester(dir, indexAnalyzer, searchAnalyzer, minChars, true, true, true);
     } catch (IOException ex) {
       LOGGER.error("Failed to build autosuggest", ex);
       throw new IndexException("Failed to build autosuggest", ex);
@@ -138,49 +141,14 @@ public class AutoSuggest {
             }
           }
         } else {
-          int max = reader.numDocs();
           Set<String> fieldsToLoad = new HashSet<>();
           fieldsToLoad.addAll(this._resultFields);
           fieldsToLoad.addAll(this._searchFields);
           fieldsToLoad.addAll(this._weights.keySet());
           if (this._withField != null) fieldsToLoad.add(this._withField);
-          for (int i = 0; i < max; i++) {
-            Document doc = reader.document(i, fieldsToLoad);
-            // load criteria values
-            Set<BytesRef> contexts = null;
-            if (this._withField != null) {
-              String[] with = doc.getValues(this._withField);
-              if (with != null) {
-                contexts = new HashSet<>();
-                for (String w : with) {
-                  contexts.add(new BytesRef(w));
-                }
-              }
-            }
-            // find doc weight
-            float weightF = 0;
-            for (Entry<String, Float> aweight : this._weights.entrySet()) {
-              String val = doc.get(aweight.getKey());
-              try {
-                // default value is 1 if missing
-                weightF += aweight.getValue() * (val == null ? 1 : Float.parseFloat(val));
-              } catch (NumberFormatException ex) {
-                LOGGER.error("Failed to compute weight as field {} is not a number! ({})", aweight.getKey(), val);
-              }
-            }
-            // mutiply by 100 to turn to long (2 decimal precision)
-            long weight = weightF == 0 ? 100 : (long) (weightF* 100);
-            // create payload
-            byte[] serialized = serialize(this._resultFields, doc);
-            BytesRef payload = serialized == null ? null : new BytesRef(serialized);
-            for (String field : this._searchFields) {
-              String[] texts = doc.getValues(field);
-              if (texts != null) {
-                for (String text : texts) {
-                  this.suggester.add(new BytesRef(text), contexts, weight, payload);
-                  buildit = true;
-                }
-              }
+          for (LeafReaderContext ctxt : reader.leaves()) {
+            if (addEntries(ctxt, fieldsToLoad)) {
+              buildit = true; 
             }
           }
         }
@@ -194,7 +162,87 @@ public class AutoSuggest {
     }
   }
 
-  private static byte[] serialize(Collection<String> fields, Document doc) throws IOException {
+  /**
+   * Add entries to the suggester
+   * 
+   * @param subReader    where to read the documents from
+   * @param fieldsToLoad the fields to add
+   * 
+   * @return <code>true</code> if something was added
+   * 
+   * @throws IOException if reading/adding entries failed
+   */
+  private boolean addEntries(LeafReaderContext context, Set<String> fieldsToLoad) throws IOException {
+    boolean buildit = false;
+    // check for leaves
+    LeafReader subReader = context.reader();
+    List<LeafReaderContext> leaves = subReader.leaves();
+    if (leaves != null && !leaves.isEmpty()) {
+      if (leaves.size() > 1 || leaves.get(0) != context) {
+        for (LeafReaderContext ctxt : leaves) {
+          if (addEntries(ctxt, fieldsToLoad)) {
+            buildit = true; 
+          }
+        }
+        return buildit;
+      }
+    }
+    // go through our docs then
+    Bits live = subReader.getLiveDocs();
+    for (int i = 0; i < subReader.maxDoc(); i++) {
+      if (live != null && !live.get(i)) continue;
+      Document doc = subReader.document(i, fieldsToLoad);
+      // load criteria values
+      Set<BytesRef> contexts = null;
+      if (this._withField != null) {
+        String[] with = doc.getValues(this._withField);
+        if (with != null) {
+          contexts = new HashSet<>();
+          for (String w : with) {
+            contexts.add(new BytesRef(w));
+          }
+        }
+      }
+      // find doc weight
+      float weightF = 0;
+      for (Entry<String, Float> aweight : this._weights.entrySet()) {
+        String val = doc.get(aweight.getKey());
+        try {
+          // default value is 1 if missing
+          weightF += aweight.getValue() * (val == null ? 1 : Float.parseFloat(val));
+        } catch (NumberFormatException ex) {
+          LOGGER.error("Failed to compute weight as field {} is not a number! ({})", aweight.getKey(), val);
+        }
+      }
+      // mutiply by 100 to turn to long (2 decimal precision)
+      long weight = weightF == 0 ? 100 : (long) (weightF* 100);
+      // create payload
+      byte[] serialized = serialize(this._resultFields, doc);
+      BytesRef payload = serialized == null ? null : new BytesRef(serialized);
+      for (String field : this._searchFields) {
+        String[] texts = doc.getValues(field);
+        if (texts != null) {
+          for (String text : texts) {
+            this.suggester.add(new BytesRef(text), contexts, weight, payload);
+            buildit = true;
+          }
+        } else {
+          LOGGER.error("Failed to load values for field {}", field);
+        }
+      }
+    }
+    return buildit;
+  }
+
+  /**
+   * Serialize the fields provided into a payload for a suggester entry.
+   * 
+   * @param fields  list of fields to load from the document
+   * @param doc     the document
+   * 
+   * @return the payload as a byte array
+   */
+  private static byte[] serialize(Collection<String> fields, Document doc) {
     if (fields.isEmpty()) return null;
     // build map
     Map<String, String[]> result = new HashMap<>();
@@ -204,9 +252,15 @@ public class AutoSuggest {
     }
     // serialize it
     ByteArrayOutputStream bos = new ByteArrayOutputStream();
-    ObjectOutputStream out = new ObjectOutputStream(bos);
-    out.writeObject(result);
-    out.close();
+    try {
+      ObjectOutputStream out = new ObjectOutputStream(bos);
+      out.writeObject(result);
+      out.close();
+    } catch (IOException ex) {
+      // all internal so shouldn't happen
+      LOGGER.error("Failed to build payload", ex);
+      return null;
+    }
     return bos.toByteArray();
   }
 
