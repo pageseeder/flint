@@ -237,7 +237,9 @@ public final class IndexIO {
    * @throws IndexException should any error be thrown by Lucene while committing.
    */
   public synchronized void maybeCommit() throws IndexException {
-    if (this._writer == null || !this._writer.hasUncommittedChanges())
+    if (this._writer == null || (!this._writer.hasDeletions() &&
+                                 !this._writer.hasUncommittedChanges() &&
+                                 !this._writer.hasPendingMerges()))
       return;
     try {
       LOGGER.debug("Committing index changes for {}", this._index.getIndexID());
