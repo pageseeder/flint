@@ -17,10 +17,12 @@ package org.pageseeder.flint.query;
 
 import java.io.IOException;
 import java.text.ParseException;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Set;
@@ -118,6 +120,11 @@ public final class SearchResults implements XMLWritable {
    * The index I/O.
    */
   private final SearchReaders readers;
+
+  /**
+   * List of fields to get the extract from.
+   */
+  private final List<String> extractFields = new ArrayList<>();
 
   /**
    * The total number of results.
@@ -250,6 +257,26 @@ public final class SearchResults implements XMLWritable {
   // ---------------------------------------------------------------------------------------------
 
   /**
+   * Add field names to get extracts from.
+   * The order matters here as the first extract found is the one included in the results.
+   * 
+   * @param fields list of field names
+   */
+  public void addExtractFields(List<String> fields) {
+    this.extractFields.addAll(fields);
+  }
+
+  /**
+   * Add a field name to get extracts from.
+   * The order matters here as the first extract found is the one included in the results.
+   * 
+   * @param field new field name
+   */
+  public void addExtractField(String field) {
+    this.extractFields.add(field);
+  }
+
+  /**
    * Returns the total number of results.
    *
    * @return the total number of results.
@@ -318,9 +345,10 @@ public final class SearchResults implements XMLWritable {
           // The query provided does not support weight, can't have extracts then
           withExtracts = false;
         }
-        for (Term t : terms) {
+        bigloop: for (Term t : terms) {
           for (IndexableField f : doc.getFields()) {
-            if (t.field().equals(f.name())) {
+            if (t.field().equals(f.name()) &&
+               (this.extractFields.isEmpty() || this.extractFields.contains(f.name()))) {
               String extract = Documents.extract(Fields.toString(f), t.text(), 200);
               if (extract != null) {
                 XMLStringWriter xsw = new XMLStringWriter(false);
@@ -329,6 +357,7 @@ public final class SearchResults implements XMLWritable {
                 xsw.writeXML(extract);
                 xsw.closeElement();
                 extractXML = xsw.toString();
+                break bigloop;
               }
             }
           }
