@@ -26,6 +26,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
 import javax.xml.transform.stream.StreamResult;
@@ -736,14 +737,35 @@ public final class IndexManager {
 
   /**
    * Kills the thread and close all the indexes.
+   * Timeout is set to 5 seconds.
    */
   public void stop() {
+    stop(5);
+  }
+
+  /**
+   * Kills the thread and close all the indexes.
+   * @param timeout in seconds for each queue
+   */
+  public void stop(long timeout) {
     // empty queue
     this._indexQueue.clear();
-    // Stop the threads
-    this.multiThreadExecutor.shutdown();
-    if (this.singleThreadExecutor != null)
-      this.singleThreadExecutor.shutdown();
+    // Interrupt the threads
+    this.multiThreadExecutor.shutdownNow();
+    // wait for finish
+    try {
+      this.multiThreadExecutor.awaitTermination(timeout, TimeUnit.SECONDS);
+    } catch (InterruptedException ex) {
+      LOGGER.error("Interrupted while shutting down multiple thread", ex);
+    }
+    if (this.singleThreadExecutor != null) {
+      this.singleThreadExecutor.shutdownNow();
+      try {
+        this.singleThreadExecutor.awaitTermination(timeout, TimeUnit.SECONDS);
+      } catch (InterruptedException ex) {
+        LOGGER.error("Interrupted while shutting down single thread", ex);
+      }
+    }
     // Close all indexes
     for (Entry<String, IndexIO> e : this._indexes.entrySet()) {
       String id = e.getKey();
