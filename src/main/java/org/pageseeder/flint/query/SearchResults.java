@@ -340,8 +340,10 @@ public final class SearchResults implements XMLWritable {
       if (withExtracts) {
         Set<Term> terms = new HashSet<Term>();
         try {
-          this._searcher.createWeight(this._query.toQuery(), true).extractTerms(terms);
-        } catch (UnsupportedOperationException ex) {
+          this._searcher.createWeight(this._query.toQuery().rewrite(this._searcher.getIndexReader()), true).extractTerms(terms);
+        } catch (Exception ex) {
+          // log it
+          LOGGER.warn("Computing extract failed, no extracts will be provided", ex);
           // The query provided does not support weight, can't have extracts then
           withExtracts = false;
         }
