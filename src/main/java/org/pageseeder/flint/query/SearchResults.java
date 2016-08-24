@@ -527,7 +527,7 @@ public final class SearchResults implements XMLWritable {
   public Iterable<Document> documents() {
     if (this._terminated)
       throw new IllegalStateException();
-    return new DocIterable();
+    return new DocIterable(this._paging.getFirstHit() - 1);
   }
 
   // Private helpers
@@ -576,6 +576,11 @@ public final class SearchResults implements XMLWritable {
    */
   private final class DocIterable implements Iterable<Document> {
 
+    private final int _start;
+    public DocIterable(int start) {
+      this._start = start;
+    }
+
     /**
      * Provides an iterable class over the Lucene documents.
      *
@@ -585,7 +590,7 @@ public final class SearchResults implements XMLWritable {
      */
     @Override
     public Iterator<Document> iterator() {
-      return new DocIterator();
+      return new DocIterator(this._start);
     }
 
   }
@@ -612,7 +617,11 @@ public final class SearchResults implements XMLWritable {
     /**
      * The current index for this iterator.
      */
-    private int index = 0; // TODO what about pagination!
+    private int index;
+
+    public DocIterator(int start) {
+      this.index = start;
+    }
 
     @Override
     public boolean hasNext() {
