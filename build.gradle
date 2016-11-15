@@ -1,0 +1,44 @@
+plugins {
+  id "com.jfrog.bintray" version "1.7"
+}
+
+group       = 'org.pageseeder.flint'
+version     = file('version.txt').text
+description = "$title"
+
+apply plugin: 'java'
+apply plugin: 'maven-publish'
+apply from: 'gradle/publishing.gradle'
+
+sourceCompatibility = 1.8
+targetCompatibility = 1.8
+
+repositories {
+  maven { url 'http://dl.bintray.com/pageseeder/maven' }
+  jcenter()
+}
+
+dependencies {
+
+  compile (
+    'org.slf4j:slf4j-api:1.7.21',
+    'org.pageseeder.xmlwriter:pso-xmlwriter:1.0.2',
+    
+    'org.apache.lucene:lucene-core:5.2.1',
+    'org.apache.lucene:lucene-misc:5.2.1',
+    'org.apache.lucene:lucene-analyzers-common:5.2.1',
+    'org.apache.lucene:lucene-queryparser:5.2.1',
+    'org.apache.lucene:lucene-suggest:5.2.1'
+  )
+
+  // runtime
+  runtime (
+    'net.sf.saxon:Saxon-HE:9.6.0-6'
+  )
+
+  testCompile (
+    'junit:junit:4.12',
+    'org.slf4j:slf4j-simple:1.7.21'
+  )
+
+}
