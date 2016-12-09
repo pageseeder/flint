@@ -19,9 +19,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-import org.pageseeder.flint.api.ContentTranslator;
-import org.pageseeder.flint.api.ContentTranslatorFactory;
-
 /**
  * Simple translator factory that only handles XML Media types by simply forwarding the content
  * without translation.

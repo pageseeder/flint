@@ -2,9 +2,9 @@ package org.pageseeder.flint.local;
 
 import java.io.File;
 
-import org.pageseeder.flint.IndexJob;
-import org.pageseeder.flint.api.Content;
-import org.pageseeder.flint.api.ContentFetcher;
+import org.pageseeder.flint.content.Content;
+import org.pageseeder.flint.content.ContentFetcher;
+import org.pageseeder.flint.indexing.IndexJob;
 
 public class LocalFileContentFetcher implements ContentFetcher {
 
@@ -12,7 +12,8 @@ public class LocalFileContentFetcher implements ContentFetcher {
   public Content getContent(IndexJob job) {
     if (job.getIndex() instanceof LocalIndex) {
       LocalIndex index = (LocalIndex) job.getIndex();
-      return new LocalFileContent(new File(job.getContentID()), index.getConfig());
+      File file = new File(job.getContentID());
+      return new LocalFileContent(file, index.getDeleteRule(file));
     }
     throw new IllegalArgumentException("Index must be LocalIndex");
   }

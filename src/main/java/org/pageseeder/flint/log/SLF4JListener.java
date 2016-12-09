@@ -15,9 +15,9 @@
  */
 package org.pageseeder.flint.log;
 
-import org.pageseeder.flint.IndexBatch;
-import org.pageseeder.flint.IndexJob;
-import org.pageseeder.flint.api.IndexListener;
+import org.pageseeder.flint.indexing.IndexBatch;
+import org.pageseeder.flint.indexing.IndexJob;
+import org.pageseeder.flint.indexing.IndexListener;
 import org.slf4j.Logger;
 
 

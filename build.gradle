@@ -2,33 +2,64 @@ plugins {
   id "com.jfrog.bintray" version "1.7"
 }
 
+ext {
+  globalVersion = file('version.txt').text
+}
 group       = 'org.pageseeder.flint'
-version     = file('version.txt').text
 description = "$title"
+version     = "$globalVersion"
 
 apply plugin: 'java'
 apply plugin: 'maven-publish'
 apply from: 'gradle/publishing.gradle'
 
-sourceCompatibility = 1.8
-targetCompatibility = 1.8
+allprojects {
+  group   = 'org.pageseeder.flint'
+  version = "$globalVersion"
 
-repositories {
-  maven { url 'http://dl.bintray.com/pageseeder/maven' }
-  jcenter()
+  apply plugin: 'java'
+  apply plugin: 'com.jfrog.bintray'
+  
+  sourceCompatibility = 1.8
+  targetCompatibility = 1.8
+
+  repositories {
+    // allette ivy
+    ivy   {
+      url 'http://ivy.pageseeder.com/shared/'
+      layout "pattern", {
+        artifact  "[organisation]/[module]/[module]-[revision].[ext]"
+      }
+    }
+    maven { url 'http://dl.bintray.com/pageseeder/maven' }
+    jcenter()
+  }
+  
+  jar {
+    manifest {
+      attributes 'Implementation-Vendor':  'Allette Systems',
+                 'Implementation-Title':   "$title",
+                 'Implementation-Version': "$globalVersion"
+    }
+  }
+}
+
+task wrapper(type: Wrapper) {
+  gradleVersion = '3.1'
+  description 'Generates the Gradle wrapper scripts'
+}
+
+task publishAllToBintray {
+  subprojects.each {
+    dependsOn("${it.path}:bintrayUpload" )
+  }
 }
 
 dependencies {
 
   compile (
     'org.slf4j:slf4j-api:1.7.21',
-    'org.pageseeder.xmlwriter:pso-xmlwriter:1.0.2',
-    
-    'org.apache.lucene:lucene-core:5.2.1',
-    'org.apache.lucene:lucene-misc:5.2.1',
-    'org.apache.lucene:lucene-analyzers-common:5.2.1',
-    'org.apache.lucene:lucene-queryparser:5.2.1',
-    'org.apache.lucene:lucene-suggest:5.2.1'
+    'org.pageseeder.xmlwriter:pso-xmlwriter:1.0.2'    
   )
 
   // runtime

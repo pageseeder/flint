@@ -17,9 +17,9 @@ package org.pageseeder.flint.log;
 
 import java.io.PrintStream;
 
-import org.pageseeder.flint.IndexBatch;
-import org.pageseeder.flint.IndexJob;
-import org.pageseeder.flint.api.IndexListener;
+import org.pageseeder.flint.indexing.IndexBatch;
+import org.pageseeder.flint.indexing.IndexJob;
+import org.pageseeder.flint.indexing.IndexListener;
 
 /**
  * A logger implementation that reports events to a <code>PrintStream</code>.

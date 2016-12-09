@@ -6,9 +6,9 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.util.HashMap;
 
-import org.apache.lucene.document.FieldType.NumericType;
-import org.apache.lucene.index.DocValuesType;
-import org.pageseeder.flint.index.FieldBuilder;
+import org.pageseeder.flint.indexing.FlintField;
+import org.pageseeder.flint.indexing.FlintField.DocValuesType;
+import org.pageseeder.flint.indexing.FlintField.NumericType;
 import org.pageseeder.xmlwriter.XMLWriter;
 import org.pageseeder.xmlwriter.XMLWriterImpl;
 import org.slf4j.Logger;
@@ -49,7 +49,7 @@ public class Catalogs {
    * 
    * @param catalog the new catalog
    */
-  public static void newField(String catalog, FieldBuilder builder) {
+  public static void newField(String catalog, FlintField builder) {
     if (catalog == null || builder == null) return;
     // find existing one
     Catalog cat = getCatalog(catalog);
@@ -202,8 +202,8 @@ public class Catalogs {
           boolean tokenized = "true".equals(attributes.getValue("tokenized"));
           String b = attributes.getValue("boost");
           float boost = b == null ? 1.0F : Float.parseFloat(b);
-          NumericType num  = FieldBuilder.toNumeric(attributes.getValue("numeric-type"));
-          DocValuesType dv = FieldBuilder.toDocValues(attributes.getValue("doc-values"), num != null);
+          NumericType num  = FlintField.toNumeric(attributes.getValue("numeric-type"));
+          DocValuesType dv = FlintField.toDocValues(attributes.getValue("doc-values"), num != null);
           this.catalog.addFieldType(stored, name, tokenized, dv, num, boost);
         }
       }

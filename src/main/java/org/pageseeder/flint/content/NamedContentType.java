@@ -15,8 +15,6 @@
  */
 package org.pageseeder.flint.content;
 
-import org.pageseeder.flint.api.ContentType;
-import org.pageseeder.flint.util.Beta;
 
 /**
  * A basic immutable implementation of a content type with a name.
@@ -28,7 +26,7 @@ import org.pageseeder.flint.util.Beta;
  * @author Christophe Lauret
  * @version 27 February 2013
  */
-@Beta public final class NamedContentType implements ContentType {
+public final class NamedContentType implements ContentType {
 
   /**
    * A default content type instance for when no more than one type is needed by an application.

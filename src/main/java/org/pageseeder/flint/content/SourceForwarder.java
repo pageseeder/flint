@@ -28,8 +28,6 @@ import java.util.Collections;
 import java.util.List;
 
 import org.pageseeder.flint.IndexException;
-import org.pageseeder.flint.api.Content;
-import org.pageseeder.flint.api.ContentTranslator;
 
 /**
  * A simple translator implementation allows XML Media types to be simply forwarded without translation.

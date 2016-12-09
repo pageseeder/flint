@@ -22,8 +22,8 @@ import java.io.IOException;
 import java.io.InputStream;
 
 import org.pageseeder.flint.IndexException;
-import org.pageseeder.flint.api.Content;
-import org.pageseeder.flint.api.ContentType;
+import org.pageseeder.flint.content.Content;
+import org.pageseeder.flint.content.ContentType;
 import org.pageseeder.flint.content.DeleteRule;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -56,16 +56,16 @@ public class LocalFileContent implements Content {
   /**
    * The config.
    */
-  private final LocalIndexConfig _config;
+  private final DeleteRule _deleteRule;
 
   /**
    * Creates a new content from a given file.
    *
    * @param f The file
    */
-  public LocalFileContent(File f, LocalIndexConfig config) {
+  public LocalFileContent(File f, DeleteRule rule) {
     this._f = f;
-    this._config = config;
+    this._deleteRule = rule;
   }
 
   @Override
@@ -87,7 +87,7 @@ public class LocalFileContent implements Content {
 
   @Override
   public DeleteRule getDeleteRule() {
-    return this._config.getDeleteRule(this._f);
+    return this._deleteRule;
   }
 
   @Override

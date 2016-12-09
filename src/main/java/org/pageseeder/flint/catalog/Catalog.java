@@ -3,10 +3,10 @@ package org.pageseeder.flint.catalog;
 import java.io.IOException;
 import java.util.HashMap;
 
-import org.apache.lucene.document.FieldType.NumericType;
-import org.apache.lucene.index.DocValuesType;
-import org.apache.lucene.index.IndexOptions;
-import org.pageseeder.flint.index.FieldBuilder;
+import org.pageseeder.flint.indexing.FlintField;
+import org.pageseeder.flint.indexing.FlintField.DocValuesType;
+import org.pageseeder.flint.indexing.FlintField.IndexOptions;
+import org.pageseeder.flint.indexing.FlintField.NumericType;
 import org.pageseeder.xmlwriter.XMLWritable;
 import org.pageseeder.xmlwriter.XMLWriter;
 
@@ -24,7 +24,7 @@ public class Catalog implements XMLWritable {
     return this._name;
   }
 
-  public void addFieldType(FieldBuilder builder) {
+  public void addFieldType(FlintField builder) {
     // ignore non-indexed fields
     if (builder.index() == IndexOptions.NONE) return;
     synchronized (this._fields) {
@@ -102,7 +102,7 @@ public class Catalog implements XMLWritable {
       this.num = n;
       this.error = e;
     }
-    public CatalogEntry(FieldBuilder builder, boolean err) {
+    public CatalogEntry(FlintField builder, boolean err) {
       this.stored = builder.store();
       this.tokenized = builder.tokenize();
       this.boost = builder.boost();

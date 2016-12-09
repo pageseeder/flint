@@ -15,7 +15,7 @@
  */
 package org.pageseeder.flint.local;
 
-import org.pageseeder.flint.api.ContentType;
+import org.pageseeder.flint.content.ContentType;
 
 /**
  * A content type provided for convenience that corresponds to a local file.

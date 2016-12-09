@@ -28,11 +28,12 @@ import java.util.Collections;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-import org.pageseeder.flint.IndexBatch;
-import org.pageseeder.flint.IndexJob;
-import org.pageseeder.flint.IndexJob.Priority;
+import org.pageseeder.flint.Index;
 import org.pageseeder.flint.IndexManager;
-import org.pageseeder.flint.api.Requester;
+import org.pageseeder.flint.Requester;
+import org.pageseeder.flint.indexing.IndexBatch;
+import org.pageseeder.flint.indexing.IndexJob;
+import org.pageseeder.flint.indexing.IndexJob.Priority;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -56,7 +57,7 @@ public final class LocalIndexer implements FileVisitor<Path> {
 
   private final IndexManager _manager;
 
-  private final LocalIndex _index;
+  private final Index _index;
   
   private long _indexModifiedDate = -1;
 
@@ -81,7 +82,7 @@ public final class LocalIndexer implements FileVisitor<Path> {
    *
    * @throws NullPointerException if the location is <code>null</code>.
    */
-  public LocalIndexer(IndexManager manager, LocalIndex index) {
+  public LocalIndexer(IndexManager manager, Index index) {
     this._manager = manager;
     this._index = index;
   }
@@ -111,7 +112,7 @@ public final class LocalIndexer implements FileVisitor<Path> {
     if (!root.exists()) return 0;
     if (root.isDirectory()) {
       // get last modif date of index
-      this._indexModifiedDate = indexed == null || indexed.isEmpty() ? -1 : this._manager.getLastTimeUsed(this._index);
+      this._indexModifiedDate = indexed == null || indexed.isEmpty() ? -1 : this._index.getIndexIO().getLastTimeUsed();
       // create batch object
       this.batch = new IndexBatch(this._index.getIndexID());
       // find documents to modify/add to index
