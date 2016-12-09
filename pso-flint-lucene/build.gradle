@@ -1,0 +1,32 @@
+
+apply plugin: 'maven-publish'
+apply plugin: 'com.jfrog.bintray'
+apply from: "$rootDir/gradle/publishing.gradle"
+
+dependencies {
+
+  compile rootProject
+
+  compile (
+    'org.slf4j:slf4j-api:1.7.21',
+    'org.pageseeder.xmlwriter:pso-xmlwriter:1.0.2',
+
+    'org.apache.lucene:lucene-core:5.2.1',
+    'org.apache.lucene:lucene-misc:5.2.1',
+    'org.apache.lucene:lucene-analyzers-common:5.2.1',
+    'org.apache.lucene:lucene-queryparser:5.2.1',
+    'org.apache.lucene:lucene-suggest:5.2.1'
+
+//    'org.apache.lucene:lucene-core:6.3.0',
+//    'org.apache.lucene:lucene-misc:6.3.0',
+//    'org.apache.lucene:lucene-analyzers-common:6.3.0',
+//    'org.apache.lucene:lucene-queryparser:6.3.0',
+//    'org.apache.lucene:lucene-suggest:6.3.0'
+  )
+
+  testCompile (
+    'junit:junit:4.12',
+    'org.slf4j:slf4j-simple:1.7.21'
+  )
+
+}

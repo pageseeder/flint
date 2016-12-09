@@ -1,0 +1,15 @@
+<?xml version="1.0"?>
+<documents version="5.0">
+  <document>
+    <field name="test_field1">doc7-field1-value1</field>
+    <field name="test_field2">doc7-field2-value1</field>
+  </document>
+  <document>
+    <field name="test_field1">doc7-field1-value2</field>
+    <field name="test_field2">doc7-field2-value2</field>
+  </document>
+  <document>
+    <field name="test_field1">doc7-field1-value3</field>
+    <field name="test_field2">doc7-field2-value3</field>
+  </document>
+</documents>

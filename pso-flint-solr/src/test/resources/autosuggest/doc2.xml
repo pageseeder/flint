@@ -1,0 +1,7 @@
+<?xml version="1.0"?>
+<documents version="5.0">
+  <document>
+    <field name="test_text_autosuggest">electric train</field>
+    <field name="test_multi_color">yellow</field>
+  </document>
+</documents>
