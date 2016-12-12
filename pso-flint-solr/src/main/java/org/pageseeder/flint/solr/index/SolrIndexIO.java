@@ -38,14 +38,15 @@ public class SolrIndexIO implements IndexIO {
 
   private SolrIndexStatus currentStatus;
 
-  public SolrIndexIO(Index index) {
+  public SolrIndexIO(Index index) throws IndexException {
     // build client to connect to solr
     String url = SolrFlintConfig.getInstance().getSolrServerURL();
     if (url.charAt(url.length() - 1) != '/') url += '/';
     this._client = new HttpSolrClient(url + index.getIndexID());
     this._client.setAllowCompression(true);
     // make sure it exists on solr server
-    new SolrCoreManager().createCore(index.getIndexID(), index.getCatalog());
+    if (!new SolrCoreManager().createCore(index.getIndexID(), index.getCatalog()))
+      throw new IndexException("Failed to create core "+index.getIndexID(), null);
   }
 
   @Override

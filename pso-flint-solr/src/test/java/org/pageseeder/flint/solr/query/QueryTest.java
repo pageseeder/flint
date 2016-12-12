@@ -111,8 +111,9 @@ public class QueryTest {
       "<field name='test_join_from'>join4</field>\n"+
     "</document>\n"+
   "</documents>";
+
   @BeforeClass
-  public static void init() {
+  public static void init() throws IndexException {
     System.out.println("indexing with "+RANDOM);
     index = new SolrIndex("test-solr-query", TestUtils.CATALOG);
     try {
@@ -304,7 +305,7 @@ public class QueryTest {
   }
 
   @Test
-  public void testJoin1() {
+  public void testJoin1() throws IndexException {
     // second index
     SolrIndex index2 = new SolrIndex("test-solr-join", TestUtils.CATALOG);
     try {
@@ -337,7 +338,7 @@ public class QueryTest {
   }
 
   @Test
-  public void testJoin2() {
+  public void testJoin2() throws IndexException {
     // second index
     SolrIndex index2 = new SolrIndex("test-solr-join", TestUtils.CATALOG);
     try {
@@ -368,7 +369,7 @@ public class QueryTest {
   }
 
   @Test
-  public void testJoin3() {
+  public void testJoin3() throws IndexException {
     // second index
     SolrIndex index2 = new SolrIndex("test-solr-join", TestUtils.CATALOG);
     try {

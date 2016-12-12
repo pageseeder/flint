@@ -24,7 +24,7 @@ public class LocalIndexerTest {
   private LocalIndexManager manager;
   
   @Before
-  public void init() {
+  public void init() throws IndexException {
     indexRoot.mkdirs();
     // clean up previous test's data
     for (File f : indexRoot.listFiles()) f.delete();

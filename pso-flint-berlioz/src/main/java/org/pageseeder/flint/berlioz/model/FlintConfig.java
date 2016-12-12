@@ -31,6 +31,7 @@ import javax.xml.transform.TransformerException;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.pageseeder.berlioz.GlobalSettings;
+import org.pageseeder.flint.IndexException;
 import org.pageseeder.flint.IndexManager;
 import org.pageseeder.flint.berlioz.helper.FolderWatcher;
 import org.pageseeder.flint.berlioz.helper.QuietListener;
@@ -190,7 +191,13 @@ public class FlintConfig {
    * @return the index master with the name provided
    */
   public SolrIndexMaster getSolrMaster(String name) {
-    return getSolrMaster(name, false);
+    try {
+      return getSolrMaster(name, false);
+    } catch (IndexException ex) {
+      // should not happen if we don't create it
+      LOGGER.error("Impossible!", ex);
+      return null;
+    }
   }
 
   /**
@@ -199,10 +206,10 @@ public class FlintConfig {
    * 
    * @return the index master with the name provided
    */
-  public SolrIndexMaster getSolrMaster(String name, boolean createIfNotFound) {
+  public SolrIndexMaster getSolrMaster(String name, boolean createIfNotFound) throws IndexException {
     // make sure only one gets created
     synchronized (this.solrIndexes) {
-      if (!this.solrIndexes.containsKey(name)) {
+      if (!this.solrIndexes.containsKey(name) && createIfNotFound) {
         IndexDefinition def = getIndexDefinitionFromIndexName(name);
         if (def == null) {
           // no config found
@@ -378,7 +385,11 @@ public class FlintConfig {
       Map<String, SolrIndexStatus> all = cores.listCores();
       // load indexes
       for (String name : all.keySet()) {
-        getSolrMaster(name, true);
+        try {
+          getSolrMaster(name, true);
+        } catch (IndexException ex) {
+          LOGGER.error("Failed to create index "+name, ex);
+        }
       }
     }
     return this.solrIndexes.values();
@@ -454,7 +465,7 @@ public class FlintConfig {
     }
   }
 
-  private SolrIndexMaster createSolrMaster(String name, IndexDefinition def) {
+  private SolrIndexMaster createSolrMaster(String name, IndexDefinition def) throws IndexException {
     // build content path
     File content = def.buildContentRoot(GlobalSettings.getAppData(), name);
     try {

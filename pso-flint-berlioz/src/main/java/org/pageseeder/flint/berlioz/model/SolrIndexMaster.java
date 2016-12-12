@@ -39,17 +39,17 @@ public final class SolrIndexMaster {
   private final Map<String, AutoSuggest> _autosuggests = new HashMap<>();
   
   public static SolrIndexMaster create(IndexManager mgr, String name,
-         File content, IndexDefinition def) throws TransformerException {
+         File content, IndexDefinition def) throws TransformerException, IndexException {
     return create(mgr, name, content, "psml", def);
   }
 
   public static SolrIndexMaster create(IndexManager mgr, String name,
-         File content, String extension, IndexDefinition def) throws TransformerException {
+         File content, String extension, IndexDefinition def) throws TransformerException, IndexException {
     return new SolrIndexMaster(mgr, name, content, extension, def);
   }
 
   private SolrIndexMaster(IndexManager mgr, String name, File content,
-      String extension, IndexDefinition def) throws TransformerException {
+      String extension, IndexDefinition def) throws TransformerException, IndexException {
     this._manager = mgr;
     this._contentRoot = content;
     this._index = new SolrLocalIndex(name, def.getName(), content);

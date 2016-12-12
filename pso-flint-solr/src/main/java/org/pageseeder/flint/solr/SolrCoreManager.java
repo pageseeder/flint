@@ -19,6 +19,7 @@ import org.apache.solr.client.solrj.response.CoreAdminResponse;
 import org.apache.solr.client.solrj.response.SolrPingResponse;
 import org.apache.solr.common.params.CoreAdminParams.CoreAdminAction;
 import org.apache.solr.common.util.NamedList;
+import org.pageseeder.flint.IndexException;
 import org.pageseeder.flint.solr.index.SolrIndexStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -74,7 +75,7 @@ public class SolrCoreManager {
    * @param name the name of core.
    * @return the status of creation
    */
-  public boolean createCore(String name, String catalog) {
+  public boolean createCore(String name, String catalog) throws IndexException {
     CoreAdminResponse response = null;
 
     // check core exist
@@ -92,6 +93,7 @@ public class SolrCoreManager {
         response = create.process(this._solr);
       } catch (RemoteSolrException | SolrServerException | IOException ex) {
         LOGGER.error("Cannot create core {}", name, ex);
+        throw new IndexException("Failed to create core "+name+": "+ex.getMessage(), ex);
       }
     } else {
       LOGGER.info("Solr core {} already exists - just reload it", name);
