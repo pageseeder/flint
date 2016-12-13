@@ -55,6 +55,12 @@ task publishAllToBintray {
   }
 }
 
+task publishAllToMavenLocal {
+  subprojects.each {
+    dependsOn("${it.path}:publishToMavenLocal" )
+  }
+}
+
 dependencies {
 
   compile (
