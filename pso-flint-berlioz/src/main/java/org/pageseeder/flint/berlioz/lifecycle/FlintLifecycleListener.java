@@ -4,6 +4,7 @@ import java.io.File;
 
 import org.pageseeder.berlioz.LifecycleListener;
 import org.pageseeder.flint.berlioz.model.FlintConfig;
+import org.pageseeder.flint.berlioz.model.SolrIndexMaster;
 
 public class FlintLifecycleListener implements LifecycleListener {
 
@@ -12,18 +13,25 @@ public class FlintLifecycleListener implements LifecycleListener {
     System.out.println("[BERLIOZ_INIT] Lifecycle: Loading Flint Indexes");
     FlintConfig config = FlintConfig.get();
     int nb = 0;
-    File root = config.getRootDirectory();
-    for (File folder : root.listFiles()) {
-      if (folder.isDirectory()) {
-        // autosuggest index?
-        if (folder.getName().endsWith("_autosuggest") &&
-            new File(root, folder.getName().split("_")[0]).exists()) {
-          continue;
-        }
-        if (config.getMaster(folder.getName(), true) == null) {
-          System.out.println("[BERLIOZ_INIT] Lifecycle: Failed to load index "+folder.getName());
-        } else {
-          nb++;
+    if (config.useSolr()) {
+      for (SolrIndexMaster index : config.listSolrIndexes()) {
+        System.out.println("[BERLIOZ_INIT] Lifecycle: index" + index.getName() + " successfuly loaded.");
+        nb ++;
+      }
+    } else {
+      File root = config.getRootDirectory();
+      for (File folder : root.listFiles()) {
+        if (folder.isDirectory()) {
+          // autosuggest index?
+          if (folder.getName().endsWith("_autosuggest") &&
+              new File(root, folder.getName().split("_")[0]).exists()) {
+            continue;
+          }
+          if (config.getMaster(folder.getName(), true) == null) {
+            System.out.println("[BERLIOZ_INIT] Lifecycle: Failed to load index "+folder.getName());
+          } else {
+            nb++;
+          }
         }
       }
     }
