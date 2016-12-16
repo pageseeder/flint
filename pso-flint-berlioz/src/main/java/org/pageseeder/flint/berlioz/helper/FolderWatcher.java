@@ -37,6 +37,7 @@ import org.pageseeder.flint.lucene.LuceneLocalIndex;
 import org.pageseeder.flint.lucene.query.BasicQuery;
 import org.pageseeder.flint.lucene.query.PrefixParameter;
 import org.pageseeder.flint.lucene.query.SearchResults;
+import org.pageseeder.flint.solr.SolrFlintException;
 import org.pageseeder.flint.solr.index.SolrLocalIndex;
 import org.pageseeder.flint.solr.query.SolrQueryManager;
 import org.slf4j.Logger;
@@ -321,10 +322,14 @@ public class FolderWatcher {
   private Collection<SolrIndexMaster> getSolrDestinations(File file, FlintConfig config) {
     List<SolrIndexMaster> indexes = new ArrayList<>();
     // find which index that file is in
-    for (SolrIndexMaster master : config.listSolrIndexes()) {
-      if (master.isInIndex(file)) {
-        indexes.add(master);
+    try {
+      for (SolrIndexMaster master : config.listSolrIndexes()) {
+        if (master.isInIndex(file)) {
+          indexes.add(master);
+        }
       }
+    } catch (SolrFlintException ex) {
+      LOGGER.error("Failed to list Solr indexes", ex);
     }
     return indexes;
   }

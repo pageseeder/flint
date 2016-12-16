@@ -11,6 +11,7 @@ import org.junit.Test;
 import org.pageseeder.flint.IndexException;
 import org.pageseeder.flint.local.LocalIndexManager;
 import org.pageseeder.flint.local.LocalIndexManagerFactory;
+import org.pageseeder.flint.solr.SolrFlintException;
 import org.pageseeder.flint.solr.query.TestUtils;
 
 public class LocalIndexerTest {
@@ -24,7 +25,7 @@ public class LocalIndexerTest {
   private LocalIndexManager manager;
   
   @Before
-  public void init() throws IndexException {
+  public void init() throws SolrFlintException {
     indexRoot.mkdirs();
     // clean up previous test's data
     for (File f : indexRoot.listFiles()) f.delete();

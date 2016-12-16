@@ -6,10 +6,10 @@ import org.pageseeder.berlioz.BerliozException;
 import org.pageseeder.berlioz.content.ContentGenerator;
 import org.pageseeder.berlioz.content.ContentRequest;
 import org.pageseeder.berlioz.content.ContentStatus;
-import org.pageseeder.flint.IndexException;
 import org.pageseeder.flint.berlioz.model.FlintConfig;
 import org.pageseeder.flint.berlioz.model.IndexDefinition;
 import org.pageseeder.flint.berlioz.util.GeneratorErrors;
+import org.pageseeder.flint.solr.SolrFlintException;
 import org.pageseeder.xmlwriter.XMLWriter;
 
 public final class CreateIndex implements ContentGenerator {
@@ -27,8 +27,8 @@ public final class CreateIndex implements ContentGenerator {
     if (cfg.useSolr()) {
       try {
         master = def == null ? null : cfg.getSolrMaster(index, true);
-      } catch (IndexException ex) {
-        GeneratorErrors.error(req, xml, "config", "Failed to create index "+index+": "+ex.getMessage(), ContentStatus.BAD_REQUEST);
+      } catch (SolrFlintException ex) {
+        GeneratorErrors.error(req, xml, "config", ex.getMessage(), ContentStatus.BAD_REQUEST);
         return;
       }
     } else {

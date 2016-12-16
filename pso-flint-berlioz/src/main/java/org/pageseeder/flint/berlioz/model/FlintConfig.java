@@ -31,7 +31,6 @@ import javax.xml.transform.TransformerException;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.pageseeder.berlioz.GlobalSettings;
-import org.pageseeder.flint.IndexException;
 import org.pageseeder.flint.IndexManager;
 import org.pageseeder.flint.berlioz.helper.FolderWatcher;
 import org.pageseeder.flint.berlioz.helper.QuietListener;
@@ -44,6 +43,7 @@ import org.pageseeder.flint.indexing.IndexBatch;
 import org.pageseeder.flint.local.LocalFileContentFetcher;
 import org.pageseeder.flint.solr.SolrCoreManager;
 import org.pageseeder.flint.solr.SolrFlintConfig;
+import org.pageseeder.flint.solr.SolrFlintException;
 import org.pageseeder.flint.solr.index.SolrIndexStatus;
 import org.pageseeder.flint.templates.TemplatesCache;
 import org.slf4j.Logger;
@@ -193,7 +193,7 @@ public class FlintConfig {
   public SolrIndexMaster getSolrMaster(String name) {
     try {
       return getSolrMaster(name, false);
-    } catch (IndexException ex) {
+    } catch (SolrFlintException ex) {
       // should not happen if we don't create it
       LOGGER.error("Impossible!", ex);
       return null;
@@ -206,7 +206,7 @@ public class FlintConfig {
    * 
    * @return the index master with the name provided
    */
-  public SolrIndexMaster getSolrMaster(String name, boolean createIfNotFound) throws IndexException {
+  public SolrIndexMaster getSolrMaster(String name, boolean createIfNotFound) throws SolrFlintException {
     // make sure only one gets created
     synchronized (this.solrIndexes) {
       if (!this.solrIndexes.containsKey(name) && createIfNotFound) {
@@ -276,7 +276,9 @@ public class FlintConfig {
     // solr?
     String url = GlobalSettings.get("flint.solr");
     this._useSolr = url != null;
-    if (this._useSolr) SolrFlintConfig.setup(ixml, url);
+    if (this._useSolr) {
+      SolrFlintConfig.setup(ixml, url);
+    }
     // manager
     int nbThreads = GlobalSettings.get("flint.threads.number", 10);
     int threadPriority = GlobalSettings.get("flint.threads.priority", 5);
@@ -378,7 +380,7 @@ public class FlintConfig {
     return this.indexes.values();
   }
 
-  public Collection<SolrIndexMaster> listSolrIndexes() {
+  public Collection<SolrIndexMaster> listSolrIndexes() throws SolrFlintException {
     if (!this._useSolr) return Collections.emptyList();
     if (this.solrIndexes.isEmpty()) {
       SolrCoreManager cores = new SolrCoreManager();
@@ -387,7 +389,7 @@ public class FlintConfig {
       for (String name : all.keySet()) {
         try {
           getSolrMaster(name, true);
-        } catch (IndexException ex) {
+        } catch (SolrFlintException ex) {
           LOGGER.error("Failed to create index "+name, ex);
         }
       }
@@ -465,7 +467,7 @@ public class FlintConfig {
     }
   }
 
-  private SolrIndexMaster createSolrMaster(String name, IndexDefinition def) throws IndexException {
+  private SolrIndexMaster createSolrMaster(String name, IndexDefinition def) throws SolrFlintException {
     // build content path
     File content = def.buildContentRoot(GlobalSettings.getAppData(), name);
     try {

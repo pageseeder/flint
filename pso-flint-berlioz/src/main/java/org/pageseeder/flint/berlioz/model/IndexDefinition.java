@@ -353,7 +353,17 @@ public class IndexDefinition implements XMLWritable {
     xml.attribute("template", this._template.getName());
     if (this.templateError != null)
       xml.attribute("template-error", this.templateError);
-    
+    if (!this._pathExcludes.isEmpty()) {
+      StringBuilder sb = new StringBuilder();
+      for (String exc : this._pathExcludes) sb.append(",").append(exc);
+      xml.attribute("path-excludes", sb.substring(1));
+    }
+    if (this.includeFilesRegex != null || this.excludeFilesRegex != null) {
+      xml.openElement("files");
+      if (this.includeFilesRegex != null) xml.attribute("includes", this.includeFilesRegex);
+      if (this.excludeFilesRegex != null) xml.attribute("excludes", this.excludeFilesRegex);
+      xml.closeElement();
+    }
     // autosuggests
     for (AutoSuggestDefinition as : this._autosuggests.values()) {
       as.toXML(xml);

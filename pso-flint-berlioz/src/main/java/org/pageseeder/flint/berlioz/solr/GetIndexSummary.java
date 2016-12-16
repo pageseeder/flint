@@ -45,7 +45,7 @@ public final class GetIndexSummary extends SolrIndexGenerator implements Cacheab
   public void process(SolrIndexMaster master, ContentRequest req, XMLWriter xml) throws BerliozException, IOException {
     // find index
     xml.openElement("index-summary");
-    xml.attribute("solr", SolrFlintConfig.getInstance().getSolrServerURL());
+    xml.attribute("solr", SolrFlintConfig.getInstance().getServerURL());
     xml.openElement("index");
     xml.attribute("name", master.getIndex().getIndexID());
     xml.attribute("content", '/' + Files.path(GlobalSettings.getAppData(), master.getIndex().getContentLocation()));

@@ -4,6 +4,7 @@
 package org.pageseeder.flint.solr;
 
 import java.io.IOException;
+import java.net.ConnectException;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
@@ -19,7 +20,6 @@ import org.apache.solr.client.solrj.response.CoreAdminResponse;
 import org.apache.solr.client.solrj.response.SolrPingResponse;
 import org.apache.solr.common.params.CoreAdminParams.CoreAdminAction;
 import org.apache.solr.common.util.NamedList;
-import org.pageseeder.flint.IndexException;
 import org.pageseeder.flint.solr.index.SolrIndexStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -42,17 +42,18 @@ public class SolrCoreManager {
   private final SolrClient _solr;
 
   public SolrCoreManager() {
-    this._solr = new HttpSolrClient(SolrFlintConfig.getInstance().getSolrServerURL());
+    this._solr = new HttpSolrClient.Builder(SolrFlintConfig.getInstance().getServerURL()).build();
   }
 
-  public Map<String, SolrIndexStatus> listCores() {
+  public Map<String, SolrIndexStatus> listCores() throws SolrFlintException {
     CoreAdminResponse response = null;
     try {
       CoreAdminRequest req = new CoreAdminRequest();
       req.setAction(CoreAdminAction.STATUS);
       response = req.process(this._solr);
     } catch (RemoteSolrException | SolrServerException | IOException ex) {
-      LOGGER.error("Cannot list cores {}", ex);
+      if (ex.getCause() instanceof ConnectException) throw new SolrFlintException(true);
+      throw new SolrFlintException("Failed to list Solr cores", ex);
     }
     if (response == null) return Collections.emptyMap();
     Map<String, SolrIndexStatus> indexes = new HashMap<String, SolrIndexStatus>();
@@ -75,7 +76,7 @@ public class SolrCoreManager {
    * @param name the name of core.
    * @return the status of creation
    */
-  public boolean createCore(String name, String catalog) throws IndexException {
+  public boolean createCore(String name, String catalog) throws SolrFlintException {
     CoreAdminResponse response = null;
 
     // check core exist
@@ -87,23 +88,25 @@ public class SolrCoreManager {
       }
       LOGGER.info("Solr core {} - creating", name);
       try {
+        String config = useConfig ? catalog : DEFAULT_CONFIG_SET;
         CoreAdminRequest.Create create = new CoreAdminRequest.Create();
-        create.setConfigSet(useConfig ? catalog : DEFAULT_CONFIG_SET);
+        create.setConfigSet(config);
         create.setCoreName(name);
         response = create.process(this._solr);
       } catch (RemoteSolrException | SolrServerException | IOException ex) {
         LOGGER.error("Cannot create core {}", name, ex);
-        throw new IndexException("Failed to create core "+name+": "+ex.getMessage(), ex);
+        if (ex.getCause() instanceof ConnectException) throw new SolrFlintException(true);
+        throw new SolrFlintException("Failed to create index "+name+": "+ex.getMessage(), ex);
       }
     } else {
-      LOGGER.info("Solr core {} already exists - just reload it", name);
-      try {
-        response = CoreAdminRequest.reloadCore(name, this._solr);
-      } catch (RemoteSolrException | SolrServerException e) {
-        LOGGER.error("SolrServerException reloading " + name + " core", e);
-      } catch (IOException e) {
-        LOGGER.error("IOException reloading " + name + " core", e);
-      }
+      LOGGER.info("Solr core {} already exists", name);
+//      LOGGER.info("Solr core {} already exists - just reload it", name);
+//      try {
+//        response = CoreAdminRequest.reloadCore(name, this._solr);
+//      } catch (RemoteSolrException | SolrServerException | IOException ex) {
+//        if (ex.getCause() instanceof ConnectException) throw new SolrFlintException(true);
+//        throw new SolrFlintException("Failed to reload core " + name+": "+ex.getMessage(), ex);
+//      }
     }
     return response != null && response.getStatus() == SUCCESS_STATUS;
   }
@@ -112,7 +115,7 @@ public class SolrCoreManager {
    * @param name the name of the core
    * @return  the status of deletion
    */
-  public boolean deleteCore(String name) {
+  public boolean deleteCore(String name) throws SolrFlintException {
     LOGGER.info("Solr core {} - deleting", name);
 
     CoreAdminResponse response = null;
@@ -120,7 +123,8 @@ public class SolrCoreManager {
       try {
         response = CoreAdminRequest.Create.unloadCore(name, this._solr);
       } catch (RemoteSolrException | SolrServerException | IOException ex) {
-        LOGGER.error("Cannot unload core {}", name, ex);
+        if (ex.getCause() instanceof ConnectException) throw new SolrFlintException(true);
+        throw new SolrFlintException("Failed to unload core " + name+": "+ex.getMessage(), ex);
       }
     } else {
       return true;
@@ -136,7 +140,8 @@ public class SolrCoreManager {
       SolrPingResponse resp = this._solr.ping();
       return 0 == resp.getStatus();
     } catch (RemoteSolrException | SolrServerException | IOException ex) {
-      LOGGER.warn("Cannot pint solr server {} ", this._solr.toString(), ex);
+      if (ex.getCause() instanceof ConnectException) return false;
+      LOGGER.error("Failed to ping Solr server: "+ex.getMessage(), ex);
     }
     return false;
   }
@@ -144,28 +149,27 @@ public class SolrCoreManager {
   /**
    * @param name the name of core
    * @return the status whether it exists
+   * @throws SolrFlintException 
    */
-  public boolean exists(String name) {
+  public boolean exists(String name) throws SolrFlintException {
     try {
       CoreAdminResponse response = CoreAdminRequest.getStatus(name, this._solr);
       return response.getCoreStatus(name).get("instanceDir") != null;
     } catch (RemoteSolrException ex) {
       if (ex.code() == 404) return false;
-      LOGGER.info("SolrServerException getting " + name + " core status", ex);
-      return false;
+      throw new SolrFlintException("Failed to check core " + name+": "+ex.getMessage(), ex);
     } catch (SolrServerException ex) {
-      LOGGER.info("SolrServerException getting " + name + " core status", ex);
-      return false;
+      if (ex.getCause() instanceof ConnectException) throw new SolrFlintException(true);
+      throw new SolrFlintException("Failed to check core " + name+": "+ex.getMessage(), ex);
     } catch (IOException ex) {
-      LOGGER.info("IOException getting " + name + " core status", ex);
-      return false;
+      throw new SolrFlintException("Failed to check core " + name+": "+ex.getMessage(), ex);
     }
   }
-//
-//  // ---------------------------------------------------------
-//  // config set managment
-//  // ---------------------------------------------------------
-//
+
+  // ---------------------------------------------------------
+  // config set managment (doesn't work for local solr)
+  // ---------------------------------------------------------
+
 //  private final static List<String> configSets = new ArrayList<>();
 //  private boolean useConfigSet(String name) {
 //    // list them
@@ -195,5 +199,16 @@ public class SolrCoreManager {
 //      }
 //    }
 //    return configSets.contains(name);
+//  }
+
+//  public static void main(String[] args) {
+//    try {
+//      CoreAdminRequest.Create create = new CoreAdminRequest.Create();
+//      create.setCoreName("default");
+//      create.setConfigSet("films");
+//      System.out.println(create.process(new HttpSolrClient.Builder("http://localhost:8983/solr").build()).getResponse());
+//    } catch (RemoteSolrException | SolrServerException | IOException ex) {
+//      ex.printStackTrace();
+//    }
 //  }
 }

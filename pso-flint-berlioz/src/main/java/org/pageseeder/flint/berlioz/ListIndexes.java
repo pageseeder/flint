@@ -34,6 +34,7 @@ import org.pageseeder.flint.IndexException;
 import org.pageseeder.flint.berlioz.model.FlintConfig;
 import org.pageseeder.flint.berlioz.model.IndexMaster;
 import org.pageseeder.flint.berlioz.model.SolrIndexMaster;
+import org.pageseeder.flint.solr.SolrFlintException;
 import org.pageseeder.xmlwriter.XMLWriter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -47,8 +48,12 @@ public final class ListIndexes implements ContentGenerator, Cacheable {
     for (IndexMaster master : config.listLuceneIndexes()) {
       etag.append(master.lastModified()).append('%');
     }
-    for (SolrIndexMaster master : config.listSolrIndexes()) {
-      etag.append(master.lastModified()).append('%');
+    try {
+      for (SolrIndexMaster master : config.listSolrIndexes()) {
+        etag.append(master.lastModified()).append('%');
+      }
+    } catch (SolrFlintException ex) {
+      return null;
     }
     return MD5.hash((String) etag.toString());
   }
@@ -57,12 +62,24 @@ public final class ListIndexes implements ContentGenerator, Cacheable {
     FlintConfig config = FlintConfig.get();
     xml.openElement("indexes");
     try {
-      // loop through index folders
-      for (IndexMaster index : config.listLuceneIndexes()) {
-        indexToXML(index, xml);
-      }
-      for (SolrIndexMaster index : config.listSolrIndexes()) {
-        indexToXML(index, xml);
+      if (config.useSolr()) {
+        try {
+          for (SolrIndexMaster index : config.listSolrIndexes()) {
+            indexToXML(index, xml);
+          }
+        } catch (SolrFlintException ex) {
+          if (ex.cannotConnect()) {
+            xml.attribute("error", "Cannot connect to Solr server, please check the configuration.");
+          } else {
+            xml.attribute("error", "Failed to list Solr indexes: "+ex.getMessage()+".");
+            LOGGER.error("Failed to list indexes", ex);
+          }
+        }
+      } else {
+        // loop through index folders
+        for (IndexMaster index : config.listLuceneIndexes()) {
+          indexToXML(index, xml);
+        }
       }
     } finally {
       xml.closeElement();

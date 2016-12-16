@@ -25,6 +25,7 @@ import org.pageseeder.flint.content.ContentFetcher;
 import org.pageseeder.flint.content.SourceForwarder;
 import org.pageseeder.flint.indexing.IndexJob;
 import org.pageseeder.flint.indexing.IndexJob.Priority;
+import org.pageseeder.flint.solr.SolrFlintException;
 import org.pageseeder.flint.solr.index.SolrIndex;
 import org.pageseeder.flint.solr.index.TestListener;
 
@@ -113,7 +114,7 @@ public class QueryTest {
   "</documents>";
 
   @BeforeClass
-  public static void init() throws IndexException {
+  public static void init() throws SolrFlintException {
     System.out.println("indexing with "+RANDOM);
     index = new SolrIndex("test-solr-query", TestUtils.CATALOG);
     try {
@@ -305,7 +306,7 @@ public class QueryTest {
   }
 
   @Test
-  public void testJoin1() throws IndexException {
+  public void testJoin1() throws SolrFlintException {
     // second index
     SolrIndex index2 = new SolrIndex("test-solr-join", TestUtils.CATALOG);
     try {
@@ -338,7 +339,7 @@ public class QueryTest {
   }
 
   @Test
-  public void testJoin2() throws IndexException {
+  public void testJoin2() throws SolrFlintException {
     // second index
     SolrIndex index2 = new SolrIndex("test-solr-join", TestUtils.CATALOG);
     try {
@@ -369,7 +370,7 @@ public class QueryTest {
   }
 
   @Test
-  public void testJoin3() throws IndexException {
+  public void testJoin3() throws SolrFlintException {
     // second index
     SolrIndex index2 = new SolrIndex("test-solr-join", TestUtils.CATALOG);
     try {

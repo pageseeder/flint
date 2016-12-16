@@ -26,6 +26,7 @@ import org.pageseeder.flint.content.DeleteRule;
 import org.pageseeder.flint.indexing.FlintDocument;
 import org.pageseeder.flint.solr.SolrCoreManager;
 import org.pageseeder.flint.solr.SolrFlintConfig;
+import org.pageseeder.flint.solr.SolrFlintException;
 import org.pageseeder.flint.solr.SolrUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -38,15 +39,15 @@ public class SolrIndexIO implements IndexIO {
 
   private SolrIndexStatus currentStatus;
 
-  public SolrIndexIO(Index index) throws IndexException {
+  public SolrIndexIO(Index index) throws SolrFlintException {
     // build client to connect to solr
-    String url = SolrFlintConfig.getInstance().getSolrServerURL();
+    String url = SolrFlintConfig.getInstance().getServerURL();
     if (url.charAt(url.length() - 1) != '/') url += '/';
-    this._client = new HttpSolrClient(url + index.getIndexID());
+    this._client = new HttpSolrClient.Builder(url + index.getIndexID()).build();
     this._client.setAllowCompression(true);
     // make sure it exists on solr server
     if (!new SolrCoreManager().createCore(index.getIndexID(), index.getCatalog()))
-      throw new IndexException("Failed to create core "+index.getIndexID(), null);
+      throw new SolrFlintException("Failed to create core "+index.getIndexID(), null);
   }
 
   @Override

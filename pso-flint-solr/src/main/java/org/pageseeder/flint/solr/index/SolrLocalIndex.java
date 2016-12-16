@@ -7,10 +7,10 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.pageseeder.flint.IndexException;
 import org.pageseeder.flint.content.DeleteRule;
 import org.pageseeder.flint.indexing.FlintField;
 import org.pageseeder.flint.local.LocalIndex;
+import org.pageseeder.flint.solr.SolrFlintException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -25,7 +25,7 @@ public class SolrLocalIndex extends LocalIndex {
 
   private final SolrIndexIO _io;
 
-  public SolrLocalIndex(String name, String config, File root) throws IndexException {
+  public SolrLocalIndex(String name, String config, File root) throws SolrFlintException {
     super(name, config);
     this._root = root;
     this._io = new SolrIndexIO(this);

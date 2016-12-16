@@ -37,14 +37,14 @@ public class SolrFlintConfig {
   }
 
   private SolrFlintConfig() {
-//    this._manager = new IndexManager(, listener, nbThreads, withSingleThread);
   }
   
-  public String getSolrServerURL() {
+  public String getServerURL() {
     return this.serverURL;
   }
 
   public File getTemplatesFolder() {
     return this.templatesFolder;
   }
+
 }

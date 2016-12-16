@@ -50,13 +50,13 @@ task wrapper(type: Wrapper) {
 }
 
 task publishAllToBintray {
-  subprojects.each {
+  allprojects.each {
     dependsOn("${it.path}:bintrayUpload" )
   }
 }
 
 task publishAllToMavenLocal {
-  subprojects.each {
+  allprojects.each {
     dependsOn("${it.path}:publishToMavenLocal" )
   }
 }

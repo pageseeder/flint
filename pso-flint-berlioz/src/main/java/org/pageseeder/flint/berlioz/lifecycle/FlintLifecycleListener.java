@@ -5,6 +5,7 @@ import java.io.File;
 import org.pageseeder.berlioz.LifecycleListener;
 import org.pageseeder.flint.berlioz.model.FlintConfig;
 import org.pageseeder.flint.berlioz.model.SolrIndexMaster;
+import org.pageseeder.flint.solr.SolrFlintException;
 
 public class FlintLifecycleListener implements LifecycleListener {
 
@@ -14,9 +15,17 @@ public class FlintLifecycleListener implements LifecycleListener {
     FlintConfig config = FlintConfig.get();
     int nb = 0;
     if (config.useSolr()) {
-      for (SolrIndexMaster index : config.listSolrIndexes()) {
-        System.out.println("[BERLIOZ_INIT] Lifecycle: index" + index.getName() + " successfuly loaded.");
-        nb ++;
+      try {
+        for (SolrIndexMaster index : config.listSolrIndexes()) {
+          System.out.println("[BERLIOZ_INIT] Lifecycle: index" + index.getName() + " successfuly loaded.");
+          nb ++;
+        }
+      } catch (SolrFlintException ex) {
+        if (ex.cannotConnect()) {
+          System.out.println("[BERLIOZ_INIT] Lifecycle: Failed to connect to Solr server, please check configuration!");
+        } else {
+          System.out.println("[BERLIOZ_INIT] Lifecycle: Failed to list Solr indexes: "+ex.getMessage()+".");
+        }
       }
     } else {
       File root = config.getRootDirectory();

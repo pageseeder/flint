@@ -18,6 +18,7 @@ import org.pageseeder.flint.berlioz.model.IndexDefinition.AutoSuggestDefinition;
 import org.pageseeder.flint.indexing.FlintDocument;
 import org.pageseeder.flint.indexing.IndexJob;
 import org.pageseeder.flint.local.LocalFileContent;
+import org.pageseeder.flint.solr.SolrFlintException;
 import org.pageseeder.flint.solr.index.SolrLocalIndex;
 import org.pageseeder.flint.solr.query.AutoSuggest;
 
@@ -39,17 +40,17 @@ public final class SolrIndexMaster {
   private final Map<String, AutoSuggest> _autosuggests = new HashMap<>();
   
   public static SolrIndexMaster create(IndexManager mgr, String name,
-         File content, IndexDefinition def) throws TransformerException, IndexException {
+         File content, IndexDefinition def) throws TransformerException, SolrFlintException {
     return create(mgr, name, content, "psml", def);
   }
 
   public static SolrIndexMaster create(IndexManager mgr, String name,
-         File content, String extension, IndexDefinition def) throws TransformerException, IndexException {
+         File content, String extension, IndexDefinition def) throws TransformerException, SolrFlintException {
     return new SolrIndexMaster(mgr, name, content, extension, def);
   }
 
   private SolrIndexMaster(IndexManager mgr, String name, File content,
-      String extension, IndexDefinition def) throws TransformerException, IndexException {
+      String extension, IndexDefinition def) throws TransformerException, SolrFlintException {
     this._manager = mgr;
     this._contentRoot = content;
     this._index = new SolrLocalIndex(name, def.getName(), content);
