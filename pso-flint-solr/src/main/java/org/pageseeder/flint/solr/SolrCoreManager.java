@@ -37,14 +37,13 @@ public class SolrCoreManager {
 
   private static final int SUCCESS_STATUS = 0;
 
-  private static final String DEFAULT_CONFIG_SET = "basic_configs";
-
   private final SolrClient _solr;
 
   public SolrCoreManager() {
     this._solr = new HttpSolrClient.Builder(SolrFlintConfig.getInstance().getServerURL()).build();
   }
 
+  @SuppressWarnings("unchecked")
   public Map<String, SolrIndexStatus> listCores() throws SolrFlintException {
     CoreAdminResponse response = null;
     try {
@@ -52,7 +51,7 @@ public class SolrCoreManager {
       req.setAction(CoreAdminAction.STATUS);
       response = req.process(this._solr);
     } catch (RemoteSolrException | SolrServerException | IOException ex) {
-      if (ex.getCause() instanceof ConnectException) throw new SolrFlintException(true);
+      if (ex.getCause() != null && ex.getCause() instanceof ConnectException) throw new SolrFlintException(true);
       throw new SolrFlintException("Failed to list Solr cores", ex);
     }
     if (response == null) return Collections.emptyMap();
@@ -76,37 +75,33 @@ public class SolrCoreManager {
    * @param name the name of core.
    * @return the status of creation
    */
-  public boolean createCore(String name, String catalog) throws SolrFlintException {
+  public boolean createCore(String name, String config) throws SolrFlintException {
     CoreAdminResponse response = null;
 
     // check core exist
     if (!exists(name)) {
       // make sure config set exists
-      boolean useConfig = true;//useConfigSet(catalog);
-      if (!useConfig) {
-        LOGGER.warn("Failed to setup config {}, using default config for index {}!", catalog, name);
-      }
-      LOGGER.info("Solr core {} - creating", name);
+      LOGGER.info("Solr core {} - creating with collection/config {}", name, config);
       try {
-        String config = useConfig ? catalog : DEFAULT_CONFIG_SET;
         CoreAdminRequest.Create create = new CoreAdminRequest.Create();
-        create.setConfigSet(config);
+        create.setCollection(config);
+        create.setCollectionConfigName(config);
         create.setCoreName(name);
         response = create.process(this._solr);
       } catch (RemoteSolrException | SolrServerException | IOException ex) {
         LOGGER.error("Cannot create core {}", name, ex);
-        if (ex.getCause() instanceof ConnectException) throw new SolrFlintException(true);
+        if (ex.getCause() != null && ex.getCause() instanceof ConnectException) throw new SolrFlintException(true);
         throw new SolrFlintException("Failed to create index "+name+": "+ex.getMessage(), ex);
       }
     } else {
-      LOGGER.info("Solr core {} already exists", name);
-//      LOGGER.info("Solr core {} already exists - just reload it", name);
-//      try {
-//        response = CoreAdminRequest.reloadCore(name, this._solr);
-//      } catch (RemoteSolrException | SolrServerException | IOException ex) {
-//        if (ex.getCause() instanceof ConnectException) throw new SolrFlintException(true);
-//        throw new SolrFlintException("Failed to reload core " + name+": "+ex.getMessage(), ex);
-//      }
+//      LOGGER.info("Solr core {} already exists", name);
+      LOGGER.info("Solr core {} already exists - reloading it", name);
+      try {
+        response = CoreAdminRequest.reloadCore(name, this._solr);
+      } catch (RemoteSolrException | SolrServerException | IOException ex) {
+        if (ex.getCause() != null && ex.getCause() instanceof ConnectException) throw new SolrFlintException(true);
+        throw new SolrFlintException("Failed to reload core " + name+": "+ex.getMessage(), ex);
+      }
     }
     return response != null && response.getStatus() == SUCCESS_STATUS;
   }
@@ -123,7 +118,7 @@ public class SolrCoreManager {
       try {
         response = CoreAdminRequest.Create.unloadCore(name, this._solr);
       } catch (RemoteSolrException | SolrServerException | IOException ex) {
-        if (ex.getCause() instanceof ConnectException) throw new SolrFlintException(true);
+        if (ex.getCause() != null && ex.getCause() instanceof ConnectException) throw new SolrFlintException(true);
         throw new SolrFlintException("Failed to unload core " + name+": "+ex.getMessage(), ex);
       }
     } else {
@@ -140,7 +135,7 @@ public class SolrCoreManager {
       SolrPingResponse resp = this._solr.ping();
       return 0 == resp.getStatus();
     } catch (RemoteSolrException | SolrServerException | IOException ex) {
-      if (ex.getCause() instanceof ConnectException) return false;
+      if (ex.getCause() != null && ex.getCause() instanceof ConnectException) return false;
       LOGGER.error("Failed to ping Solr server: "+ex.getMessage(), ex);
     }
     return false;
@@ -159,53 +154,22 @@ public class SolrCoreManager {
       if (ex.code() == 404) return false;
       throw new SolrFlintException("Failed to check core " + name+": "+ex.getMessage(), ex);
     } catch (SolrServerException ex) {
-      if (ex.getCause() instanceof ConnectException) throw new SolrFlintException(true);
+      if (ex.getCause() != null && ex.getCause() instanceof ConnectException) throw new SolrFlintException(true);
       throw new SolrFlintException("Failed to check core " + name+": "+ex.getMessage(), ex);
     } catch (IOException ex) {
       throw new SolrFlintException("Failed to check core " + name+": "+ex.getMessage(), ex);
     }
   }
 
-  // ---------------------------------------------------------
-  // config set managment (doesn't work for local solr)
-  // ---------------------------------------------------------
-
-//  private final static List<String> configSets = new ArrayList<>();
-//  private boolean useConfigSet(String name) {
-//    // list them
-//    if (configSets.isEmpty()) {
-//      try {
-//        ConfigSetAdminResponse.List list = new ConfigSetAdminRequest.List().process(this._solr);
-//        if (list != null && list.getStatus() == SUCCESS_STATUS) {
-//          configSets.addAll(list.getConfigSets());
-//        } else {
-//          LOGGER.error("Failed to list config sets: {}", list.getErrorMessages());
-//        }
-//      } catch (RemoteSolrException | SolrServerException | IOException ex) {
-//        LOGGER.error("Failed to list config sets", ex);
-//      }
-//    }
-//    // create it?
-//    if (!configSets.contains(name)) {
-//      // check config sets
-//      ConfigSetAdminRequest.Create create = new ConfigSetAdminRequest.Create();
-//      create.setConfigSetName(name);
-//      create.setBaseConfigSetName(DEFAULT_CONFIG_SET);
-//      try {
-//        ConfigSetAdminResponse resp = create.process(this._solr);
-//        if (resp != null && resp.getStatus() == SUCCESS_STATUS) configSets.add(name);
-//      } catch (RemoteSolrException | SolrServerException | IOException ex) {
-//        LOGGER.error("Failed to create config set {}", name, ex);
-//      }
-//    }
-//    return configSets.contains(name);
-//  }
-
 //  public static void main(String[] args) {
 //    try {
+////      CollectionAdminRequest.Create c = CollectionAdminRequest.createCollection("local-case", "local-case", 1, 1);
+////      System.out.println(c.process(new HttpSolrClient.Builder("http://localhost:8983/solr").build()).getResponse());
+//      
 //      CoreAdminRequest.Create create = new CoreAdminRequest.Create();
-//      create.setCoreName("default");
-//      create.setConfigSet("films");
+//      create.setCollection("dev-case");
+//      create.setCollectionConfigName("dev-case");
+//      create.setCoreName("case");
 //      System.out.println(create.process(new HttpSolrClient.Builder("http://localhost:8983/solr").build()).getResponse());
 //    } catch (RemoteSolrException | SolrServerException | IOException ex) {
 //      ex.printStackTrace();

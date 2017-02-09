@@ -43,6 +43,7 @@ public final class ListIndexes implements ContentGenerator, Cacheable {
   private static final Logger LOGGER = LoggerFactory.getLogger(ListIndexes.class);
 
   public String getETag(ContentRequest req) {
+    if ("true".equals(req.getParameter("refresh", "false"))) return null;
     StringBuilder etag = new StringBuilder();
     FlintConfig config = FlintConfig.get();
     for (IndexMaster master : config.listLuceneIndexes()) {
@@ -63,8 +64,9 @@ public final class ListIndexes implements ContentGenerator, Cacheable {
     xml.openElement("indexes");
     try {
       if (config.useSolr()) {
+        xml.attribute("solr", "true");
         try {
-          for (SolrIndexMaster index : config.listSolrIndexes()) {
+          for (SolrIndexMaster index : config.listSolrIndexes("true".equals(req.getParameter("refresh", "false")))) {
             indexToXML(index, xml);
           }
         } catch (SolrFlintException ex) {

@@ -331,6 +331,14 @@ public class FlintConfig {
       loadAutoSuggests(def);
       this.indexConfigs.put(type, def);
     }
+    // load solr indexes at startup
+    if (this._useSolr) {
+      try {
+        listSolrIndexes();
+      } catch (SolrFlintException ex) {
+        LOGGER.warn("Failed to load solr indexes at startup!", ex);
+      }
+    }
   }
 
   /**
@@ -381,8 +389,14 @@ public class FlintConfig {
   }
 
   public Collection<SolrIndexMaster> listSolrIndexes() throws SolrFlintException {
+    return listSolrIndexes(this.solrIndexes.isEmpty());
+  }
+
+  public Collection<SolrIndexMaster> listSolrIndexes(boolean refreshFromServer) throws SolrFlintException {
     if (!this._useSolr) return Collections.emptyList();
-    if (this.solrIndexes.isEmpty()) {
+    if (refreshFromServer) {
+      // clear existing
+      this.solrIndexes.clear();
       SolrCoreManager cores = new SolrCoreManager();
       Map<String, SolrIndexStatus> all = cores.listCores();
       // load indexes
