@@ -13,6 +13,7 @@ import java.util.function.Consumer;
 
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient.RemoteSolrException;
 import org.apache.solr.client.solrj.request.CoreAdminRequest;
@@ -40,7 +41,15 @@ public class SolrCoreManager {
   private final SolrClient _solr;
 
   public SolrCoreManager() {
-    this._solr = new HttpSolrClient.Builder(SolrFlintConfig.getInstance().getServerURL()).build();
+    // build client to connect to solr
+    SolrFlintConfig config = SolrFlintConfig.getInstance();
+    // use cloud?
+    String zkhosts = config.getZKHosts();
+    if (zkhosts != null) {
+      this._solr = new CloudSolrClient.Builder().withZkHost(config.getZKHosts()).build();
+    } else {
+      this._solr = new HttpSolrClient.Builder(config.getServerURL()).allowCompression(true).build();
+    }
   }
 
   @SuppressWarnings("unchecked")

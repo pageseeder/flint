@@ -11,6 +11,7 @@ import java.nio.file.Path;
 import java.nio.file.WatchEvent.Kind;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -31,6 +32,7 @@ import org.pageseeder.flint.berlioz.model.FlintConfig;
 import org.pageseeder.flint.berlioz.model.IndexDefinition;
 import org.pageseeder.flint.berlioz.model.IndexMaster;
 import org.pageseeder.flint.berlioz.model.SolrIndexMaster;
+import org.pageseeder.flint.indexing.IndexBatch;
 import org.pageseeder.flint.indexing.IndexJob.Priority;
 import org.pageseeder.flint.local.LocalFileContentType;
 import org.pageseeder.flint.lucene.LuceneLocalIndex;
@@ -369,12 +371,14 @@ public class FolderWatcher {
      */
     public void index(LuceneLocalIndex index, String path) {
       Pair<String, LuceneLocalIndex> key = new Pair<String, LuceneLocalIndex>(path, index);
-      AtomicInteger delay = this._delayedLuceneIndexing.get(key);
-      // add it if not there
-      if (delay == null)
-        this._delayedLuceneIndexing.put(key, new AtomicInteger(this._delay));
-      // reset otherwise
-      else delay.set(this._delay);
+      synchronized (this._delayedLuceneIndexing) {
+        AtomicInteger delay = this._delayedLuceneIndexing.get(key);
+        // add it if not there
+        if (delay == null)
+          this._delayedLuceneIndexing.put(key, new AtomicInteger(this._delay));
+        // reset otherwise
+        else delay.set(this._delay);
+      }
     }
 
     /**
@@ -384,12 +388,14 @@ public class FolderWatcher {
      */
     public void index(SolrLocalIndex index, String path) {
       Pair<String, SolrLocalIndex> key = new Pair<String, SolrLocalIndex>(path, index);
-      AtomicInteger delay = this._delayedSolrIndexing.get(key);
-      // add it if not there
-      if (delay == null)
-        this._delayedSolrIndexing.put(key, new AtomicInteger(this._delay));
-      // reset otherwise
-      else delay.set(this._delay);
+      synchronized (this._delayedSolrIndexing) {
+        AtomicInteger delay = this._delayedSolrIndexing.get(key);
+        // add it if not there
+        if (delay == null)
+          this._delayedSolrIndexing.put(key, new AtomicInteger(this._delay));
+        // reset otherwise
+        else delay.set(this._delay);
+      }
     }
 
     @Override
@@ -404,33 +410,83 @@ public class FolderWatcher {
           LOGGER.error("Failed to wait 1s in delayed indexer", ex);
           break;
         }
-        // loop through delayed files
-        for (Pair<String, LuceneLocalIndex> toIndex : new ArrayList<>(this._delayedLuceneIndexing.keySet())) {
-          AtomicInteger timer = this._delayedLuceneIndexing.get(toIndex);
-          if (timer.decrementAndGet() == 0) {
-            LOGGER.debug("Re-indexing file {} after delay", toIndex.first());
-            // index now
-            config.getManager().index(
-                toIndex.first(), LocalFileContentType.SINGLETON,
-                toIndex.second(), new Requester("Berlioz File Watcher Delayed Indexer"), Priority.HIGH, null);
-            // delete it
-            this._delayedLuceneIndexing.remove(toIndex);
+        // one requester
+        Requester req = new Requester("Berlioz File Watcher Delayed Indexer");
+        // lucene indexes first
+        synchronized (this._delayedLuceneIndexing) {
+          // do we need batches?
+          Map<String, IndexBatch> batches = null;
+          if (this._delayedLuceneIndexing.size() > 1) {
+            batches = new HashMap<>();
           }
-          if (!this.keepGoing) break bigloop;
+          try {
+            // loop through delayed files
+            for (Pair<String, LuceneLocalIndex> toIndex : new ArrayList<>(this._delayedLuceneIndexing.keySet())) {
+              AtomicInteger timer = this._delayedLuceneIndexing.get(toIndex);
+              if (timer.decrementAndGet() == 0) {
+                LOGGER.debug("Re-indexing file {} after delay", toIndex.first());
+                // index now
+                if (batches == null) {
+                  config.getManager().index(toIndex.first(), LocalFileContentType.SINGLETON, toIndex.second(), req, Priority.HIGH, null);
+                } else {
+                  IndexBatch batch = batches.get(toIndex.second().getIndexID());
+                  if (batch == null) {
+                    batch = new IndexBatch(toIndex.second().getIndexID());
+                    batches.put(batch.getIndex(), batch);
+                  }
+                  batch.increaseTotal();
+                  config.getManager().indexBatch(batch, toIndex.first(), LocalFileContentType.SINGLETON, toIndex.second(), req, Priority.HIGH, null);
+                }
+                // delete it
+                this._delayedLuceneIndexing.remove(toIndex);
+              }
+              if (!this.keepGoing) break bigloop;
+            }
+          } finally {
+            // complete batches
+            if (batches != null) {
+              for (IndexBatch batch : batches.values()) {
+                batch.setComputed();
+              }
+            }
+          }
         }
         // solr then
-        for (Pair<String, SolrLocalIndex> toIndex : new ArrayList<>(this._delayedSolrIndexing.keySet())) {
-          AtomicInteger timer = this._delayedSolrIndexing.get(toIndex);
-          if (timer.decrementAndGet() == 0) {
-            LOGGER.debug("Re-indexing file {} after delay", toIndex.first());
-            // index now
-            config.getManager().index(
-                toIndex.first(), LocalFileContentType.SINGLETON,
-                toIndex.second(), new Requester("Berlioz File Watcher Delayed Indexer"), Priority.HIGH, null);
-            // delete it
-            this._delayedSolrIndexing.remove(toIndex);
+        synchronized (this._delayedSolrIndexing) {
+          Map<String, IndexBatch> batches = null;
+          if (this._delayedLuceneIndexing.size() > 1) {
+            batches = new HashMap<>();
           }
-          if (!this.keepGoing) break bigloop;
+          try {
+            for (Pair<String, SolrLocalIndex> toIndex : new ArrayList<>(this._delayedSolrIndexing.keySet())) {
+              AtomicInteger timer = this._delayedSolrIndexing.get(toIndex);
+              if (timer.decrementAndGet() == 0) {
+                LOGGER.debug("Re-indexing file {} after delay", toIndex.first());
+                // index now
+                if (batches == null) {
+                  config.getManager().index(toIndex.first(), LocalFileContentType.SINGLETON, toIndex.second(), req, Priority.HIGH, null);
+                } else {
+                  IndexBatch batch = batches.get(toIndex.second().getIndexID());
+                  if (batch == null) {
+                    batch = new IndexBatch(toIndex.second().getIndexID());
+                    batches.put(batch.getIndex(), batch);
+                  }
+                  batch.increaseTotal();
+                  config.getManager().indexBatch(batch, toIndex.first(), LocalFileContentType.SINGLETON, toIndex.second(), req, Priority.HIGH, null);
+                }
+                // delete it
+                this._delayedSolrIndexing.remove(toIndex);
+              }
+              if (!this.keepGoing) break bigloop;
+            }
+          } finally {
+            // complete batches
+            if (batches != null) {
+              for (IndexBatch batch : batches.values()) {
+                batch.setComputed();
+              }
+            }
+          }
         }
       }
     }

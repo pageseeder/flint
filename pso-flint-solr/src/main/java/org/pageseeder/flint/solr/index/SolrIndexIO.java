@@ -10,6 +10,7 @@ import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient.RemoteSolrException;
 import org.apache.solr.client.solrj.request.LukeRequest;
@@ -35,16 +36,23 @@ public class SolrIndexIO implements IndexIO {
 
   private final static Logger LOGGER = LoggerFactory.getLogger(SolrIndexIO.class);
 
-  private final HttpSolrClient _client;
+  private final SolrClient _client;
+
+  private final String _collection;
 
   private SolrIndexStatus currentStatus;
 
   public SolrIndexIO(Index index) throws SolrFlintException {
+    this._collection = index.getIndexID();
     // build client to connect to solr
-    String url = SolrFlintConfig.getInstance().getServerURL();
-    if (url.charAt(url.length() - 1) != '/') url += '/';
-    this._client = new HttpSolrClient.Builder(url + index.getIndexID()).build();
-    this._client.setAllowCompression(true);
+    SolrFlintConfig config = SolrFlintConfig.getInstance();
+    // use cloud?
+    String zkhosts = config.getZKHosts();
+    if (zkhosts != null) {
+      this._client = new CloudSolrClient.Builder().withZkHost(config.getZKHosts()).build();
+    } else {
+      this._client = new HttpSolrClient.Builder(config.getServerURL()).allowCompression(true).build();
+    }
     // make sure it exists on solr server
     if (!new SolrCoreManager().createCore(index.getIndexID(), index.getCatalog()))
       throw new SolrFlintException("Failed to create core "+index.getIndexID(), null);
@@ -76,7 +84,7 @@ public class SolrIndexIO implements IndexIO {
   public void maybeCommit() {
     try {
       // commit
-      this._client.commit();
+      this._client.commit(this._collection);
       // reset
       this.currentStatus = null;
     } catch (SolrServerException | IOException ex) {
@@ -88,8 +96,8 @@ public class SolrIndexIO implements IndexIO {
   public boolean clearIndex() throws IndexException {
     UpdateResponse resp;
     try {
-      resp = this._client.deleteByQuery("*:*");
-      resp = this._client.commit();
+      resp = this._client.deleteByQuery(this._collection, "*:*");
+      resp = this._client.commit(this._collection);
       // reset
       this.currentStatus = null;
     } catch (SolrServerException | IOException ex) {
@@ -105,9 +113,9 @@ public class SolrIndexIO implements IndexIO {
       try {
         UpdateResponse resp;
         if (drule.deleteByID()) {
-          resp = this._client.deleteById(drule.getDeleteID());
+          resp = this._client.deleteById(this._collection, drule.getDeleteID());
         } else {
-          resp = this._client.deleteByQuery(drule.getDeleteQuery());
+          resp = this._client.deleteByQuery(this._collection, drule.getDeleteQuery());
         }
         return resp.getStatus() == 0;
       } catch (SolrServerException | IOException ex) {
@@ -123,7 +131,7 @@ public class SolrIndexIO implements IndexIO {
     if (rule != null) deleteDocuments(rule);
     // add then
     try {
-      UpdateResponse resp = this._client.add(SolrUtils.toDocuments(documents));
+      UpdateResponse resp = this._client.add(this._collection, SolrUtils.toDocuments(documents));
       return resp.getStatus() == 0;
     } catch (SolrServerException | IOException ex) {
       throw new IndexException("Failed to add document(s)", ex);
@@ -135,7 +143,7 @@ public class SolrIndexIO implements IndexIO {
       LukeRequest request = new LukeRequest();
       request.setShowSchema(true);
       try {
-        LukeResponse response = request.process(this._client);
+        LukeResponse response = request.process(this._client, this._collection);
         if (response != null) {
           this.currentStatus = new SolrIndexStatus();
           this.currentStatus
@@ -162,7 +170,7 @@ public class SolrIndexIO implements IndexIO {
 
   public QueryResponse query(SolrQuery query) {
     try {
-      return this._client.query(query);
+      return this._client.query(this._collection, query);
     } catch (SolrServerException | IOException ex) {
       LOGGER.error("Failed to run solr query {}", query, ex);
     }
@@ -171,7 +179,7 @@ public class SolrIndexIO implements IndexIO {
 
   public QueryResponse query(SolrParams params) {
     try {
-      return this._client.query(params);
+      return this._client.query(this._collection, params);
     } catch (SolrServerException | IOException ex) {
       LOGGER.error("Failed to run query with params {}", params, ex);
     }
@@ -180,7 +188,7 @@ public class SolrIndexIO implements IndexIO {
 
   public QueryResponse request(QueryRequest request) {
     try {
-      return request.process(this._client);
+      return request.process(this._client, this._collection);
     } catch (SolrServerException | IOException ex) {
       LOGGER.error("Failed to run query request {}", request, ex);
     }
@@ -189,7 +197,7 @@ public class SolrIndexIO implements IndexIO {
 
   public SolrResponse process(SolrRequest<? extends SolrResponse> request) {
     try {
-      return request.process(this._client);
+      return request.process(this._client, this._collection);
     } catch (SolrServerException | IOException ex) {
       LOGGER.error("Failed to process request {}", request, ex);
     }
@@ -199,5 +207,10 @@ public class SolrIndexIO implements IndexIO {
   public SolrClient getClient() {
     return this._client;
   }
+
+  public String getCollection() {
+    return this._collection;
+  }
+
 
 }

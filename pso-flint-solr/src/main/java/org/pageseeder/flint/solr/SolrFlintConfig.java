@@ -11,18 +11,22 @@ public class SolrFlintConfig {
 
   private static SolrFlintConfig INSTANCE;
 
-  private String serverURL = "http://localhost:8983/solr/";
+  private final String _serverURL;
 
-  private File templatesFolder = null;
+  private final String _zkhosts;
+
+  private final File templatesFolder;
 
 //  private final IndexManager _manager;
 
   public static void setup(File templates, String url) {
+    setup(templates, url, null);
+  }
+
+  public static void setup(File templates, String url, String zkhosts) {
     if (INSTANCE == null) {
-      INSTANCE = new SolrFlintConfig();
-      INSTANCE.templatesFolder = templates;
-      INSTANCE.serverURL = url == null ? "http://localhost:8983/solr/" : url;
-      LOGGER.info("Solr Flint has been setup with Solr server at {} and templates under {}", INSTANCE.serverURL, INSTANCE.templatesFolder);
+      INSTANCE = new SolrFlintConfig(templates, url, zkhosts);
+      LOGGER.info("Solr Flint has been setup with Solr server at {} and templates under {}", INSTANCE._serverURL, INSTANCE.templatesFolder);
     } else {
       LOGGER.warn("Trying to setup Solr Flint twice, ignoring!");
     }
@@ -31,16 +35,23 @@ public class SolrFlintConfig {
   public static SolrFlintConfig getInstance() {
     if (INSTANCE == null) {
       LOGGER.warn("Solr Flint has not been setup, using default properties!");
-      INSTANCE = new SolrFlintConfig();
+      INSTANCE = new SolrFlintConfig(null, "http://localhost:8983/solr/", null);
     }
     return INSTANCE;
   }
 
-  private SolrFlintConfig() {
+  private SolrFlintConfig(File templates, String url, String zkhosts) {
+    this.templatesFolder = templates;
+    this._serverURL = url;
+    this._zkhosts = zkhosts;
   }
-  
+
   public String getServerURL() {
-    return this.serverURL;
+    return this._serverURL;
+  }
+
+  public String getZKHosts() {
+    return this._zkhosts;
   }
 
   public File getTemplatesFolder() {

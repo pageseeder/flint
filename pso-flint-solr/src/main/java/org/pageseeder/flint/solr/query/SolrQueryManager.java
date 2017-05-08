@@ -49,9 +49,7 @@ public class SolrQueryManager {
   }
 
   /**
-   * @param query the {@link SolrQuery}
-   * @param consumer the {@link Consumer}
-   * @return the {@link SearchResultsMetadata}
+   * @param facets the facets to list
    */
   public void facets(Facets facets) {
     select(new SolrQuery("*:*"), null, facets, null);
@@ -69,6 +67,7 @@ public class SolrQueryManager {
   /**
    * @param query the {@link SolrQuery}
    * @param consumer the {@link Consumer}
+   * @param facets   the {@link Facets}
    * @return the {@link SearchResultsMetadata}
    */
   public SearchResultsMetadata select(SolrQuery query, Consumer<SolrDocument> consumer, Facets facets) {
@@ -78,6 +77,7 @@ public class SolrQueryManager {
   /**
    * @param query the {@link SolrQuery}
    * @param consumer the {@link Consumer}
+   * @param highlights the {@link Highlights}
    * @return the {@link SearchResultsMetadata}
    */
   public SearchResultsMetadata select(SolrQuery query, Consumer<SolrDocument> consumer, Highlights highlights) {
@@ -88,10 +88,8 @@ public class SolrQueryManager {
   /**
    * @param query              the {@link SolrQuery}
    * @param documentConsumer   how to handle the results
-   * @param highlightConsumer  how to handle the highlights
-   * @param highlightField     the field to highlight
-   * @param snippet            the nb of extracts to return
-   * @param fragsize           the size of snippets to return
+   * @param facets             the {@link Facets}
+   * @param highlights         the {@link Highlights}
    * 
    * @return the {@link SearchResultsMetadata}
    */
