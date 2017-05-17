@@ -277,7 +277,16 @@ public class FlintConfig {
     String url = GlobalSettings.get("flint.solr");
     this._useSolr = url != null;
     if (this._useSolr) {
-      SolrFlintConfig.setup(ixml, url);
+      Collection<String> zkhosts = null;
+      if (!url.startsWith("http")) {
+        zkhosts = new ArrayList<>();
+        for (String zkh : url.split(",")) {
+          if (zkh != null && !zkh.isEmpty())
+            zkhosts.add(zkh);
+        }
+        url = null;
+      }
+      SolrFlintConfig.setup(ixml, url, zkhosts);
     }
     // manager
     int nbThreads = GlobalSettings.get("flint.threads.number", 10);

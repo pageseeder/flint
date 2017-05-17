@@ -5,6 +5,7 @@ package org.pageseeder.flint.solr;
 
 import java.io.IOException;
 import java.net.ConnectException;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
@@ -44,9 +45,9 @@ public class SolrCoreManager {
     // build client to connect to solr
     SolrFlintConfig config = SolrFlintConfig.getInstance();
     // use cloud?
-    String zkhosts = config.getZKHosts();
-    if (zkhosts != null) {
-      this._solr = new CloudSolrClient.Builder().withZkHost(config.getZKHosts()).build();
+    Collection<String> zkhosts = config.getZKHosts();
+    if (zkhosts != null && !zkhosts.isEmpty()) {
+      this._solr = new CloudSolrClient.Builder().withZkHost(zkhosts).build();
     } else {
       this._solr = new HttpSolrClient.Builder(config.getServerURL()).allowCompression(true).build();
     }

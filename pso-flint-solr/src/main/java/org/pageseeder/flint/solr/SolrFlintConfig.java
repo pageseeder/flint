@@ -1,6 +1,8 @@
 package org.pageseeder.flint.solr;
 
 import java.io.File;
+import java.util.ArrayList;
+import java.util.Collection;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -13,7 +15,7 @@ public class SolrFlintConfig {
 
   private final String _serverURL;
 
-  private final String _zkhosts;
+  private final Collection<String> _zkhosts = new ArrayList<>();
 
   private final File templatesFolder;
 
@@ -23,7 +25,7 @@ public class SolrFlintConfig {
     setup(templates, url, null);
   }
 
-  public static void setup(File templates, String url, String zkhosts) {
+  public static void setup(File templates, String url, Collection<String> zkhosts) {
     if (INSTANCE == null) {
       INSTANCE = new SolrFlintConfig(templates, url, zkhosts);
       LOGGER.info("Solr Flint has been setup with Solr server at {} and templates under {}", INSTANCE._serverURL, INSTANCE.templatesFolder);
@@ -40,17 +42,17 @@ public class SolrFlintConfig {
     return INSTANCE;
   }
 
-  private SolrFlintConfig(File templates, String url, String zkhosts) {
+  private SolrFlintConfig(File templates, String url, Collection<String> zkhosts) {
     this.templatesFolder = templates;
     this._serverURL = url;
-    this._zkhosts = zkhosts;
+    if (zkhosts != null) this._zkhosts.addAll(zkhosts);
   }
 
   public String getServerURL() {
     return this._serverURL;
   }
 
-  public String getZKHosts() {
+  public Collection<String> getZKHosts() {
     return this._zkhosts;
   }
 
