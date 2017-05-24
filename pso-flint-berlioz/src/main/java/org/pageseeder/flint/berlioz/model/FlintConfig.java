@@ -342,9 +342,12 @@ public class FlintConfig {
       // set filters
       def.setIndexingFilesRegex(regexInclude, regexExclude);
       // solr attributes
-      def.setSolrAttribute("router",   GlobalSettings.get("flint.index." + type + ".solr.router"));
-      def.setSolrAttribute("shards",   GlobalSettings.get("flint.index." + type + ".solr.shards"));
-      def.setSolrAttribute("replicas", GlobalSettings.get("flint.index." + type + ".solr.replicas"));
+      def.setSolrAttribute("num-shards",   GlobalSettings.get("flint.index." + type + ".solr.num-shards"));
+      def.setSolrAttribute("num-replicas", GlobalSettings.get("flint.index." + type + ".solr.num-replicas"));
+      def.setSolrAttribute("shards",       GlobalSettings.get("flint.index." + type + ".solr.shards"));
+      def.setSolrAttribute("max-shards",   GlobalSettings.get("flint.index." + type + ".solr.max-shards"));
+      def.setSolrAttribute("router",       GlobalSettings.get("flint.index." + type + ".solr.router"));
+      def.setSolrAttribute("router-field", GlobalSettings.get("flint.index." + type + ".solr.router-field"));
       // autosuggests
       loadAutoSuggests(def);
       this.indexConfigs.put(type, def);
