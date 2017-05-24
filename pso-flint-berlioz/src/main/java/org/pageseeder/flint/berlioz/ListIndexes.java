@@ -25,6 +25,7 @@ import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.store.Directory;
 import org.pageseeder.berlioz.BerliozException;
+import org.pageseeder.berlioz.GlobalSettings;
 import org.pageseeder.berlioz.content.Cacheable;
 import org.pageseeder.berlioz.content.ContentGenerator;
 import org.pageseeder.berlioz.content.ContentRequest;
@@ -34,6 +35,9 @@ import org.pageseeder.flint.IndexException;
 import org.pageseeder.flint.berlioz.model.FlintConfig;
 import org.pageseeder.flint.berlioz.model.IndexMaster;
 import org.pageseeder.flint.berlioz.model.SolrIndexMaster;
+import org.pageseeder.flint.berlioz.util.Files;
+import org.pageseeder.flint.solr.ClusterStatus;
+import org.pageseeder.flint.solr.SolrCollectionManager;
 import org.pageseeder.flint.solr.SolrFlintException;
 import org.pageseeder.xmlwriter.XMLWriter;
 import org.slf4j.Logger;
@@ -67,7 +71,11 @@ public final class ListIndexes implements ContentGenerator, Cacheable {
         xml.attribute("solr", "true");
         try {
           for (SolrIndexMaster index : config.listSolrIndexes("true".equals(req.getParameter("refresh", "false")))) {
-            indexToXML(index, xml);
+            xml.openElement("index");
+            xml.attribute("solr", "true");
+            xml.attribute("name", index.getIndex().getIndexID());
+            xml.attribute("content", '/' + Files.path(GlobalSettings.getAppData(), index.getIndex().getContentLocation()));
+            xml.closeElement();
           }
         } catch (SolrFlintException ex) {
           if (ex.cannotConnect()) {
@@ -75,6 +83,18 @@ public final class ListIndexes implements ContentGenerator, Cacheable {
           } else {
             xml.attribute("error", "Failed to list Solr indexes: "+ex.getMessage()+".");
             LOGGER.error("Failed to list indexes", ex);
+          }
+        }
+        // load details from solr directly
+        try {
+          ClusterStatus status = new SolrCollectionManager().getClusterStatus();
+          if (status != null) status.toXML(xml);
+        } catch (SolrFlintException ex) {
+          if (ex.cannotConnect()) {
+            xml.attribute("error", "Cannot connect to Solr server, please check the configuration.");
+          } else {
+            xml.attribute("error", "Failed to get cluster status: "+ex.getMessage()+".");
+            LOGGER.error("Failed to get cluster status", ex);
           }
         }
       } else {
@@ -126,21 +146,6 @@ public final class ListIndexes implements ContentGenerator, Cacheable {
         if (dreader != null) dreader.close();
       }
     }
-    xml.closeElement();
-  }
-
-  /**
-   * Output index.
-   * 
-   * @param index the index
-   * @param xml
-   * @throws IOException
-   */
-  private void indexToXML(SolrIndexMaster index, XMLWriter xml) throws IOException {
-    xml.openElement("index");
-    xml.attribute("solr", "true");
-    xml.attribute("name", index.getIndex().getIndexID());
-    index.getIndex().getIndexStatus().toXML(xml);
     xml.closeElement();
   }
 }

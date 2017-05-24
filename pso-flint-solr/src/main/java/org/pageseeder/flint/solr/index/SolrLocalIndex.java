@@ -29,10 +29,14 @@ public class SolrLocalIndex extends LocalIndex {
     super(name, config);
     this._root = root;
     this._io = new SolrIndexIO(this);
+    this._io.start();
   }
 
-  public SolrIndexStatus getIndexStatus() {
-    return this._io.getCurrentStatus();
+  public SolrLocalIndex(String name, String config, File root, Map<String, String> solrAttributes) throws SolrFlintException {
+    super(name, config);
+    this._root = root;
+    this._io = new SolrIndexIO(this);
+    this._io.start(solrAttributes);
   }
 
   @Override

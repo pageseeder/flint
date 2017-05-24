@@ -2,9 +2,8 @@ package org.pageseeder.flint.solr.index;
 
 import java.io.IOException;
 import java.util.Collection;
-import java.util.Date;
 import java.util.List;
-import java.util.Map.Entry;
+import java.util.Map;
 
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
@@ -13,11 +12,7 @@ import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
-import org.apache.solr.client.solrj.impl.HttpSolrClient.RemoteSolrException;
-import org.apache.solr.client.solrj.request.LukeRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
-import org.apache.solr.client.solrj.response.LukeResponse;
-import org.apache.solr.client.solrj.response.LukeResponse.FieldInfo;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.client.solrj.response.UpdateResponse;
 import org.apache.solr.common.params.SolrParams;
@@ -26,7 +21,7 @@ import org.pageseeder.flint.IndexException;
 import org.pageseeder.flint.IndexIO;
 import org.pageseeder.flint.content.DeleteRule;
 import org.pageseeder.flint.indexing.FlintDocument;
-import org.pageseeder.flint.solr.SolrCoreManager;
+import org.pageseeder.flint.solr.SolrCollectionManager;
 import org.pageseeder.flint.solr.SolrFlintConfig;
 import org.pageseeder.flint.solr.SolrFlintException;
 import org.pageseeder.flint.solr.SolrUtils;
@@ -41,9 +36,7 @@ public class SolrIndexIO implements IndexIO {
 
   private final String _collection;
 
-  private SolrIndexStatus currentStatus;
-
-  public SolrIndexIO(Index index) throws SolrFlintException {
+  public SolrIndexIO(Index index) {
     this._collection = index.getIndexID();
     // build client to connect to solr
     SolrFlintConfig config = SolrFlintConfig.getInstance();
@@ -54,15 +47,21 @@ public class SolrIndexIO implements IndexIO {
     } else {
       this._client = new HttpSolrClient.Builder(config.getServerURL()).allowCompression(true).build();
     }
+  }
+
+  public void start() throws SolrFlintException {
+    start(null);
+  }
+
+  public void start(Map<String, String> attributes) throws SolrFlintException {
     // make sure it exists on solr server
-    if (!new SolrCoreManager().createCore(index.getIndexID(), index.getCatalog()))
-      throw new SolrFlintException("Failed to create core "+index.getIndexID(), null);
+    if (!new SolrCollectionManager().createCollection(this._collection, attributes))
+      throw new SolrFlintException("Failed to create collection "+this._collection, null);
   }
 
   @Override
   public long getLastTimeUsed() {
-    SolrIndexStatus info = getCurrentStatus();
-    return info == null || info.getLastModified() == null ? -1 : info.getLastModified().getTime();
+    return -1;
   }
 
   @Override
@@ -78,7 +77,6 @@ public class SolrIndexIO implements IndexIO {
   @Override
   public void maybeRefresh() {
     // reset
-    this.currentStatus = null;
   }
 
   @Override
@@ -86,8 +84,6 @@ public class SolrIndexIO implements IndexIO {
     try {
       // commit
       this._client.commit(this._collection);
-      // reset
-      this.currentStatus = null;
     } catch (SolrServerException | IOException ex) {
       LOGGER.error("Failed to commit index!", ex);
     }
@@ -99,8 +95,6 @@ public class SolrIndexIO implements IndexIO {
     try {
       resp = this._client.deleteByQuery(this._collection, "*:*");
       resp = this._client.commit(this._collection);
-      // reset
-      this.currentStatus = null;
     } catch (SolrServerException | IOException ex) {
       throw new IndexException("Failed to clear index", ex);
     }
@@ -137,36 +131,6 @@ public class SolrIndexIO implements IndexIO {
     } catch (SolrServerException | IOException ex) {
       throw new IndexException("Failed to add document(s)", ex);
     }
-  }
-
-  public SolrIndexStatus getCurrentStatus() {
-    if (this.currentStatus == null) {
-      LukeRequest request = new LukeRequest();
-      request.setShowSchema(true);
-      try {
-        LukeResponse response = request.process(this._client, this._collection);
-        if (response != null) {
-          this.currentStatus = new SolrIndexStatus();
-          this.currentStatus
-              .numDocs(response.getNumDocs() != null ? response.getNumDocs() : 0)
-              .elapsedTime(response.getElapsedTime())
-              .numTerms(response.getNumTerms() != null ? response.getNumTerms() : 0)
-              .maxDoc(response.getMaxDoc() != null ? response.getMaxDoc() : 0)
-              .version(response.getIndexInfo().get("version").toString())
-              .lastModified((Date) response.getIndexInfo().get("lastModified"))
-              .current((Boolean) response.getIndexInfo().get("current"))
-              .numSegments((int) response.getIndexInfo().get("segmentCount"))
-              .size((Long) response.getIndexInfo().get("segmentsFileSizeInBytes"));
-          for (Entry<String, FieldInfo> field : response.getFieldInfo().entrySet()) {
-            this.currentStatus.field(field.getKey(), field.getValue().getDocs());
-          }
-        }
-
-      } catch (RemoteSolrException | SolrServerException | IOException ex) {
-        LOGGER.error("Cannot get solr info ", ex);
-      }
-    }
-    return this.currentStatus;
   }
 
   public QueryResponse query(SolrQuery query) {

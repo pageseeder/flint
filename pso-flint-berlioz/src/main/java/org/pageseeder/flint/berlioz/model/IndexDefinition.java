@@ -64,12 +64,19 @@ public class IndexDefinition implements XMLWritable {
    * the iXML template
    */
   private final File _template;
+
   /**
    * if there was an error with the template
    */
   private String templateError = null;
+
   /**
-   * if there was an error with the template
+   * solr attributes
+   */
+  private Map<String, String> _solrAttributes = new HashMap<>();
+
+  /**
+   * autosuggests
    */
   private Map<String, AutoSuggestDefinition> _autosuggests = new HashMap<>();
 
@@ -138,6 +145,14 @@ public class IndexDefinition implements XMLWritable {
   public AutoSuggestDefinition getAutoSuggest(String name) {
     assert name != null;
     return this._autosuggests.get(name);
+  }
+
+  public void setSolrAttribute(String name, String value) {
+    this._solrAttributes.put(name, value);
+  }
+
+  public String getSolrAttribute(String name) {
+    return this._solrAttributes.get(name);
   }
 
   public FileFilter buildFileFilter(final File root) {

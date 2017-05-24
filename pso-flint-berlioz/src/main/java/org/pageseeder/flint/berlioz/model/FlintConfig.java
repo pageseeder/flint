@@ -41,10 +41,9 @@ import org.pageseeder.flint.content.ContentTranslatorFactory;
 import org.pageseeder.flint.content.SourceForwarder;
 import org.pageseeder.flint.indexing.IndexBatch;
 import org.pageseeder.flint.local.LocalFileContentFetcher;
-import org.pageseeder.flint.solr.SolrCoreManager;
+import org.pageseeder.flint.solr.SolrCollectionManager;
 import org.pageseeder.flint.solr.SolrFlintConfig;
 import org.pageseeder.flint.solr.SolrFlintException;
-import org.pageseeder.flint.solr.index.SolrIndexStatus;
 import org.pageseeder.flint.templates.TemplatesCache;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -249,9 +248,18 @@ public class FlintConfig {
       }
       return true; // ???
     } else if (this.solrIndexes.containsKey(name)) {
+      // close index
       SolrIndexMaster master = this.solrIndexes.get(name);
       master.getIndex().close();
-      // TODO remove from solr server?
+      // delete collection from solr
+      try {
+        new SolrCollectionManager().deleteCollection(name);
+      } catch (SolrFlintException ex) {
+        LOGGER.error("Failed to delete collection {} from Solr server", name, ex);
+        return false;
+      }
+      // remove from local list
+      this.solrIndexes.remove(name);
       return true;
     }
     return false;
@@ -274,17 +282,14 @@ public class FlintConfig {
     this._directory = directory;
     this._ixml = ixml;
     // solr?
-    String url = GlobalSettings.get("flint.solr");
+    String url = GlobalSettings.get("flint.solr.url");
+    String zkh = GlobalSettings.get("flint.solr.zookeeper");
     this._useSolr = url != null;
     if (this._useSolr) {
-      Collection<String> zkhosts = null;
-      if (!url.startsWith("http")) {
-        zkhosts = new ArrayList<>();
-        for (String zkh : url.split(",")) {
-          if (zkh != null && !zkh.isEmpty())
-            zkhosts.add(zkh);
-        }
-        url = null;
+      Collection<String> zkhosts = new ArrayList<>();
+      for (String z : zkh.split(",")) {
+        if (z != null && !z.trim().isEmpty())
+          zkhosts.add(z.trim());
       }
       SolrFlintConfig.setup(ixml, url, zkhosts);
     }
@@ -336,6 +341,10 @@ public class FlintConfig {
       String regexExclude = GlobalSettings.get("flint.index." + type + ".files.excludes");
       // set filters
       def.setIndexingFilesRegex(regexInclude, regexExclude);
+      // solr attributes
+      def.setSolrAttribute("router",   GlobalSettings.get("flint.index." + type + ".solr.router"));
+      def.setSolrAttribute("shards",   GlobalSettings.get("flint.index." + type + ".solr.shards"));
+      def.setSolrAttribute("replicas", GlobalSettings.get("flint.index." + type + ".solr.replicas"));
       // autosuggests
       loadAutoSuggests(def);
       this.indexConfigs.put(type, def);
@@ -406,10 +415,10 @@ public class FlintConfig {
     if (refreshFromServer) {
       // clear existing
       this.solrIndexes.clear();
-      SolrCoreManager cores = new SolrCoreManager();
-      Map<String, SolrIndexStatus> all = cores.listCores();
+      SolrCollectionManager cores = new SolrCollectionManager();
+      Collection<String> all = cores.listCollections();
       // load indexes
-      for (String name : all.keySet()) {
+      for (String name : all) {
         try {
           getSolrMaster(name, true);
         } catch (SolrFlintException ex) {

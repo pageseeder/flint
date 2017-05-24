@@ -18,6 +18,7 @@ import org.pageseeder.flint.berlioz.model.IndexDefinition.AutoSuggestDefinition;
 import org.pageseeder.flint.indexing.FlintDocument;
 import org.pageseeder.flint.indexing.IndexJob;
 import org.pageseeder.flint.local.LocalFileContent;
+import org.pageseeder.flint.solr.SolrCollectionManager;
 import org.pageseeder.flint.solr.SolrFlintException;
 import org.pageseeder.flint.solr.index.SolrLocalIndex;
 import org.pageseeder.flint.solr.query.AutoSuggest;
@@ -38,7 +39,7 @@ public final class SolrIndexMaster {
   private final IndexDefinition _def;
 
   private final Map<String, AutoSuggest> _autosuggests = new HashMap<>();
-  
+
   public static SolrIndexMaster create(IndexManager mgr, String name,
          File content, IndexDefinition def) throws TransformerException, SolrFlintException {
     return create(mgr, name, content, "psml", def);
@@ -53,7 +54,20 @@ public final class SolrIndexMaster {
       String extension, IndexDefinition def) throws TransformerException, SolrFlintException {
     this._manager = mgr;
     this._contentRoot = content;
-    this._index = new SolrLocalIndex(name, def.getName(), content);
+    Map<String, String> atts = new HashMap<>();
+    String value = def.getSolrAttribute("router");
+    if (value != null) atts.put(SolrCollectionManager.ROUTER_NAME, value);
+    value = def.getSolrAttribute("num-shards");
+    if (value != null) atts.put(SolrCollectionManager.NUM_SHARDS, value);
+    value = def.getSolrAttribute("num-replicas");
+    if (value != null) atts.put(SolrCollectionManager.NUM_REPLICAS, value);
+    value = def.getSolrAttribute("shards");
+    if (value != null) atts.put(SolrCollectionManager.SHARDS, value);
+    value = def.getSolrAttribute("max-shards");
+    if (value != null) atts.put(SolrCollectionManager.MAX_SHARDS_PER_NODE, value);
+    value = def.getSolrAttribute("router-field");
+    if (value != null) atts.put(SolrCollectionManager.ROUTER_FIELD, value);
+    this._index = new SolrLocalIndex(name, def.getName(), content, atts);
     this._index.setTemplate(extension, def.getTemplate().toURI());
     this._def = def;
     this._indexingFileFilter = def.buildFileFilter(this._contentRoot);
