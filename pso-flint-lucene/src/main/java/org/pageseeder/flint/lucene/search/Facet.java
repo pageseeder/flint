@@ -15,6 +15,7 @@
  */
 package org.pageseeder.flint.lucene.search;
 import java.io.IOException;
+import java.util.List;
 
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
@@ -40,6 +41,8 @@ public interface Facet extends XMLWritable {
 
   /**
    * Returns the query that would correspond to this facet for the specified value.
+   * 
+   * @deprecated use {@link Filter} instead
    *
    * @param value the text of the term to match.
    * @return the requested query if it exists or <code>null</code>.
@@ -55,5 +58,17 @@ public interface Facet extends XMLWritable {
    * @throws IOException should it be reported by the searcher.
    */
   void compute(IndexSearcher searcher, Query base) throws IOException;
+
+  /**
+   * Compute the values for this flexible facet.
+   * The filters provided are applied to the base query except for the ones with the same name as this facet.
+   *
+   * @param searcher The searcher to use to compute the facet values.
+   * @param base     The base query to build the facet from.
+   * @param filters  The filters to re-apply to the base query
+   *
+   * @throws IOException should it be reported by the searcher.
+   */
+  void compute(IndexSearcher searcher, Query base, List<Filter> filters) throws IOException;
 
 }

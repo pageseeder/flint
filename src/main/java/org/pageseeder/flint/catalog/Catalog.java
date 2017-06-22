@@ -1,7 +1,10 @@
 package org.pageseeder.flint.catalog;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
+import java.util.List;
 
 import org.pageseeder.flint.indexing.FlintField;
 import org.pageseeder.flint.indexing.FlintField.DocValuesType;
@@ -56,6 +59,18 @@ public class Catalog implements XMLWritable {
   public DocValuesType getDocValuesType(String fieldname) {
     CatalogEntry entry = this._fields.get(fieldname);
     return entry == null ? null : entry.docValues;
+  }
+
+  public Collection<String> getFieldsByPrefix(String prefix) {
+    List<String> matching = new ArrayList<>();
+    synchronized (this._fields) {
+      for (String field : this._fields.keySet()) {
+        if (field.startsWith(prefix)) {
+          matching.add(field);
+        }
+      }
+    }
+    return matching;
   }
 
   public void clear() {

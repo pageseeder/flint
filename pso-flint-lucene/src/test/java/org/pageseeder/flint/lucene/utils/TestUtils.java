@@ -1,4 +1,4 @@
-package org.pageseeder.flint.utils;
+package org.pageseeder.flint.lucene.utils;
 
 import java.io.ByteArrayInputStream;
 import java.io.File;

@@ -4,7 +4,9 @@ import java.text.DateFormat;
 import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.apache.lucene.document.CompressionTools;
 import org.apache.lucene.document.DateTools.Resolution;
@@ -21,7 +23,6 @@ import org.apache.lucene.document.SortedDocValuesField;
 import org.apache.lucene.document.SortedNumericDocValuesField;
 import org.apache.lucene.document.SortedSetDocValuesField;
 import org.apache.lucene.index.IndexOptions;
-import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.NumericUtils;
 import org.pageseeder.flint.catalog.Catalogs;
@@ -39,39 +40,59 @@ public class LuceneUtils {
   private static final Logger LOGGER = LoggerFactory.getLogger(LuceneUtils.class);
 
   public static List<Document> toDocuments(List<FlintDocument> fdocs) {
+    Map<String, FlintField> forCatalog = new HashMap<String, FlintField>();
     List<Document> docs = new ArrayList<Document>();
     for (FlintDocument fdoc : fdocs) {
       Document doc = new Document();
       for (FlintField field : fdoc.fields()) {
-        IndexableField thefield = toField(field);
+        Field thefield = toField(field, forCatalog);
         if (thefield != null) {
           doc.add(thefield);
         } else {
           LOGGER.warn("Ignoring invalid field {}", field.name());
         }
       }
+      // add fields to catalog
+      for (FlintField ff : forCatalog.values()) {
+        if (ff.catalog() != null) Catalogs.newField(ff.catalog(), ff);
+      }
       docs.add(doc);
     }
     return docs;
   }
 
-  public static IndexableField toField(FlintField ffield) {
+  private static Field toField(FlintField ffield, Map<String, FlintField> forCatalog) {
     if (ffield.name() == null)
       throw new IllegalStateException("Unable to build field, field name not set");
     if (ffield.index() == null)
       throw new IllegalStateException("Unable to build field, field index not set");
     if (ffield.value() == null)
       throw new IllegalStateException("Unable to build field, field value not set");
+
+    Field field;
     // check if compressed first
     if (ffield.compressed()) {
-      return toCompressedField(ffield);
+      field = toCompressedField(ffield);
+      if (field != null) forCatalog.put(ffield.name(), ffield); // priority over normal fields
     }
     // check if docvalues next
-    if (ffield.isDocValues()) {
-      return toDocValuesField(ffield);
+    else if (ffield.isDocValues()) {
+      field = toDocValuesField(ffield);
+      if (field != null) forCatalog.put(ffield.name(), ffield); // priority over normal fields
     }
     // normal field then
-    return toNormalField(ffield);
+    else {
+      field = toNormalField(ffield);
+      if (field != null && !forCatalog.containsKey(ffield.name())) // lesser priority
+        forCatalog.put(ffield.name(), ffield);
+    }
+    if (field != null) {
+      // Sets the boost if necessary
+      if (ffield.boost() != FlintField.DEFAULT_BOOST_VALUE) {
+        field.setBoost(ffield.boost());
+      }
+    }
+    return field;
   }
 
   public static Resolution toResolution(org.pageseeder.flint.indexing.FlintField.Resolution resolution) {
@@ -92,7 +113,7 @@ public class LuceneUtils {
   //                                      private helpers
   // ----------------------------------------------------------------------------------------------
 
-  private static IndexableField toNormalField(FlintField ffield) {
+  private static Field toNormalField(FlintField ffield) {
  // construct the field type
     FieldType type = new FieldType();
     type.setStored(ffield.store());
@@ -155,16 +176,9 @@ public class LuceneUtils {
     } else {
       field = new Field(ffield.name(), value, type);
     }
-    // Sets the boost if necessary
-    if (ffield.boost() != FlintField.DEFAULT_BOOST_VALUE) {
-      field.setBoost(ffield.boost());
-    }
-    // add it to catalog
-    if (ffield.catalog() != null)
-      Catalogs.newField(ffield.catalog(), ffield);
     return field;
   }
-  private static IndexableField toDocValuesField(FlintField ffield) {
+  private static Field toDocValuesField(FlintField ffield) {
     Field field = null;
     // check doc values
     switch (ffield.docValues()) {
@@ -174,7 +188,18 @@ public class LuceneUtils {
         field = new SortedSetDocValuesField(ffield.name(), new BytesRef(ffield.value()));
         break;
       case SORTED_NUMERIC:
-        if (ffield.numeric() != null) {
+        if (ffield.numeric() != null && ffield.dateformat() != null) {
+          Number date = Dates.toNumber(toDate(ffield.value().toString(), ffield.dateformat()), toResolution(ffield.resolution()));
+          // only int or long possible for dates
+          if (date != null && date instanceof Long) {
+            field = new SortedNumericDocValuesField(ffield.name(), (Long) date);
+          } else if (date != null && date instanceof Integer) {
+            field = new SortedNumericDocValuesField(ffield.name(), (Integer) date);
+          } else {
+            LOGGER.warn("Ignoring field {} as it has a date format but no date", ffield.name());
+          }
+          break;
+        } else if (ffield.numeric() != null) {
           switch (ffield.numeric()) {
             case DOUBLE:
               field = new SortedNumericDocValuesField(ffield.name(), NumericUtils.doubleToSortableLong(Double.parseDouble(ffield.value().toString())));
@@ -185,8 +210,8 @@ public class LuceneUtils {
             case INT:
               field = new SortedNumericDocValuesField(ffield.name(), Integer.parseInt(ffield.value().toString()));
           }
+          break;
         }
-        break;
       case SORTED:
         field = new SortedDocValuesField(ffield.name(), new BytesRef(ffield.value()));
         break;
@@ -204,25 +229,15 @@ public class LuceneUtils {
           }
         }
     }
-    if (field == null) return null;
-    // Sets the boost if necessary
-    if (ffield.boost() != FlintField.DEFAULT_BOOST_VALUE) {
-      field.setBoost(ffield.boost());
-    }
     return field;
   }
 
-  private static IndexableField toCompressedField(FlintField ffield) {
+  private static Field toCompressedField(FlintField ffield) {
     // Generate a compressed field
     byte[] value = CompressionTools.compressString(ffield.value().toString());
     FieldType type = new FieldType();
     type.setStored(true);
-    Field field = new Field(ffield.name(), value, type);
-    // Sets the boost if necessary
-    if (ffield.boost() != FlintField.DEFAULT_BOOST_VALUE) {
-      field.setBoost(ffield.boost());
-    }
-    return field;
+    return new Field(ffield.name(), value, type);
   }
 
   private static IndexOptions toIndexOptions(org.pageseeder.flint.indexing.FlintField.IndexOptions options) {

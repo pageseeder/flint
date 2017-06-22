@@ -38,6 +38,9 @@ import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.TopFieldDocs;
 import org.pageseeder.flint.IndexException;
+import org.pageseeder.flint.indexing.FlintDocument;
+import org.pageseeder.flint.indexing.FlintField;
+import org.pageseeder.flint.indexing.FlintField.NumericType;
 import org.pageseeder.flint.lucene.LuceneIndexIO;
 import org.pageseeder.flint.lucene.search.Fields;
 import org.pageseeder.flint.lucene.util.Dates;
@@ -306,6 +309,24 @@ public final class SearchResults implements XMLWritable {
   }
 
   /**
+   * @return the index searcher, can be used to compute facets
+   * 
+   * @throws IndexException if the results have been terminated and the searcher closed
+   */
+  public IndexSearcher searcher() throws IndexException {
+    if (this._terminated)
+      throw new IndexException("Cannot retrieve searcher after termination", new IllegalStateException());
+    return this._searcher;
+  }
+
+  /**
+   * @return the original query
+   */
+  public SearchQuery query() {
+    return this._query;
+  }
+
+  /**
    * Serialises the search results as XML.
    *
    * @param xml The XML writer.
@@ -441,6 +462,72 @@ public final class SearchResults implements XMLWritable {
           xml.attribute("numeric-type", "int");
         }
         if (f.binaryValue() != null) xml.attribute("compressed", "true");
+        xml.writeText(value);
+        xml.closeElement();
+      }
+    }
+    // close 'document'
+    xml.closeElement();
+    
+  }
+
+  public static void flintDocumentToXML(FlintDocument doc, int timezoneOffset, XMLWriter xml) throws IOException {
+    flintDocumentToXML(doc, null, null, timezoneOffset, xml);
+  }
+
+  private static void flintDocumentToXML(FlintDocument doc, String extract, String score, int timezoneOffset, XMLWriter xml) throws IOException {
+    xml.openElement("result", true);
+
+    if (score != null) xml.attribute("score", score);
+    if (extract != null) xml.writeXML(extract);
+
+    // display the value of each field
+    for (FlintField f : doc.fields()) {
+      // Retrieve the value
+      String value = f.toString();
+      ValueType type = ValueType.STRING;
+      // check for numeric value
+      NumericType nt = f.numeric();
+      if (nt != null) {
+        if (nt == NumericType.LONG)        type = ValueType.LONG;
+        else if (nt == NumericType.DOUBLE) type = ValueType.DOUBLE;
+        else if (nt == NumericType.INT)    type = ValueType.INT;
+        else if (nt == NumericType.FLOAT)  type = ValueType.FLOAT;
+      // format dates using ISO 8601 when possible
+      } else if (value != null && value.length() > 0 && f.name().contains("date") && Dates.isLuceneDate(value)) {
+        try {
+          if (value.length() > 8) {
+            value = Dates.toISODateTime(value, timezoneOffset);
+            type = ValueType.DATETIME;
+          } else {
+            value = Dates.toISODate(value);
+            if (value.length() == 10) {
+              type = ValueType.DATE;
+            }
+          }
+        } catch (ParseException ex) {
+          LOGGER.warn("Unparseable date found {}", value);
+        }
+      }
+      // unnecessary to return the full value of long fields
+      if (value != null && value.length() < MAX_FIELD_VALUE_LENGTH) {
+        xml.openElement("field");
+        xml.attribute("name", f.name());
+        // Display the correct attributes so that we know we can format the date
+        if (type == ValueType.DATE) {
+          xml.attribute("date", value);
+        } else if (type == ValueType.DATETIME) {
+          xml.attribute("datetime", value);
+        } else if (type == ValueType.LONG) {
+          xml.attribute("numeric-type", "long");
+        } else if (type == ValueType.DOUBLE) {
+          xml.attribute("numeric-type", "double");
+        } else if (type == ValueType.FLOAT) {
+          xml.attribute("numeric-type", "float");
+        } else if (type == ValueType.INT) {
+          xml.attribute("numeric-type", "int");
+        }
+        if (f.compressed()) xml.attribute("compressed", "true");
         xml.writeText(value);
         xml.closeElement();
       }

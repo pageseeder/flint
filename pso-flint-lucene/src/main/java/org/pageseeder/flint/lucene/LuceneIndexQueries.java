@@ -63,37 +63,6 @@ public final class LuceneIndexQueries {
    */
   private static final Logger LOGGER = LoggerFactory.getLogger(LuceneIndexQueries.class);
 
-//  private final IndexManager _manager;
-//  /**
-//   * Simple constructor which will use a SilentListener.
-//   *
-//   * @param cf the Content Fetcher used to retrieve the content to index.
-//   */
-//  public LuceneIndexManager(ContentFetcher cf) {
-//    this._manager = new IndexManager(cf);
-//  }
-//
-//  /**
-//   * Simple Constructor.
-//   *
-//   * @param cf       the Content Fetcher used to retrieve the content to index.
-//   * @param listener an object used to record events
-//   */
-//  public LuceneIndexManager(ContentFetcher cf, IndexListener listener) {
-//    this._manager = new IndexManager(cf, listener);
-//  }
-//
-//  /**
-//   * Simple Constructor.
-//   *
-//   * @param cf        the Content Fetcher used to retrieve the content to index.
-//   * @param listener  an object used to record events
-//   * @param nbThreads the number of indexing threads
-//   */
-//  public LuceneIndexManager(ContentFetcher cf, IndexListener listener, int nbThreads, boolean withSingleThread) {
-//    this._manager = new IndexManager(cf, listener, nbThreads, withSingleThread);
-//  }
-
   // Public external methods
   // ----------------------------------------------------------------------------------------------
 
@@ -204,8 +173,8 @@ public final class LuceneIndexQueries {
   public static SearchResults query(List<Index> indexes, SearchQuery query, SearchPaging paging) throws IndexException {
     Query lquery = query.toQuery();
     if (lquery == null)
-      throw new IndexException("Failed performing a query because the query is null",
-          new NullPointerException("Null query"));
+      throw new IndexException("Failed performing a query because the query is null", new NullPointerException("Null query"));
+    // find all readers
     Map<LuceneIndexIO, IndexReader> readersMap = new HashMap<>();
     IndexReader[] readers = new IndexReader[indexes.size()];
     // grab a reader for each indexes
@@ -379,7 +348,7 @@ public final class LuceneIndexQueries {
    * @return
    * @throws IndexException
    */
-  public static synchronized LuceneIndexIO getIndexIO(Index index) throws IndexException {
+  private static LuceneIndexIO getIndexIO(Index index) throws IndexException {
     if (index == null) return null;
     IndexIO io = index.getIndexIO();
     if (io instanceof LuceneIndexIO)

@@ -1,4 +1,4 @@
-package org.pageseeder.flint.utils;
+package org.pageseeder.flint.lucene.utils;
 
 import java.io.File;
 
@@ -18,7 +18,7 @@ import org.pageseeder.flint.content.SourceForwarder;
 import org.pageseeder.flint.indexing.IndexJob;
 import org.pageseeder.flint.indexing.IndexJob.Priority;
 import org.pageseeder.flint.lucene.LuceneIndex;
-import org.pageseeder.flint.query.NumberParameterTest;
+import org.pageseeder.flint.lucene.query.NumberParameterTest;
 
 public class DocValuesUpdaterTest {
 

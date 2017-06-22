@@ -22,6 +22,9 @@ import java.util.regex.Pattern;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.IndexableField;
+import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.Query;
+import org.pageseeder.flint.lucene.search.DocumentCounter;
 import org.pageseeder.flint.lucene.search.Fields;
 import org.pageseeder.flint.lucene.search.Terms;
 import org.pageseeder.xmlwriter.XMLWriter;
@@ -39,6 +42,22 @@ public final class Documents {
    * Utility class need no constructor.
    */
   private Documents() {
+  }
+
+  /**
+   * Count the number of documents matching the specified query.
+   *
+   * @param searcher the index search to use.
+   * @param query    the query.
+   *
+   * @return the number of documents matching the specified query.
+   *
+   * @throws IOException if thrown by the searcher.
+   */
+  public static int count(IndexSearcher searcher, Query query) throws IOException {
+    DocumentCounter counter = new DocumentCounter();
+    searcher.search(query, counter);
+    return counter.getCount();
   }
 
   /**

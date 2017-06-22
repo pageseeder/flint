@@ -1,4 +1,4 @@
-package org.pageseeder.flint.utils;
+package org.pageseeder.flint.lucene.utils;
 
 import org.pageseeder.flint.indexing.IndexBatch;
 import org.pageseeder.flint.indexing.IndexJob;

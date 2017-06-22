@@ -16,16 +16,18 @@
 package org.pageseeder.flint.lucene.search;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.List;
 
-import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.BooleanQuery;
+import org.apache.lucene.search.FieldValueQuery;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermQuery;
+import org.apache.lucene.util.NumericUtils;
+import org.pageseeder.flint.indexing.FlintField.NumericType;
+import org.pageseeder.flint.lucene.query.NumberParameter;
 import org.pageseeder.flint.lucene.util.Beta;
 import org.pageseeder.flint.lucene.util.Bucket;
 import org.pageseeder.flint.lucene.util.Bucket.Entry;
@@ -39,7 +41,7 @@ import org.pageseeder.xmlwriter.XMLWriter;
  * @version 16 February 2012
  */
 @Beta
-public final class FieldFacet implements XMLWritable, Facet {
+public final class FlexibleFieldFacet implements XMLWritable, Facet {
 
   /**
    * The default number of facet values if not specified.
@@ -52,9 +54,14 @@ public final class FieldFacet implements XMLWritable, Facet {
   private final String _name;
 
   /**
-   * The queries used to calculate each facet.
+   * The max nb of terms
    */
-  private final List<TermQuery> _queries;
+  private final int _maxTerms;
+
+  /**
+   * If this facet is a number
+   */
+  private final NumericType _numeric;
 
   /**
    * The queries used to calculate each facet.
@@ -62,14 +69,31 @@ public final class FieldFacet implements XMLWritable, Facet {
   private transient Bucket<Term> _bucket;
 
   /**
+   * If the facet was computed in a "flexible" way
+   */
+  private transient boolean flexible = false;
+
+  /**
+   * The total number of results containing the field used in this facet
+   */
+  private transient int totalResults = 0;
+
+  /**
+   * The total number of terms found in the search results
+   */
+  private transient int totalTerms = 0;
+
+  /**
    * Creates a new facet with the specified name;
    *
-   * @param name    The name of the facet.
-   * @param queries The subqueries to use on top of the base query to calculate the facet values.
+   * @param name     The name of the facet.
+   * @param numeric  If this facet is numeric
+   * @param maxterms The maximum number of terms to return
    */
-  private FieldFacet(String name, List<TermQuery> queries) {
+  private FlexibleFieldFacet(String name, NumericType numeric, int maxterms) {
     this._name = name;
-    this._queries = queries;
+    this._numeric = numeric;
+    this._maxTerms = maxterms;
   }
 
   /**
@@ -82,49 +106,88 @@ public final class FieldFacet implements XMLWritable, Facet {
   }
 
   /**
-   * Returns the query for given value if it the specified value matches the text for the term.
+   * Returns the query for given value.
+   *
+   * @deprecated use {@link Filter}
    *
    * @param value the text of the term to match.
-   * @return the requested query if it exists or <code>null</code>.
+   * @return the requested query.
    */
   @Override
   public Query forValue(String value) {
     if (value == null) return null;
-    for (TermQuery t : this._queries) {
-      if (value.equals(t.getTerm().text())) return t;
-    }
-    // Why null?
     return new TermQuery(new Term(this._name, value));
   }
 
   /**
-   * Computes each facet option.
+   * Computes each facet option as a flexible facet.
+   * All filters but the ones using the same field as this facet are applied to the base query before computing the numbers.
    *
    * @param searcher the index search to use.
    * @param base     the base query.
+   * @param filters  the filters applied to the base query
    * @param size     the maximum number of field values to compute.
    *
    * @throws IOException if thrown by the searcher.
    */
-  public void compute(IndexSearcher searcher, Query base, int size) throws IOException {
+  public void compute(IndexSearcher searcher, Query base, List<Filter> filters, int size) throws IOException {
     // If the base is null, simply calculate for each query
     if (base == null) {
       compute(searcher, size);
     } else {
       if (size < 0) throw new IllegalArgumentException("size < 0");
-      // Otherwise, make a boolean query of the base AND each facet query
+      // reset total terms
+      this.totalTerms = 0;
+      // find all terms
+      List<Term> terms = Terms.terms(searcher.getIndexReader(), this._name);
+      if (this._maxTerms > 0 && terms.size() > this._maxTerms) return;
+      // Otherwise, re-compute the query without the corresponding filter 
+      Query filtered = base;
+      if (filters != null) {
+        this.flexible = true;
+        for (Filter filter : filters) {
+          if (!this._name.equals(filter.name()))
+            filtered = filter.filterQuery(filtered);
+        }
+      }
       Bucket<Term> bucket = new Bucket<Term>(size);
       DocumentCounter counter = new DocumentCounter();
-      for (TermQuery q : this._queries) {
+      for (Term t : terms) {
         BooleanQuery query = new BooleanQuery();
-        query.add(base, Occur.MUST);
-        query.add(q, Occur.MUST);
+        query.add(filtered, Occur.MUST);
+        query.add(termToQuery(t), Occur.MUST);
         searcher.search(query, counter);
-        bucket.add(q.getTerm(), counter.getCount());
+        int count = counter.getCount();
+        bucket.add(t, count);
         counter.reset();
+        if (count >= 0) this.totalTerms++;
       }
       this._bucket = bucket;
+      // compute total results
+      BooleanQuery query = new BooleanQuery();
+      query.add(base, Occur.MUST);
+      query.add(new FieldValueQuery(this._name), Occur.MUST);
+      searcher.search(query, counter);
+      this.totalResults = counter.getCount();
     }
+  }
+
+  /**
+   * Computes each facet option.
+   *
+   * <p>Same as <code>compute(searcher, base, 10);</code>.
+   *
+   * <p>Defaults to 10.
+   *
+   * @see #compute(Searcher, Query, int)
+   *
+   * @param searcher the index search to use.
+   * @param base     the base query.
+   *
+   * @throws IOException if thrown by the searcher.
+   */
+  public void compute(IndexSearcher searcher, Query base, int size) throws IOException {
+    compute(searcher, base, null, size);
   }
 
   /**
@@ -143,7 +206,26 @@ public final class FieldFacet implements XMLWritable, Facet {
    */
   @Override
   public void compute(IndexSearcher searcher, Query base) throws IOException {
-    compute(searcher, base, DEFAULT_MAX_NUMBER_OF_VALUES);
+    compute(searcher, base, null, DEFAULT_MAX_NUMBER_OF_VALUES);
+  }
+
+  /**
+   * Computes each facet option as a flexible facet.
+   *
+   * <p>Same as <code>computeFlexible(searcher, base, filters, 10);</code>.
+   *
+   * <p>Defaults to 10.
+   *
+   * @see #computeFlexible(IndexSearcher, Query, List, int)
+   *
+   * @param searcher the index search to use.
+   * @param base     the base query.
+   * @param filters  the filters applied to the base query
+   *
+   * @throws IOException if thrown by the searcher.
+   */
+  public void compute(IndexSearcher searcher, Query base, List<Filter> filters) throws IOException {
+    compute(searcher, base, filters, DEFAULT_MAX_NUMBER_OF_VALUES);
   }
 
   /**
@@ -155,28 +237,80 @@ public final class FieldFacet implements XMLWritable, Facet {
    * @throws IOException if thrown by the searcher.
    */
   private void compute(IndexSearcher searcher, int size) throws IOException {
+    // find all terms
+    List<Term> terms = Terms.terms(searcher.getIndexReader(), this._name);
+    if (this._maxTerms > 0 && terms.size() > this._maxTerms) return;
     Bucket<Term> bucket = new Bucket<Term>(size);
     DocumentCounter counter = new DocumentCounter();
-    for (TermQuery q : this._queries) {
-      searcher.search(q, counter);
-      bucket.add(q.getTerm(), counter.getCount());
+    for (Term t : terms) {
+      searcher.search(termToQuery(t), counter);
+      bucket.add(t, counter.getCount());
       counter.reset();
     }
+    // set totals
+    this.totalTerms = terms.size();
+    this.totalResults = 0;
     this._bucket = bucket;
+  }
+
+  /**
+   * Create a query for the term given, using the numeric type if there is one.
+   * 
+   * @param t the term
+   * 
+   * @return the query
+   */
+  private Query termToQuery(Term t) {
+    if (this._numeric != null) {
+      switch (this._numeric) {
+        case INT:
+          return NumberParameter.newIntParameter(t.field(), NumericUtils.prefixCodedToInt(t.bytes())).toQuery();
+        case LONG:
+          return NumberParameter.newLongParameter(t.field(), NumericUtils.prefixCodedToLong(t.bytes())).toQuery();
+        case DOUBLE:
+          return NumberParameter.newDoubleParameter(t.field(), NumericUtils.sortableLongToDouble(NumericUtils.prefixCodedToLong(t.bytes()))).toQuery();
+        case FLOAT:
+          return NumberParameter.newFloatParameter(t.field(), NumericUtils.sortableIntToFloat(NumericUtils.prefixCodedToInt(t.bytes()))).toQuery();
+      }
+    }
+    return new TermQuery(t);
+  }
+
+  /**
+   * Create a query for the term given, using the numeric type if there is one.
+   * 
+   * @param t the term
+   * 
+   * @return the query
+   */
+  private String termToText(Term t) {
+    if (this._numeric != null) {
+      switch (this._numeric) {
+        case INT:
+          return String.valueOf(NumericUtils.prefixCodedToInt(t.bytes()));
+        case LONG:
+          return String.valueOf(NumericUtils.prefixCodedToLong(t.bytes()));
+        case DOUBLE:
+          return String.valueOf(NumericUtils.sortableLongToDouble(NumericUtils.prefixCodedToLong(t.bytes())));
+        case FLOAT:
+          return String.valueOf(NumericUtils.sortableIntToFloat(NumericUtils.prefixCodedToInt(t.bytes())));
+      }
+    }
+    return t.text();
   }
 
   @Override
   public void toXML(XMLWriter xml) throws IOException {
     xml.openElement("facet", true);
     xml.attribute("name", this._name);
-    xml.attribute("type", "field");
-    xml.attribute("computed", Boolean.toString(this._bucket != null));
+    xml.attribute("type", this._numeric == null ? "field" : "numeric-field");
+    xml.attribute("flexible", String.valueOf(this.flexible));
+    xml.attribute("total-terms", this.totalTerms);
+    xml.attribute("total-results", this.totalResults);
     if (this._bucket != null) {
-      xml.attribute("total", this._bucket.getConsidered());
       for (Entry<Term> e : this._bucket.entrySet()) {
         xml.openElement("term");
-        xml.attribute("field", e.item().field());
-        xml.attribute("text", e.item().text());
+        xml.attribute("text", termToText(e.item()));
         xml.attribute("cardinality", e.count());
         xml.closeElement();
       }
@@ -193,40 +327,57 @@ public final class FieldFacet implements XMLWritable, Facet {
   /**
    * Creates a new facet for the specified field.
    *
-   * @param field  the field for this facet.
-   * @param reader the reader to use.
+   * @param field The name of the facet.
    *
    * @return the corresponding Facet ready to use with a base query.
    *
    * @throws IOException if thrown by the reader.
    */
-  public static FieldFacet newFacet(String field, IndexReader reader) throws IOException {
-    List<Term> terms = Terms.terms(reader, field);
-    List<TermQuery> subs = new ArrayList<TermQuery>(terms.size());
-    for (Term t : terms) {
-      subs.add(new TermQuery(t));
-    }
-    return new FieldFacet(field, subs);
+  public static FlexibleFieldFacet newFacet(String field) throws IOException {
+    return new FlexibleFieldFacet(field, null, -1);
   }
 
   /**
    * Creates a new facet for the specified field.
    *
-   * @param field  the field for this facet.
-   * @param reader the reader to use.
+   * @param field     The name of the facet.
+   * @param maxValues The maximum number of terms to return
    *
    * @return the corresponding Facet ready to use with a base query.
    *
    * @throws IOException if thrown by the reader.
    */
-  public static FieldFacet newFacet(String field, IndexReader reader, int maxValues) throws IOException {
-    List<Term> terms = Terms.terms(reader, field);
-    if (terms.size() > maxValues) return null;
-    List<TermQuery> subs = new ArrayList<TermQuery>(terms.size());
-    for (Term t : terms) {
-      subs.add(new TermQuery(t));
-    }
-    return new FieldFacet(field, subs);
+  public static FlexibleFieldFacet newFacet(String field, int maxValues) throws IOException {
+    return new FlexibleFieldFacet(field, null, maxValues);
+  }
+
+  /**
+   * Creates a new facet for the specified field.
+   *
+   * @param field     The name of the facet.
+   * @param type      If this facet is numeric
+   *
+   * @return the corresponding Facet ready to use with a base query.
+   *
+   * @throws IOException if thrown by the reader.
+   */
+  public static FlexibleFieldFacet newFacet(String field, NumericType type) throws IOException {
+    return new FlexibleFieldFacet(field, type, -1);
+  }
+
+  /**
+   * Creates a new facet for the specified field.
+   *
+   * @param field     The name of the facet.
+   * @param type      If this facet is numeric
+   * @param maxValues The maximum number of terms to return
+   *
+   * @return the corresponding Facet ready to use with a base query.
+   *
+   * @throws IOException if thrown by the reader.
+   */
+  public static FlexibleFieldFacet newFacet(String field, NumericType type, int maxValues) throws IOException {
+    return new FlexibleFieldFacet(field, type, maxValues);
   }
 
 }

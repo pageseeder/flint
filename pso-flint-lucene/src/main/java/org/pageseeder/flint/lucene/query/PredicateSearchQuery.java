@@ -56,6 +56,11 @@ public final class PredicateSearchQuery implements SearchQuery {
   private final Sort _sort;
 
   /**
+   * The default field.
+   */
+  private final String _defaultfield;
+
+  /**
    * A flag to specify if wildcard ('*' or '?') is allowed as the first character of the predicate.
    */
   private boolean _allowLeadingWildcard = false;
@@ -130,9 +135,24 @@ public final class PredicateSearchQuery implements SearchQuery {
    * @throws IllegalArgumentException If the predicate is <code>null</code>.
    */
   public PredicateSearchQuery(String predicate, Analyzer analyzer, Sort sort) throws IllegalArgumentException {
+    this(predicate, analyzer, null, sort);
+  }
+
+  /**
+   * Creates new predicate search query.
+   *
+   * @param predicate    The predicate for this query.
+   * @param analyzer     The analyzer to use for the query, should be the same as the one used to write the Index.
+   * @param defaultfield The default field
+   * @param sort         The sort order for the results.
+   *
+   * @throws IllegalArgumentException If the predicate is <code>null</code>.
+   */
+  public PredicateSearchQuery(String predicate, Analyzer analyzer, String defaultfield, Sort sort) throws IllegalArgumentException {
     if (predicate == null) throw new IllegalArgumentException("predicate is null");
     this._predicate = predicate;
     this._analyser = analyzer;
+    this._defaultfield = defaultfield;
     this._sort = sort;
   }
 
@@ -161,7 +181,7 @@ public final class PredicateSearchQuery implements SearchQuery {
     if (this._predicate == null)
       return null;
     try {
-      QueryParser parser = new QueryParser(null, this._analyser);
+      QueryParser parser = new QueryParser(this._defaultfield, this._analyser);
       parser.setAllowLeadingWildcard(this._allowLeadingWildcard);
       return parser.parse(this._predicate);
     } catch (ParseException ex) {

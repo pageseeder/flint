@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import org.apache.lucene.analysis.Analyzer;
@@ -31,13 +32,13 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanClause.Occur;
-import org.pageseeder.flint.lucene.search.Fields;
-import org.pageseeder.flint.lucene.search.Terms;
-import org.pageseeder.flint.lucene.util.Beta;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.PhraseQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermQuery;
+import org.pageseeder.flint.lucene.search.Fields;
+import org.pageseeder.flint.lucene.search.Terms;
+import org.pageseeder.flint.lucene.util.Beta;
 
 /**
  * A set of utility methods related to query objects in Lucene.
@@ -59,33 +60,6 @@ public final class Queries {
   }
 
   /**
-   * Returns the term or phrase query corresponding to the specified text.
-   *
-   * <p>If the text is surrounded by double quotes, this method will
-   * return a {@link PhraseQuery} otherwise, it will return a simple {@link TermQuery}.
-   *
-   * <p>Note: Quotation marks are thrown away.
-   *
-   * @param field the field to construct the terms.
-   * @param text  the text to construct the query from.
-   * @return the corresponding query.
-   */
-  @Beta
-  public static Query toTermOrPhraseQuery(String field, String text) {
-    if (field == null) throw new NullPointerException("field");
-    if (text == null) throw new NullPointerException("text");
-    boolean isPhrase = IS_A_PHRASE.matcher(text).matches();
-    if (isPhrase) {
-      PhraseQuery phrase = new PhraseQuery();
-      String[] terms = text.substring(1, text.length()-1).split("\\s+");
-      for (String t : terms) {
-        phrase.add(new Term(field, t));
-      }
-      return phrase;
-    } else return new TermQuery(new Term(field, text));
-  }
-
-  /**
    * Returns a boolean query combining all the specified queries in {@link Occur#MUST} clauses
    * as it is were an AND operator.
    *
@@ -93,6 +67,7 @@ public final class Queries {
    * @return The combined queries.
    */
   public static Query and(Query... queries) {
+    if (queries.length == 1) return queries[0];
     BooleanQuery query = new BooleanQuery();
     for (Query q : queries) {
       query.add(q, Occur.MUST);
@@ -108,6 +83,7 @@ public final class Queries {
    * @return The combined queries.
    */
   public static Query or(Query... queries) {
+    if (queries.length == 1) return queries[0];
     BooleanQuery query = new BooleanQuery();
     for (Query q : queries) {
       query.add(q, Occur.SHOULD);
@@ -139,6 +115,36 @@ public final class Queries {
     return similar;
   }
 
+  public static boolean isAPhrase(String text) {
+    return IS_A_PHRASE.matcher(text).matches();
+  }
+  /**
+   * Returns the term or phrase query corresponding to the specified text.
+   *
+   * <p>If the text is surrounded by double quotes, this method will
+   * return a {@link PhraseQuery} otherwise, it will return a simple {@link TermQuery}.
+   *
+   * <p>Note: Quotation marks are thrown away.
+   *
+   * @param field the field to construct the terms.
+   * @param text  the text to construct the query from.
+   * @return the corresponding query.
+   */
+  @Beta
+  public static Query toTermOrPhraseQuery(String field, String text) {
+    if (field == null) throw new NullPointerException("field");
+    if (text == null) throw new NullPointerException("text");
+    boolean isPhrase = isAPhrase(text);
+    if (isPhrase) {
+      PhraseQuery phrase = new PhraseQuery();
+      String[] terms = text.substring(1, text.length()-1).split("\\s+");
+      for (String t : terms) {
+        phrase.add(new Term(field, t));
+      }
+      return phrase;
+    } else return new TermQuery(new Term(field, text));
+  }
+
 
   /**
    * Returns the term or phrase query corresponding to the specified text.
@@ -157,7 +163,7 @@ public final class Queries {
   public static List<Query> toTermOrPhraseQueries(String field, String text, Analyzer analyzer) {
     if (field == null) throw new NullPointerException("field");
     if (text == null) throw new NullPointerException("text");
-    boolean isPhrase = IS_A_PHRASE.matcher(text).matches();
+    boolean isPhrase = isAPhrase(text);
     if (isPhrase) {
       PhraseQuery phrase = new PhraseQuery();
       addTermsToPhrase(field, text.substring(1, text.length()-1), analyzer, phrase);
@@ -169,6 +175,69 @@ public final class Queries {
       }
       return q;
     }
+  }
+
+  /**
+   * Returns the query corresponding to the specified text after parsing it.
+   * <p>Supported operators are <code>AND</code> and <code>OR</code>, parentheses are also handled.
+   *
+   * <p>The examples below show the resulting query as a Lucene predicate from the text specified using "field" as the field name:
+   * <pre>
+   * |Big|             => field:Big
+   * |Big Bang|        => field:Big field:Bang
+   * |   Big   bang |  => field:Big field:Bang
+   * |"Big Bang"|      => field:"Big Bang"
+   * |Big AND Bang|    => +field:Big +field:Bang
+   * |Big OR Bang|     => field:Big field:Bang
+   * |"Big AND Bang"|  => field:"Big AND Bang"
+   * |First "Big Bang"|  => field:First field:"Big bang"
+   * |First "Big Bang|   => field:First field:"Big field:Bang
+   * |First AND (Big Bang)|  => +field:First +(field:Big field:Bang)
+   * </pre>
+   *
+   * @param field the field to construct the terms.
+   * @param text  the text to construct the query from.
+   * 
+   * @return the corresponding query.
+   */
+  @Beta
+  public static Query parseToQuery(String field, String text, Analyzer analyzer) {
+    if (field == null) throw new NullPointerException("field");
+    if (text == null) throw new NullPointerException("text");
+    // shortcut for single word or single sentence
+    if (!text.trim().matches(".*?\\s.*?") || isAPhrase(text))
+      return analyzer == null ? toTermOrPhraseQuery(field, text) : or(toTermOrPhraseQueries(field, text, analyzer).toArray(new Query[] {}));
+    // get last query
+    Query query = null;
+    boolean lastIsAND = false;
+    // parse text
+    Pattern p = Pattern.compile("(\\([^\\(]+\\))|(\\S+)");
+    Matcher m = p.matcher(text);
+    while (m.find()) {
+      // compute query for this item
+      Query thisQuery = null;
+      String g = m.group().trim();
+      if (g.charAt(0) == '(' && g.charAt(g.length()-1) == ')') {                // parentheses?
+        thisQuery = parseToQuery(field, g.substring(1, g.length()-1), analyzer);
+      } else if ("AND".equals(g)) {                                             // AND?
+        lastIsAND = true;
+      } else if ("OR".equals(g)) {                                              // OR?
+        lastIsAND = false;
+      } else {                                                                  // phrase or normal word then
+        thisQuery = analyzer == null ? toTermOrPhraseQuery(field, g) : or(toTermOrPhraseQueries(field, g, analyzer).toArray(new Query[] {}));
+      }
+      if (thisQuery != null) {
+        if (query == null) {
+          query = thisQuery;
+        } else if (lastIsAND) {
+          query = and(query, thisQuery);
+        } else {
+          query = or(query, thisQuery);
+        }
+        lastIsAND = false;
+      }
+    }
+    return query;
   }
 
   /**

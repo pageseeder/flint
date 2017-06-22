@@ -127,6 +127,11 @@ public final class FieldFacet implements XMLWritable, Facet {
     }
   }
 
+  @Override
+  public void compute(IndexSearcher searcher, Query base, List<Filter> filters) throws IOException {
+    compute(searcher, base);
+  }
+
   /**
    * Computes each facet option.
    *

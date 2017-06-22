@@ -1,4 +1,4 @@
-package org.pageseeder.flint.query;
+package org.pageseeder.flint.lucene.query;
 
 import java.io.File;
 import java.util.Calendar;
@@ -28,8 +28,8 @@ import org.pageseeder.flint.lucene.LuceneIndexQueries;
 import org.pageseeder.flint.lucene.query.BasicQuery;
 import org.pageseeder.flint.lucene.query.DateParameter;
 import org.pageseeder.flint.lucene.query.SearchResults;
-import org.pageseeder.flint.utils.TestListener;
-import org.pageseeder.flint.utils.TestUtils;
+import org.pageseeder.flint.lucene.utils.TestListener;
+import org.pageseeder.flint.lucene.utils.TestUtils;
 
 public class DateParameterTest {
 

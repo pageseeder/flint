@@ -284,8 +284,7 @@ public final class Terms {
   @Beta public static List<Term> terms(IndexReader reader, String field) throws IOException {
     LOGGER.debug("Loading terms for field {}", field);
     List<Term> termsList = new ArrayList<Term>();
-    Fields fields = MultiFields.getFields(reader);
-    org.apache.lucene.index.Terms terms = fields.terms(field);
+    org.apache.lucene.index.Terms terms = MultiFields.getTerms(reader, field);
     if (terms == null) return termsList;
     TermsEnum termsEnum = terms.iterator();
     if (termsEnum == TermsEnum.EMPTY) return termsList;
