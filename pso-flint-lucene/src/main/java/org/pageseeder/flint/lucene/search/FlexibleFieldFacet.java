@@ -160,7 +160,7 @@ public final class FlexibleFieldFacet implements XMLWritable, Facet {
         int count = counter.getCount();
         bucket.add(t, count);
         counter.reset();
-        if (count >= 0) this.totalTerms++;
+        if (count > 0) this.totalTerms++;
       }
       this._bucket = bucket;
       // compute total results
@@ -305,8 +305,10 @@ public final class FlexibleFieldFacet implements XMLWritable, Facet {
     xml.attribute("name", this._name);
     xml.attribute("type", this._numeric == null ? "field" : "numeric-field");
     xml.attribute("flexible", String.valueOf(this.flexible));
-    xml.attribute("total-terms", this.totalTerms);
-    xml.attribute("total-results", this.totalResults);
+    if (!this.flexible) {
+      xml.attribute("total-terms", this.totalTerms);
+      xml.attribute("total-results", this.totalResults);
+    }
     if (this._bucket != null) {
       for (Entry<Term> e : this._bucket.entrySet()) {
         xml.openElement("term");
