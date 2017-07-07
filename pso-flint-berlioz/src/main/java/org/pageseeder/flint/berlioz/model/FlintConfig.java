@@ -211,8 +211,9 @@ public class FlintConfig {
       if (!this.solrIndexes.containsKey(name) && createIfNotFound) {
         IndexDefinition def = getIndexDefinitionFromIndexName(name);
         if (def == null) {
-          // no config found
-          LOGGER.error("Failed to create index {}, no matching index definition found in configuration", name);
+          // any indexes that have been defined on the server but not in the configuration
+          // will not have an IndexDefinition.
+          LOGGER.info("No index configuration found for the Solr collection {}", name);
         } else {
           SolrIndexMaster master = createSolrMaster(name, def);
           if (master != null)
