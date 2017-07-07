@@ -87,7 +87,7 @@ public class SolrCollectionManager {
   public Collection<String> listCollections() throws SolrFlintException {
     CollectionAdminResponse response = null;
     try {
-      CollectionAdminRequest.List req = CollectionAdminRequest.listCollections();
+      CollectionAdminRequest.List req = new CollectionAdminRequest.List();
       response = req.process(this._solr);
     } catch (RemoteSolrException | SolrServerException | IOException ex) {
       if (ex.getCause() != null && ex.getCause() instanceof ConnectException) throw new SolrFlintException(true);

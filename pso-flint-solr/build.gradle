@@ -11,7 +11,7 @@ dependencies {
     'org.slf4j:slf4j-api:1.7.21',
     'org.pageseeder.xmlwriter:pso-xmlwriter:1.0.2',
 //    'com.allette.solr:solr-utils:1.0.3',
-    'org.apache.solr:solr-solrj:6.3.0'
+    'org.apache.solr:solr-solrj:6.5.1'
   )
 
   testCompile (
