@@ -73,7 +73,11 @@ public class SolrIndexIO implements IndexIO {
 		  if (response != null) {
 
 			  Date lastModified = (Date)response.getIndexInfo().get("lastModified");
-			  lastModifiedTime =lastModified.getTime();
+			  if(lastModified != null){
+				  lastModifiedTime =lastModified.getTime();
+			  }else{
+				  return lastModifiedTime; 
+			  }
 		  }
 
 	  } catch ( SolrServerException | IOException ex) {
