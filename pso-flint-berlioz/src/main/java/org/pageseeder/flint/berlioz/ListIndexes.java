@@ -75,6 +75,8 @@ public final class ListIndexes implements ContentGenerator, Cacheable {
             xml.attribute("solr", "true");
             xml.attribute("name", index.getIndex().getIndexID());
             xml.attribute("content", '/' + Files.path(GlobalSettings.getAppData(), index.getIndex().getContentLocation()));
+            long lm = index.getIndex().getIndexIO().getLastTimeUsed();
+            if (lm > 0) xml.attribute("last-modified", ISO8601.DATETIME.format(lm));
             xml.closeElement();
           }
         } catch (SolrFlintException ex) {
