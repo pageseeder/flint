@@ -63,8 +63,10 @@ public final class LocalIndexer implements FileVisitor<Path> {
 
   private Map<String, Long> indexedFiles = null;
 
-  private FileFilter filter = null;
-
+  private FileFilter fileFilter = null;
+  
+  private FileFilter directoryFilter = null;
+  
   private IndexBatch batch = null;
 
   private boolean useIndexDate = true;
@@ -96,7 +98,11 @@ public final class LocalIndexer implements FileVisitor<Path> {
   }
 
   public void setFileFilter(FileFilter filter) {
-    this.filter = filter;
+    this.fileFilter = filter;
+  }
+
+  public void setDirectoryFilter(FileFilter directoryFilter) {
+    this.directoryFilter = directoryFilter;
   }
 
   /**
@@ -155,8 +161,8 @@ public final class LocalIndexer implements FileVisitor<Path> {
     Long indexModified = this.indexedFiles == null ? null : this.indexedFiles.remove(aspath);
     // only files updated since last commit
     if (!this.useIndexDate || this._indexModifiedDate == -1 || attrs.lastModifiedTime().toMillis() > this._indexModifiedDate) {
-      // check for filter
-      if (this.filter != null && !this.filter.accept(file))
+      // check for fileFilter
+      if (this.fileFilter != null && !this.fileFilter.accept(file))
         return FileVisitResult.CONTINUE;
       // check in the index to know what action to perform
       if (indexModified == null) {
@@ -178,6 +184,9 @@ public final class LocalIndexer implements FileVisitor<Path> {
 
   @Override
   public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) throws IOException {
+    File file = dir.toFile();
+    if (this.directoryFilter != null && !this.directoryFilter.accept(file))
+      return FileVisitResult.SKIP_SUBTREE;
     return FileVisitResult.CONTINUE;
   }
 

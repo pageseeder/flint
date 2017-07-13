@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.Date;
 
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
@@ -15,6 +16,8 @@ import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.client.solrj.response.UpdateResponse;
+import org.apache.solr.client.solrj.request.LukeRequest;
+import org.apache.solr.client.solrj.response.LukeResponse;
 import org.apache.solr.common.params.SolrParams;
 import org.pageseeder.flint.Index;
 import org.pageseeder.flint.IndexException;
@@ -61,7 +64,27 @@ public class SolrIndexIO implements IndexIO {
 
   @Override
   public long getLastTimeUsed() {
-    return -1;
+	  long lastModifiedTime = -1;
+	  LukeRequest request = new LukeRequest();
+	  request.setShowSchema(true);
+	  
+	  try {
+		  LukeResponse response = request.process(this._client, this._collection);
+		  if (response != null) {
+
+			  Date lastModified = (Date)response.getIndexInfo().get("lastModified");
+			  if(lastModified != null){
+				  lastModifiedTime =lastModified.getTime();
+			  }else{
+				  return lastModifiedTime; 
+			  }
+		  }
+
+	  } catch ( SolrServerException | IOException ex) {
+		  LOGGER.error("Cannot get last modified time ", ex);
+	  }
+
+	  return lastModifiedTime;
   }
 
   @Override

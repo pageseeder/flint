@@ -58,8 +58,8 @@ public class ClusterStatus implements XMLWritable {
       Collection created = new Collection();
       created.name = aname;
       created.autoAddReplicas   = "true".equals(col.get("autoAddReplicas"));
-      created.maxShardsPerNode  = Integer.parseInt((String) col.get("maxShardsPerNode"));
-      created.replicationFactor = Integer.parseInt((String) col.get("replicationFactor"));
+      created.maxShardsPerNode  = col.get("maxShardsPerNode") == null ? -1 : Integer.parseInt((String) col.get("maxShardsPerNode"));
+      created.replicationFactor = col.get("replicationFactor") == null ? -1 : Integer.parseInt((String) col.get("replicationFactor"));
       created.routerName  = (String) ((Map<String, Object>) col.get("router")).get("name");
       created.routerField = (String) ((Map<String, Object>) col.get("router")).get("field");
       Map<String, Object> theshards = (Map<String, Object>) col.get("shards");
