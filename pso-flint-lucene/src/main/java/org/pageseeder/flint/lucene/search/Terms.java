@@ -17,9 +17,12 @@ package org.pageseeder.flint.lucene.search;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 
 import org.apache.lucene.index.Fields;
 import org.apache.lucene.index.IndexReader;
@@ -283,17 +286,17 @@ public final class Terms {
    */
   @Beta public static List<Term> terms(IndexReader reader, String field) throws IOException {
     LOGGER.debug("Loading terms for field {}", field);
-    List<Term> termsList = new ArrayList<Term>();
     org.apache.lucene.index.Terms terms = MultiFields.getTerms(reader, field);
-    if (terms == null) return termsList;
+    if (terms == null) return Collections.emptyList();
     TermsEnum termsEnum = terms.iterator();
-    if (termsEnum == TermsEnum.EMPTY) return termsList;
+    if (termsEnum == TermsEnum.EMPTY) return Collections.emptyList();
+    Map<BytesRef, Term> termsList = new HashMap<BytesRef, Term>(); // TODO use map with byte as key
     while (termsEnum.next() != null) {
       BytesRef t = termsEnum.term();
       if (t == null) break;
-      termsList.add(new Term(field, BytesRef.deepCopyOf(t)));
+      termsList.put(t, new Term(field, BytesRef.deepCopyOf(t)));
     }
-    return termsList;
+    return new ArrayList<>(termsList.values());
   }
 
   /**

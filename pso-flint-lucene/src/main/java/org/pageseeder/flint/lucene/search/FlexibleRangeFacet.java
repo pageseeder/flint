@@ -16,9 +16,12 @@
 package org.pageseeder.flint.lucene.search;
 
 import java.io.IOException;
+import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
-import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.document.DateTools.Resolution;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.BooleanQuery;
@@ -27,6 +30,7 @@ import org.apache.lucene.search.Query;
 import org.pageseeder.flint.lucene.util.Beta;
 import org.pageseeder.flint.lucene.util.Bucket;
 import org.pageseeder.flint.lucene.util.Bucket.Entry;
+import org.pageseeder.flint.lucene.util.Dates;
 import org.pageseeder.xmlwriter.XMLWritable;
 import org.pageseeder.xmlwriter.XMLWriter;
 
@@ -37,7 +41,7 @@ import org.pageseeder.xmlwriter.XMLWriter;
  * @version 14 July 2017
  */
 @Beta
-public abstract class FlexibleFieldFacet implements XMLWritable {
+public abstract class FlexibleRangeFacet implements XMLWritable {
 
   /**
    * The default number of facet values if not specified.
@@ -50,29 +54,24 @@ public abstract class FlexibleFieldFacet implements XMLWritable {
   private final String _name;
 
   /**
-   * The max nb of terms
-   */
-  private final int _maxTerms;
-
-  /**
    * The queries used to calculate each facet.
    */
-  private transient Bucket<String> _bucket;
+  protected transient Bucket<Range> _bucket;
 
   /**
    * If the facet was computed in a "flexible" way
    */
-  private transient boolean flexible = false;
+  protected transient boolean flexible = false;
 
   /**
    * The total number of results containing the field used in this facet
    */
-  private transient int totalResults = 0;
+  protected transient int totalResults = 0;
 
   /**
-   * The total number of terms found in the search results
+   * The total number of ranges containing the field used in this facet
    */
-  private transient int totalTerms = 0;
+  protected transient int totalRanges = 0;
 
   /**
    * Creates a new facet with the specified name;
@@ -80,11 +79,9 @@ public abstract class FlexibleFieldFacet implements XMLWritable {
    * @param name     The name of the facet.
    * @param numeric  If this facet is numeric
    * @param r        If this facet is a date
-   * @param maxterms The maximum number of terms to return
    */
-  protected FlexibleFieldFacet(String name, int maxterms) {
+  protected FlexibleRangeFacet(String name) {
     this._name = name;
-    this._maxTerms = maxterms;
   }
 
   /**
@@ -101,7 +98,7 @@ public abstract class FlexibleFieldFacet implements XMLWritable {
    *
    * @param searcher the index search to use.
    * @param base     the base query.
-   * @param filters  the filters applied to the base query (ignored if the base query is null)
+   * @param filters  the filters applied to the base query
    * @param size     the maximum number of field values to compute.
    *
    * @throws IOException if thrown by the searcher.
@@ -112,11 +109,8 @@ public abstract class FlexibleFieldFacet implements XMLWritable {
       compute(searcher, size);
     } else {
       if (size < 0) throw new IllegalArgumentException("size < 0");
-      // reset total terms
-      this.totalTerms = 0;
       // find all terms
-      List<Term> terms = terms(searcher.getIndexReader());
-      if (this._maxTerms > 0 && terms.size() > this._maxTerms) return;
+      List<Term> terms = Terms.terms(searcher.getIndexReader(), this._name);
       // Otherwise, re-compute the query without the corresponding filter 
       Query filtered = base;
       if (filters != null) {
@@ -126,19 +120,32 @@ public abstract class FlexibleFieldFacet implements XMLWritable {
             filtered = filter.filterQuery(filtered);
         }
       }
-      Bucket<String> bucket = new Bucket<String>(size);
       DocumentCounter counter = new DocumentCounter();
+      Map<Range, Integer> ranges = new HashMap<>();
       for (Term t : terms) {
+        // find range
+        Range r = findRange(t);
+        if (r == null) r = OTHER;
+        // find count
         BooleanQuery query = new BooleanQuery();
         query.add(filtered, Occur.MUST);
         query.add(termToQuery(t), Occur.MUST);
         searcher.search(query, counter);
         int count = counter.getCount();
-        bucket.add(t.text(), count);
+        if (count > 0) {
+          // add to map
+          Integer ec = ranges.get(r);
+          ranges.put(r, Integer.valueOf(count + (ec == null ? 0 : ec.intValue())));
+        }
         counter.reset();
-        if (count > 0) this.totalTerms++;
       }
-      this._bucket = bucket;
+      this.totalRanges = ranges.size();
+      // add to bucket
+      Bucket<Range> b = new Bucket<Range>(size);
+      for (Range r : ranges.keySet()) {
+        b.add(r, ranges.get(r));
+      }
+      this._bucket = b;
       // compute total results
       FieldDocumentCounter totalCounter = new FieldDocumentCounter(this._name);
       searcher.search(filtered, totalCounter);
@@ -209,29 +216,34 @@ public abstract class FlexibleFieldFacet implements XMLWritable {
    *
    * @throws IOException if thrown by the searcher.
    */
-  private void compute(IndexSearcher searcher, int size) throws IOException {
+  protected void compute(IndexSearcher searcher, int size) throws IOException {
     // find all terms
-    List<Term> terms = terms(searcher.getIndexReader());
-    if (this._maxTerms > 0 && terms.size() > this._maxTerms) return;
-    this.totalTerms = 0;
-    Bucket<String> bucket = new Bucket<String>(size);
+    List<Term> terms = Terms.terms(searcher.getIndexReader(), this._name);
     DocumentCounter counter = new DocumentCounter();
+    Map<Range, Integer> ranges = new HashMap<>();
     for (Term t : terms) {
-      // already there? can happen for numbers as they can be different terms with same value
-      String value = t.text();
-      if (bucket.contains(value)) continue;
+      // find the range
+      Range r = findRange(t);
+      if (r == null) r = OTHER;
+      // find number
       searcher.search(termToQuery(t), counter);
-      bucket.add(value, counter.getCount());
+      int count = counter.getCount();
+      if (count > 0) {
+        // add to map
+        Integer ec = ranges.get(r);
+        ranges.put(r, Integer.valueOf(count + (ec == null ? 0 : ec.intValue())));
+      }
       counter.reset();
-      this.totalTerms++;
     }
     // set totals
     this.totalResults = 0;
-    this._bucket = bucket;
-  }
-
-  protected List<Term> terms(IndexReader reader) throws IOException {
-    return Terms.terms(reader, this._name);
+    this.totalRanges = ranges.size();
+    // add to bucket
+    Bucket<Range> b = new Bucket<Range>(size);
+    for (Range r : ranges.keySet()) {
+      b.add(r, ranges.get(r));
+    }
+    this._bucket = b;
   }
 
   /**
@@ -243,9 +255,20 @@ public abstract class FlexibleFieldFacet implements XMLWritable {
    */
   protected abstract Query termToQuery(Term t);
 
+  /**
+   * Create a query for the term given, using the numeric type if there is one.
+   * 
+   * @param t the term
+   * 
+   * @return the query
+   */
+  protected abstract String termToText(Term t);
+
   protected abstract String getType();
 
-  protected abstract void termToXML(String term, int cardinality, XMLWriter xml) throws IOException;
+  protected abstract void rangeToXML(Range range, int cardinality, XMLWriter xml) throws IOException;
+
+  protected abstract Range findRange(Term t);
 
   @Override
   public void toXML(XMLWriter xml) throws IOException {
@@ -254,27 +277,110 @@ public abstract class FlexibleFieldFacet implements XMLWritable {
     xml.attribute("type", getType());
     xml.attribute("flexible", String.valueOf(this.flexible));
     if (!this.flexible) {
-      xml.attribute("total-terms", this.totalTerms);
+      xml.attribute("total-ranges", this.totalRanges);
       xml.attribute("total-results", this.totalResults);
     }
     if (this._bucket != null) {
-      for (Entry<String> e : this._bucket.entrySet()) {
-        termToXML(e.item(), e.count(), xml);
+      for (Entry<Range> e : this._bucket.entrySet()) {
+        if (e.item() == OTHER) {
+          xml.openElement("remaining-range");
+          xml.attribute("cardinality", e.count());
+          xml.closeElement();
+        } else {
+          rangeToXML(e.item(), e.count(), xml);
+        }
       }
     }
     xml.closeElement();
   }
 
-  public Bucket<String> getValues() {
+  public Bucket<Range> getValues() {
     return this._bucket;
-  }
-
-  public int getTotalTerms() {
-    return this.totalTerms;
   }
 
   public int getTotalResults() {
     return this.totalResults;
   }
 
+  public int getTotalRanges() {
+    return this.totalRanges;
+  }
+
+  public static class Range implements Comparable<Range> {
+    private final String min;
+    private final String max;
+    private boolean includeMin;
+    private boolean includeMax;
+    private Range(String mi, boolean withMin, String ma, boolean withMax) {
+      this.max = ma;
+      this.min = mi;
+      this.includeMin = withMin;
+      this.includeMax = withMax;
+    }
+    public String getMin() {
+      return this.min;
+    }
+    public String getMax() {
+      return this.max;
+    }
+    protected boolean includeMax() {
+      return this.includeMax;
+    }
+    protected boolean includeMin() {
+      return this.includeMin;
+    }
+    @Override
+    public String toString() {
+      return (this.includeMin?'[':'{')+this.min+'-'+this.max+(this.includeMax?']':'}');
+    }
+    @Override
+    public boolean equals(Object obj) {
+      if (obj instanceof Range) {
+        Range r = (Range) obj;
+        return ((r.min == null && this.min == null) || (r.min != null && r.min.equals(this.min))) &&
+               ((r.max == null && this.max == null) || (r.max != null && r.max.equals(this.max))) &&
+               this.includeMin == r.includeMin && this.includeMax == r.includeMax;
+      }
+      return false;
+    }
+    @Override
+    public int hashCode() {
+      return (this.min != null ? this.min.hashCode() * 13 : 13) +
+             (this.max != null ? this.max.hashCode() * 11 : 11) +
+             (this.includeMin ? 17 : 7) +
+             (this.includeMax ? 5  : 3);
+    }
+    @Override
+    public int compareTo(Range o) {
+      if (this.min == null) {
+        if (o.min != null) return -1;
+        if (this.max == null) return -1;
+        if (o.max == null) return 1;
+        return this.max.compareTo(o.max);
+      } else {
+        if (o.min == null) return 1;
+        return this.min.compareTo(o.min);
+      }
+    }
+    public static Range stringRange(String mi, String ma) {
+      return stringRange(mi, true, ma, true);
+    }
+    public static Range stringRange(String mi, boolean withMin, String ma, boolean withMax) {
+      return new Range(mi, true, ma, true);
+    }
+    public static Range numericRange(Number mi, Number ma) {
+      return numericRange(mi, true, ma, true);
+    }
+    public static Range numericRange(Number mi, boolean withMin, Number ma, boolean withMax) {
+      return new Range(mi == null ? null : mi.toString(), withMin, ma == null ? null : ma.toString(), withMax);
+    }
+    public static Range dateRange(Date mi, Date ma, Resolution res) {
+      return dateRange(mi, true, ma, true, res);
+    }
+    public static Range dateRange(Date mi, boolean withMin, Date ma, boolean withMax, Resolution res) {
+      return new Range(Dates.toString(mi, res), withMin, Dates.toString(ma, res), withMax);
+    }
+  }
+
+  private static final Range OTHER = new Range((String) null, false, (String) null, false);
 }

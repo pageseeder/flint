@@ -1,6 +1,7 @@
 package org.pageseeder.flint.local;
 
 import java.io.File;
+import java.io.FileFilter;
 import java.util.List;
 
 import org.pageseeder.flint.IndexManager;
@@ -42,6 +43,12 @@ public class LocalIndexManager {
 
   public void indexNewContent(LocalIndex index, File content) {
     LocalIndexer indexer = new LocalIndexer(this.manager, index);
+    indexer.indexFolder(content, null);
+  }
+
+  public void indexNewContent(LocalIndex index, FileFilter filter, File content) {
+    LocalIndexer indexer = new LocalIndexer(this.manager, index);
+    indexer.setFileFilter(filter);
     indexer.indexFolder(content, null);
   }
 

@@ -15,7 +15,6 @@
  */
 package org.pageseeder.flint.ixml;
 
-import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -63,7 +62,7 @@ final class IndexDocumentHandler_2_0 extends DefaultHandler implements IndexDocu
   /**
    * Date parser instances.
    */
-  private final Map<String, DateFormat> dfs = new HashMap<String, DateFormat>();
+  private final Map<String, SimpleDateFormat> dfs = new HashMap<String, SimpleDateFormat>();
 
   /**
    * The list of Lucene documents produced by this handler.
@@ -297,9 +296,9 @@ final class IndexDocumentHandler_2_0 extends DefaultHandler implements IndexDocu
    * @param format The date format used.
    * @return the corresponding date format or <code>null</code>.
    */
-  private DateFormat toDateFormat(String format) {
+  private SimpleDateFormat toDateFormat(String format) {
     if (format == null) return null;
-    DateFormat df = this.dfs.get(format);
+    SimpleDateFormat df = this.dfs.get(format);
     // Date format not processed yet
     if (df == null) {
       try {

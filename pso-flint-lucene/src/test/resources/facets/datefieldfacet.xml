@@ -1,0 +1,45 @@
+<?xml version="1.0"?>
+<documents version="5.0">
+  <document>
+    <field name="field" tokenize="false">value</field>
+    <field name="facet1" tokenize="false" date-format="yyyy-MM-dd_HH:mm:ss" date-resolution="second">2017-01-01_12:00:00</field>
+    <field name="facet2" tokenize="false" date-format="yyyy-MM-dd_HH:mm:ss" date-resolution="second">2017-02-01_12:00:00</field>
+    <field name="facet3" tokenize="false" date-format="yyyy-MM-dd_HH:mm:ss" date-resolution="second">2017-03-01_12:00:00</field>
+  </document>
+  <document>
+    <field name="field" tokenize="false">value</field>
+    <field name="facet1" tokenize="false" date-format="yyyy-MM-dd_HH:mm:ss" date-resolution="second">2017-01-02_12:00:00</field>
+    <field name="facet2" tokenize="false" date-format="yyyy-MM-dd_HH:mm:ss" date-resolution="second">2017-02-02_12:00:00</field>
+    <field name="facet3" tokenize="false" date-format="yyyy-MM-dd_HH:mm:ss" date-resolution="second">2017-03-01_12:00:00</field>
+  </document>
+  <document>
+    <field name="field" tokenize="false">value</field>
+    <field name="facet1" tokenize="false" date-format="yyyy-MM-dd_HH:mm:ss" date-resolution="second">2017-01-03_12:00:00</field>
+    <field name="facet2" tokenize="false" date-format="yyyy-MM-dd_HH:mm:ss" date-resolution="second">2017-02-02_12:00:00</field>
+    <field name="facet3" tokenize="false" date-format="yyyy-MM-dd_HH:mm:ss" date-resolution="second">2017-03-01_12:00:00</field>
+  </document>
+  <document>
+    <field name="field" tokenize="false">value</field>
+    <field name="facet1" tokenize="false" date-format="yyyy-MM-dd_HH:mm:ss" date-resolution="second">2017-01-04_12:00:00</field>
+    <field name="facet2" tokenize="false" date-format="yyyy-MM-dd_HH:mm:ss" date-resolution="second">2017-02-03_12:00:00</field>
+    <field name="facet3" tokenize="false" date-format="yyyy-MM-dd_HH:mm:ss" date-resolution="second">2017-03-01_12:00:00</field>
+  </document>
+  <document>
+    <field name="field" tokenize="false">value</field>
+    <field name="facet1" tokenize="false" date-format="yyyy-MM-dd_HH:mm:ss" date-resolution="second">2017-01-04_12:00:00</field>
+    <field name="facet2" tokenize="false" date-format="yyyy-MM-dd_HH:mm:ss" date-resolution="second">2017-02-04_12:00:00</field>
+    <field name="facet3" tokenize="false" date-format="yyyy-MM-dd_HH:mm:ss" date-resolution="second">2017-03-01_12:00:00</field>
+  </document>
+  <document>
+    <field name="field" tokenize="false">value</field>
+    <field name="facet1" tokenize="false" date-format="yyyy-MM-dd_HH:mm:ss" date-resolution="second">2017-01-05_12:00:00</field>
+    <field name="facet2" tokenize="false" date-format="yyyy-MM-dd_HH:mm:ss" date-resolution="second">2017-02-05_12:00:00</field>
+    <field name="facet3" tokenize="false" date-format="yyyy-MM-dd_HH:mm:ss" date-resolution="second">2017-03-01_12:00:00</field>
+  </document>
+  <document>
+    <field name="field" tokenize="false">value</field>
+    <field name="facet1" tokenize="false" date-format="yyyy-MM-dd_HH:mm:ss" date-resolution="second">2017-01-06_12:00:00</field>
+    <field name="facet2" tokenize="false" date-format="yyyy-MM-dd_HH:mm:ss" date-resolution="second">2017-02-06_12:00:00</field>
+    <field name="facet3" tokenize="false" date-format="yyyy-MM-dd_HH:mm:ss" date-resolution="second">2017-03-02_12:00:00</field>
+  </document>
+</documents>

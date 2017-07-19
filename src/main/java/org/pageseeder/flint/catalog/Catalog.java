@@ -1,6 +1,7 @@
 package org.pageseeder.flint.catalog;
 
 import java.io.IOException;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -10,6 +11,7 @@ import org.pageseeder.flint.indexing.FlintField;
 import org.pageseeder.flint.indexing.FlintField.DocValuesType;
 import org.pageseeder.flint.indexing.FlintField.IndexOptions;
 import org.pageseeder.flint.indexing.FlintField.NumericType;
+import org.pageseeder.flint.indexing.FlintField.Resolution;
 import org.pageseeder.xmlwriter.XMLWritable;
 import org.pageseeder.xmlwriter.XMLWriter;
 
@@ -37,12 +39,20 @@ public class Catalog implements XMLWritable {
     }
   }
 
+  /**
+   * @deprecated use addFieldType
+   */
   public void addFieldType(boolean stored, String name, boolean tokenized, DocValuesType dt, NumericType num, float boost) {
+    addFieldType(stored, name, tokenized, dt, num, null, null, boost);
+  }
+
+  public void addFieldType(boolean stored, String name, boolean tokenized, DocValuesType dt, NumericType num,
+      SimpleDateFormat df, Resolution r, float boost) {
     synchronized (this._fields) {
-      CatalogEntry newone = new CatalogEntry(stored, dt, tokenized, boost, num, false);
+      CatalogEntry newone = new CatalogEntry(stored, dt, tokenized, boost, num, df, r, false);
       CatalogEntry existing = this._fields.get(name);
       if (existing == null || !existing.equals(newone))
-        this._fields.put(name, new CatalogEntry(stored, dt, tokenized, boost, num, existing != null));
+        this._fields.put(name, new CatalogEntry(stored, dt, tokenized, boost, num,  df, r, existing != null));
     }
   }
 
@@ -73,6 +83,16 @@ public class Catalog implements XMLWritable {
     return matching;
   }
 
+  public Resolution getResolution(String field) {
+    CatalogEntry entry = this._fields.get(field);
+    return entry != null ? entry.resolution : null;
+  }
+
+  public SimpleDateFormat getDateFormat(String field) {
+    CatalogEntry entry = this._fields.get(field);
+    return entry != null ? entry.dateFormat : null;
+  }
+
   public void clear() {
     synchronized (this._fields) {
       this._fields.clear();
@@ -97,6 +117,11 @@ public class Catalog implements XMLWritable {
       if (entry.boost != 1.0)
         xml.attribute("boost", String.valueOf(entry.boost));
       if (entry.error) xml.attribute("error", "true");
+      if (entry.dateFormat != null &&
+          entry.dateFormat instanceof SimpleDateFormat)
+        xml.attribute("date-format", ((SimpleDateFormat) entry.dateFormat).toPattern());
+      if (entry.resolution != null)
+        xml.attribute("date-resolution", entry.resolution.toString().toLowerCase());
       xml.closeElement();
     }
     xml.closeElement();
@@ -108,13 +133,17 @@ public class Catalog implements XMLWritable {
     private final boolean stored;
     private final DocValuesType docValues;
     private final NumericType num;
+    private final SimpleDateFormat dateFormat;
+    private final Resolution resolution;
     private final float boost;
-    public CatalogEntry(boolean s, DocValuesType dv, boolean t, float b, NumericType n, boolean e) {
+    public CatalogEntry(boolean s, DocValuesType dv, boolean t, float b, NumericType n, SimpleDateFormat df, Resolution r, boolean e) {
       this.stored = s;
       this.docValues = dv;
       this.tokenized = t;
       this.boost = b;
       this.num = n;
+      this.resolution = r;
+      this.dateFormat = df;
       this.error = e;
     }
     public CatalogEntry(FlintField builder, boolean err) {
@@ -122,6 +151,8 @@ public class Catalog implements XMLWritable {
       this.tokenized = builder.tokenize();
       this.boost = builder.boost();
       this.num = builder.numericType();
+      this.dateFormat = builder.dateformat();
+      this.resolution = builder.resolution();
       this.error = err;
       this.docValues = builder.docValues();
     }
@@ -129,21 +160,23 @@ public class Catalog implements XMLWritable {
     public boolean equals(Object obj) {
       if (obj instanceof CatalogEntry) {
         CatalogEntry entry = (CatalogEntry) obj;
-        return this.tokenized == entry.tokenized &&
-               this.stored    == entry.stored &&
-               this.boost     == entry.boost &&
-               this.num       == entry.num &&
-               this.docValues == entry.docValues;
+        return this.tokenized  == entry.tokenized &&
+               this.stored     == entry.stored &&
+               this.boost      == entry.boost &&
+               this.num        == entry.num &&
+               this.docValues  == entry.docValues &&
+               this.dateFormat == entry.dateFormat;
       }
       return false;
     }
     @Override
     public int hashCode() {
-      return (int) (this.boost * 10000) * 31 +
+      return (int) (this.boost * 10000) * 37 +
              (this.num == null ? 13 : this.num.hashCode() * 17) +
              (this.stored    ? 19 : 2) +
              (this.docValues == null ? 23 : this.docValues.hashCode() * 7) +
-             (this.tokenized ? 5 : 11);
+             (this.tokenized ? 5 : 11) +
+             (this.dateFormat == null ? 31 : this.dateFormat.hashCode() * 31);
     }
   }
 }

@@ -15,7 +15,8 @@
  */
 package org.pageseeder.flint.indexing;
 
-import java.text.DateFormat;
+import java.text.SimpleDateFormat;
+import java.util.TimeZone;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -30,6 +31,11 @@ import org.slf4j.LoggerFactory;
  * @version 10 February 2012
  */
 public final class FlintField {
+
+  /**
+   * Use the GMT time zone.
+   */
+  private static final TimeZone GMT = TimeZone.getTimeZone("GMT");
 
   /**
    * The default boost value for the term.
@@ -118,7 +124,7 @@ public final class FlintField {
   /**
    * Date format to use (only if the value is a date)
    */
-  private DateFormat _dateformat;
+  private SimpleDateFormat _dateformat;
 
   /**
    * The 'resolution' attribute of the field currently processed - determines the granularity of date stored.
@@ -191,6 +197,7 @@ public final class FlintField {
     cloned._docValues = DocValuesType.FORCED_NONE;
     return cloned;
   }
+
   // Setters
   // ----------------------------------------------------------------------------------------------
 
@@ -448,8 +455,19 @@ public final class FlintField {
    * @param dateformat A date format to parse dates.
    * @return this builder.
    */
-  public FlintField dateFormat(DateFormat dateformat) {
+  public FlintField dateFormat(SimpleDateFormat dateformat) {
     this._dateformat = dateformat;
+    return this;
+  }
+
+  /**
+   * Returns the date format for this field.
+   *
+   * @param dateformat A date format to parse dates.
+   * @return this builder.
+   */
+  public FlintField dateFormat(String dateformat) {
+    this._dateformat = toDateFormat(dateformat);
     return this;
   }
 
@@ -608,7 +626,11 @@ public final class FlintField {
   }
 
   public boolean isDocValues() {
-    return (this._docValues != DocValuesType.NONE && this._docValues != DocValuesType.FORCED_NONE);// || (this._numeric != null && this._dateformat == null);
+    return (this._docValues != DocValuesType.NONE && this._docValues != DocValuesType.FORCED_NONE);
+  }
+
+  public boolean isNumeric() {
+    return this._numeric != null;
   }
 
   /**
@@ -628,7 +650,7 @@ public final class FlintField {
     return this._numeric;
   }
 
-  public DateFormat dateformat() {
+  public SimpleDateFormat dateformat() {
     return this._dateformat;
   }
 
@@ -689,13 +711,14 @@ public final class FlintField {
    */
   public static Resolution toResolution(String resolution) {
     if (resolution == null) return null;
-    else if ("year".equals(resolution))    return Resolution.YEAR;
-    else if ("month".equals(resolution))   return Resolution.MONTH;
-    else if ("day".equals(resolution))     return Resolution.DAY;
-    else if ("hour".equals(resolution))    return Resolution.HOUR;
-    else if ("minute".equals(resolution))  return Resolution.MINUTE;
-    else if ("second".equals(resolution))  return Resolution.SECOND;
-    else if ("milli".equals(resolution))   return Resolution.MILLISECOND;
+    else if ("year".equals(resolution))        return Resolution.YEAR;
+    else if ("month".equals(resolution))       return Resolution.MONTH;
+    else if ("day".equals(resolution))         return Resolution.DAY;
+    else if ("hour".equals(resolution))        return Resolution.HOUR;
+    else if ("minute".equals(resolution))      return Resolution.MINUTE;
+    else if ("second".equals(resolution))      return Resolution.SECOND;
+    else if ("milli".equals(resolution))       return Resolution.MILLISECOND;
+    else if ("millisecond".equals(resolution)) return Resolution.MILLISECOND;
     LOGGER.warn("Invalid date resolution: {}, defaulting to Resolution.DAY", resolution);
     return Resolution.DAY;
   }
@@ -755,6 +778,55 @@ public final class FlintField {
       LOGGER.warn("Could not parse boost value '{}' as float, using {}", boost, DEFAULT_BOOST_VALUE);
       return DEFAULT_BOOST_VALUE;
     }
+  }
+
+  /**
+   * Returns the date format to use, allowing recycling.
+   *
+   * <p>Set the current date format to <code>null<code> if the format is <code>null</code>.
+   *
+   * <p>Otherwise retrieve from map or create an instance if it has never been created.
+   *
+   * <p>Note: we only set the timezone if the date format includes a time component; otherwise we default to GMT to
+   * ensure that Lucene will preserve the date.
+   *
+   * @param format The date format used.
+   * @return the corresponding date format or <code>null</code>.
+   */
+  public static SimpleDateFormat toDateFormat(String format) {
+    if (format == null) return null;
+    try {
+      SimpleDateFormat df = new SimpleDateFormat(format);
+      if (includesTime(format)) {
+        df.setTimeZone(TimeZone.getDefault());
+      } else {
+        df.setTimeZone(GMT);
+      }
+      return df;
+    } catch (IllegalArgumentException ex) {
+      LOGGER.warn("Ignoring unusable date format '"+format+"'", ex);
+    }
+    return null;
+  }
+
+  /**
+   * Indicates whether the format includes a time component.
+   *
+   * @param format The date format
+   * @return <code>true</code> if it includes a time component;
+   *         <code>false</code> otherwise.
+   */
+  private static boolean includesTime(String format) {
+    if (format.indexOf('H') >= 0) return true; // Hour in day (0-23)
+    else if (format.indexOf('k') >= 0) return true; // Hour in day (1-24)
+    else if (format.indexOf('K') >= 0) return true; // Hour in am/pm (0-11)
+    else if (format.indexOf('h') >= 0) return true; // Hour in am/pm (1-12)
+    else if (format.indexOf('m') >= 0) return true; // Minute in hour
+    else if (format.indexOf('s') >= 0) return true; // Second in minute
+    else if (format.indexOf('S') >= 0) return true; // Millisecond
+    else if (format.indexOf('Z') >= 0) return true; // Time zone
+    else if (format.indexOf('z') >= 0) return true; // Time zone
+    return false;
   }
 
 

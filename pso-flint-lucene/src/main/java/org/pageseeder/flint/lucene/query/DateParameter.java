@@ -57,6 +57,16 @@ public final class DateParameter implements SearchParameter {
   private Resolution _resolution = Resolution.DAY;
 
   /**
+   * Whether the minimum value should be included; ignored if the minimum value is <code>null</code>
+   */
+  private boolean _minInclusive;
+
+  /**
+   * Whether the maximum value should be included; ignored if the maximum value is <code>null</code>
+   */
+  private boolean _maxInclusive;
+
+  /**
    * Indicates whether the date field is a numeric field.
    */
   private boolean _numeric = false;
@@ -69,7 +79,7 @@ public final class DateParameter implements SearchParameter {
 // Implementation methods ----------------------------------------------------------------------
 
   /**
-   * Creates a new date parameter.
+   * Creates a new date parameter (inclusive of from and to dates).
    *
    * @param field      the date field to search
    * @param from       the start date in the range (may be <code>null</code>)
@@ -78,11 +88,28 @@ public final class DateParameter implements SearchParameter {
    * @param numeric    whether it is a numeric field
    */
   public DateParameter(String field, Date from, Date to, Resolution resolution, boolean numeric) {
+    this(field, from, to, true, true, resolution, numeric);
+  }
+
+  /**
+   * Creates a new date parameter.
+   *
+   * @param field      the date field to search
+   * @param from       the start date in the range (may be <code>null</code>)
+   * @param to         the end date in the range (may be <code>null</code>)
+   * @param withMin    if the from date is included in the range
+   * @param withMax    if the to date is included in the range
+   * @param resolution the date resolution
+   * @param numeric    whether it is a numeric field
+   */
+  public DateParameter(String field, Date from, Date to, boolean withMin, boolean withMax, Resolution resolution, boolean numeric) {
     if (field == null) throw new NullPointerException("field");
     if (resolution == null) throw new NullPointerException("resolution");
     this._field = field;
     this._from = from;
     this._to = to;
+    this._minInclusive = withMin;
+    this._maxInclusive = withMax;
     this._resolution = resolution;
     this._numeric = numeric;
   }
@@ -96,7 +123,7 @@ public final class DateParameter implements SearchParameter {
    * @param numeric    whether it is a numeric field
    */
   public DateParameter(String field, Date exactMatch, Resolution resolution, boolean numeric) {
-    this(field, exactMatch, exactMatch, resolution, numeric);
+    this(field, exactMatch, exactMatch, true, true, resolution, numeric);
   }
 
   /**
@@ -137,6 +164,14 @@ public final class DateParameter implements SearchParameter {
     return this._from == null && this._to == null;
   }
 
+  public boolean isMaxIncluded() {
+    return this._maxInclusive;
+  }
+
+  public boolean isMinIncluded() {
+    return this._minInclusive;
+  }
+
   /**
    * Generates the <code>Query</code> object corresponding to a date range search query.
    *
@@ -150,9 +185,9 @@ public final class DateParameter implements SearchParameter {
     // an including range query on the date
     if (this._query == null)  {
       if (this._numeric) {
-        this._query = toNumericRangeQuery(this._field, this._from, this._to, this._resolution);
+        this._query = toNumericRangeQuery(this._field, this._from, this._to, this._minInclusive, this._maxInclusive, this._resolution);
       } else {
-        this._query = toTermRangeQuery(this._field, this._from, this._to, this._resolution);
+        this._query = toTermRangeQuery(this._field, this._from, this._to, this._minInclusive, this._maxInclusive, this._resolution);
       }
     }
     return this._query;
@@ -196,10 +231,10 @@ public final class DateParameter implements SearchParameter {
    *
    * @return the corresponding <code>TermRangeQuery</code>
    */
-  private static TermRangeQuery toTermRangeQuery(String field, Date from, Date to, Resolution resolution) {
+  private static TermRangeQuery toTermRangeQuery(String field, Date from, Date to, boolean withMin, boolean withMax, Resolution resolution) {
     BytesRef min = from != null? new BytesRef(Dates.toString(from, resolution).getBytes()) : null;
     BytesRef max = to   != null? new BytesRef(Dates.toString(to,   resolution).getBytes()) : null;
-    return new TermRangeQuery(field, min, max, true, true);
+    return new TermRangeQuery(field, min, max, withMin, withMax);
   }
 
   /**
@@ -212,13 +247,13 @@ public final class DateParameter implements SearchParameter {
    *
    * @return the corresponding <code>NumericRangeQuery</code>
    */
-  private static NumericRangeQuery<? extends Number> toNumericRangeQuery(String field, Date from, Date to, Resolution resolution) {
+  private static NumericRangeQuery<? extends Number> toNumericRangeQuery(String field, Date from, Date to, boolean withMin, boolean withMax, Resolution resolution) {
     Number min = from != null? Dates.toNumber(from, resolution) : null;
     Number max = to != null? Dates.toNumber(to, resolution) : null;
     // Using long values (resolution = MILLISECOND | SECOND | MINUTE | HOUR)
-    if (min instanceof Long || (min == null && max instanceof Long)) return NumericRangeQuery.newLongRange(field, (Long)min, (Long)max, true, true);
+    if (min instanceof Long || (min == null && max instanceof Long)) return NumericRangeQuery.newLongRange(field, (Long)min, (Long)max, withMin, withMax);
     // Using integer values (resolution = DAY | MONTH | YEAR)
-    if (min instanceof Integer || (min == null && max instanceof Integer)) return NumericRangeQuery.newIntRange(field, (Integer)min, (Integer)max, true, true);
+    if (min instanceof Integer || (min == null && max instanceof Integer)) return NumericRangeQuery.newIntRange(field, (Integer)min, (Integer)max, withMin, withMax);
     // Should never happen
     return null;
   }

@@ -4,11 +4,13 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.text.SimpleDateFormat;
 import java.util.HashMap;
 
 import org.pageseeder.flint.indexing.FlintField;
 import org.pageseeder.flint.indexing.FlintField.DocValuesType;
 import org.pageseeder.flint.indexing.FlintField.NumericType;
+import org.pageseeder.flint.indexing.FlintField.Resolution;
 import org.pageseeder.xmlwriter.XMLWriter;
 import org.pageseeder.xmlwriter.XMLWriterImpl;
 import org.slf4j.Logger;
@@ -202,9 +204,11 @@ public class Catalogs {
           boolean tokenized = "true".equals(attributes.getValue("tokenized"));
           String b = attributes.getValue("boost");
           float boost = b == null ? 1.0F : Float.parseFloat(b);
-          NumericType num  = FlintField.toNumeric(attributes.getValue("numeric-type"));
-          DocValuesType dv = FlintField.toDocValues(attributes.getValue("doc-values"), num != null);
-          this.catalog.addFieldType(stored, name, tokenized, dv, num, boost);
+          NumericType num     = FlintField.toNumeric(attributes.getValue("numeric-type"));
+          DocValuesType dv    = FlintField.toDocValues(attributes.getValue("doc-values"), num != null);
+          SimpleDateFormat df = FlintField.toDateFormat(attributes.getValue("date-format"));
+          Resolution res      = FlintField.toResolution(attributes.getValue("date-resolution"));
+          this.catalog.addFieldType(stored, name, tokenized, dv, num, df, res, boost);
         }
       }
     }

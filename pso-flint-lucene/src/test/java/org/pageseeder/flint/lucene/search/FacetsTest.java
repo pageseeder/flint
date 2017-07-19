@@ -1,6 +1,7 @@
 package org.pageseeder.flint.lucene.search;
 
 import java.io.File;
+import java.io.FileFilter;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
@@ -17,8 +18,6 @@ import org.pageseeder.flint.IndexException;
 import org.pageseeder.flint.local.LocalIndexManager;
 import org.pageseeder.flint.local.LocalIndexManagerFactory;
 import org.pageseeder.flint.lucene.LuceneLocalIndex;
-import org.pageseeder.flint.lucene.search.Facets;
-import org.pageseeder.flint.lucene.search.FieldFacet;
 import org.pageseeder.flint.lucene.util.Bucket;
 import org.pageseeder.flint.lucene.utils.TestListener;
 import org.pageseeder.flint.lucene.utils.TestUtils;
@@ -27,6 +26,7 @@ public class FacetsTest {
 
   private static File template  = new File("src/test/resources/template.xsl");
   private static File documents = new File("src/test/resources/facets");
+  private static FileFilter filter = new FileFilter() { public boolean accept(File file) { return "facets.xml".equals(file.getName()); } };
   private static File indexRoot = new File("tmp/index");
 
   private static LuceneLocalIndex index;
@@ -45,7 +45,7 @@ public class FacetsTest {
     }
     manager = LocalIndexManagerFactory.createMultiThreads(new TestListener());
     System.out.println("Starting manager!");
-    manager.indexNewContent(index, documents);
+    manager.indexNewContent(index, filter, documents);
     System.out.println("Documents indexed");
     // wait a bit
     TestUtils.wait(1);

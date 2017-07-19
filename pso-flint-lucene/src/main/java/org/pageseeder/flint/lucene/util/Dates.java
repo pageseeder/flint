@@ -18,6 +18,9 @@ package org.pageseeder.flint.lucene.util;
 import java.text.DateFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.GregorianCalendar;
@@ -209,6 +212,32 @@ public final class Dates {
   public static String toString(Date date, Resolution resolution) {
     if (date == null) return null;
     return DateTools.timeToString(date.getTime(), resolution);
+  }
+
+  /**
+   * Return the string value used by Lucene 3 for dates.
+   *
+   * @param date       The date to turn to a string
+   * @param resolution The resolution for the formatting
+   *
+   * @return The string value for use by Lucene.
+   */
+  public static String toString(OffsetDateTime date, Resolution resolution) {
+    if (date == null) return null;
+    return DateTools.timeToString(date.toInstant().toEpochMilli(), resolution);
+  }
+
+  /**
+   * Return the string value used by Lucene 3 for dates.
+   *
+   * @param date       The date to turn to a string
+   * @param resolution The resolution for the formatting
+   *
+   * @return The string value for use by Lucene.
+   */
+  public static String toString(LocalDateTime date, Resolution resolution) {
+    if (date == null) return null;
+    return DateTools.timeToString(date.toInstant(ZoneOffset.UTC).toEpochMilli(), resolution);
   }
 
   /**

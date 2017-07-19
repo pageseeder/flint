@@ -108,6 +108,20 @@ import java.util.TreeSet;
   }
 
   /**
+   * Checks if an object is already in the bucket (using equals method).
+   *
+   * @param item the item to check
+   * 
+   * @return <code>true</code> if the item was found in the bucket
+   */
+  public boolean contains(T item) {
+    for (Entry<T> e : this._entries) {
+      if (e._item.equals(item)) return true;
+    }
+    return false;
+  }
+
+  /**
    * Adds an object to this bucket.
    *
    * @param item  A new Item
@@ -262,7 +276,7 @@ import java.util.TreeSet;
     public boolean equals(Entry<?> o) {
       //
       if (this._count != o._count) return false;
-      return comparable(this._item, o._item)? this._item.equals(o._item) : true;
+      return comparable(this._item, o._item) ? this._item.equals(o._item) : true;
     }
 
     /**

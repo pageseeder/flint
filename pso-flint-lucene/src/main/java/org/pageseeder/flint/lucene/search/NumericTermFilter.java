@@ -19,11 +19,9 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.Query;
-import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.util.NumericUtils;
 import org.pageseeder.flint.indexing.FlintField.NumericType;
 import org.pageseeder.flint.lucene.query.NumberParameter;
@@ -38,7 +36,7 @@ import org.pageseeder.xmlwriter.XMLWriter;
  * @version 16 February 2012
  */
 @Beta
-public class TermFilter implements Filter {
+public class NumericTermFilter implements Filter {
 
   /**
    * The name of the field
@@ -53,25 +51,25 @@ public class TermFilter implements Filter {
   /**
    * The list of terms to filter with
    */
-  private final Map<String, Occur> _terms = new HashMap<>();
+  private final Map<Number, Occur> _values = new HashMap<>();
 
   /**
    * Creates a new filter with the specified name;
    *
    * @param name    The name of the filter.
    */
-  private TermFilter(Builder builder) {
+  private NumericTermFilter(Builder builder) {
     this._name = builder._name;
     this._numeric = builder._numeric;
-    this._terms.putAll(builder._terms);
+    this._values.putAll(builder._values);
   }
 
   @Override
   public Query filterQuery(Query base) {
     BooleanQuery filterQuery = new BooleanQuery();
-    for (String word : this._terms.keySet()) {
-      Occur clause = this._terms.get(word);
-      filterQuery.add(wordToQuery(word), clause);
+    for (Number value : this._values.keySet()) {
+      Occur clause = this._values.get(value);
+      filterQuery.add(numberToQuery(value), clause);
     }
     return base == null ? filterQuery : Queries.and(base, filterQuery);
   }
@@ -84,21 +82,28 @@ public class TermFilter implements Filter {
   public void toXML(XMLWriter xml) throws IOException {
     xml.openElement("filter");
     xml.attribute("field", this._name);
-    for (String word : this._terms.keySet()) {
+    xml.attribute("type", "numeric");
+    for (Number value : this._values.keySet()) {
       xml.openElement("term");
-      xml.attribute("text", word);
-      xml.attribute("occur", occurToString(this._terms.get(word)));
+      xml.attribute("text", String.valueOf(value));
+      xml.attribute("occur", occurToString(this._values.get(value)));
       xml.closeElement();
     }
     xml.closeElement();
   }
 
-  public static TermFilter newTermFilter(String name, String word) {
-    return newTermFilter(name, word, Occur.MUST);
+  public static NumericTermFilter newFilter(String name, Number value) {
+    return newFilter(name, value, Occur.MUST);
   }
 
-  public static TermFilter newTermFilter(String name, String word, Occur occur) {
-    return new Builder().name(name).addTerm(word, occur).build();
+  public static NumericTermFilter newFilter(String name, Number value, Occur occur) {
+    NumericType numeric;
+    if (value instanceof Integer)     numeric = NumericType.INT;
+    else if (value instanceof Float)  numeric = NumericType.FLOAT;
+    else if (value instanceof Double) numeric = NumericType.DOUBLE;
+    else if (value instanceof Long)   numeric = NumericType.LONG;
+    else return null;
+    return new Builder().name(name).numeric(numeric).addNumber(value, occur).build();
   }
 
   /**
@@ -108,20 +113,18 @@ public class TermFilter implements Filter {
    * 
    * @return the query
    */
-  private Query wordToQuery(String word) {
-    if (this._numeric != null) {
-      switch (this._numeric) {
-        case INT:
-          return NumberParameter.newIntParameter(this._name, Integer.parseInt(word)).toQuery();
-        case LONG:
-          return NumberParameter.newLongParameter(this._name, Long.parseLong(word)).toQuery();
-        case DOUBLE:
-          return NumberParameter.newDoubleParameter(this._name, NumericUtils.sortableLongToDouble(Long.parseLong(word))).toQuery();
-        case FLOAT:
-          return NumberParameter.newFloatParameter(this._name, NumericUtils.sortableIntToFloat(Integer.parseInt(word))).toQuery();
-      }
+  private Query numberToQuery(Number value) {
+    switch (this._numeric) {
+      case INT:
+        return NumberParameter.newIntParameter(this._name, (Integer) value).toQuery();
+      case LONG:
+        return NumberParameter.newLongParameter(this._name, (Long) value).toQuery();
+      case DOUBLE:
+        return NumberParameter.newDoubleParameter(this._name, NumericUtils.sortableLongToDouble((Long) value)).toQuery();
+      case FLOAT:
+        return NumberParameter.newFloatParameter(this._name, NumericUtils.sortableIntToFloat((Integer) value)).toQuery();
     }
-    return new TermQuery(new Term(this._name, word));
+    return null;
   }
 
   private static String occurToString(Occur occur) {
@@ -146,7 +149,7 @@ public class TermFilter implements Filter {
     /**
      * The list of terms to filter with
      */
-    private final Map<String, Occur> _terms = new HashMap<>();
+    private final Map<Number, Occur> _values = new HashMap<>();
 
     public Builder name(String name) {
       this._name = name;
@@ -158,15 +161,16 @@ public class TermFilter implements Filter {
       return this;
     }
 
-    public Builder addTerm(String term, Occur when) {
-      this._terms.put(term, when == null ? Occur.MUST : when);
+    public Builder addNumber(Number value, Occur when) {
+      this._values.put(value, when == null ? Occur.MUST : when);
       return this;
     }
 
-    public TermFilter build() {
+    public NumericTermFilter build() {
       if (this._name == null) throw new NullPointerException("name");
-      if (this._terms.isEmpty()) throw new IllegalStateException("no terms to filter with!");
-      return new TermFilter(this);
+      if (this._numeric == null) throw new NullPointerException("numeric");
+      if (this._values.isEmpty()) throw new IllegalStateException("no values to filter with!");
+      return new NumericTermFilter(this);
     }
   }
 }
