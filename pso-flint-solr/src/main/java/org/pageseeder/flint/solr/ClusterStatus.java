@@ -18,11 +18,11 @@ public class ClusterStatus implements XMLWritable {
   public static ClusterStatus fromNamedList(NamedList<Object> list) {
     ClusterStatus status = new ClusterStatus();
     NamedList<Object> cols = (NamedList<Object>) list.get("collections");
-    for (int i = 0; i < cols.size(); i++) {
+    if (cols != null) for (int i = 0; i < cols.size(); i++) {
       status.collections.add(Collection.fromMap(cols.getName(i), (Map<String, Object>) cols.getVal(i)));
     }
     List<Object> nodes = (List<Object>) list.get("live_nodes");
-    for (Object node : nodes) {
+    if (nodes != null) for (Object node : nodes) {
       status.liveNodes.add(node.toString());
     }
     return status;
@@ -56,14 +56,15 @@ public class ClusterStatus implements XMLWritable {
     @SuppressWarnings("unchecked")
     public static Collection fromMap(String aname, Map<String, Object> col) {
       Collection created = new Collection();
+      if (col == null || aname == null) return created;
       created.name = aname;
       created.autoAddReplicas   = "true".equals(col.get("autoAddReplicas"));
-      created.maxShardsPerNode  = col.get("maxShardsPerNode") == null ? -1 : Integer.parseInt((String) col.get("maxShardsPerNode"));
+      created.maxShardsPerNode  = col.get("maxShardsPerNode")  == null ? -1 : Integer.parseInt((String) col.get("maxShardsPerNode"));
       created.replicationFactor = col.get("replicationFactor") == null ? -1 : Integer.parseInt((String) col.get("replicationFactor"));
-      created.routerName  = (String) ((Map<String, Object>) col.get("router")).get("name");
-      created.routerField = (String) ((Map<String, Object>) col.get("router")).get("field");
+      created.routerName  = col.get("router") == null ? null : (String) ((Map<String, Object>) col.get("router")).get("name");
+      created.routerField = col.get("router") == null ? null : (String) ((Map<String, Object>) col.get("router")).get("field");
       Map<String, Object> theshards = (Map<String, Object>) col.get("shards");
-      for (String name : theshards.keySet()) {
+      if (theshards != null) for (String name : theshards.keySet()) {
         created.shards.add(Shard.fromMap(name, (Map<String, Object>) theshards.get(name)));
       }
       return created;
@@ -94,7 +95,7 @@ public class ClusterStatus implements XMLWritable {
       created.name  = aname;
       created.state = (String) col.get("state");
       Map<String, Object> thereplicas = (Map<String, Object>) col.get("replicas");
-      for (String name : thereplicas.keySet()) {
+      if (thereplicas != null) for (String name : thereplicas.keySet()) {
         created.replicas.add(Replica.fromMap(name, (Map<String, Object>) thereplicas.get(name)));
       }
       return created;
