@@ -1,0 +1,45 @@
+<?xml version="1.0"?>
+<documents version="5.0">
+  <document>
+    <field name="field" tokenize="false">value1</field>
+    <field name="facet1" tokenize="false">aaaaaa</field>
+    <field name="facet2" tokenize="false">aaaaaa</field>
+    <field name="facet3" tokenize="false">word1</field>
+  </document>
+  <document>
+    <field name="field" tokenize="false">value1</field>
+    <field name="facet1" tokenize="false">aaaaaa</field>
+    <field name="facet2" tokenize="false">dddddd</field>
+    <field name="facet3" tokenize="false">something</field>
+  </document>
+  <document>
+    <field name="field" tokenize="false">value1</field>
+    <field name="facet1" tokenize="false">bbbbbb</field>
+    <field name="facet2" tokenize="false">hhhhhh</field>
+    <field name="facet3" tokenize="false">TEST</field>
+  </document>
+  <document>
+    <field name="field" tokenize="false">value1</field>
+    <field name="facet1" tokenize="false">bbbbbb</field>
+    <field name="facet2" tokenize="false">mmmmmm</field>
+    <field name="facet3" tokenize="false">0123456</field>
+  </document>
+  <document>
+    <field name="field" tokenize="false">value1</field>
+    <field name="facet1" tokenize="false">cccccc</field>
+    <field name="facet2" tokenize="false">oooooo</field>
+    <field name="facet3" tokenize="false">tEs_t</field>
+  </document>
+  <document>
+    <field name="field" tokenize="false">value1</field>
+    <field name="facet1" tokenize="false">dddddd</field>
+    <field name="facet2" tokenize="false">tttttt</field>
+    <field name="facet3" tokenize="false">something</field>
+  </document>
+  <document>
+    <field name="field" tokenize="false">value2</field>
+    <field name="facet1" tokenize="false">eeeeee</field>
+    <field name="facet2" tokenize="false">zzzzzz</field>
+    <field name="facet3" tokenize="false">blabla</field>
+  </document>
+</documents>

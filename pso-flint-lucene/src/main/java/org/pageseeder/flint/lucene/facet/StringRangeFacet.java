@@ -13,15 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.pageseeder.flint.lucene.search;
+package org.pageseeder.flint.lucene.facet;
 
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.lucene.index.Term;
-import org.apache.lucene.search.Query;
-import org.apache.lucene.search.TermQuery;
 import org.pageseeder.flint.lucene.util.Beta;
 import org.pageseeder.xmlwriter.XMLWriter;
 
@@ -47,31 +45,6 @@ public class StringRangeFacet extends FlexibleRangeFacet {
     super(name);
     this._ranges.addAll(ranges);
     this._caseSensitive = caseSensitive;
-  }
-
-
-  /**
-   * Create a query for the term given, using the numeric type if there is one.
-   * 
-   * @param t the term
-   * 
-   * @return the query
-   */
-  @Override
-  protected Query termToQuery(Term t) {
-    return new TermQuery(t);
-  }
-
-  /**
-   * Create a query for the term given, using the numeric type if there is one.
-   * 
-   * @param t the term
-   * 
-   * @return the query
-   */
-  @Override
-  protected String termToText(Term t) {
-    return t.text();
   }
 
   @Override

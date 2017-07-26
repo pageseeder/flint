@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.pageseeder.flint.lucene.search;
+package org.pageseeder.flint.lucene.facet;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -26,6 +26,9 @@ import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.pageseeder.flint.indexing.FlintField.NumericType;
 import org.pageseeder.flint.lucene.query.NumericRange;
+import org.pageseeder.flint.lucene.search.DocumentCounter;
+import org.pageseeder.flint.lucene.search.FieldDocumentCounter;
+import org.pageseeder.flint.lucene.search.Filter;
 import org.pageseeder.flint.lucene.util.Beta;
 import org.pageseeder.flint.lucene.util.Bucket;
 import org.pageseeder.xmlwriter.XMLWriter;
@@ -37,12 +40,7 @@ import org.pageseeder.xmlwriter.XMLWriter;
  * @version 14 July 2017
  */
 @Beta
-public class NumericRangeFacet extends FlexibleRangeFacet {
-
-  /**
-   * If this facet is a number
-   */
-  private final NumericType _numeric;
+public abstract class NumericRangeFacet extends FlexibleRangeFacet {
 
   private final List<Range> _ranges = new ArrayList<>();
 
@@ -52,9 +50,8 @@ public class NumericRangeFacet extends FlexibleRangeFacet {
    * @param name     The name of the facet.
    * @param maxterms The maximum number of terms to return
    */
-  private NumericRangeFacet(String name, NumericType numeric, List<Range> ranges) {
+  private NumericRangeFacet(String name, List<Range> ranges) {
     super(name);
-    this._numeric = numeric;
     this._ranges.addAll(ranges);
   }
 
@@ -133,49 +130,10 @@ public class NumericRangeFacet extends FlexibleRangeFacet {
     this.totalResults = 0;
   }
 
-  /**
-   * Create a query for the term given, using the numeric type if there is one.
-   * 
-   * @param t the term
-   * 
-   * @return the query
-   */
-  protected Query rangeToQuery(Range r) {
-    switch (this._numeric) {
-      case INT:
-        return NumericRange.newIntRange(name(), r.getMin() == null ? null : Integer.parseInt(r.getMin()),
-                                                r.getMax() == null ? null : Integer.parseInt(r.getMax()),
-                                                r.includeMin(), r.includeMax()).toQuery();
-      case LONG:
-        return NumericRange.newLongRange(name(), r.getMin() == null ? null : Long.parseLong(r.getMin()),
-                                                 r.getMax() == null ? null : Long.parseLong(r.getMax()),
-                                                 r.includeMin(), r.includeMax()).toQuery();
-      case DOUBLE:
-        return NumericRange.newDoubleRange(name(), r.getMin() == null ? null : Double.parseDouble(r.getMin()),
-                                                   r.getMax() == null ? null : Double.parseDouble(r.getMax()),
-                                                   r.includeMin(), r.includeMax()).toQuery();
-      case FLOAT:
-        return NumericRange.newFloatRange(name(), r.getMin() == null ? null : Float.parseFloat(r.getMin()),
-                                                  r.getMax() == null ? null : Float.parseFloat(r.getMax()),
-                                                  r.includeMin(), r.includeMax()).toQuery();
-    }
-    return null;
-  }
-
   @Override
-  protected String termToText(Term t) {
-    return null;
-  }
+  protected Range findRange(Term t) { return null; }
 
-  @Override
-  protected Query termToQuery(Term t) {
-    return null;
-  }
-
-  @Override
-  protected Range findRange(Term t) {
-    return null;
-  }
+  protected abstract Query rangeToQuery(Range r);
 
   @Override
   protected String getType() {
@@ -191,6 +149,54 @@ public class NumericRangeFacet extends FlexibleRangeFacet {
     xml.closeElement();
   }
 
+  private static class IntRangeFacet extends NumericRangeFacet {
+    public IntRangeFacet(String name, List<Range> ranges) {
+      super(name, ranges);
+    }
+    @Override
+    protected Query rangeToQuery(Range r) {
+      return NumericRange.newIntRange(name(),
+          r.getMin() == null ? null : Integer.parseInt(r.getMin()),
+          r.getMax() == null ? null : Integer.parseInt(r.getMax()),
+          r.includeMin(), r.includeMax()).toQuery();
+    }
+  }
+  private static class FloatRangeFacet extends NumericRangeFacet {
+    public FloatRangeFacet(String name, List<Range> ranges) {
+      super(name, ranges);
+    }
+    @Override
+    protected Query rangeToQuery(Range r) {
+      return NumericRange.newFloatRange(name(),
+          r.getMin() == null ? null : Float.parseFloat(r.getMin()),
+          r.getMax() == null ? null : Float.parseFloat(r.getMax()),
+          r.includeMin(), r.includeMax()).toQuery();
+    }
+  }
+  private static class DoubleRangeFacet extends NumericRangeFacet {
+    public DoubleRangeFacet(String name, List<Range> ranges) {
+      super(name, ranges);
+    }
+    @Override
+    protected Query rangeToQuery(Range r) {
+      return NumericRange.newDoubleRange(name(),
+          r.getMin() == null ? null : Double.parseDouble(r.getMin()),
+          r.getMax() == null ? null : Double.parseDouble(r.getMax()),
+          r.includeMin(), r.includeMax()).toQuery();
+    }
+  }
+  private static class LongRangeFacet extends NumericRangeFacet {
+    public LongRangeFacet(String name, List<Range> ranges) {
+      super(name, ranges);
+    }
+    @Override
+    protected Query rangeToQuery(Range r) {
+      return NumericRange.newLongRange(name(),
+          r.getMin() == null ? null : Long.parseLong(r.getMin()),
+          r.getMax() == null ? null : Long.parseLong(r.getMax()),
+          r.includeMin(), r.includeMax()).toQuery();
+    }
+  }
   // Builder ------------------------------------------------------------------------------------------
   public static class Builder {
 
@@ -233,8 +239,13 @@ public class NumericRangeFacet extends FlexibleRangeFacet {
     public NumericRangeFacet build() {
       if (this.name == null) throw new NullPointerException("Must have a field name");
       if (this.numeric == null) throw new NullPointerException("Must have a numeric type");
-      NumericRangeFacet fr = new NumericRangeFacet(this.name, this.numeric, this.ranges);
-      return fr;
+      switch (this.numeric) {
+        case INT:    return new IntRangeFacet(name, ranges);
+        case DOUBLE: return new DoubleRangeFacet(name, ranges);
+        case FLOAT:  return new FloatRangeFacet(name, ranges);
+        case LONG:   return new LongRangeFacet(name, ranges);
+      }
+      return null;
     }
   }
 }

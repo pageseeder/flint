@@ -1,4 +1,4 @@
-package org.pageseeder.flint.lucene.search;
+package org.pageseeder.flint.lucene.facet;
 
 import java.io.File;
 import java.io.FileFilter;
@@ -8,6 +8,7 @@ import java.text.SimpleDateFormat;
 import java.util.Collections;
 import java.util.Date;
 import java.util.List;
+import java.util.TimeZone;
 
 import javax.xml.transform.TransformerException;
 
@@ -27,6 +28,8 @@ import org.pageseeder.flint.local.LocalIndexManagerFactory;
 import org.pageseeder.flint.lucene.LuceneIndexQueries;
 import org.pageseeder.flint.lucene.LuceneLocalIndex;
 import org.pageseeder.flint.lucene.query.DateParameter;
+import org.pageseeder.flint.lucene.search.DateTermFilter;
+import org.pageseeder.flint.lucene.search.Filter;
 import org.pageseeder.flint.lucene.util.Bucket;
 import org.pageseeder.flint.lucene.util.Dates;
 import org.pageseeder.flint.lucene.utils.TestListener;
@@ -68,6 +71,8 @@ public class DateFieldFacetTest {
     } catch (IndexException ex) {
       ex.printStackTrace();
     }
+    // set GMT as indexed dates
+    format.setTimeZone(TimeZone.getTimeZone("GMT"));
   }
 
   @AfterClass
@@ -158,6 +163,45 @@ public class DateFieldFacetTest {
     Assert.assertEquals(1, values.items().size());
     Assert.assertEquals(6, values.count(Dates.toString(format.parse("2017-03-01_12:00:00"), second_resolution)));
   }
+
+//  @Test
+//  public void testFacetsQuerySearchResults() throws IndexException, IOException, ParseException {
+//    Date d = format.parse("2017-03-01_12:00:00");
+//    SearchQuery base = BasicQuery.newBasicQuery(new DateParameter("facet3", d, second_resolution, false));
+//    // run search
+//    SearchResults results = LuceneIndexQueries.query(index, base);
+//    DateFieldFacet facet = DateFieldFacet.newFacet("facet1", second_resolution);
+//    facet.compute(results);
+//    Assert.assertEquals(6, facet.getTotalResults());
+//    Assert.assertEquals(5, facet.getTotalTerms());
+//    Bucket<String> values = facet.getValues();
+//    Assert.assertEquals(5, values.items().size());
+//    Assert.assertEquals(1, values.count(Dates.toString(format.parse("2017-01-01_12:00:00"), second_resolution)));
+//    Assert.assertEquals(1, values.count(Dates.toString(format.parse("2017-01-02_12:00:00"), second_resolution)));
+//    Assert.assertEquals(1, values.count(Dates.toString(format.parse("2017-01-03_12:00:00"), second_resolution)));
+//    Assert.assertEquals(2, values.count(Dates.toString(format.parse("2017-01-04_12:00:00"), second_resolution)));
+//    Assert.assertEquals(1, values.count(Dates.toString(format.parse("2017-01-05_12:00:00"), second_resolution)));
+//    // facets 2
+//    facet = DateFieldFacet.newFacet("facet2", Resolution.SECOND);
+//    facet.compute(results);
+//    Assert.assertEquals(6, facet.getTotalResults());
+//    Assert.assertEquals(5, facet.getTotalTerms());
+//    values = facet.getValues();
+//    Assert.assertEquals(5, values.items().size());
+//    Assert.assertEquals(1, values.count(Dates.toString(format.parse("2017-02-01_12:00:00"), second_resolution)));
+//    Assert.assertEquals(2, values.count(Dates.toString(format.parse("2017-02-02_12:00:00"), second_resolution)));
+//    Assert.assertEquals(1, values.count(Dates.toString(format.parse("2017-02-03_12:00:00"), second_resolution)));
+//    Assert.assertEquals(1, values.count(Dates.toString(format.parse("2017-02-04_12:00:00"), second_resolution)));
+//    Assert.assertEquals(1, values.count(Dates.toString(format.parse("2017-02-05_12:00:00"), second_resolution)));
+//    // facets 3
+//    facet = DateFieldFacet.newFacet("facet3", Resolution.SECOND);
+//    facet.compute(results);
+//    Assert.assertEquals(6, facet.getTotalResults());
+//    Assert.assertEquals(1, facet.getTotalTerms());
+//    values = facet.getValues();
+//    Assert.assertEquals(1, values.items().size());
+//    Assert.assertEquals(6, values.count(Dates.toString(format.parse("2017-03-01_12:00:00"), second_resolution)));
+//  }
 
   @Test
   public void testFlexibleFacetsQuery() throws IndexException, IOException, ParseException {

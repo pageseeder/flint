@@ -1,4 +1,4 @@
-package org.pageseeder.flint.lucene.search;
+package org.pageseeder.flint.lucene.facet;
 
 import java.io.File;
 import java.io.FileFilter;
@@ -22,6 +22,8 @@ import org.pageseeder.flint.local.LocalIndexManager;
 import org.pageseeder.flint.local.LocalIndexManagerFactory;
 import org.pageseeder.flint.lucene.LuceneIndexQueries;
 import org.pageseeder.flint.lucene.LuceneLocalIndex;
+import org.pageseeder.flint.lucene.search.Filter;
+import org.pageseeder.flint.lucene.search.StringTermFilter;
 import org.pageseeder.flint.lucene.util.Bucket;
 import org.pageseeder.flint.lucene.utils.TestListener;
 import org.pageseeder.flint.lucene.utils.TestUtils;
@@ -149,6 +151,43 @@ public class StringFieldFacetTest {
     Assert.assertEquals(1, values.items().size());
     Assert.assertEquals(6, values.count("value30"));
   }
+
+//  @Test
+//  public void testFacetsQuerySearchResults() throws IndexException, IOException {
+//    SearchQuery base = BasicQuery.newBasicQuery(new TermParameter("facet3", "value30"));
+//    SearchResults results = LuceneIndexQueries.query(index, base, new SearchPaging(1, 2));
+//    StringFieldFacet facet = StringFieldFacet.newFacet("facet1");
+//    facet.compute(results);
+//    Assert.assertEquals(6, facet.getTotalResults());
+//    Assert.assertEquals(5, facet.getTotalTerms());
+//    Bucket<String> values = facet.getValues();
+//    Assert.assertEquals(5, values.items().size());
+//    Assert.assertEquals(1, values.count("value10"));
+//    Assert.assertEquals(2, values.count("value11"));
+//    Assert.assertEquals(1, values.count("value12"));
+//    Assert.assertEquals(1, values.count("value13"));
+//    Assert.assertEquals(1, values.count("value14"));
+//    // facets 2
+//    facet = StringFieldFacet.newFacet("facet2");
+//    facet.compute(results);
+//    Assert.assertEquals(6, facet.getTotalResults());
+//    Assert.assertEquals(5, facet.getTotalTerms());
+//    values = facet.getValues();
+//    Assert.assertEquals(5, values.items().size());
+//    Assert.assertEquals(1, values.count("value20"));
+//    Assert.assertEquals(1, values.count("value21"));
+//    Assert.assertEquals(1, values.count("value22"));
+//    Assert.assertEquals(1, values.count("value23"));
+//    Assert.assertEquals(2, values.count("value24"));
+//    // facets 3
+//    facet = StringFieldFacet.newFacet("facet3");
+//    facet.compute(results);
+//    Assert.assertEquals(6, facet.getTotalResults());
+//    Assert.assertEquals(1, facet.getTotalTerms());
+//    values = facet.getValues();
+//    Assert.assertEquals(1, values.items().size());
+//    Assert.assertEquals(6, values.count("value30"));
+//  }
 
   @Test
   public void testFlexibleFacetsQuery() throws IndexException, IOException {

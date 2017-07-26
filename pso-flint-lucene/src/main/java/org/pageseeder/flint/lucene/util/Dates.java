@@ -18,9 +18,8 @@ package org.pageseeder.flint.lucene.util;
 import java.text.DateFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.time.OffsetDateTime;
-import java.time.ZoneOffset;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.GregorianCalendar;
@@ -173,32 +172,33 @@ public final class Dates {
    */
   public static String format(Date date, Resolution resolution) {
     if (date == null) return null;
-    Calendar calendar = GregorianCalendar.getInstance();
-    calendar.setTime(date);
-    StringBuilder iso = new StringBuilder();
-    // Year [YYYY]
-    iso.append(leftZeroPad4(calendar.get(GregorianCalendar.YEAR)));
-    if (resolution == Resolution.YEAR) return iso.toString();
-    // Month [YYYY]-[MM]
-    iso.append('-').append(leftZeroPad2(calendar.get(GregorianCalendar.MONTH) + 1));
-    if (resolution == Resolution.MONTH) return iso.toString();
-    // Day [YYYY]-[MM]-[DD]
-    iso.append('-').append(leftZeroPad2(calendar.get(GregorianCalendar.DAY_OF_MONTH)));
-    if (resolution == Resolution.DAY) return iso.toString();
-    // TODO: Times require the time zone
-    String z = toTimeZone(calendar.getTimeZone().getOffset(date.getTime()));
-    // Hour [YYYY]-[MM]-[DD]T[hh]
-    iso.append('T').append(leftZeroPad2(calendar.get(GregorianCalendar.HOUR_OF_DAY)));
-    if (resolution == Resolution.HOUR) return iso.append(z).toString();
-    // Minute [YYYY]-[MM]-[DD]T[hh]:[mm]
-    iso.append(':').append(leftZeroPad2(calendar.get(GregorianCalendar.MINUTE)));
-    if (resolution == Resolution.MINUTE) return iso.append(z).toString();
-    // Second [YYYY]-[MM]-[DD]T[hh]:[mm]:[ss]
-    iso.append(':').append(leftZeroPad2(calendar.get(GregorianCalendar.SECOND)));
-    if (resolution == Resolution.SECOND) return iso.append(z).toString();
-    // MilliSecond [YYYY]-[MM]-[DD]T[hh]:[mm]:[ss].[sss]
-    iso.append('.').append(leftZeroPad3(calendar.get(GregorianCalendar.MILLISECOND)));
-    return iso.append(z).toString();
+    return format(date.getTime(), resolution);
+  }
+
+  /**
+   * Formats the specified date as a String with the given resolution using ISO8601.
+   *
+   * <p>Formats based on the resolution using the ISO8601 extended format:
+   * <ul>
+   *   <li>Year <code>[YYYY]</code>
+   *   <li>Month <code>[YYYY]-[MM]</code>
+   *   <li>Day <code>[YYYY]-[MM]-[DD]</code>
+   *   <li>Hour <code>[YYYY]-[MM]-[DD]T[hh]</code>
+   *   <li>Minute <code>[YYYY]-[MM]-[DD]T[hh]:[mm]</code>
+   *   <li>Second <code>[YYYY]-[MM]-[DD]T[hh]:[mm]:[ss]</code>
+   *   <li>MilliSecond <code> [YYYY]-[MM]-[DD]T[hh]:[mm]:[ss].[sss]</code>
+   * </ul>
+   *
+   * <p>Note: dates returned in local time.
+   *
+   * @param date       The date to format
+   * @param resolution The resolution for the formatting
+   *
+   * @return the formatted date as ISO8601 or <code>null</code>.
+   */
+  public static String format(OffsetDateTime date, Resolution resolution) {
+    if (date == null) return null;
+    return format(date.toInstant().toEpochMilli(), resolution);
   }
 
   /**
@@ -235,9 +235,9 @@ public final class Dates {
    *
    * @return The string value for use by Lucene.
    */
-  public static String toString(LocalDateTime date, Resolution resolution) {
+  public static String toString(Instant date, Resolution resolution) {
     if (date == null) return null;
-    return DateTools.timeToString(date.toInstant(ZoneOffset.UTC).toEpochMilli(), resolution);
+    return DateTools.timeToString(date.toEpochMilli(), resolution);
   }
 
   /**
@@ -250,7 +250,75 @@ public final class Dates {
    */
   public static Number toNumber(Date date, Resolution resolution) {
     if (date == null) return null;
-    long timems = date.getTime();
+    return toNumber(date.getTime(), resolution);
+  }
+
+  /**
+   * Return the numeric value used by Lucene 3 for dates.
+   *
+   * @param date       The date to convert
+   * @param resolution The resolution for the formatting
+   *
+   * @return The numeric value for use by Lucene.
+   */
+  public static Number toNumber(OffsetDateTime date, Resolution resolution) {
+    if (date == null) return null;
+    return toNumber(date.toInstant().toEpochMilli(), resolution);
+  }
+
+  // private helpers ------------------------------------------------------------------------------
+
+  /**
+   * Formats the specified date as a String with the given resolution using ISO8601.
+   *
+   * <p>Formats based on the resolution using the ISO8601 extended format:
+   * <ul>
+   *   <li>Year <code>[YYYY]</code>
+   *   <li>Month <code>[YYYY]-[MM]</code>
+   *   <li>Day <code>[YYYY]-[MM]-[DD]</code>
+   *   <li>Hour <code>[YYYY]-[MM]-[DD]T[hh]</code>
+   *   <li>Minute <code>[YYYY]-[MM]-[DD]T[hh]:[mm]</code>
+   *   <li>Second <code>[YYYY]-[MM]-[DD]T[hh]:[mm]:[ss]</code>
+   *   <li>MilliSecond <code> [YYYY]-[MM]-[DD]T[hh]:[mm]:[ss].[sss]</code>
+   * </ul>
+   *
+   * <p>Note: dates returned in local time.
+   *
+   * @param date       The date to format
+   * @param resolution The resolution for the formatting
+   *
+   * @return the formatted date as ISO8601 or <code>null</code>.
+   */
+  public static String format(long timems, Resolution resolution) {
+    Calendar calendar = GregorianCalendar.getInstance();
+    calendar.setTimeInMillis(timems);
+    StringBuilder iso = new StringBuilder();
+    // Year [YYYY]
+    iso.append(leftZeroPad4(calendar.get(GregorianCalendar.YEAR)));
+    if (resolution == Resolution.YEAR) return iso.toString();
+    // Month [YYYY]-[MM]
+    iso.append('-').append(leftZeroPad2(calendar.get(GregorianCalendar.MONTH) + 1));
+    if (resolution == Resolution.MONTH) return iso.toString();
+    // Day [YYYY]-[MM]-[DD]
+    iso.append('-').append(leftZeroPad2(calendar.get(GregorianCalendar.DAY_OF_MONTH)));
+    if (resolution == Resolution.DAY) return iso.toString();
+    // TODO: Times require the time zone
+    String z = toTimeZone(calendar.getTimeZone().getOffset(timems));
+    // Hour [YYYY]-[MM]-[DD]T[hh]
+    iso.append('T').append(leftZeroPad2(calendar.get(GregorianCalendar.HOUR_OF_DAY)));
+    if (resolution == Resolution.HOUR) return iso.append(z).toString();
+    // Minute [YYYY]-[MM]-[DD]T[hh]:[mm]
+    iso.append(':').append(leftZeroPad2(calendar.get(GregorianCalendar.MINUTE)));
+    if (resolution == Resolution.MINUTE) return iso.append(z).toString();
+    // Second [YYYY]-[MM]-[DD]T[hh]:[mm]:[ss]
+    iso.append(':').append(leftZeroPad2(calendar.get(GregorianCalendar.SECOND)));
+    if (resolution == Resolution.SECOND) return iso.append(z).toString();
+    // MilliSecond [YYYY]-[MM]-[DD]T[hh]:[mm]:[ss].[sss]
+    iso.append('.').append(leftZeroPad3(calendar.get(GregorianCalendar.MILLISECOND)));
+    return iso.append(z).toString();
+  }
+
+  private static Number toNumber(long timems, Resolution resolution) {
     // Resolution higher than Day -> Long
     if (resolution == Resolution.MILLISECOND) return Long.valueOf(timems);
     else if (resolution == Resolution.SECOND) return Long.valueOf(timems / ONE_SECOND_IN_MS);
@@ -264,8 +332,6 @@ public final class Dates {
     if (resolution == Resolution.YEAR) return Integer.valueOf(c.get(GregorianCalendar.YEAR));
     return null;
   }
-
-  // private helpers ------------------------------------------------------------------------------
 
   /**
    * Pads the given numbers with zeros to the left.

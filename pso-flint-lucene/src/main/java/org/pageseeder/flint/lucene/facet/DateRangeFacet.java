@@ -13,16 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.pageseeder.flint.lucene.search;
+package org.pageseeder.flint.lucene.facet;
 
 import java.io.IOException;
 import java.text.ParseException;
 import java.util.ArrayList;
-import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
-
-import javax.xml.bind.DatatypeConverter;
 
 import org.apache.lucene.document.DateTools;
 import org.apache.lucene.document.DateTools.Resolution;
@@ -31,6 +28,7 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermQuery;
 import org.pageseeder.flint.lucene.query.DateParameter;
 import org.pageseeder.flint.lucene.util.Beta;
+import org.pageseeder.flint.lucene.util.Dates;
 import org.pageseeder.xmlwriter.XMLWriter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -83,18 +81,6 @@ public class DateRangeFacet extends FlexibleRangeFacet {
     return new TermQuery(t);
   }
 
-  /**
-   * Create a query for the term given, using the numeric type if there is one.
-   * 
-   * @param t the term
-   * 
-   * @return the query
-   */
-  @Override
-  protected String termToText(Term t) {
-    return t.text();
-  }
-
   @Override
   protected String getType() {
     return "date-range";
@@ -140,16 +126,12 @@ public class DateRangeFacet extends FlexibleRangeFacet {
   protected void rangeToXML(Range range, int cardinality, XMLWriter xml) throws IOException {
     xml.openElement("range");
     if (range.getMin() != null) try {
-      Calendar cal = java.util.Calendar.getInstance();
-      cal.setTime(DateTools.stringToDate(range.getMin()));
-      xml.attribute("min", DatatypeConverter.printDateTime(cal));
+      xml.attribute("min", Dates.format(DateTools.stringToDate(range.getMin()), this._resolution));
     } catch (ParseException ex) {
       // should not happen as the string is coming from the date formatter in the first place
     }
     if (range.getMax() != null) try {
-      Calendar cal = java.util.Calendar.getInstance();
-      cal.setTime(DateTools.stringToDate(range.getMax()));
-      xml.attribute("max", DatatypeConverter.printDateTime(cal));
+      xml.attribute("max", Dates.format(DateTools.stringToDate(range.getMax()), this._resolution));
     } catch (ParseException ex) {
       // should not happen as the string is coming from the date formatter in the first place
     }

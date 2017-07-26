@@ -1,4 +1,4 @@
-package org.pageseeder.flint.lucene.search;
+package org.pageseeder.flint.lucene.facet;
 
 import java.io.File;
 import java.io.FileFilter;
@@ -7,6 +7,7 @@ import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Collections;
 import java.util.List;
+import java.util.TimeZone;
 
 import javax.xml.transform.TransformerException;
 
@@ -25,8 +26,10 @@ import org.pageseeder.flint.local.LocalIndexManager;
 import org.pageseeder.flint.local.LocalIndexManagerFactory;
 import org.pageseeder.flint.lucene.LuceneIndexQueries;
 import org.pageseeder.flint.lucene.LuceneLocalIndex;
+import org.pageseeder.flint.lucene.facet.FlexibleRangeFacet.Range;
 import org.pageseeder.flint.lucene.query.DateParameter;
-import org.pageseeder.flint.lucene.search.FlexibleRangeFacet.Range;
+import org.pageseeder.flint.lucene.search.DateTermFilter;
+import org.pageseeder.flint.lucene.search.Filter;
 import org.pageseeder.flint.lucene.util.Bucket;
 import org.pageseeder.flint.lucene.utils.TestListener;
 import org.pageseeder.flint.lucene.utils.TestUtils;
@@ -67,6 +70,8 @@ public class DateRangeFacetTest {
     } catch (IndexException ex) {
       ex.printStackTrace();
     }
+    // set GMT as indexed dates
+    format.setTimeZone(TimeZone.getTimeZone("GMT"));
   }
 
   @AfterClass

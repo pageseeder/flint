@@ -16,6 +16,9 @@
 package org.pageseeder.flint.lucene.query;
 
 import java.io.IOException;
+import java.time.Instant;
+import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 import java.util.Date;
 
 import org.apache.lucene.document.DateTools.Resolution;
@@ -44,12 +47,12 @@ public final class DateParameter implements SearchParameter {
   /**
    * The FROM date, if <code>null</code>, then no lower limit.
    */
-  private Date _from;
+  private OffsetDateTime _from;
 
   /**
    * The TO date, if <code>null</code>, then no upper limit.
    */
-  private Date _to;
+  private OffsetDateTime _to;
 
   /**
    * The resolution for this date field.
@@ -79,6 +82,18 @@ public final class DateParameter implements SearchParameter {
 // Implementation methods ----------------------------------------------------------------------
 
   /**
+   * Creates a new date parameter.
+   *
+   * @param field      the date field to search
+   * @param exactMatch the exact matching date
+   * @param resolution the date resolution
+   * @param numeric    whether it is a numeric field
+   */
+  public DateParameter(String field, Date exactMatch, Resolution resolution, boolean numeric) {
+    this(field, exactMatch, exactMatch, true, true, resolution, numeric);
+  }
+
+  /**
    * Creates a new date parameter (inclusive of from and to dates).
    *
    * @param field      the date field to search
@@ -103,6 +118,47 @@ public final class DateParameter implements SearchParameter {
    * @param numeric    whether it is a numeric field
    */
   public DateParameter(String field, Date from, Date to, boolean withMin, boolean withMax, Resolution resolution, boolean numeric) {
+    this(field, from == null ? null : OffsetDateTime.ofInstant(Instant.ofEpochMilli(from.getTime()), ZoneOffset.UTC),
+                to   == null ? null : OffsetDateTime.ofInstant(Instant.ofEpochMilli(to.getTime()),   ZoneOffset.UTC), withMin, withMax, resolution, numeric);
+  }
+
+  /**
+   * Creates a new date parameter.
+   *
+   * @param field      the date field to search
+   * @param exactMatch the exact matching date
+   * @param resolution the date resolution
+   * @param numeric    whether it is a numeric field
+   */
+  public DateParameter(String field, OffsetDateTime exactMatch, Resolution resolution, boolean numeric) {
+    this(field, exactMatch, exactMatch, true, true, resolution, numeric);
+  }
+
+  /**
+   * Creates a new date parameter (inclusive of from and to dates).
+   *
+   * @param field      the date field to search
+   * @param from       the start date in the range (may be <code>null</code>)
+   * @param to         the end date in the range (may be <code>null</code>)
+   * @param resolution the date resolution
+   * @param numeric    whether it is a numeric field
+   */
+  public DateParameter(String field, OffsetDateTime from, OffsetDateTime to, Resolution resolution, boolean numeric) {
+    this(field, from, to, true, true, resolution, numeric);
+  }
+
+  /**
+   * Creates a new date parameter.
+   *
+   * @param field      the date field to search
+   * @param from       the start date in the range (may be <code>null</code>)
+   * @param to         the end date in the range (may be <code>null</code>)
+   * @param withMin    if the from date is included in the range
+   * @param withMax    if the to date is included in the range
+   * @param resolution the date resolution
+   * @param numeric    whether it is a numeric field
+   */
+  public DateParameter(String field, OffsetDateTime from, OffsetDateTime to, boolean withMin, boolean withMax, Resolution resolution, boolean numeric) {
     if (field == null) throw new NullPointerException("field");
     if (resolution == null) throw new NullPointerException("resolution");
     this._field = field;
@@ -115,24 +171,12 @@ public final class DateParameter implements SearchParameter {
   }
 
   /**
-   * Creates a new date parameter.
-   *
-   * @param field      the date field to search
-   * @param exactMatch the exact matching date
-   * @param resolution the date resolution
-   * @param numeric    whether it is a numeric field
-   */
-  public DateParameter(String field, Date exactMatch, Resolution resolution, boolean numeric) {
-    this(field, exactMatch, exactMatch, true, true, resolution, numeric);
-  }
-
-  /**
    * Returns the value of the lower limit of the date range.
    *
    * @return A date instance or <code>null</code>.
    */
   public Date from() {
-    return this._from != null? new Date(this._from.getTime()) : null;
+    return this._from != null? new Date(this._from.toInstant().toEpochMilli()) : null;
   }
 
   /**
@@ -141,8 +185,26 @@ public final class DateParameter implements SearchParameter {
    * @return A date instance  or <code>null</code>.
    */
   public Date to() {
-    return this._to != null? new Date(this._to.getTime()) : null;
+    return this._to != null? new Date(this._to.toInstant().toEpochMilli()) : null;
   }
+
+  /**
+   * Returns the value of the lower limit of the date range.
+   *
+   * @return A date instance or <code>null</code>.
+   */
+  public OffsetDateTime fromOffsetDateTime() {
+    return this._from;
+  }
+
+  /**
+   * Returns the value of the upper limit for the date range.
+   *
+   * @return A date instance or <code>null</code>.
+   */
+  public OffsetDateTime toOffsetDateTime() {
+    return this._to;
+ }
 
   /**
    * Returns the name of the date field to search.
@@ -202,13 +264,18 @@ public final class DateParameter implements SearchParameter {
    */
   @Override
   public void toXML(XMLWriter xml) throws IOException {
-    xml.openElement("date-range", false);
+    boolean exactMatch = this._from != null && this._from.equals(this._to);
+    xml.openElement(exactMatch ? "date-parameter" : "date-range", false);
     xml.attribute("field", this._field);
-    if (this._from != null) {
-      xml.attribute("from", Dates.format(this._from, this._resolution));
-    }
-    if (this._to != null) {
-      xml.attribute("to",  Dates.format(this._to, this._resolution));
+    if (exactMatch) {
+      xml.attribute("value", Dates.format(this._from, this._resolution));
+    } else {
+      if (this._from != null) {
+        xml.attribute("from", Dates.format(this._from, this._resolution));
+      }
+      if (this._to != null) {
+        xml.attribute("to",  Dates.format(this._to, this._resolution));
+      }
     }
     xml.closeElement();
   }
@@ -231,7 +298,7 @@ public final class DateParameter implements SearchParameter {
    *
    * @return the corresponding <code>TermRangeQuery</code>
    */
-  private static TermRangeQuery toTermRangeQuery(String field, Date from, Date to, boolean withMin, boolean withMax, Resolution resolution) {
+  private static TermRangeQuery toTermRangeQuery(String field, OffsetDateTime from, OffsetDateTime to, boolean withMin, boolean withMax, Resolution resolution) {
     BytesRef min = from != null? new BytesRef(Dates.toString(from, resolution).getBytes()) : null;
     BytesRef max = to   != null? new BytesRef(Dates.toString(to,   resolution).getBytes()) : null;
     return new TermRangeQuery(field, min, max, withMin, withMax);
@@ -247,7 +314,7 @@ public final class DateParameter implements SearchParameter {
    *
    * @return the corresponding <code>NumericRangeQuery</code>
    */
-  private static NumericRangeQuery<? extends Number> toNumericRangeQuery(String field, Date from, Date to, boolean withMin, boolean withMax, Resolution resolution) {
+  private static NumericRangeQuery<? extends Number> toNumericRangeQuery(String field, OffsetDateTime from, OffsetDateTime to, boolean withMin, boolean withMax, Resolution resolution) {
     Number min = from != null? Dates.toNumber(from, resolution) : null;
     Number max = to != null? Dates.toNumber(to, resolution) : null;
     // Using long values (resolution = MILLISECOND | SECOND | MINUTE | HOUR)

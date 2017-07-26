@@ -26,7 +26,7 @@ import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermQuery;
-import org.pageseeder.flint.lucene.util.Beta;
+import org.pageseeder.flint.lucene.facet.FlexibleFieldFacet;
 import org.pageseeder.flint.lucene.util.Bucket;
 import org.pageseeder.flint.lucene.util.Bucket.Entry;
 import org.pageseeder.xmlwriter.XMLWritable;
@@ -35,10 +35,11 @@ import org.pageseeder.xmlwriter.XMLWriter;
 /**
  * A facet implementation using a simple index field.
  *
+ * @deprecated use {@link FlexibleFieldFacet}
+ * 
  * @author Christophe Lauret
  * @version 16 February 2012
  */
-@Beta
 public final class FieldFacet implements XMLWritable, Facet {
 
   /**

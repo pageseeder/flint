@@ -19,7 +19,6 @@ import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.SortedNumericSortField;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
-import org.junit.Test;
 import org.pageseeder.flint.IndexException;
 import org.pageseeder.flint.IndexManager;
 import org.pageseeder.flint.Requester;
@@ -88,7 +87,7 @@ public class DatesTest {
     System.out.println("-----------------------------------");
   }
 
-  @Test
+//  @Test
   public void testSorting1() throws IndexException, IOException {
     long before = System.currentTimeMillis();
     // run searches
@@ -107,7 +106,7 @@ public class DatesTest {
     System.out.println("Time sorting string: "+(System.currentTimeMillis()-before));
   }
 
-  @Test
+//  @Test
   public void testSearch() throws IndexException, IOException {
     long before = System.currentTimeMillis();
     Date d = new Date(before);
@@ -128,7 +127,7 @@ public class DatesTest {
     System.out.println("Time search string: "+(System.currentTimeMillis()-before));
   }
 
-  @Test
+//  @Test
   public void testRanges() throws IndexException, IOException {
     long before = System.currentTimeMillis();
     Date min = new Date(before - 4 * 3600 * 1000);
@@ -150,6 +149,41 @@ public class DatesTest {
     results.terminate();
     System.out.println("Time range string: "+(System.currentTimeMillis()-before));
   }
+
+////  @Test
+//  public void testFacets() throws IndexException, IOException, ParseException {
+//    SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss");
+//    sdf.setTimeZone(TimeZone.getTimeZone("GMT"));
+//    XMLStringWriter xml = new XMLStringWriter(NamespaceAware.No);
+//    long before = System.currentTimeMillis();
+//    Date min = sdf.parse("2017-07-18T05:09:30");
+//    Date max = sdf.parse("2017-07-18T05:10:00");
+//    // run facets
+//    SearchQuery query = BasicQuery.newBasicQuery(TermRange.newRange("date-string",
+//        Dates.toString(min, Resolution.SECOND), Dates.toString(max, Resolution.SECOND), true, true));
+//    IndexSearcher searcher = LuceneIndexQueries.grabSearcher(indexString);
+//    DateFieldFacet facet = DateFieldFacet.newFacet("date-string", Resolution.SECOND);
+//    facet.compute(searcher, query.toQuery());
+//    facet.toXML(xml);
+//    LuceneIndexQueries.release(indexString, searcher);
+//    System.out.println("Time facet searcher: "+(System.currentTimeMillis()-before));
+//    System.out.println(xml.toString());
+//
+//    xml = new XMLStringWriter(NamespaceAware.No);
+//    before = System.currentTimeMillis();
+//    SearchResults results = LuceneIndexQueries.query(indexString, query, new SearchPaging(1, 1000000));
+//    System.out.println("Time search: "+(System.currentTimeMillis()-before)+" - results: "+results.getTotalNbOfResults());
+//
+//    // run facets using search results
+//    before = System.currentTimeMillis();
+//    facet = DateFieldFacet.newFacet("date-string", Resolution.SECOND);
+//    facet.compute(results);
+//    facet.toXML(xml);
+//    results.terminate();
+//    System.out.println("Time facet results: "+(System.currentTimeMillis()-before));
+//    System.out.println(xml.toString());
+//
+//  }
 
   private static void indexContent() {
     int total = 100000;

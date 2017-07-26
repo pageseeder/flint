@@ -16,14 +16,13 @@
 package org.pageseeder.flint.lucene.search;
 
 import java.io.IOException;
-import java.util.Calendar;
+import java.time.Instant;
+import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 
-import javax.xml.bind.DatatypeConverter;
-
-import org.apache.lucene.document.DateTools;
 import org.apache.lucene.document.DateTools.Resolution;
 import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.BooleanQuery;
@@ -31,6 +30,7 @@ import org.apache.lucene.search.Query;
 import org.pageseeder.flint.lucene.query.DateParameter;
 import org.pageseeder.flint.lucene.query.Queries;
 import org.pageseeder.flint.lucene.util.Beta;
+import org.pageseeder.flint.lucene.util.Dates;
 import org.pageseeder.xmlwriter.XMLWriter;
 
 /**
@@ -55,7 +55,7 @@ public class DateTermFilter implements Filter {
   /**
    * The list of dates to filter with
    */
-  private final Map<Date, Occur> _dates = new HashMap<>();
+  private final Map<OffsetDateTime, Occur> _dates = new HashMap<>();
 
   /**
    * Creates a new filter with the specified name;
@@ -71,7 +71,7 @@ public class DateTermFilter implements Filter {
   @Override
   public Query filterQuery(Query base) {
     BooleanQuery filterQuery = new BooleanQuery();
-    for (Date date : this._dates.keySet()) {
+    for (OffsetDateTime date : this._dates.keySet()) {
       Occur clause = this._dates.get(date);
       filterQuery.add(new DateParameter(this._name, date, this._resolution, false).toQuery(), clause);
     }
@@ -84,14 +84,12 @@ public class DateTermFilter implements Filter {
 
   @Override
   public void toXML(XMLWriter xml) throws IOException {
-    Calendar cal = Calendar.getInstance();
     xml.openElement("filter");
     xml.attribute("field", this._name);
-    for (Date date : this._dates.keySet()) {
+    for (OffsetDateTime date : this._dates.keySet()) {
       xml.openElement("term");
-      xml.attribute("text", DateTools.dateToString(date, this._resolution));
-      cal.setTime(date);
-      xml.attribute("date", DatatypeConverter.printDateTime(cal));
+      xml.attribute("text", Dates.toString(date, this._resolution));
+      xml.attribute("date", Dates.format(date, this._resolution));
       xml.attribute("occur", occurToString(this._dates.get(date)));
       xml.closeElement();
     }
@@ -103,6 +101,14 @@ public class DateTermFilter implements Filter {
   }
 
   public static DateTermFilter newFilter(String name, Date date, Resolution res, Occur occur) {
+    return new Builder().name(name).resolution(res).addDate(date, occur).build();
+  }
+
+  public static DateTermFilter newFilter(String name, OffsetDateTime date, Resolution res) {
+    return newFilter(name, date, res, Occur.MUST);
+  }
+
+  public static DateTermFilter newFilter(String name, OffsetDateTime date, Resolution res, Occur occur) {
     return new Builder().name(name).resolution(res).addDate(date, occur).build();
   }
 
@@ -128,7 +134,7 @@ public class DateTermFilter implements Filter {
     /**
      * The list of terms to filter with
      */
-    private final Map<Date, Occur> _dates = new HashMap<>();
+    private final Map<OffsetDateTime, Occur> _dates = new HashMap<>();
 
     public Builder name(String name) {
       this._name = name;
@@ -141,6 +147,12 @@ public class DateTermFilter implements Filter {
     }
 
     public Builder addDate(Date date, Occur when) {
+      if (date != null)
+        this._dates.put(OffsetDateTime.ofInstant(Instant.ofEpochMilli(date.getTime()), ZoneOffset.UTC), when == null ? Occur.MUST : when);
+      return this;
+    }
+
+    public Builder addDate(OffsetDateTime date, Occur when) {
       this._dates.put(date, when == null ? Occur.MUST : when);
       return this;
     }

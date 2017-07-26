@@ -468,7 +468,6 @@ public final class SearchResults implements XMLWritable {
     }
     // close 'document'
     xml.closeElement();
-    
   }
 
   public static void flintDocumentToXML(FlintDocument doc, int timezoneOffset, XMLWriter xml) throws IOException {
@@ -534,7 +533,15 @@ public final class SearchResults implements XMLWritable {
     }
     // close 'document'
     xml.closeElement();
-    
+
+  }
+
+  public int getFirstHit() {
+    return this._paging.getFirstHit();
+  }
+
+  public int getLastHit() {
+    return this._paging.getLastHit(this.totalNbOfResults);
   }
 
   /**
@@ -615,7 +622,7 @@ public final class SearchResults implements XMLWritable {
   public Iterable<Document> documents() {
     if (this._terminated)
       throw new IllegalStateException();
-    return new DocIterable(this._paging.getFirstHit() - 1);
+    return new DocIterable(this._paging.getFirstHit() - 1, getLastHit());
   }
 
   // Private helpers
@@ -665,8 +672,10 @@ public final class SearchResults implements XMLWritable {
   private final class DocIterable implements Iterable<Document> {
 
     private final int _start;
-    public DocIterable(int start) {
+    private final int _end;
+    public DocIterable(int start, int end) {
       this._start = start;
+      this._end = end;
     }
 
     /**
@@ -678,7 +687,7 @@ public final class SearchResults implements XMLWritable {
      */
     @Override
     public Iterator<Document> iterator() {
-      return new DocIterator(this._start);
+      return new DocIterator(this._start, this._end);
     }
 
   }
@@ -707,13 +716,19 @@ public final class SearchResults implements XMLWritable {
      */
     private int index;
 
-    public DocIterator(int start) {
+    /**
+     * The current index for this iterator.
+     */
+    private int endIndex;
+
+    public DocIterator(int start, int end) {
       this.index = start;
+      this.endIndex = end;
     }
 
     @Override
     public boolean hasNext() {
-      return this.index < this.scoredocs.length;
+      return this.index < this.scoredocs.length && this.index < this.endIndex;
     }
 
     @Override

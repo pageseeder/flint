@@ -797,37 +797,12 @@ public final class FlintField {
     if (format == null) return null;
     try {
       SimpleDateFormat df = new SimpleDateFormat(format);
-      if (includesTime(format)) {
-        df.setTimeZone(TimeZone.getDefault());
-      } else {
-        df.setTimeZone(GMT);
-      }
+      df.setTimeZone(GMT);
       return df;
     } catch (IllegalArgumentException ex) {
       LOGGER.warn("Ignoring unusable date format '"+format+"'", ex);
     }
     return null;
   }
-
-  /**
-   * Indicates whether the format includes a time component.
-   *
-   * @param format The date format
-   * @return <code>true</code> if it includes a time component;
-   *         <code>false</code> otherwise.
-   */
-  private static boolean includesTime(String format) {
-    if (format.indexOf('H') >= 0) return true; // Hour in day (0-23)
-    else if (format.indexOf('k') >= 0) return true; // Hour in day (1-24)
-    else if (format.indexOf('K') >= 0) return true; // Hour in am/pm (0-11)
-    else if (format.indexOf('h') >= 0) return true; // Hour in am/pm (1-12)
-    else if (format.indexOf('m') >= 0) return true; // Minute in hour
-    else if (format.indexOf('s') >= 0) return true; // Second in minute
-    else if (format.indexOf('S') >= 0) return true; // Millisecond
-    else if (format.indexOf('Z') >= 0) return true; // Time zone
-    else if (format.indexOf('z') >= 0) return true; // Time zone
-    return false;
-  }
-
 
 }

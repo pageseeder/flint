@@ -13,14 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.pageseeder.flint.lucene.search;
+package org.pageseeder.flint.lucene.facet;
 
 import java.io.IOException;
 import java.text.ParseException;
-import java.util.Calendar;
 import java.util.Date;
-
-import javax.xml.bind.DatatypeConverter;
 
 import org.apache.lucene.document.DateTools;
 import org.apache.lucene.document.DateTools.Resolution;
@@ -29,6 +26,7 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermQuery;
 import org.pageseeder.flint.lucene.query.DateParameter;
 import org.pageseeder.flint.lucene.util.Beta;
+import org.pageseeder.flint.lucene.util.Dates;
 import org.pageseeder.xmlwriter.XMLWriter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -90,9 +88,7 @@ public class DateFieldFacet extends FlexibleFieldFacet {
     xml.openElement("term");
     xml.attribute("text", term);
     try {
-      Calendar cal = java.util.Calendar.getInstance();
-      cal.setTime(DateTools.stringToDate(term));
-      xml.attribute("date", DatatypeConverter.printDateTime(cal));
+      xml.attribute("date", Dates.format(DateTools.stringToDate(term), this._resolution));
     } catch (ParseException ex) {
       // should not happen as the string is coming from the date formatter in the first place
     }

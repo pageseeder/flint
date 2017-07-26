@@ -106,8 +106,7 @@ public final class LuceneIndexQueries {
           sort = Sort.INDEXORDER;
         }
         // load the scores
-        TopFieldCollector tfc = TopFieldCollector.create(sort, paging.getHitsPerPage() * paging.getPage(), true, true,
-            false);
+        TopFieldCollector tfc = TopFieldCollector.create(sort, paging.getHitsPerPage() * paging.getPage(), true, true, false);
         searcher.search(lquery, tfc);
         return new SearchResults(query, tfc.topDocs().scoreDocs, tfc.getTotalHits(), paging, io, searcher);
       } catch (IOException e) {

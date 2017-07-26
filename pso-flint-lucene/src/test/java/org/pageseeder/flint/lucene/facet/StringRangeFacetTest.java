@@ -1,4 +1,4 @@
-package org.pageseeder.flint.lucene.search;
+package org.pageseeder.flint.lucene.facet;
 
 import java.io.File;
 import java.io.FileFilter;
@@ -22,7 +22,10 @@ import org.pageseeder.flint.local.LocalIndexManager;
 import org.pageseeder.flint.local.LocalIndexManagerFactory;
 import org.pageseeder.flint.lucene.LuceneIndexQueries;
 import org.pageseeder.flint.lucene.LuceneLocalIndex;
-import org.pageseeder.flint.lucene.search.FlexibleRangeFacet.Range;
+import org.pageseeder.flint.lucene.facet.StringRangeFacet;
+import org.pageseeder.flint.lucene.facet.FlexibleRangeFacet.Range;
+import org.pageseeder.flint.lucene.search.Filter;
+import org.pageseeder.flint.lucene.search.StringTermFilter;
 import org.pageseeder.flint.lucene.util.Bucket;
 import org.pageseeder.flint.lucene.utils.TestListener;
 import org.pageseeder.flint.lucene.utils.TestUtils;
