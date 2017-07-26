@@ -18,7 +18,6 @@ import org.pageseeder.flint.local.LocalIndexManager;
 import org.pageseeder.flint.local.LocalIndexManagerFactory;
 import org.pageseeder.flint.lucene.LuceneIndexQueries;
 import org.pageseeder.flint.lucene.LuceneLocalIndex;
-import org.pageseeder.flint.lucene.search.Terms;
 import org.pageseeder.flint.lucene.util.Bucket;
 import org.pageseeder.flint.lucene.utils.TestListener;
 import org.pageseeder.flint.lucene.utils.TestUtils;
@@ -253,6 +252,7 @@ System.out.println(fields);
     try {
       reader = LuceneIndexQueries.grabReader(index);
       List<String> values = Terms.prefix(reader, new Term("prefix1", "pre"));
+      Assert.assertFalse(values.contains("pre"));
       Assert.assertTrue(values.contains("president"));
       Assert.assertTrue(values.contains("pretense"));
       Assert.assertTrue(values.contains("pretentious"));
@@ -261,10 +261,12 @@ System.out.println(fields);
       Assert.assertTrue(values.contains("pretext"));
       Assert.assertTrue(values.contains("pressing"));
       values = Terms.prefix(reader, new Term("prefix1", "pret"));
+      Assert.assertFalse(values.contains("pret"));
       Assert.assertTrue(values.contains("pretense"));
       Assert.assertTrue(values.contains("pretentious"));
       Assert.assertTrue(values.contains("pretext"));
       values = Terms.prefix(reader, new Term("prefix1", "preten"));
+      Assert.assertFalse(values.contains("preten"));
       Assert.assertTrue(values.contains("pretense"));
       Assert.assertTrue(values.contains("pretentious"));
     } catch (IndexException | IOException ex) {
