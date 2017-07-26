@@ -16,7 +16,6 @@
 package org.pageseeder.flint.lucene.query;
 
 import java.io.IOException;
-import java.io.StringReader;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -118,6 +117,7 @@ public final class Queries {
   public static boolean isAPhrase(String text) {
     return IS_A_PHRASE.matcher(text).matches();
   }
+
   /**
    * Returns the term or phrase query corresponding to the specified text.
    *
@@ -164,7 +164,7 @@ public final class Queries {
     if (field == null) throw new NullPointerException("field");
     if (text == null) throw new NullPointerException("text");
     boolean isPhrase = isAPhrase(text);
-    if (isPhrase) {
+    if (isPhrase && (analyzer == null || isTokenized(field, analyzer))) {
       PhraseQuery phrase = new PhraseQuery();
       addTermsToPhrase(field, text.substring(1, text.length()-1), analyzer, phrase);
       return Collections.singletonList((Query)phrase);
@@ -205,7 +205,7 @@ public final class Queries {
     if (field == null) throw new NullPointerException("field");
     if (text == null) throw new NullPointerException("text");
     // shortcut for single word or single sentence
-    if (!text.trim().matches(".*?\\s.*?") || isAPhrase(text))
+    if (!text.trim().matches(".*?\\s.*?") || isAPhrase(text) || (analyzer != null && !isTokenized(field, analyzer)))
       return analyzer == null ? toTermOrPhraseQuery(field, text) : or(toTermOrPhraseQueries(field, text, analyzer).toArray(new Query[] {}));
     // get last query
     Query query = null;
@@ -253,7 +253,7 @@ public final class Queries {
    */
   private static void addTermsToPhrase(String field, String text, Analyzer analyzer, PhraseQuery phrase) {
     try {
-      TokenStream stream = analyzer.tokenStream(field, new StringReader(text));
+      TokenStream stream = analyzer.tokenStream(field, text);
       PositionIncrementAttribute increment = stream.addAttribute(PositionIncrementAttribute.class);
       CharTermAttribute attribute = stream.addAttribute(CharTermAttribute.class);
       int position = -1;
@@ -269,6 +269,30 @@ public final class Queries {
       // Should not occur since we use a StringReader
       ex.printStackTrace();
     }
+  }
+
+  private static boolean isTokenized(String field, Analyzer analyzer) {
+    // try to load terms for a phrase and return true if more than one term
+    TokenStream stream = null;
+    try {
+      stream = analyzer.tokenStream(field, "word1 word2");
+      stream.reset();
+      if (stream.incrementToken()) {
+        return stream.incrementToken();
+      }
+    } catch (IOException ex) {
+      // Should not occur since we use a StringReader
+      ex.printStackTrace();
+    } finally {
+      if (stream != null) try {
+        stream.end();
+        stream.close();
+      } catch (IOException ex) {
+        // Should not occur since we use a StringReader
+        ex.printStackTrace();
+      }
+    }
+    return false;
   }
 
   // Substitutions
