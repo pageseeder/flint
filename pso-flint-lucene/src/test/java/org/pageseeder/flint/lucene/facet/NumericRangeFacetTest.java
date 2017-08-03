@@ -88,7 +88,6 @@ public class NumericRangeFacetTest {
         .addRange(13, 15)
         .addRange(16, 20).build();
     facet.compute(searcher, null);
-    Assert.assertEquals(0, facet.getTotalResults());
     Assert.assertEquals(2, facet.getTotalRanges());
     Bucket<Range> ranges = facet.getValues();
     Assert.assertEquals(2, ranges.items().size());
@@ -100,7 +99,6 @@ public class NumericRangeFacetTest {
         .addRange(23, 24)
         .addRange(25, 29).build();
     facet.compute(searcher, null);
-    Assert.assertEquals(0, facet.getTotalResults());
     Assert.assertEquals(3, facet.getTotalRanges());
     ranges = facet.getValues();
     Assert.assertEquals(3, ranges.items().size());
@@ -112,7 +110,6 @@ public class NumericRangeFacetTest {
         .addRange(30, 32)
         .addRange(33, 38).build();
     facet.compute(searcher, null);
-    Assert.assertEquals(0, facet.getTotalResults());
     Assert.assertEquals(1, facet.getTotalRanges());
     ranges = facet.getValues();
     Assert.assertEquals(1, ranges.items().size());
@@ -127,7 +124,6 @@ public class NumericRangeFacetTest {
         .addRange(13, 15)
         .addRange(16, 20).build();
     facet.compute(searcher, base);
-    Assert.assertEquals(6, facet.getTotalResults());
     Assert.assertEquals(2, facet.getTotalRanges());
     Bucket<Range> ranges = facet.getValues();
     Assert.assertEquals(2, ranges.items().size());
@@ -139,7 +135,6 @@ public class NumericRangeFacetTest {
         .addRange(23, 24)
         .addRange(25, 29).build();
     facet.compute(searcher, base);
-    Assert.assertEquals(6, facet.getTotalResults());
     Assert.assertEquals(2, facet.getTotalRanges());
     ranges = facet.getValues();
     Assert.assertEquals(2, ranges.items().size());
@@ -150,7 +145,6 @@ public class NumericRangeFacetTest {
         .addRange(30, 32)
         .addRange(33, 38).build();
     facet.compute(searcher, base);
-    Assert.assertEquals(6, facet.getTotalResults());
     Assert.assertEquals(1, facet.getTotalRanges());
     ranges = facet.getValues();
     Assert.assertEquals(1, ranges.items().size());
@@ -166,7 +160,6 @@ public class NumericRangeFacetTest {
         .addRange(13, 15)
         .addRange(16, 20).build();
     facet.compute(searcher, base, filters);
-    Assert.assertEquals(6, facet.getTotalResults());
     Assert.assertEquals(2, facet.getTotalRanges());
     Bucket<Range> ranges = facet.getValues();
     Assert.assertEquals(2, ranges.items().size());
@@ -178,7 +171,6 @@ public class NumericRangeFacetTest {
         .addRange(23, 24)
         .addRange(25, 29).build();
     facet.compute(searcher, base, filters);
-    Assert.assertEquals(6, facet.getTotalResults());
     Assert.assertEquals(2, facet.getTotalRanges());
     ranges = facet.getValues();
     Assert.assertEquals(2, ranges.items().size());
@@ -189,7 +181,6 @@ public class NumericRangeFacetTest {
         .addRange(30, 32)
         .addRange(33, 38).build();
     facet.compute(searcher, base, filters);
-    Assert.assertEquals(7, facet.getTotalResults());
     Assert.assertEquals(1, facet.getTotalRanges());
     ranges = facet.getValues();
     Assert.assertEquals(1, ranges.items().size());

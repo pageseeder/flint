@@ -23,29 +23,17 @@ import org.apache.lucene.search.SimpleCollector;
 
 
 /**
- * Simply counts the number of documents in search results.
+ * Simply checks if there is at least one document in the search results with the field specified.
  *
- * <p>Typical usage:
- * <pre>
- *  // creates a document counter
- *  DocumentCounter counter = new DocumentCounter();
- *
- *  // make a search
- *  searcher.search(query, counter);
- *
- *  // get the final count
- *  int numberOfDocuments = counter.getCount();
- * </pre>
- *
- * @author Christophe Lauret
- * @version 2 August 2010
+ * @author Jean-Baptiste Reure
+ * @version 31 July 2017
  */
-public final class FieldDocumentCounter extends SimpleCollector {
+public final class FieldDocumentChecker extends SimpleCollector {
 
   /**
-   * The number of documents collected (counted).
+   * The flag.
    */
-  private int count = 0;
+  private boolean fieldFound = false;
 
   private final String field;
 
@@ -54,7 +42,7 @@ public final class FieldDocumentCounter extends SimpleCollector {
   /**
    * Creates a new document counter.
    */
-  public FieldDocumentCounter(String fieldname) {
+  public FieldDocumentChecker(String fieldname) {
     this.field = fieldname;
   }
 
@@ -73,13 +61,13 @@ public final class FieldDocumentCounter extends SimpleCollector {
   }
 
   /**
-   * Increase the document count.
+   * Check for the field's presence.
    *
    * @param doc the position of the Lucene {@link Document} in the index
    */
   @Override
   public void collect(int doc) {
-    if (this.context != null) {
+    if (this.context != null && !this.fieldFound) {
       Document d;
       try {
         d = this.context.reader().document(doc, Collections.singleton(this.field));
@@ -87,23 +75,17 @@ public final class FieldDocumentCounter extends SimpleCollector {
         return;
       }
       if (d != null && d.getField(this.field) != null)
-        this.count++;
+        this.fieldFound = true;
     }
   }
 
   /**
-   * Returns the number of documents counted after a search.
+   * Returns <code>true</code> if there was at least one document with the field specified.
    *
-   * @return the  number of documents counted after a search.
+   * @return <code>true</code> if there was at least one document with the field specified.
    */
-  public int getCount() {
-    return this.count;
+  public boolean fieldFound() {
+    return this.fieldFound;
   }
 
-  /**
-   * Resets this document counter for reuse by resetting the count to zero.
-   */
-  public void reset() {
-    this.count = 0;
-  }
 }

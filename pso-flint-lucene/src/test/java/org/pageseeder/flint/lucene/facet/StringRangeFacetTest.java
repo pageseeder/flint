@@ -22,7 +22,6 @@ import org.pageseeder.flint.local.LocalIndexManager;
 import org.pageseeder.flint.local.LocalIndexManagerFactory;
 import org.pageseeder.flint.lucene.LuceneIndexQueries;
 import org.pageseeder.flint.lucene.LuceneLocalIndex;
-import org.pageseeder.flint.lucene.facet.StringRangeFacet;
 import org.pageseeder.flint.lucene.facet.FlexibleRangeFacet.Range;
 import org.pageseeder.flint.lucene.search.Filter;
 import org.pageseeder.flint.lucene.search.StringTermFilter;
@@ -87,7 +86,6 @@ public class StringRangeFacetTest {
         .addRange("value13", "value15")
         .addRange("value16", "value20").build();
     facet.compute(searcher, null);
-    Assert.assertEquals(0, facet.getTotalResults());
     Assert.assertEquals(2, facet.getTotalRanges());
     Bucket<Range> ranges = facet.getValues();
     Assert.assertEquals(2, ranges.items().size());
@@ -99,7 +97,6 @@ public class StringRangeFacetTest {
         .addRange("value23", "value24")
         .addRange("value25", "value29").build();
     facet.compute(searcher, null);
-    Assert.assertEquals(0, facet.getTotalResults());
     Assert.assertEquals(3, facet.getTotalRanges());
     ranges = facet.getValues();
     Assert.assertEquals(3, ranges.items().size());
@@ -111,7 +108,6 @@ public class StringRangeFacetTest {
         .addRange("value30", "value32")
         .addRange("value33", "value38").build();
     facet.compute(searcher, null);
-    Assert.assertEquals(0, facet.getTotalResults());
     Assert.assertEquals(1, facet.getTotalRanges());
     ranges = facet.getValues();
     Assert.assertEquals(1, ranges.items().size());
@@ -126,7 +122,6 @@ public class StringRangeFacetTest {
         .addRange("value13", "value15")
         .addRange("value16", "value20").build();
     facet.compute(searcher, base);
-    Assert.assertEquals(6, facet.getTotalResults());
     Assert.assertEquals(2, facet.getTotalRanges());
     Bucket<Range> ranges = facet.getValues();
     Assert.assertEquals(2, ranges.items().size());
@@ -138,7 +133,6 @@ public class StringRangeFacetTest {
         .addRange("value23", "value24")
         .addRange("value25", "value29").build();
     facet.compute(searcher, base);
-    Assert.assertEquals(6, facet.getTotalResults());
     Assert.assertEquals(2, facet.getTotalRanges());
     ranges = facet.getValues();
     Assert.assertEquals(2, ranges.items().size());
@@ -149,7 +143,6 @@ public class StringRangeFacetTest {
         .addRange("value30", "value32")
         .addRange("value33", "value38").build();
     facet.compute(searcher, base);
-    Assert.assertEquals(6, facet.getTotalResults());
     Assert.assertEquals(1, facet.getTotalRanges());
     ranges = facet.getValues();
     Assert.assertEquals(1, ranges.items().size());
@@ -165,7 +158,6 @@ public class StringRangeFacetTest {
         .addRange("value13", "value15")
         .addRange("value16", "value20").build();
     facet.compute(searcher, base, filters);
-    Assert.assertEquals(6, facet.getTotalResults());
     Assert.assertEquals(2, facet.getTotalRanges());
     Bucket<Range> ranges = facet.getValues();
     Assert.assertEquals(2, ranges.items().size());
@@ -177,7 +169,6 @@ public class StringRangeFacetTest {
         .addRange("value23", "value24")
         .addRange("value25", "value29").build();
     facet.compute(searcher, base, filters);
-    Assert.assertEquals(6, facet.getTotalResults());
     Assert.assertEquals(2, facet.getTotalRanges());
     ranges = facet.getValues();
     Assert.assertEquals(2, ranges.items().size());
@@ -188,7 +179,6 @@ public class StringRangeFacetTest {
         .addRange("value30", "value32")
         .addRange("value33", "value38").build();
     facet.compute(searcher, base, filters);
-    Assert.assertEquals(7, facet.getTotalResults());
     Assert.assertEquals(1, facet.getTotalRanges());
     ranges = facet.getValues();
     Assert.assertEquals(1, ranges.items().size());

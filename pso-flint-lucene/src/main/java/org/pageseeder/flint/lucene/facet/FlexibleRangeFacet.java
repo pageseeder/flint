@@ -29,7 +29,6 @@ import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermQuery;
 import org.pageseeder.flint.lucene.search.DocumentCounter;
-import org.pageseeder.flint.lucene.search.FieldDocumentCounter;
 import org.pageseeder.flint.lucene.search.Filter;
 import org.pageseeder.flint.lucene.search.Terms;
 import org.pageseeder.flint.lucene.util.Beta;
@@ -67,11 +66,6 @@ public abstract class FlexibleRangeFacet implements XMLWritable {
    * If the facet was computed in a "flexible" way
    */
   protected transient boolean flexible = false;
-
-  /**
-   * The total number of results containing the field used in this facet
-   */
-  protected transient int totalResults = 0;
 
   /**
    * The total number of ranges containing the field used in this facet
@@ -115,7 +109,6 @@ public abstract class FlexibleRangeFacet implements XMLWritable {
     } else {
       if (size < 0) throw new IllegalArgumentException("size < 0");
       this.totalRanges = 0;
-      this.totalResults = 0;
       // find all terms
       List<Term> terms = Terms.terms(searcher.getIndexReader(), this._name);
       // Otherwise, re-compute the query without the corresponding filter 
@@ -153,10 +146,6 @@ public abstract class FlexibleRangeFacet implements XMLWritable {
         b.add(r, ranges.get(r));
       }
       this._bucket = b;
-      // compute total results
-      FieldDocumentCounter totalCounter = new FieldDocumentCounter(this._name);
-      searcher.search(filtered, totalCounter);
-      this.totalResults = totalCounter.getCount();
     }
   }
 
@@ -243,7 +232,6 @@ public abstract class FlexibleRangeFacet implements XMLWritable {
       counter.reset();
     }
     // set totals
-    this.totalResults = 0;
     this.totalRanges = ranges.size();
     // add to bucket
     Bucket<Range> b = new Bucket<Range>(size);
@@ -278,7 +266,6 @@ public abstract class FlexibleRangeFacet implements XMLWritable {
     xml.attribute("flexible", String.valueOf(this.flexible));
     if (!this.flexible) {
       xml.attribute("total-ranges", this.totalRanges);
-      xml.attribute("total-results", this.totalResults);
     }
     if (this._bucket != null) {
       for (Entry<Range> e : this._bucket.entrySet()) {
@@ -296,10 +283,6 @@ public abstract class FlexibleRangeFacet implements XMLWritable {
 
   public Bucket<Range> getValues() {
     return this._bucket;
-  }
-
-  public int getTotalResults() {
-    return this.totalResults;
   }
 
   public int getTotalRanges() {

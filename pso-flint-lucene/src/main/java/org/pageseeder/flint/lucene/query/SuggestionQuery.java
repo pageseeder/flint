@@ -84,6 +84,9 @@ public final class SuggestionQuery implements SearchQuery {
     // Compute the list of terms
     List<Term> terms = new ArrayList<Term>();
     for (Term term : this._terms) {
+      // try exact match
+      terms.add(term);
+      // try prefixed terms
       List<String> values = Terms.prefix(reader, term);
       for (String v : values) {
         Term t = new Term(term.field(), v);

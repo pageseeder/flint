@@ -41,5 +41,6 @@
     <field name="facet1" tokenize="false">value15</field>
     <field name="facet2" tokenize="false">value25</field>
     <field name="facet3" tokenize="false">value31</field>
+    <field name="facet4" tokenize="false">value40</field>
   </document>
 </documents>

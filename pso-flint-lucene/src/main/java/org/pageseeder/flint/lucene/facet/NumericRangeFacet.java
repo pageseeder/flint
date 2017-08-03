@@ -27,7 +27,6 @@ import org.apache.lucene.search.Query;
 import org.pageseeder.flint.indexing.FlintField.NumericType;
 import org.pageseeder.flint.lucene.query.NumericRange;
 import org.pageseeder.flint.lucene.search.DocumentCounter;
-import org.pageseeder.flint.lucene.search.FieldDocumentCounter;
 import org.pageseeder.flint.lucene.search.Filter;
 import org.pageseeder.flint.lucene.util.Beta;
 import org.pageseeder.flint.lucene.util.Bucket;
@@ -97,10 +96,6 @@ public abstract class NumericRangeFacet extends FlexibleRangeFacet {
         if (count > 0) this.totalRanges++;
       }
       this._bucket = bucket;
-      // compute total results
-      FieldDocumentCounter totalCounter = new FieldDocumentCounter(name());
-      searcher.search(filtered, totalCounter);
-      this.totalResults = totalCounter.getCount();
     }
   }
 
@@ -126,8 +121,6 @@ public abstract class NumericRangeFacet extends FlexibleRangeFacet {
       if (count > 0) this.totalRanges++;
     }
     this._bucket = bucket;
-    // set totals
-    this.totalResults = 0;
   }
 
   @Override

@@ -18,8 +18,9 @@ package org.pageseeder.flint.lucene.query;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Iterator;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.BooleanQuery;
@@ -48,7 +49,7 @@ public class BasicQuery<T extends SearchParameter> implements SearchQuery {
   /**
    * A list of query parameters which can be used on top of the base query.
    */
-  private final List<SearchParameter> _parameters;
+  private final Map<SearchParameter, Occur> _parameters;
 
   /**
    * The Lucene query corresponding to this object.
@@ -75,6 +76,26 @@ public class BasicQuery<T extends SearchParameter> implements SearchQuery {
     if (base == null) throw new NullPointerException("base");
     if (parameters == null) throw new NullPointerException("parameters");
     this._base = base;
+    this._parameters = new HashMap<>();
+    if (parameters != null) for (SearchParameter param : parameters)
+      this._parameters.put(param, Occur.MUST);
+  }
+
+  /**
+   * Constructs a new query.
+   *
+   * <p>For safety and to ensure that the parameters remain unmodifiable, the specified list should
+   * be unmodifiable. Use the factory method to ensure create create an unmodifiable list.
+   *
+   * @param base       The query to use as a base.
+   * @param parameters A list of query parameters which can be used on top of the base query.
+   *
+   * @throws NullPointerException if either argument is <code>null</code>.
+   */
+  BasicQuery(T base, Map<SearchParameter, Occur> parameters) throws NullPointerException {
+    if (base == null) throw new NullPointerException("base");
+    if (parameters == null) throw new NullPointerException("parameters");
+    this._base = base;
     this._parameters = parameters;
   }
 
@@ -93,6 +114,15 @@ public class BasicQuery<T extends SearchParameter> implements SearchQuery {
    * @return the list of additional search parameters associated with this query.
    */
   public final List<SearchParameter> parameters() {
+    return new ArrayList<>(this._parameters.keySet());
+  }
+
+  /**
+   * Returns the list of additional search parameters associated with this query.
+   *
+   * @return the list of additional search parameters associated with this query.
+   */
+  public final Map<SearchParameter, Occur> parametersMap() {
     return this._parameters;
   }
 
@@ -168,7 +198,7 @@ public class BasicQuery<T extends SearchParameter> implements SearchQuery {
       xml.closeElement();
       // Parameters
       xml.openElement("parameters", !this.parameters().isEmpty());
-      for (SearchParameter p : this._parameters) {
+      for (SearchParameter p : parameters()) {
         p.toXML(xml);
       }
       xml.closeElement();
@@ -201,11 +231,14 @@ public class BasicQuery<T extends SearchParameter> implements SearchQuery {
     s.append(this._base.toString());
     if (this.parameters().size() > 0) {
       s.append(" with (");
-      for (Iterator<SearchParameter> i = this._parameters.iterator(); i.hasNext();) {
-        s.append(i.next().toString());
-        if (i.hasNext()) {
-          s.append(" and ");
+      boolean first = true;
+      for (SearchParameter p : this._parameters.keySet()) {
+        if (!first) {
+          Occur oc = this._parameters.get(p);
+          s.append(oc == Occur.MUST ? " and " : oc == Occur.MUST_NOT ? " and not " : " or ");
         }
+        s.append(p.toString());
+        first = false;
       }
       s.append(')');
     }
@@ -223,14 +256,14 @@ public class BasicQuery<T extends SearchParameter> implements SearchQuery {
    *
    * @return the corresponding Lucene Query
    */
-  private static Query toQuery(SearchParameter base, List<SearchParameter> parameters) {
+  private static Query toQuery(SearchParameter base, Map<SearchParameter, Occur> parameters) {
     // No parameters, just use the base.
     if (parameters.isEmpty()) return base.toQuery();
     // Make an AND of all parameters
     BooleanQuery query = new BooleanQuery();
     query.add(base.toQuery(), Occur.MUST);
-    for (SearchParameter p : parameters) {
-      query.add(p.toQuery(), Occur.MUST);
+    for (SearchParameter p : parameters.keySet()) {
+      query.add(p.toQuery(), parameters.get(p));
     }
     return query;
   }

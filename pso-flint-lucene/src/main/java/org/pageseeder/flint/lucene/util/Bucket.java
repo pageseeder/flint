@@ -131,11 +131,11 @@ import java.util.TreeSet;
     if (count > 0 || this._acceptZero) {
       this._considered++;
     }
-    if (count >= this.minCount) {
+    if (count >= this.minCount && this._capacity > 0) {
       this._entries.add(new Entry<T>(item, count));
       if (this._entries.size() > this._capacity) {
         this._entries.remove(this._entries.last());
-        this.minCount = this._entries.last().count();
+        this.minCount = this._entries.isEmpty() ? 1 : this._entries.last().count();
       }
     }
   }
@@ -276,7 +276,7 @@ import java.util.TreeSet;
     public boolean equals(Entry<?> o) {
       //
       if (this._count != o._count) return false;
-      return comparable(this._item, o._item) ? this._item.equals(o._item) : true;
+      return comparable(this._item, o._item) ? this._item.equals(o._item) : false;
     }
 
     /**
@@ -293,7 +293,7 @@ import java.util.TreeSet;
     public int compareTo(Entry<T> e) {
       int c = e._count - this._count;
       if (c != 0) return c;
-      return comparable(this._item, e._item)? ((Comparable<T>)this._item).compareTo(e._item) : 0;
+      return comparable(this._item, e._item)? ((Comparable<T>)this._item).compareTo(e._item) : this._item.toString().compareTo(e._item.toString());
     }
 
     /**

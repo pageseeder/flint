@@ -31,6 +31,8 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.TermQuery;
+import org.pageseeder.flint.catalog.Catalog;
 import org.pageseeder.flint.lucene.search.Fields;
 import org.pageseeder.flint.lucene.search.Terms;
 import org.pageseeder.flint.lucene.util.Beta;
@@ -145,23 +147,33 @@ public final class Question implements SearchParameter, XMLWritable {
    * <p>This only needs to be done once.
    *
    * @param analyzer The analyser used by the underlying index.
+   * @param catalog  The catalog to know if a field is analyzed or not
    */
-  private void compute(Analyzer analyzer) {
+  private void compute(Analyzer analyzer, Catalog catalog) {
     BooleanQuery query = new BooleanQuery();
     if (this._supportOperators) {
       for (Entry<String, Float> e : this._fields.entrySet()) {
-        Query q = Queries.parseToQuery(e.getKey(), this._question, analyzer);
+        Query q = catalog != null && !catalog.isTokenized(e.getKey()) ?
+                  new TermQuery(new Term(e.getKey(), this._question)) :
+                  Queries.parseToQuery(e.getKey(), this._question, analyzer);
         q.setBoost(e.getValue());
         query.add(q, Occur.SHOULD);
       }
     } else {
       List<String> values = Fields.toValues(this._question);
       for (Entry<String, Float> e : this._fields.entrySet()) {
+        boolean analyzed = catalog == null || catalog.isTokenized(e.getKey());
         BooleanQuery sub = new BooleanQuery();
         for (String value : values) {
-          for(Query q : Queries.toTermOrPhraseQueries(e.getKey(), value, analyzer)) {
+          if (!analyzed) {
+            Query q = new TermQuery(new Term(e.getKey(), value));
             q.setBoost(e.getValue());
             sub.add(q, Occur.SHOULD);
+          } else {
+            for(Query q : Queries.toTermOrPhraseQueries(e.getKey(), value, analyzer)) {
+              q.setBoost(e.getValue());
+              sub.add(q, Occur.SHOULD);
+            }
           }
         }
         query.add(sub, Occur.SHOULD);
@@ -291,6 +303,18 @@ public final class Question implements SearchParameter, XMLWritable {
   // ==============================================================================================
 
   /**
+   * A factory method to create a new question and compute it using the basic syntax.
+   *
+   * @param field The field for the question.
+   * @param question The question itself.
+   *
+   * @return a new question.
+   */
+  public static Question newQuestion(String field, String question) {
+    return newQuestion(Collections.singletonMap(field, 1.0f), question);
+  }
+
+  /**
    * A factory method to create a new question and compute it using a simple tokenizer.
    *
    * @param field    The field for the question.
@@ -300,10 +324,32 @@ public final class Question implements SearchParameter, XMLWritable {
    * @return a new question.
    */
   public static Question newQuestion(String field, String question, Analyzer analyzer) {
-    Map<String, Float> fields = Collections.singletonMap(field, 1.0f);
-    Question q = new Question(fields, question, false);
-    q.compute(analyzer);
-    return q;
+    return newQuestion(field, question, analyzer, null);
+  }
+
+  /**
+   * A factory method to create a new question and compute it using a simple tokenizer.
+   *
+   * @param field    The field for the question.
+   * @param question The question itself.
+   * @param analyzer The analyser to use when parsing the question.
+   *
+   * @return a new question.
+   */
+  public static Question newQuestion(String field, String question, Analyzer analyzer, Catalog catalog) {
+    return newQuestion(Collections.singletonMap(field, 1.0f), question, analyzer, catalog);
+  }
+
+  /**
+   * A factory method to create a new question and compute it using the basic syntax.
+   *
+   * @param fields The list of fields for the question.
+   * @param question The question itself.
+   *
+   * @return a new question.
+   */
+  public static Question newQuestion(List<String> fields, String question) {
+    return newQuestion(Fields.asBoostMap(Fields.filterNames(fields)), question);
   }
 
   /**
@@ -316,57 +362,20 @@ public final class Question implements SearchParameter, XMLWritable {
    * @return a new question.
    */
   public static Question newQuestion(List<String> fields, String question, Analyzer analyzer) {
-    List<String> names = Fields.filterNames(fields);
-    Map<String, Float> map = Fields.asBoostMap(names);
-    Question q = new Question(map, question, false);
-    q.compute(analyzer);
-    return q;
+    return newQuestion(fields, question, analyzer, null);
   }
 
   /**
    * A factory method to create a new question and compute it using a simple tokenizer.
    *
-   * @param fields The list of fields for the question.
+   * @param fields   The list of fields for the question.
    * @param question The question itself.
    * @param analyzer The analyser to use when parsing the question.
    *
    * @return a new question.
    */
-  public static Question newQuestion(Map<String, Float> fields, String question, Analyzer analyzer) {
-    Question q = new Question(fields, question, false);
-    q.compute(analyzer);
-    return q;
-  }
-
-  /**
-   * A factory method to create a new question and compute it using the basic syntax.
-   *
-   * @param field The field for the question.
-   * @param question The question itself.
-   *
-   * @return a new question.
-   */
-  public static Question newQuestion(String field, String question) {
-    Map<String, Float> fields = Collections.singletonMap(field, 1.0f);
-    Question q = new Question(fields, question, false);
-    q.compute();
-    return q;
-  }
-
-  /**
-   * A factory method to create a new question and compute it using the basic syntax.
-   *
-   * @param fields The list of fields for the question.
-   * @param question The question itself.
-   *
-   * @return a new question.
-   */
-  public static Question newQuestion(List<String> fields, String question) {
-    List<String> names = Fields.filterNames(fields);
-    Map<String, Float> map = Fields.asBoostMap(names);
-    Question q = new Question(map, question, false);
-    q.compute();
-    return q;
+  public static Question newQuestion(List<String> fields, String question, Analyzer analyzer, Catalog catalog) {
+    return newQuestion(Fields.asBoostMap(Fields.filterNames(fields)), question, analyzer, catalog);
   }
 
   /**
@@ -386,34 +395,14 @@ public final class Question implements SearchParameter, XMLWritable {
   /**
    * A factory method to create a new question and compute it using a simple tokenizer.
    *
-   * @param field    The field for the question.
+   * @param fields The list of fields for the question.
    * @param question The question itself.
    * @param analyzer The analyser to use when parsing the question.
    *
    * @return a new question.
    */
-  public static Question newQuestionWithOperators(String field, String question, Analyzer analyzer) {
-    Map<String, Float> fields = Collections.singletonMap(field, 1.0f);
-    Question q = new Question(fields, question, true);
-    q.compute(analyzer);
-    return q;
-  }
-
-  /**
-   * A factory method to create a new question and compute it using a simple tokenizer.
-   *
-   * @param fields   The list of fields for the question.
-   * @param question The question itself.
-   * @param analyzer The analyser to use when parsing the question.
-   *
-   * @return a new question.
-   */
-  public static Question newQuestionWithOperators(List<String> fields, String question, Analyzer analyzer) {
-    List<String> names = Fields.filterNames(fields);
-    Map<String, Float> map = Fields.asBoostMap(names);
-    Question q = new Question(map, question, true);
-    q.compute(analyzer);
-    return q;
+  public static Question newQuestion(Map<String, Float> fields, String question, Analyzer analyzer) {
+    return newQuestion(fields, question, analyzer, null);
   }
 
   /**
@@ -425,9 +414,9 @@ public final class Question implements SearchParameter, XMLWritable {
    *
    * @return a new question.
    */
-  public static Question newQuestionWithOperators(Map<String, Float> fields, String question, Analyzer analyzer) {
-    Question q = new Question(fields, question, true);
-    q.compute(analyzer);
+  public static Question newQuestion(Map<String, Float> fields, String question, Analyzer analyzer,  Catalog catalog) {
+    Question q = new Question(fields, question, false);
+    q.compute(analyzer, catalog);
     return q;
   }
 
@@ -440,10 +429,33 @@ public final class Question implements SearchParameter, XMLWritable {
    * @return a new question.
    */
   public static Question newQuestionWithOperators(String field, String question) {
-    Map<String, Float> fields = Collections.singletonMap(field, 1.0f);
-    Question q = new Question(fields, question, true);
-    q.compute();
-    return q;
+    return newQuestionWithOperators(Collections.singletonMap(field, 1.0f), question);
+  }
+
+  /**
+   * A factory method to create a new question and compute it using a simple tokenizer.
+   *
+   * @param field    The field for the question.
+   * @param question The question itself.
+   * @param analyzer The analyser to use when parsing the question.
+   *
+   * @return a new question.
+   */
+  public static Question newQuestionWithOperators(String field, String question, Analyzer analyzer) {
+    return newQuestionWithOperators(field, question, analyzer, null);
+  }
+
+  /**
+   * A factory method to create a new question and compute it using a simple tokenizer.
+   *
+   * @param field    The field for the question.
+   * @param question The question itself.
+   * @param analyzer The analyser to use when parsing the question.
+   *
+   * @return a new question.
+   */
+  public static Question newQuestionWithOperators(String field, String question, Analyzer analyzer, Catalog catalog) {
+    return newQuestion(Collections.singletonMap(field, 1.0f), question, analyzer, catalog);
   }
 
   /**
@@ -455,11 +467,33 @@ public final class Question implements SearchParameter, XMLWritable {
    * @return a new question.
    */
   public static Question newQuestionWithOperators(List<String> fields, String question) {
-    List<String> names = Fields.filterNames(fields);
-    Map<String, Float> map = Fields.asBoostMap(names);
-    Question q = new Question(map, question, true);
-    q.compute();
-    return q;
+    return newQuestionWithOperators(Fields.asBoostMap(Fields.filterNames(fields)), question);
+  }
+
+  /**
+   * A factory method to create a new question and compute it using a simple tokenizer.
+   *
+   * @param fields   The list of fields for the question.
+   * @param question The question itself.
+   * @param analyzer The analyser to use when parsing the question.
+   *
+   * @return a new question.
+   */
+  public static Question newQuestionWithOperators(List<String> fields, String question, Analyzer analyzer) {
+    return newQuestionWithOperators(fields, question, analyzer, null);
+  }
+
+  /**
+   * A factory method to create a new question and compute it using a simple tokenizer.
+   *
+   * @param fields   The list of fields for the question.
+   * @param question The question itself.
+   * @param analyzer The analyser to use when parsing the question.
+   *
+   * @return a new question.
+   */
+  public static Question newQuestionWithOperators(List<String> fields, String question, Analyzer analyzer, Catalog catalog) {
+    return newQuestionWithOperators(Fields.asBoostMap(Fields.filterNames(fields)), question, analyzer, catalog);
   }
 
   /**
@@ -473,6 +507,34 @@ public final class Question implements SearchParameter, XMLWritable {
   public static Question newQuestionWithOperators(Map<String, Float> fields, String question) {
     Question q = new Question(fields, question, true);
     q.compute();
+    return q;
+  }
+
+  /**
+   * A factory method to create a new question and compute it using a simple tokenizer.
+   *
+   * @param fields The list of fields for the question.
+   * @param question The question itself.
+   * @param analyzer The analyser to use when parsing the question.
+   *
+   * @return a new question.
+   */
+  public static Question newQuestionWithOperators(Map<String, Float> fields, String question, Analyzer analyzer) {
+    return newQuestionWithOperators(fields, question, analyzer, null);
+  }
+
+  /**
+   * A factory method to create a new question and compute it using a simple tokenizer.
+   *
+   * @param fields The list of fields for the question.
+   * @param question The question itself.
+   * @param analyzer The analyser to use when parsing the question.
+   *
+   * @return a new question.
+   */
+  public static Question newQuestionWithOperators(Map<String, Float> fields, String question, Analyzer analyzer, Catalog catalog) {
+    Question q = new Question(fields, question, true);
+    q.compute(analyzer, catalog);
     return q;
   }
 

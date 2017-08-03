@@ -93,7 +93,6 @@ public class DateFieldFacetTest {
   public void testFacetsNoQuery() throws IndexException, IOException, ParseException {
     DateFieldFacet facet = DateFieldFacet.newFacet("facet1", second_resolution);
     facet.compute(searcher, null);
-    Assert.assertEquals(0, facet.getTotalResults());// 2017-01-01_12:00:00
     Assert.assertEquals(6, facet.getTotalTerms());
     Bucket<String> values = facet.getValues();
     Assert.assertEquals(6, values.items().size());
@@ -106,7 +105,6 @@ public class DateFieldFacetTest {
     // facets 2
     facet = DateFieldFacet.newFacet("facet2", Resolution.SECOND);
     facet.compute(searcher, null);
-    Assert.assertEquals(0, facet.getTotalResults());
     Assert.assertEquals(6, facet.getTotalTerms());
     values = facet.getValues();
     Assert.assertEquals(6, values.items().size());
@@ -119,7 +117,6 @@ public class DateFieldFacetTest {
     // facets 3
     facet = DateFieldFacet.newFacet("facet3", Resolution.SECOND);
     facet.compute(searcher, null);
-    Assert.assertEquals(0, facet.getTotalResults());
     Assert.assertEquals(2, facet.getTotalTerms());
     values = facet.getValues();
     Assert.assertEquals(2, values.items().size());
@@ -133,7 +130,6 @@ public class DateFieldFacetTest {
     Query base = new DateParameter("facet3", d, second_resolution, false).toQuery();
     DateFieldFacet facet = DateFieldFacet.newFacet("facet1", second_resolution);
     facet.compute(searcher, base);
-    Assert.assertEquals(6, facet.getTotalResults());
     Assert.assertEquals(5, facet.getTotalTerms());
     Bucket<String> values = facet.getValues();
     Assert.assertEquals(5, values.items().size());
@@ -145,7 +141,6 @@ public class DateFieldFacetTest {
     // facets 2
     facet = DateFieldFacet.newFacet("facet2", Resolution.SECOND);
     facet.compute(searcher, base);
-    Assert.assertEquals(6, facet.getTotalResults());
     Assert.assertEquals(5, facet.getTotalTerms());
     values = facet.getValues();
     Assert.assertEquals(5, values.items().size());
@@ -157,7 +152,6 @@ public class DateFieldFacetTest {
     // facets 3
     facet = DateFieldFacet.newFacet("facet3", Resolution.SECOND);
     facet.compute(searcher, base);
-    Assert.assertEquals(6, facet.getTotalResults());
     Assert.assertEquals(1, facet.getTotalTerms());
     values = facet.getValues();
     Assert.assertEquals(1, values.items().size());
@@ -210,7 +204,6 @@ public class DateFieldFacetTest {
     Query base = new TermQuery(new Term("field", "value"));
     DateFieldFacet facet = DateFieldFacet.newFacet("facet1", second_resolution);
     facet.compute(searcher, base, filters);
-    Assert.assertEquals(6, facet.getTotalResults());
     Assert.assertEquals(5, facet.getTotalTerms());
     Bucket<String> values = facet.getValues();
     Assert.assertEquals(5, values.items().size());
@@ -223,7 +216,6 @@ public class DateFieldFacetTest {
     // facets 2
     facet = DateFieldFacet.newFacet("facet2", Resolution.SECOND);
     facet.compute(searcher, base, filters);
-    Assert.assertEquals(6, facet.getTotalResults());
     Assert.assertEquals(5, facet.getTotalTerms());
     values = facet.getValues();
     Assert.assertEquals(5, values.items().size());
@@ -235,7 +227,6 @@ public class DateFieldFacetTest {
     // facets 3
     facet = DateFieldFacet.newFacet("facet3", Resolution.SECOND);
     facet.compute(searcher, base, filters);
-    Assert.assertEquals(7, facet.getTotalResults());
     Assert.assertEquals(2, facet.getTotalTerms());
     values = facet.getValues();
     Assert.assertEquals(2, values.items().size());

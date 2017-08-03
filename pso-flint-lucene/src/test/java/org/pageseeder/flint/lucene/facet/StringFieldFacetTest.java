@@ -82,7 +82,6 @@ public class StringFieldFacetTest {
   public void testFacetsNoQuery() throws IndexException, IOException {
     StringFieldFacet facet = StringFieldFacet.newFacet("facet1");
     facet.compute(searcher, null);
-    Assert.assertEquals(0, facet.getTotalResults());
     Assert.assertEquals(6, facet.getTotalTerms());
     Bucket<String> values = facet.getValues();
     Assert.assertEquals(6, values.items().size());
@@ -95,7 +94,6 @@ public class StringFieldFacetTest {
     // facets 2
     facet = StringFieldFacet.newFacet("facet2");
     facet.compute(searcher, null);
-    Assert.assertEquals(0, facet.getTotalResults());
     Assert.assertEquals(6, facet.getTotalTerms());
     values = facet.getValues();
     Assert.assertEquals(6, values.items().size());
@@ -108,12 +106,35 @@ public class StringFieldFacetTest {
     // facets 3
     facet = StringFieldFacet.newFacet("facet3");
     facet.compute(searcher, null);
-    Assert.assertEquals(0, facet.getTotalResults());
     Assert.assertEquals(2, facet.getTotalTerms());
     values = facet.getValues();
     Assert.assertEquals(2, values.items().size());
     Assert.assertEquals(6, values.count("value30"));
     Assert.assertEquals(1, values.count("value31"));
+  }
+
+  @Test
+  public void testFacetsQueryNoTerms() throws IndexException, IOException {
+    Query base = new TermQuery(new Term("facet3", "value30"));
+    StringFieldFacet facet = StringFieldFacet.newFacet("facet1");
+    facet.compute(searcher, base, 0);
+    Assert.assertTrue(facet.hasResults());
+    Assert.assertNull(facet.getValues());
+    // facets 2
+    facet = StringFieldFacet.newFacet("facet2");
+    facet.compute(searcher, base, 0);
+    Assert.assertTrue(facet.hasResults());
+    Assert.assertNull(facet.getValues());
+    // facets 3
+    facet = StringFieldFacet.newFacet("facet3");
+    facet.compute(searcher, base, 0);
+    Assert.assertTrue(facet.hasResults());
+    Assert.assertNull(facet.getValues());
+    // facets 4
+    facet = StringFieldFacet.newFacet("facet4");
+    facet.compute(searcher, base, 0);
+    Assert.assertFalse(facet.hasResults());
+    Assert.assertNull(facet.getValues());
   }
 
   @Test
@@ -121,7 +142,6 @@ public class StringFieldFacetTest {
     Query base = new TermQuery(new Term("facet3", "value30"));
     StringFieldFacet facet = StringFieldFacet.newFacet("facet1");
     facet.compute(searcher, base);
-    Assert.assertEquals(6, facet.getTotalResults());
     Assert.assertEquals(5, facet.getTotalTerms());
     Bucket<String> values = facet.getValues();
     Assert.assertEquals(5, values.items().size());
@@ -133,7 +153,6 @@ public class StringFieldFacetTest {
     // facets 2
     facet = StringFieldFacet.newFacet("facet2");
     facet.compute(searcher, base);
-    Assert.assertEquals(6, facet.getTotalResults());
     Assert.assertEquals(5, facet.getTotalTerms());
     values = facet.getValues();
     Assert.assertEquals(5, values.items().size());
@@ -145,49 +164,11 @@ public class StringFieldFacetTest {
     // facets 3
     facet = StringFieldFacet.newFacet("facet3");
     facet.compute(searcher, base);
-    Assert.assertEquals(6, facet.getTotalResults());
     Assert.assertEquals(1, facet.getTotalTerms());
     values = facet.getValues();
     Assert.assertEquals(1, values.items().size());
     Assert.assertEquals(6, values.count("value30"));
   }
-
-//  @Test
-//  public void testFacetsQuerySearchResults() throws IndexException, IOException {
-//    SearchQuery base = BasicQuery.newBasicQuery(new TermParameter("facet3", "value30"));
-//    SearchResults results = LuceneIndexQueries.query(index, base, new SearchPaging(1, 2));
-//    StringFieldFacet facet = StringFieldFacet.newFacet("facet1");
-//    facet.compute(results);
-//    Assert.assertEquals(6, facet.getTotalResults());
-//    Assert.assertEquals(5, facet.getTotalTerms());
-//    Bucket<String> values = facet.getValues();
-//    Assert.assertEquals(5, values.items().size());
-//    Assert.assertEquals(1, values.count("value10"));
-//    Assert.assertEquals(2, values.count("value11"));
-//    Assert.assertEquals(1, values.count("value12"));
-//    Assert.assertEquals(1, values.count("value13"));
-//    Assert.assertEquals(1, values.count("value14"));
-//    // facets 2
-//    facet = StringFieldFacet.newFacet("facet2");
-//    facet.compute(results);
-//    Assert.assertEquals(6, facet.getTotalResults());
-//    Assert.assertEquals(5, facet.getTotalTerms());
-//    values = facet.getValues();
-//    Assert.assertEquals(5, values.items().size());
-//    Assert.assertEquals(1, values.count("value20"));
-//    Assert.assertEquals(1, values.count("value21"));
-//    Assert.assertEquals(1, values.count("value22"));
-//    Assert.assertEquals(1, values.count("value23"));
-//    Assert.assertEquals(2, values.count("value24"));
-//    // facets 3
-//    facet = StringFieldFacet.newFacet("facet3");
-//    facet.compute(results);
-//    Assert.assertEquals(6, facet.getTotalResults());
-//    Assert.assertEquals(1, facet.getTotalTerms());
-//    values = facet.getValues();
-//    Assert.assertEquals(1, values.items().size());
-//    Assert.assertEquals(6, values.count("value30"));
-//  }
 
   @Test
   public void testFlexibleFacetsQuery() throws IndexException, IOException {
@@ -195,7 +176,6 @@ public class StringFieldFacetTest {
     Query base = new TermQuery(new Term("field", "value"));
     StringFieldFacet facet = StringFieldFacet.newFacet("facet1");
     facet.compute(searcher, base, filters);
-    Assert.assertEquals(6, facet.getTotalResults());
     Assert.assertEquals(5, facet.getTotalTerms());
     Bucket<String> values = facet.getValues();
     Assert.assertEquals(5, values.items().size());
@@ -207,7 +187,6 @@ public class StringFieldFacetTest {
     // facets 2
     facet = StringFieldFacet.newFacet("facet2");
     facet.compute(searcher, base, filters);
-    Assert.assertEquals(6, facet.getTotalResults());
     Assert.assertEquals(5, facet.getTotalTerms());
     values = facet.getValues();
     Assert.assertEquals(5, values.items().size());
@@ -219,12 +198,36 @@ public class StringFieldFacetTest {
     // facets 3
     facet = StringFieldFacet.newFacet("facet3");
     facet.compute(searcher, base, filters);
-    Assert.assertEquals(7, facet.getTotalResults());
     Assert.assertEquals(2, facet.getTotalTerms());
     values = facet.getValues();
     Assert.assertEquals(2, values.items().size());
     Assert.assertEquals(6, values.count("value30"));
     Assert.assertEquals(1, values.count("value31"));
+  }
+
+  @Test
+  public void testFlexibleFacetsQueryNoTerms() throws IndexException, IOException {
+    List<Filter> filters = Collections.singletonList(StringTermFilter.newFilter("facet3", "value30"));
+    Query base = new TermQuery(new Term("field", "value"));
+    StringFieldFacet facet = StringFieldFacet.newFacet("facet1");
+    facet.compute(searcher, base, filters, 0);
+    Assert.assertTrue(facet.hasResults());
+    Assert.assertNull(facet.getValues());
+    // facets 2
+    facet = StringFieldFacet.newFacet("facet2");
+    facet.compute(searcher, base, 0);
+    Assert.assertTrue(facet.hasResults());
+    Assert.assertNull(facet.getValues());
+    // facets 3
+    facet = StringFieldFacet.newFacet("facet3");
+    facet.compute(searcher, base, 0);
+    Assert.assertTrue(facet.hasResults());
+    Assert.assertNull(facet.getValues());
+    // facets 4
+    facet = StringFieldFacet.newFacet("facet4");
+    facet.compute(searcher, base, 0);
+    Assert.assertTrue(facet.hasResults());
+    Assert.assertNull(facet.getValues());
   }
 
 }

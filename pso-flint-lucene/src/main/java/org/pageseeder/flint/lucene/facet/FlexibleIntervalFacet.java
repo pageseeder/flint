@@ -29,7 +29,6 @@ import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.pageseeder.flint.lucene.search.DocumentCounter;
-import org.pageseeder.flint.lucene.search.FieldDocumentCounter;
 import org.pageseeder.flint.lucene.search.Filter;
 import org.pageseeder.flint.lucene.search.Terms;
 import org.pageseeder.flint.lucene.util.Beta;
@@ -77,11 +76,6 @@ public abstract class FlexibleIntervalFacet implements XMLWritable {
    * If the facet was computed in a "flexible" way
    */
   private transient boolean flexible = false;
-
-  /**
-   * The total number of results containing the field used in this facet
-   */
-  protected transient int totalResults = 0;
 
   /**
    * The total number of intervals with results
@@ -176,10 +170,6 @@ public abstract class FlexibleIntervalFacet implements XMLWritable {
         b.add(interval, intervals.get(interval));
       }
       this._bucket = b;
-      // compute total results
-      FieldDocumentCounter totalCounter = new FieldDocumentCounter(this._name);
-      searcher.search(filtered, totalCounter);
-      this.totalResults = totalCounter.getCount();
     }
   }
 
@@ -269,7 +259,6 @@ public abstract class FlexibleIntervalFacet implements XMLWritable {
       counter.reset();
     }
     // set totals
-    this.totalResults = 0;
     this.totalIntervals = intervals.size();
     // add to bucket
     Bucket<Interval> b = new Bucket<Interval>(size);
@@ -303,7 +292,6 @@ public abstract class FlexibleIntervalFacet implements XMLWritable {
     xml.attribute("flexible", String.valueOf(this.flexible));
     if (!this.flexible) {
       xml.attribute("total-intervals", this.totalIntervals);
-      xml.attribute("total-results", this.totalResults);
     }
     if (this._bucket != null) {
       for (Entry<Interval> e : this._bucket.entrySet()) {
@@ -320,11 +308,6 @@ public abstract class FlexibleIntervalFacet implements XMLWritable {
   public int getTotalIntervals() {
     return this.totalIntervals;
   }
-
-  public int getTotalResults() {
-    return this.totalResults;
-  }
-
 
   public static class Interval implements Comparable<Interval> {
     private final String min;

@@ -83,7 +83,6 @@ public class StringIntervalFacetTest {
   public void testFacetsNoQuery() throws IndexException, IOException, ParseException {
     StringIntervalFacet facet = new StringIntervalFacet.Builder().name("facet1").start("a").intervalLength("a").build();
     facet.compute(searcher, null);
-    Assert.assertEquals(0, facet.getTotalResults());
     Assert.assertEquals(5, facet.getTotalIntervals());
     Bucket<Interval> intervals = facet.getValues();
     Assert.assertEquals(5, intervals.items().size());
@@ -94,7 +93,6 @@ public class StringIntervalFacetTest {
     Assert.assertEquals(1, intervals.count(Interval.stringInterval("e", "f")));
     facet = new StringIntervalFacet.Builder().name("facet2").start("aaaaa").intervalLength("ddddd").build();
     facet.compute(searcher, null);
-    Assert.assertEquals(0, facet.getTotalResults());
     Assert.assertEquals(5, facet.getTotalIntervals());
     intervals = facet.getValues();
     Assert.assertEquals(5, intervals.items().size());
@@ -105,7 +103,6 @@ public class StringIntervalFacetTest {
     Assert.assertEquals(1, intervals.count(Interval.stringInterval("yyyyy", "~~~~~")));
     facet = new StringIntervalFacet.Builder().name("facet3").start("m").intervalLength("k").build();
     facet.compute(searcher, null);
-    Assert.assertEquals(0, facet.getTotalResults());
     Assert.assertEquals(4, facet.getTotalIntervals());
     intervals = facet.getValues();
     Assert.assertEquals(4, intervals.items().size());
@@ -120,7 +117,6 @@ public class StringIntervalFacetTest {
     Query base = new TermParameter("field", "value1").toQuery();
     StringIntervalFacet facet = new StringIntervalFacet.Builder().name("facet1").start("a").intervalLength("a").build();
     facet.compute(searcher, base);
-    Assert.assertEquals(6, facet.getTotalResults());
     Assert.assertEquals(4, facet.getTotalIntervals());
     Bucket<Interval> intervals = facet.getValues();
     Assert.assertEquals(4, intervals.items().size());
@@ -130,7 +126,6 @@ public class StringIntervalFacetTest {
     Assert.assertEquals(1, intervals.count(Interval.stringInterval("d", "e")));
     facet = new StringIntervalFacet.Builder().name("facet2").start("aaaaa").intervalLength("ddddd").build();
     facet.compute(searcher, base);
-    Assert.assertEquals(6, facet.getTotalResults());
     Assert.assertEquals(4, facet.getTotalIntervals());
     intervals = facet.getValues();
     Assert.assertEquals(4, intervals.items().size());
@@ -140,7 +135,6 @@ public class StringIntervalFacetTest {
     Assert.assertEquals(1, intervals.count(Interval.stringInterval("qqqqq", "uuuuu")));
     facet = new StringIntervalFacet.Builder().name("facet3").start("m").intervalLength("k").build();
     facet.compute(searcher, base);
-    Assert.assertEquals(6, facet.getTotalResults());
     Assert.assertEquals(3, facet.getTotalIntervals());
     intervals = facet.getValues();
     Assert.assertEquals(3, intervals.items().size());
@@ -155,7 +149,6 @@ public class StringIntervalFacetTest {
     Query base = new TermParameter("field", "value1").toQuery();
     StringIntervalFacet facet = new StringIntervalFacet.Builder().name("facet1").start("a").intervalLength("a").build();
     facet.compute(searcher, base, filters);
-    Assert.assertEquals(2, facet.getTotalResults());
     Assert.assertEquals(2, facet.getTotalIntervals());
     Bucket<Interval> intervals = facet.getValues();
     Assert.assertEquals(2, intervals.items().size());
@@ -163,7 +156,6 @@ public class StringIntervalFacetTest {
     Assert.assertEquals(1, intervals.count(Interval.stringInterval("d", "e")));
     facet = new StringIntervalFacet.Builder().name("facet2").start("aaaaa").intervalLength("ddddd").build();
     facet.compute(searcher, base, filters);
-    Assert.assertEquals(2, facet.getTotalResults());
     Assert.assertEquals(2, facet.getTotalIntervals());
     intervals = facet.getValues();
     Assert.assertEquals(2, intervals.items().size());
@@ -171,7 +163,6 @@ public class StringIntervalFacetTest {
     Assert.assertEquals(1, intervals.count(Interval.stringInterval("qqqqq", "uuuuu")));
     facet = new StringIntervalFacet.Builder().name("facet3").start("m").intervalLength("k").build();
     facet.compute(searcher, base, filters);
-    Assert.assertEquals(6, facet.getTotalResults());
     Assert.assertEquals(3, facet.getTotalIntervals());
     intervals = facet.getValues();
     Assert.assertEquals(3, intervals.items().size());

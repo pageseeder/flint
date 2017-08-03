@@ -24,7 +24,6 @@ import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.pageseeder.flint.lucene.search.DocumentCounter;
-import org.pageseeder.flint.lucene.search.FieldDocumentCounter;
 import org.pageseeder.flint.lucene.search.Filter;
 import org.pageseeder.flint.lucene.search.Terms;
 import org.pageseeder.flint.lucene.util.Beta;
@@ -68,14 +67,14 @@ public abstract class FlexibleFieldFacet implements XMLWritable {
   private transient boolean flexible = false;
 
   /**
-   * The total number of results containing the field used in this facet
-   */
-  private transient int totalResults = 0;
-
-  /**
    * The total number of terms found in the search results
    */
-  private transient int totalTerms = 0;
+  private transient int totalTerms = -1;
+
+  /**
+   * If there are results containing the field used in this facet
+   */
+  private transient boolean hasResults = false;
 
   /**
    * Creates a new facet with the specified name;
@@ -115,12 +114,11 @@ public abstract class FlexibleFieldFacet implements XMLWritable {
       compute(searcher, size);
     } else {
       if (size < 0) throw new IllegalArgumentException("size < 0");
-      // reset total terms
-      this.totalTerms = 0;
-      // find all terms
-      List<Term> terms = Terms.terms(searcher.getIndexReader(), name());
-      if (this._maxTerms > 0 && terms.size() > this._maxTerms) return;
-      // Otherwise, re-compute the query without the corresponding filter 
+      // reset
+      this.totalTerms = -1;
+      this.hasResults = false;
+      this._bucket = null;
+      // Otherwise, re-compute the query without the corresponding filter (for flexible facets)
       Query filtered = base;
       if (filters != null) {
         this.flexible = true;
@@ -129,6 +127,10 @@ public abstract class FlexibleFieldFacet implements XMLWritable {
             filtered = filter.filterQuery(filtered);
         }
       }
+      this.totalTerms = size == 0 ? -1 : 0;
+      // find all terms
+      List<Term> terms = Terms.terms(searcher.getIndexReader(), name());
+      if (this._maxTerms > 0 && terms.size() > this._maxTerms) return;
       Bucket<String> bucket = new Bucket<String>(size);
       DocumentCounter counter = new DocumentCounter();
       for (Term t : terms) {
@@ -137,15 +139,17 @@ public abstract class FlexibleFieldFacet implements XMLWritable {
         query.add(termToQuery(t), Occur.MUST);
         searcher.search(query, counter);
         int count = counter.getCount();
+        // stop at first results if we don't want terms
+        if (count > 0 && size == 0) {
+          this.hasResults = true;
+          return;
+        }
         bucket.add(t.text(), count);
         counter.reset();
         if (count > 0) this.totalTerms++;
       }
-      this._bucket = bucket;
-      // compute total results
-      FieldDocumentCounter totalCounter = new FieldDocumentCounter(this._name);
-      searcher.search(filtered, totalCounter);
-      this.totalResults = totalCounter.getCount();
+      if (size != 0)
+        this._bucket = bucket;
     }
   }
 
@@ -213,21 +217,31 @@ public abstract class FlexibleFieldFacet implements XMLWritable {
    * @throws IOException if thrown by the searcher.
    */
   private void compute(IndexSearcher searcher, int size) throws IOException {
-    // find all terms
-    List<Term> terms = Terms.terms(searcher.getIndexReader(), this._name);
-    if (this._maxTerms > 0 && terms.size() > this._maxTerms) return;
-    this.totalTerms = 0;
-    Bucket<String> bucket = new Bucket<String>(size);
-    DocumentCounter counter = new DocumentCounter();
-    for (Term t : terms) {
-      searcher.search(termToQuery(t), counter);
-      bucket.add(t.text(), counter.getCount());
-      counter.reset();
-      this.totalTerms++;
+    if (size == 0) {
+      // reset
+      this.totalTerms = -1;
+      this._bucket = null;
+      // check if there are terms
+      this.hasResults = !Terms.terms(searcher.getIndexReader(), this._name).isEmpty();
+    } else {
+      // reset
+      this.totalTerms = size == 0 ? -1 : 0;
+      this.hasResults = false;
+      this._bucket = null;
+      // find all terms
+      List<Term> terms = Terms.terms(searcher.getIndexReader(), this._name);
+      if (this._maxTerms > 0 && terms.size() > this._maxTerms) return;
+      Bucket<String> bucket = new Bucket<String>(size);
+      DocumentCounter counter = new DocumentCounter();
+      for (Term t : terms) {
+        searcher.search(termToQuery(t), counter);
+        bucket.add(t.text(), counter.getCount());
+        counter.reset();
+        this.totalTerms++;
+      }
+      // set bucket
+      this._bucket = bucket;
     }
-    // set totals
-    this.totalResults = 0;
-    this._bucket = bucket;
   }
 
   /**
@@ -249,10 +263,10 @@ public abstract class FlexibleFieldFacet implements XMLWritable {
     xml.attribute("name", this._name);
     xml.attribute("type", getType());
     xml.attribute("flexible", String.valueOf(this.flexible));
-    if (!this.flexible) {
+    if (this.totalTerms == -1)
+      xml.attribute("has-results", this.hasResults ? "true" : "false");
+    if (!this.flexible && this.totalTerms != -1)
       xml.attribute("total-terms", this.totalTerms);
-      xml.attribute("total-results", this.totalResults);
-    }
     if (this._bucket != null) {
       for (Entry<String> e : this._bucket.entrySet()) {
         termToXML(e.item(), e.count(), xml);
@@ -269,8 +283,7 @@ public abstract class FlexibleFieldFacet implements XMLWritable {
     return this.totalTerms;
   }
 
-  public int getTotalResults() {
-    return this.totalResults;
+  public boolean hasResults() {
+    return this.hasResults;
   }
-
 }

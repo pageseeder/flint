@@ -2,6 +2,7 @@ package org.pageseeder.flint.lucene.search;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.List;
 
 import javax.xml.transform.TransformerException;
@@ -9,6 +10,9 @@ import javax.xml.transform.TransformerException;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.Query;
+import org.apache.lucene.search.TermQuery;
 import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.BeforeClass;
@@ -66,7 +70,6 @@ public class TermsTest {
     try {
       reader = LuceneIndexQueries.grabReader(index);
       List<String> fields = Terms.fields(reader);
-System.out.println(fields);
       Assert.assertEquals(9, fields.size());
       Assert.assertTrue(fields.contains("_src"));
       Assert.assertTrue(fields.contains("_path"));
@@ -154,6 +157,43 @@ System.out.println(fields);
       Assert.assertEquals(2, reader.getDocCount("prefix1"));
       Assert.assertEquals(2, reader.getDocCount("prefix2"));
       LuceneIndexQueries.release(index, reader);
+    } catch (IndexException | IOException ex) {
+      ex.printStackTrace();
+      Assert.fail();
+    } finally {
+      // cleanup
+      if (doc3 != null && doc3.exists()) doc3.delete();
+    }
+  }
+
+  @Test
+  public void testResultsFields() throws IndexException {
+    File doc3 = null;
+    Query query = new TermQuery(new Term("field1", "value1"));
+    List<String> candidates = Arrays.asList(new String[] {"field1", "field2", "field3", "prefix1"});
+    IndexSearcher searcher;
+    try {
+      searcher = LuceneIndexQueries.grabSearcher(index);
+      List<String> fields = Terms.fields(searcher, query, candidates);
+      Assert.assertEquals(3, fields.size());
+      Assert.assertTrue(fields.contains("field1"));
+      Assert.assertTrue(fields.contains("field2"));
+      Assert.assertTrue(fields.contains("prefix1"));
+      LuceneIndexQueries.release(index, searcher);
+      // index new doc
+      doc3 = TestUtils.createFile(documents, "doc3.xml", "<documents version=\"5.0\"><document><field name=\"field1\">value1</field><field name=\"field3\">value3</field></document></documents>");
+      manager.indexFile(index, doc3);
+      // wait a bit
+      TestUtils.wait(1);
+      // new check
+      searcher = LuceneIndexQueries.grabSearcher(index);
+      fields = Terms.fields(searcher, query, candidates);
+      Assert.assertEquals(4, fields.size());
+      Assert.assertTrue(fields.contains("field1"));
+      Assert.assertTrue(fields.contains("field2"));
+      Assert.assertTrue(fields.contains("field3"));
+      Assert.assertTrue(fields.contains("prefix1"));
+      LuceneIndexQueries.release(index, searcher);
     } catch (IndexException | IOException ex) {
       ex.printStackTrace();
       Assert.fail();

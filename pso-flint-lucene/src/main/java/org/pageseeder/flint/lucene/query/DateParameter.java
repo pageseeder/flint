@@ -272,9 +272,11 @@ public final class DateParameter implements SearchParameter {
     } else {
       if (this._from != null) {
         xml.attribute("from", Dates.format(this._from, this._resolution));
+        xml.attribute("from-included", Boolean.toString(this._minInclusive));
       }
       if (this._to != null) {
         xml.attribute("to",  Dates.format(this._to, this._resolution));
+        xml.attribute("to-included", Boolean.toString(this._maxInclusive));
       }
     }
     xml.closeElement();

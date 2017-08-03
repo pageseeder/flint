@@ -30,7 +30,9 @@ import org.apache.lucene.index.MultiFields;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.FuzzyTermsEnum;
+import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.PrefixQuery;
+import org.apache.lucene.search.Query;
 import org.apache.lucene.util.AttributeSource;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.automaton.CompiledAutomaton;
@@ -296,6 +298,28 @@ public final class Terms {
       termsList.put(t, new Term(field, BytesRef.deepCopyOf(t)));
     }
     return new ArrayList<>(termsList.values());
+  }
+
+  /**
+   * Returns the list of term fields from the list of the fields provided which are in the search results of the query provided.
+   *
+   * @param searcher   a searcher on the index desired
+   * @param query      the base query
+   * @param candidates the list of candidate fields
+   *
+   * @return the list of fields with search results
+   *
+   * @throws IOException should any IO error be reported when querying the index.
+   */
+  @Beta public static List<String> fields(IndexSearcher searcher, Query query, List<String> candidates) throws IOException {
+    LOGGER.debug("Loading fields for query {}", query);
+    List<String> fields = new ArrayList<String>();
+    for (String field : candidates) {
+      FieldDocumentChecker checker = new FieldDocumentChecker(field);
+      searcher.search(query, checker);
+      if (checker.fieldFound()) fields.add(field);
+    }
+    return fields;
   }
 
   /**
