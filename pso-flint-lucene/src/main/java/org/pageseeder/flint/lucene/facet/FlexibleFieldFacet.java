@@ -23,6 +23,8 @@ import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.TopDocs;
+import org.apache.lucene.search.WildcardQuery;
 import org.pageseeder.flint.lucene.search.DocumentCounter;
 import org.pageseeder.flint.lucene.search.Filter;
 import org.pageseeder.flint.lucene.search.Terms;
@@ -115,10 +117,10 @@ public abstract class FlexibleFieldFacet implements XMLWritable {
     } else {
       if (size < 0) throw new IllegalArgumentException("size < 0");
       // reset
-      this.totalTerms = -1;
+      this.totalTerms = size == 0 ? -1 : 0;
       this.hasResults = false;
       this._bucket = null;
-      // Otherwise, re-compute the query without the corresponding filter (for flexible facets)
+      // re-compute the query without the corresponding filter (for flexible facets)
       Query filtered = base;
       if (filters != null) {
         this.flexible = true;
@@ -127,26 +129,43 @@ public abstract class FlexibleFieldFacet implements XMLWritable {
             filtered = filter.filterQuery(filtered);
         }
       }
-      this.totalTerms = size == 0 ? -1 : 0;
+      // try wildcard query as it's faster, but if it fails go through all terms
+      if (size == 0) try {
+        BooleanQuery query = new BooleanQuery();
+        query.add(filtered, Occur.MUST);
+        query.add(new WildcardQuery(new Term(this._name, "*")), Occur.MUST);
+        TopDocs td = searcher.search(query, 1);
+        this.hasResults = td.totalHits > 0;
+        return;
+      } catch (Exception ex) {
+        // oh well go through terms then
+      }
       // find all terms
       List<Term> terms = Terms.terms(searcher.getIndexReader(), name());
       if (this._maxTerms > 0 && terms.size() > this._maxTerms) return;
-      Bucket<String> bucket = new Bucket<String>(size);
+      // loop through terms
       DocumentCounter counter = new DocumentCounter();
+      Bucket<String> bucket = new Bucket<String>(size);
       for (Term t : terms) {
         BooleanQuery query = new BooleanQuery();
         query.add(filtered, Occur.MUST);
         query.add(termToQuery(t), Occur.MUST);
-        searcher.search(query, counter);
-        int count = counter.getCount();
-        // stop at first results if we don't want terms
-        if (count > 0 && size == 0) {
-          this.hasResults = true;
-          return;
+        if (size == 0) {
+          // we just want to know if there are results,
+          // so load only one and stop when we get one
+          TopDocs td = searcher.search(query, 1);
+          if (td.totalHits > 0) {
+            this.hasResults = true;
+            return;
+          }
+        } else {
+          // count results
+          searcher.search(query, counter);
+          int count = counter.getCount();
+          bucket.add(t.text(), count);
+          counter.reset();
+          if (count > 0) this.totalTerms++;
         }
-        bucket.add(t.text(), count);
-        counter.reset();
-        if (count > 0) this.totalTerms++;
       }
       if (size != 0)
         this._bucket = bucket;

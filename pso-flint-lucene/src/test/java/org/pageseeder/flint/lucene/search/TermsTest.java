@@ -13,9 +13,9 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermQuery;
-import org.junit.AfterClass;
+import org.junit.After;
 import org.junit.Assert;
-import org.junit.BeforeClass;
+import org.junit.Before;
 import org.junit.Test;
 import org.pageseeder.flint.IndexException;
 import org.pageseeder.flint.local.LocalIndexManager;
@@ -34,9 +34,9 @@ public class TermsTest {
 
   private static LuceneLocalIndex index;
   private static LocalIndexManager manager;
-  
-  @BeforeClass
-  public static void init() {
+
+  @Before
+  public void init() {
     // clean up last test's data
     for (File f : indexRoot.listFiles()) f.delete();
     indexRoot.delete();
@@ -55,8 +55,8 @@ public class TermsTest {
     TestUtils.wait(1);
   }
 
-  @AfterClass
-  public static void after() {
+  @After
+  public void after() {
     // stop index
     System.out.println("Stopping manager!");
     index.close();
