@@ -83,7 +83,9 @@ public class LuceneUtils {
     // normal field then
     else {
       field = toNormalField(ffield);
-      if (field != null && !forCatalog.containsKey(ffield.name())) // lesser priority
+      if (field != null && field.fieldType() != null &&
+          field.fieldType().indexOptions() != IndexOptions.NONE &&
+          !forCatalog.containsKey(ffield.name())) // lesser priority
         forCatalog.put(ffield.name(), ffield);
     }
     if (field != null) {
