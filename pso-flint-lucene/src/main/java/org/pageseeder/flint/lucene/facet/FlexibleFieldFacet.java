@@ -284,8 +284,10 @@ public abstract class FlexibleFieldFacet implements XMLWritable {
     xml.attribute("flexible", String.valueOf(this.flexible));
     if (this.totalTerms == -1)
       xml.attribute("has-results", this.hasResults ? "true" : "false");
-    if (!this.flexible && this.totalTerms != -1)
+    else {
+      xml.attribute("has-results", this.totalTerms > 0 ? "true" : "false");
       xml.attribute("total-terms", this.totalTerms);
+    }
     if (this._bucket != null) {
       for (Entry<String> e : this._bucket.entrySet()) {
         termToXML(e.item(), e.count(), xml);
