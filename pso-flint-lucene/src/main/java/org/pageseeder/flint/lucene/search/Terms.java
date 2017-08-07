@@ -163,7 +163,7 @@ public final class Terms {
     Fields fields = MultiFields.getFields(reader);
     org.apache.lucene.index.Terms terms = fields == null ? null : fields.terms(term.field());
     if (terms == null) return;
-    FuzzyTermsEnum fuzzy = new FuzzyTermsEnum(terms, atts, term, 2, 0, true);
+    FuzzyTermsEnum fuzzy = new FuzzyTermsEnum(terms, atts, term, minSimilarity, 0, false);
     BytesRef val;
     BytesRef searched = term.bytes();
     while ((val = fuzzy.next()) != null) {
