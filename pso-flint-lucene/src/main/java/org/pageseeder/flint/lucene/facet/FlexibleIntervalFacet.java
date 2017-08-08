@@ -369,7 +369,7 @@ public abstract class FlexibleIntervalFacet implements XMLWritable {
       return stringInterval(mi, true, ma, true);
     }
     public static Interval stringInterval(String mi, boolean withMin, String ma, boolean withMax) {
-      return new Interval(mi, true, ma, false);
+      return new Interval(mi, withMin, ma, withMax);
     }
     public static Interval numericInterval(Number mi, Number ma) {
       return numericInterval(mi, true, ma, false);

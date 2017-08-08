@@ -135,6 +135,8 @@ public class DateRangeFacet extends FlexibleRangeFacet {
     } catch (ParseException ex) {
       // should not happen as the string is coming from the date formatter in the first place
     }
+    if (range.getMin() != null) xml.attribute("include-min", range.includeMin() ? "true" : "false");
+    if (range.getMax() != null) xml.attribute("include-max", range.includeMax() ? "true" : "false");
     xml.attribute("cardinality", cardinality);
     xml.closeElement();
   }

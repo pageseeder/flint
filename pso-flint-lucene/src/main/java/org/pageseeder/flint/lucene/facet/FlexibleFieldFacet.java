@@ -164,7 +164,10 @@ public abstract class FlexibleFieldFacet implements XMLWritable {
           int count = counter.getCount();
           bucket.add(t.text(), count);
           counter.reset();
-          if (count > 0) this.totalTerms++;
+          if (count > 0) {
+            this.totalTerms++;
+            this.hasResults = true;
+          }
         }
       }
       if (size != 0)
@@ -257,6 +260,7 @@ public abstract class FlexibleFieldFacet implements XMLWritable {
         bucket.add(t.text(), counter.getCount());
         counter.reset();
         this.totalTerms++;
+        this.hasResults = true;
       }
       // set bucket
       this._bucket = bucket;

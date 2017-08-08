@@ -86,6 +86,7 @@ public class DateTermFilter implements Filter {
   public void toXML(XMLWriter xml) throws IOException {
     xml.openElement("filter");
     xml.attribute("field", this._name);
+    xml.attribute("type", "date");
     for (OffsetDateTime date : this._dates.keySet()) {
       xml.openElement("term");
       xml.attribute("text", Dates.toString(date, this._resolution));

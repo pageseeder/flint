@@ -71,6 +71,8 @@ public class StringRangeFacet extends FlexibleRangeFacet {
     xml.openElement("range");
     if (range.getMin() != null) xml.attribute("min", range.getMin());
     if (range.getMax() != null) xml.attribute("max", range.getMax());
+    if (range.getMin() != null) xml.attribute("include-min", range.includeMin() ? "true" : "false");
+    if (range.getMax() != null) xml.attribute("include-max", range.includeMax() ? "true" : "false");
     xml.attribute("cardinality", cardinality);
     xml.closeElement();
   }
