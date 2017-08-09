@@ -349,7 +349,7 @@ public abstract class FlexibleRangeFacet implements XMLWritable {
       return stringRange(mi, true, ma, true);
     }
     public static Range stringRange(String mi, boolean withMin, String ma, boolean withMax) {
-      return new Range(mi, true, ma, true);
+      return new Range(mi, withMin, ma, withMax);
     }
     public static Range numericRange(Number mi, Number ma) {
       return numericRange(mi, true, ma, true);

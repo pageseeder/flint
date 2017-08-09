@@ -100,10 +100,12 @@ public class StringIntervalFacet extends FlexibleIntervalFacet {
       if (lowerLimit && upperLimit) {
         return Interval.stringInterval(lower, this._includeMin, upper, this._includeMax);
       }
-      from = to;
       // safety check
       if (forward  && upperLimit) return null;
       if (!forward && lowerLimit) return null;
+      // not in any interval that can be computed with ascii characters
+      if (from.equals(to)) return null;
+      from = to;
     }
   }
 
@@ -136,7 +138,7 @@ public class StringIntervalFacet extends FlexibleIntervalFacet {
         char ic = interval.toLowerCase().charAt(i);
         c += (ic - 'a' + 1) * (increase ? 1 : -1);
         // deal with edges: .. - 0 - 9 - ... - A - Z - ... - a - z - ...
-        if (c < '0') c = '.';
+        if (c < '0') c = ' ';
         if (c > '9' && c < 'A') c = increase ? 'A' : '9';
         if (c > 'Z' && c < 'a') c = increase ? 'a' : 'Z';
         if (c > 'z') c = '~';
