@@ -246,7 +246,7 @@ public class DateIntervalFacet extends FlexibleIntervalFacet {
     }
 
     public Builder end(OffsetDateTime endDate) {
-      this.start = endDate;
+      this.end = endDate;
       return this;
     }
 
