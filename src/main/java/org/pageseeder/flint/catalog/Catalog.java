@@ -165,7 +165,8 @@ public class Catalog implements XMLWritable {
                this.boost      == entry.boost &&
                this.num        == entry.num &&
                this.docValues  == entry.docValues &&
-               this.dateFormat == entry.dateFormat;
+               ((this.dateFormat == null && entry.dateFormat == null) ||
+                (this.dateFormat != null && this.dateFormat.equals(entry.dateFormat)));
       }
       return false;
     }
