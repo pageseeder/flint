@@ -68,14 +68,9 @@ public class DateIntervalFacet extends FlexibleIntervalFacet {
   private final OffsetDateTime _start;
 
   /**
-   * If the lower limit of the interval is included
+   * The end date
    */
-  private final boolean _includeMin;
-
-  /**
-   * If the upper limit of the interval is included
-   */
-  private final boolean _includeMax;
+  private final OffsetDateTime _end;
 
   /**
    * Creates a new facet with the specified name;
@@ -83,14 +78,13 @@ public class DateIntervalFacet extends FlexibleIntervalFacet {
    * @param name     The name of the facet.
    * @param maxterms The maximum number of terms to return
    */
-  private DateIntervalFacet(String name, OffsetDateTime start, int maxIntervals, Resolution resolution, Period p, Duration d, boolean includeMin, boolean includeMax) {
-    super(name, Dates.toString(start, resolution), maxIntervals);
+  private DateIntervalFacet(String name, OffsetDateTime start, OffsetDateTime end, int maxIntervals, Resolution resolution, Period p, Duration d, boolean includeMin, boolean includeLastMax) {
+    super(name, Dates.toString(start, resolution), Dates.toString(end, resolution), includeMin, includeLastMax, maxIntervals);
     this._start = start;
+    this._end = end;
     this._resolution = resolution;
     this._intervalDate = p;
     this._intervalTime = d;
-    this._includeMin = includeMin;
-    this._includeMax = includeMax;
   }
 
   /**
@@ -134,26 +128,41 @@ public class DateIntervalFacet extends FlexibleIntervalFacet {
     boolean forward = date.isAfter(this._start);
     OffsetDateTime from = this._start;
     while (true) {
-      OffsetDateTime to;
-      if (forward) {
-        to = this._intervalDate == null ? from : from.plus(this._intervalDate);
-        to = this._intervalTime == null ? to : to.plus(this._intervalTime);
-      } else {
-        to = this._intervalDate == null ? from : from.minus(this._intervalDate);
-        to = this._intervalTime == null ? to : to.minus(this._intervalTime);
-      }
+      OffsetDateTime to = next(from, forward);
       OffsetDateTime lower = forward ? from : to;
       OffsetDateTime upper = forward ? to : from;
-      boolean lowerLimit = date.isAfter(lower)  || (this._includeMin && date.equals(lower));
-      boolean upperLimit = date.isBefore(upper) || (this._includeMax && date.equals(upper));
-      if (lowerLimit && upperLimit) {
-        return Interval.dateInterval(new Date(lower.toEpochSecond() * 1000), this._includeMin, new Date(upper.toEpochSecond() * 1000), this._includeMax, this._resolution);
+      // make sure we're still within limits
+      if (this._end != null) {
+        if (lower.isAfter(this._end)    || lower.equals(this._end) ||
+            upper.isBefore(this._start) || upper.equals(this._start))
+          return null;
       }
-      from = to;
-      // safety check
+      boolean includeMax = this._end != null && to.equals(next(to, forward)) ? includeLastUpper() : !includeLower();
+      boolean lowerLimit = date.isAfter(lower)  || (includeLower() && date.equals(lower));
+      boolean upperLimit = date.isBefore(upper) || (includeMax     && date.equals(upper));
+      if (lowerLimit && upperLimit) {
+        return Interval.dateInterval(new Date(lower.toEpochSecond() * 1000), includeLower(), new Date(upper.toEpochSecond() * 1000), includeMax, this._resolution);
+      }
+      // safety checks
       if (forward  && upperLimit) return null;
       if (!forward && lowerLimit) return null;
+      if (from.equals(to)) return null;
+      from = to;
     }
+  }
+
+  private OffsetDateTime next(OffsetDateTime from, boolean forward) {
+    OffsetDateTime to;
+    if (forward) {
+      to = this._intervalDate == null ? from : from.plus(this._intervalDate);
+      to = this._intervalTime == null ? to : to.plus(this._intervalTime);
+      if (this._end != null && to.isAfter(this._end)) to = this._end;
+    } else {
+      to = this._intervalDate == null ? from : from.minus(this._intervalDate);
+      to = this._intervalTime == null ? to : to.minus(this._intervalTime);
+      if (this._end != null && to.isBefore(this._start)) to = this._start;
+    }
+    return to;
   }
 
   @Override
@@ -180,9 +189,11 @@ public class DateIntervalFacet extends FlexibleIntervalFacet {
 
     private OffsetDateTime start = null;
 
+    private OffsetDateTime end = null;
+
     private boolean includeMin = true;
 
-    private boolean includeMax = false;
+    private boolean includeLastMax = true;
 
     private Period intervalDate = null;
 
@@ -204,8 +215,8 @@ public class DateIntervalFacet extends FlexibleIntervalFacet {
       return this;
     }
 
-    public Builder includeMax(boolean include) {
-      this.includeMax = include;
+    public Builder includeLastMax(boolean include) {
+      this.includeLastMax = include;
       return this;
     }
 
@@ -234,6 +245,16 @@ public class DateIntervalFacet extends FlexibleIntervalFacet {
       return this;
     }
 
+    public Builder end(OffsetDateTime endDate) {
+      this.start = endDate;
+      return this;
+    }
+
+    public Builder end(Date endDate) {
+      this.end = OffsetDateTime.ofInstant(Instant.ofEpochMilli(endDate.getTime()), ZoneId.of("GMT"));
+      return this;
+    }
+
     public Builder start(OffsetDateTime startDate) {
       this.start = startDate;
       return this;
@@ -244,7 +265,7 @@ public class DateIntervalFacet extends FlexibleIntervalFacet {
       if (this.resolution == null) throw new NullPointerException("Must have a resolution");
       if (this.start == null) throw new NullPointerException("Must have a start date");
       if (this.intervalTime == null && this.intervalDate == null) throw new NullPointerException("Must have a valid interval (period or duration)");
-      return new DateIntervalFacet(this.name, this.start, this.maxIntervals, this.resolution, this.intervalDate, this.intervalTime, this.includeMin, this.includeMax);
+      return new DateIntervalFacet(this.name, this.start, this.end, this.maxIntervals, this.resolution, this.intervalDate, this.intervalTime, this.includeMin, this.includeLastMax);
     }
   }
 

@@ -98,8 +98,8 @@ public class DateIntervalFacetTest {
   public void testFacetsNoQuery() throws IndexException, IOException, ParseException {
     DateIntervalFacet facet = new DateIntervalFacet.Builder().name("facet1").resolution(day_resolution).intervalDate(ONE_MONTHS).start(format.parse("2017-05-05")).build();
     facet.compute(searcher, null);
-    Assert.assertEquals(6, facet.getTotalIntervals());
     Bucket<Interval> intervals = facet.getValues();
+    Assert.assertEquals(6, facet.getTotalIntervals());
     Assert.assertEquals(6, intervals.items().size());
     Assert.assertEquals(1, intervals.count(Interval.dateInterval(format.parse("2016-12-05"), format.parse("2017-01-05"), day_resolution)));
     Assert.assertEquals(1, intervals.count(Interval.dateInterval(format.parse("2017-01-05"), format.parse("2017-02-05"), day_resolution)));
@@ -107,11 +107,21 @@ public class DateIntervalFacetTest {
     Assert.assertEquals(2, intervals.count(Interval.dateInterval(format.parse("2017-03-05"), format.parse("2017-04-05"), day_resolution)));
     Assert.assertEquals(1, intervals.count(Interval.dateInterval(format.parse("2017-04-05"), format.parse("2017-05-05"), day_resolution)));
     Assert.assertEquals(1, intervals.count(Interval.dateInterval(format.parse("2017-05-05"), format.parse("2017-06-05"), day_resolution)));
+    facet = new DateIntervalFacet.Builder().name("facet1").resolution(day_resolution).intervalDate(ONE_MONTHS)
+        .start(format.parse("2017-02-05")).end(format.parse("2017-05-03")).build();
+    facet.compute(searcher, null);
+    intervals = facet.getValues();
+    System.out.println(intervals);
+    Assert.assertEquals(3, facet.getTotalIntervals());
+    Assert.assertEquals(3, intervals.items().size());
+    Assert.assertEquals(1, intervals.count(Interval.dateInterval(format.parse("2017-02-05"), format.parse("2017-03-05"), day_resolution)));
+    Assert.assertEquals(2, intervals.count(Interval.dateInterval(format.parse("2017-03-05"), format.parse("2017-04-05"), day_resolution)));
+    Assert.assertEquals(1, intervals.count(Interval.dateInterval(format.parse("2017-04-05"), true, format.parse("2017-05-03"), true, day_resolution)));
     // facets 2
     facet = new DateIntervalFacet.Builder().name("facet2").resolution(day_resolution).intervalDate(TWO_MONTHS).start(format.parse("2016-05-24")).build();
     facet.compute(searcher, null);
-    Assert.assertEquals(3, facet.getTotalIntervals());
     intervals = facet.getValues();
+    Assert.assertEquals(3, facet.getTotalIntervals());
     Assert.assertEquals(3, intervals.items().size());
     Assert.assertEquals(1, intervals.count(Interval.dateInterval(format.parse("2015-11-24"), format.parse("2016-01-24"), day_resolution)));
     Assert.assertEquals(4, intervals.count(Interval.dateInterval(format.parse("2016-01-24"), format.parse("2016-03-24"), day_resolution)));
@@ -119,8 +129,8 @@ public class DateIntervalFacetTest {
     // facets 3
     facet = new DateIntervalFacet.Builder().name("facet3").resolution(day_resolution).intervalDate(SIX_DAYS).start(format.parse("2015-01-10")).build();
     facet.compute(searcher, null);
-    Assert.assertEquals(2, facet.getTotalIntervals());
     intervals = facet.getValues();
+    Assert.assertEquals(2, facet.getTotalIntervals());
     Assert.assertEquals(2, intervals.items().size());
     Assert.assertEquals(6, intervals.count(Interval.dateInterval(format.parse("2014-12-29"), format.parse("2015-01-04"), day_resolution)));
     Assert.assertEquals(1, intervals.count(Interval.dateInterval(format.parse("2015-01-28"), format.parse("2015-02-03"), day_resolution)));

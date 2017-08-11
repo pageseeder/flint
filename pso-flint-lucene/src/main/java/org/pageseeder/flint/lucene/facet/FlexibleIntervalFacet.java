@@ -63,6 +63,21 @@ public abstract class FlexibleIntervalFacet implements XMLWritable {
   private final String _start;
 
   /**
+   * A max value not to search after
+   */
+  private final String _end;
+
+  /**
+   * If the lower limit of each interval is included
+   */
+  private final boolean _includeLower;
+
+  /**
+   * If the upper limit of the last interval is included
+   */
+  private final boolean _includeLastUpper;
+
+  /**
    * The queries used to calculate each facet.
    */
   protected transient Bucket<Interval> _bucket;
@@ -75,7 +90,7 @@ public abstract class FlexibleIntervalFacet implements XMLWritable {
   /**
    * If the facet was computed in a "flexible" way
    */
-  private transient boolean flexible = false;
+  protected transient boolean flexible = false;
 
   /**
    * The total number of intervals with results
@@ -87,11 +102,16 @@ public abstract class FlexibleIntervalFacet implements XMLWritable {
    *
    * @param name         The name of the facet.
    * @param start        The starting point when computing intervals
+   * @param end          An end value not to search past
    * @param maxIntervals The maximum number of intervals to load
    */
-  protected FlexibleIntervalFacet(String name, String start, int maxIntervals) {
+  protected FlexibleIntervalFacet(String name, String start, String end,
+      boolean includeLower, boolean includeLastUpper, int maxIntervals) {
     this._name = name;
     this._start = start;
+    this._end = end;
+    this._includeLower = includeLower;
+    this._includeLastUpper = includeLastUpper;
     this._maxIntervals = maxIntervals;
   }
 
@@ -109,6 +129,30 @@ public abstract class FlexibleIntervalFacet implements XMLWritable {
    */
   public String start() {
     return this._start;
+  }
+
+  /**
+   * Returns the end value not to search past.
+   * @return the end value not to search past.
+   */
+  public String end() {
+    return this._end;
+  }
+
+  /**
+   * Returns <code>true</code> if the lower limit of each interval is included
+   * @return <code>true</code> if the lower limit of each interval is included
+   */
+  public boolean includeLower() {
+    return this._includeLower;
+  }
+
+  /**
+   * Returns <code>true</code> if the upper limit of the last interval is included
+   * @return <code>true</code> if the upper limit of the last interval is included
+   */
+  public boolean includeLastUpper() {
+    return this._includeLastUpper;
   }
 
   /**
@@ -146,7 +190,7 @@ public abstract class FlexibleIntervalFacet implements XMLWritable {
       for (Term t : terms) {
         // find range
         Interval r = findInterval(t);
-        if (r == null) r = OTHER;
+        if (r == null) continue;
         // find count
         BooleanQuery query = new BooleanQuery();
         query.add(filtered, Occur.MUST);
@@ -244,7 +288,7 @@ public abstract class FlexibleIntervalFacet implements XMLWritable {
     for (Term t : terms) {
       // find the range
       Interval interval = findInterval(t);
-      if (interval == null) interval = OTHER;
+      if (interval == null) continue;
       // find number
       searcher.search(termToQuery(t), counter);
       int count = counter.getCount();
@@ -288,6 +332,7 @@ public abstract class FlexibleIntervalFacet implements XMLWritable {
     xml.openElement("facet", true);
     xml.attribute("name", this._name);
     xml.attribute("start", this._start);
+    if (this._end != null) xml.attribute("end", this._end);
     xml.attribute("type", getType());
     xml.attribute("flexible", String.valueOf(this.flexible));
     if (!this.flexible) {
@@ -366,7 +411,7 @@ public abstract class FlexibleIntervalFacet implements XMLWritable {
       }
     }
     public static Interval stringInterval(String mi, String ma) {
-      return stringInterval(mi, true, ma, true);
+      return stringInterval(mi, true, ma, false);
     }
     public static Interval stringInterval(String mi, boolean withMin, String ma, boolean withMax) {
       return new Interval(mi, withMin, ma, withMax);
@@ -391,5 +436,4 @@ public abstract class FlexibleIntervalFacet implements XMLWritable {
     }
   }
 
-  private static final Interval OTHER = new Interval((String) null, false, (String) null, false);
 }

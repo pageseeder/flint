@@ -206,6 +206,11 @@ import java.util.TreeSet;
     return this._considered;
   }
 
+  @Override
+  public String toString() {
+    return this._entries.toString();
+  }
+
   /**
    * An Item-Count pair used as an entry for the bucket.
    *

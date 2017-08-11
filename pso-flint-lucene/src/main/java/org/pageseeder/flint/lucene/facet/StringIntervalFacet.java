@@ -35,17 +35,7 @@ public class StringIntervalFacet extends FlexibleIntervalFacet {
   /**
    * The length of an interval
    */
-  private final String _intervalLength;
-
-  /**
-   * If the lower limit of the interval is included
-   */
-  private final boolean _includeMin;
-
-  /**
-   * If the upper limit of the interval is included
-   */
-  private final boolean _includeMax;
+  private final int _intervalLength;
 
   /**
    * If the string comparison is case sensitive
@@ -58,11 +48,10 @@ public class StringIntervalFacet extends FlexibleIntervalFacet {
    * @param name     The name of the facet.
    * @param maxterms The maximum number of terms to return
    */
-  private StringIntervalFacet(String name, String start, int maxIntervals, boolean caseSensitive, String length, boolean includeMin, boolean includeMax) {
-    super(name, start, maxIntervals);
+  private StringIntervalFacet(String name, String start, String end, int maxIntervals,
+      boolean caseSensitive, int length, boolean includeMin, boolean includeLastMax) {
+    super(name, start, end, includeMin, includeLastMax, maxIntervals);
     this._intervalLength = length;
-    this._includeMin = includeMin;
-    this._includeMax = includeMax;
     this._caseSensitive = caseSensitive;
   }
 
@@ -86,19 +75,27 @@ public class StringIntervalFacet extends FlexibleIntervalFacet {
   @Override
   protected Interval findInterval(Term t) {
     if (t == null) return null;
+    String maxTerm = end();
+    String minTerm = end() == null ? null : start();
     String termValue = t.text();
     if (termValue.isEmpty()) return null;
     // go forwards or backwards?
-    boolean forward = isAfter(termValue, start());
+    boolean forward = isAfter(termValue, start(), includeLower());
     String from = start();
     while (true) {
-      String to = next(from, this._intervalLength, forward);
+      String to = next(from, this._intervalLength, minTerm, maxTerm, forward);
       String lower = forward ? from : to;
       String upper = forward ? to   : from;
-      boolean lowerLimit = isAfter(termValue, lower);
-      boolean upperLimit = isBefore(termValue, upper);
+      boolean includeMax = maxTerm != null && to.equals(next(to, this._intervalLength, minTerm, maxTerm, forward)) ? includeLastUpper() : !includeLower();
+      // make sure we're still within limits
+      if (maxTerm != null) {
+        if (isAfter(lower, maxTerm, true) || isBefore(upper, minTerm, true))
+          return null;
+      }
+      boolean lowerLimit = isAfter(termValue, lower, includeLower());
+      boolean upperLimit = isBefore(termValue, upper, includeMax);
       if (lowerLimit && upperLimit) {
-        return Interval.stringInterval(lower, this._includeMin, upper, this._includeMax);
+        return Interval.stringInterval(lower, includeLower(), upper, includeMax);
       }
       // safety check
       if (forward  && upperLimit) return null;
@@ -120,44 +117,43 @@ public class StringIntervalFacet extends FlexibleIntervalFacet {
     xml.closeElement();
   }
 
-  private boolean isAfter(String s1, String s2) {
+  private boolean isAfter(String s1, String s2, boolean includeEquals) {
     int comparison = (this._caseSensitive ? s1.compareTo(s2) : s1.compareToIgnoreCase(s2));
-    return comparison > 0 || (this._includeMin && comparison == 0); 
+    return comparison > 0 || (includeEquals && comparison == 0); 
   }
 
-  private boolean isBefore(String s1, String s2) {
+  private boolean isBefore(String s1, String s2, boolean includeEquals) {
     int comparison = (this._caseSensitive ? s1.compareTo(s2) : s1.compareToIgnoreCase(s2));
-    return comparison < 0 || (this._includeMax && comparison == 0); 
+    return comparison < 0 || (includeEquals && comparison == 0); 
   }
 
-  private static String next(String s, String interval, boolean increase) {
-    StringBuilder increased = new StringBuilder();
-    for (int i = 0; i < s.length(); i++) {
-      char c = s.charAt(i);
-      if (i < interval.length()) {
-        char ic = interval.toLowerCase().charAt(i);
-        c += (ic - 'a' + 1) * (increase ? 1 : -1);
-        // deal with edges: .. - 0 - 9 - ... - A - Z - ... - a - z - ...
-        if (c < '0') c = ' ';
-        if (c > '9' && c < 'A') c = increase ? 'A' : '9';
-        if (c > 'Z' && c < 'a') c = increase ? 'a' : 'Z';
-        if (c > 'z') c = '~';
-      }
-      increased.append(c);
-    }
-    return increased.toString();
+  private static String next(String s, int interval, String min, String max, boolean increase) {
+    if (s.isEmpty()) return s;
+    char nextFirstChar = (char) (s.charAt(0) + ((increase ? 1 : -1) * interval));
+    // deal with edges: .. - 0 - 9 - ... - A - Z - ... - a - z - ...
+    if (nextFirstChar < '0' && min != null) return min;
+    else if (nextFirstChar < '0') nextFirstChar = '0' - 1;
+    else if (nextFirstChar > '9' && nextFirstChar < 'A') nextFirstChar = increase ? 'A' : '9';
+    else if (nextFirstChar > 'Z' && nextFirstChar < 'a') nextFirstChar = increase ? 'a' : 'Z';
+    else if (nextFirstChar > 'z' && max != null) return max;
+    else if (nextFirstChar > 'z') nextFirstChar = 'z' + 1;
+    else if (min != null && String.valueOf(nextFirstChar).compareTo(min) < 0) return min;
+    else if (max != null && String.valueOf(nextFirstChar).compareTo(max) > 0) return max;
+    return nextFirstChar + s.substring(1);
   }
 
   // Builder ------------------------------------------------------------------------------------------
   public static class Builder {
 
-    private String intervalLength = null;
+    private int intervalLength = -1;
 
     private String start = null;
 
+    private String end = null;
+
     private boolean includeMin = true;
 
-    private boolean includeMax = false;
+    private boolean includeLastMax = true;
 
     private boolean caseSensitive = true;
 
@@ -175,8 +171,8 @@ public class StringIntervalFacet extends FlexibleIntervalFacet {
       return this;
     }
 
-    public Builder includeMax(boolean include) {
-      this.includeMax = include;
+    public Builder includeLastMax(boolean include) {
+      this.includeLastMax = include;
       return this;
     }
 
@@ -185,13 +181,18 @@ public class StringIntervalFacet extends FlexibleIntervalFacet {
       return this;
     }
 
-    public Builder intervalLength(String length) {
+    public Builder intervalLength(int length) {
       this.intervalLength = length;
       return this;
     }
 
     public Builder start(String thestart) {
       this.start = thestart;
+      return this;
+    }
+
+    public Builder end(String theend) {
+      this.end = theend;
       return this;
     }
 
@@ -202,9 +203,10 @@ public class StringIntervalFacet extends FlexibleIntervalFacet {
 
     public StringIntervalFacet build() {
       if (this.name == null) throw new NullPointerException("Must have a field name");
-      if (this.start == null) throw new NullPointerException("Must have a start date");
-      if (this.intervalLength == null) throw new NullPointerException("Must have an interval length");
-      return new StringIntervalFacet(this.name, this.start, this.maxIntervals, this.caseSensitive, this.intervalLength, this.includeMin, this.includeMax);
+      if (this.start == null) throw new NullPointerException("Must have a start");
+      if (this.intervalLength <= 0) throw new NullPointerException("Must have a valid interval length");
+      return new StringIntervalFacet(this.name, this.start, this.end,
+          this.maxIntervals, this.caseSensitive, this.intervalLength, this.includeMin, this.includeLastMax);
     }
   }
 
