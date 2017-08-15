@@ -148,14 +148,9 @@ public final class IndexingThread implements Runnable {
       } finally {
         // mark job
         job.finish();
-        // tell listener that the job ended
-        this._listener.endJob(job);
         // end batch?
         IndexBatch batch = job.getBatch();
         boolean batchFinished = batch != null && batch.increaseCurrent();
-        if (batchFinished) {
-          this._listener.endBatch(job.getBatch());
-        }
         // when to update index reader and searcher
         if (io != null) {
           if (batchFinished) {
@@ -168,6 +163,11 @@ public final class IndexingThread implements Runnable {
           if (!this._indexQueue.hasJobsForIndex(job.getIndex())) {
             io.maybeCommit();
           }
+        }
+        // tell listener that the job ended
+        this._listener.endJob(job);
+        if (batchFinished) {
+          this._listener.endBatch(job.getBatch());
         }
       }
       // check the number of opened readers then
