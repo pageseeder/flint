@@ -17,7 +17,6 @@ package org.pageseeder.flint.lucene;
 
 import java.io.File;
 import java.io.IOException;
-import java.security.InvalidParameterException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -103,7 +102,7 @@ public final class LuceneIndexIO implements IndexIO {
   /**
    * The underlying index writer used by Flint for this index (there should only be one).
    */
-  private final IndexWriter _writer;
+  private IndexWriter _writer;
 
   /**
    * The underlying index writer used by Flint for this index (there should only be one).
@@ -111,9 +110,19 @@ public final class LuceneIndexIO implements IndexIO {
   private ReaderManager _reader;
 
   /**
+   * The index directory
+   */
+  private final Directory _directory;
+
+  /**
+   * The analyzer used for the writer
+   */
+  private final Analyzer _analyzer;
+
+  /**
    * A search manager using this writer.
    */
-  private final SearcherManager _searcher;
+  private SearcherManager _searcher;
 
   private Integer writing = 0;
   private Integer committing = 0;
@@ -128,33 +137,10 @@ public final class LuceneIndexIO implements IndexIO {
    * @throws IndexException if opening the index failed
    */
   public LuceneIndexIO(Directory dir, Analyzer analyzer) throws IndexException {
+    this._analyzer = analyzer;
+    this._directory = dir;
     try {
-      // create it?
-      boolean createIt = !DirectoryReader.indexExists(dir);
-      // read only?
-      boolean readonly = isReadOnly(dir);
-      // find directory
-      if (readonly && createIt)
-        throw new IndexException("Cannot create index location ", new InvalidParameterException());
-      if (readonly) {
-        this._writer = null;
-        this._reader = new ReaderManager(dir);
-        this._searcher = new SearcherManager(dir, FACTORY);
-      } else {
-        // create writer
-        IndexWriterConfig config = new IndexWriterConfig(analyzer);
-        ConcurrentMergeScheduler merger = new ConcurrentMergeScheduler();
-//        merger.setMaxMergesAndThreads(maxMergeCount, maxThreadCount);
-        config.setMergeScheduler(merger);
-        if (createIt) config.setOpenMode(OpenMode.CREATE);
-        this._writer = new IndexWriter(dir, config);
-        if (createIt) this._writer.commit();
-        boolean applyAllDeletes = true;
-        // create searcher
-        this._searcher = new SearcherManager(this._writer, applyAllDeletes, FACTORY);
-        // create reader
-        this._reader = new ReaderManager(this._writer, applyAllDeletes);
-      }
+      open();
     } catch (IOException ex) {
       throw new IndexException("Failed to create writer on index", ex);
     }
@@ -173,7 +159,6 @@ public final class LuceneIndexIO implements IndexIO {
     // add it to list of opened indexes
     OpenIndexManager.add(this);
   }
-
 
   public long getLastTimeUsed() {
     return lastTimeUsed.get();
@@ -270,9 +255,10 @@ public final class LuceneIndexIO implements IndexIO {
    * @throws IndexException should any error be thrown by Lucene.
    */
   public synchronized boolean clearIndex() throws IndexException {
-    if (this._writer == null|| isState(State.CLOSING) || isState(State.CLOSED)) return false;
-    this.startWriting();
+    if (this._writer == null|| isState(State.CLOSING)) return false;
     try {
+      if (isState(State.CLOSED)) open();
+      startWriting();
       this._writer.deleteAll();
       this.lastTimeUsed.set(System.currentTimeMillis());
       state(State.DIRTY);
@@ -294,11 +280,12 @@ public final class LuceneIndexIO implements IndexIO {
    * @throws IndexException should any error be thrown by Lucene.
    */
   public synchronized boolean deleteDocuments(DeleteRule rule) throws IndexException {
-    if (this._writer == null|| isState(State.CLOSING) || isState(State.CLOSED)) return false;
+    if (this._writer == null|| isState(State.CLOSING)) return false;
     if (!(rule instanceof LuceneDeleteRule)) return false;
-    startWriting();
     LuceneDeleteRule drule = (LuceneDeleteRule) rule;
     try {
+      if (isState(State.CLOSED)) open();
+      startWriting();
       if (drule.useTerm()) {
         this._writer.deleteDocuments(drule.toTerm());
       } else {
@@ -329,15 +316,16 @@ public final class LuceneIndexIO implements IndexIO {
    * @throws IndexException should any error be thrown by Lucene
    */
   public synchronized boolean updateDocuments(DeleteRule rule, List<FlintDocument> documents) throws IndexException {
-    if (this._writer == null || isState(State.CLOSING) || isState(State.CLOSED)) return false;
+    if (this._writer == null || isState(State.CLOSING)) return false;
     LuceneDeleteRule drule;
     if (rule == null) drule = null;
     else {
       if (!(rule instanceof LuceneDeleteRule)) return false;
       drule = (LuceneDeleteRule) rule;
     }
-    startWriting();
     try {
+      if (isState(State.CLOSED)) open();
+      startWriting();
       List<Document> docs = LuceneUtils.toDocuments(documents);
       // delete?
       if (rule != null) {
@@ -377,9 +365,10 @@ public final class LuceneIndexIO implements IndexIO {
    */
   public synchronized boolean updateDocValues(Term term, Field... newFields) throws IndexException {
     // check state
-    if (this._writer == null || isState(State.CLOSING) || isState(State.CLOSED)) return false;
-    startWriting();
+    if (this._writer == null || isState(State.CLOSING)) return false;
     try {
+      if (isState(State.CLOSED)) open();
+      startWriting();
       this._writer.updateDocValues(term, newFields);
       // set state
       this.lastTimeUsed.set(System.currentTimeMillis());
@@ -393,8 +382,9 @@ public final class LuceneIndexIO implements IndexIO {
   }
 
   public IndexSearcher bookSearcher() {
-    if (isState(State.CLOSED) || isState(State.CLOSING)) return null;
+    if (isState(State.CLOSING)) return null;
     try {
+      if (isState(State.CLOSED)) open();
       return this._searcher.acquire();
     } catch (IOException ex) {
       LOGGER.error("Failed to book searcher", ex);
@@ -412,8 +402,9 @@ public final class LuceneIndexIO implements IndexIO {
   }
 
   public IndexReader bookReader() {
-    if (isState(State.CLOSED) || isState(State.CLOSING)) return null;
+    if (isState(State.CLOSING)) return null;
     try {
+      if (isState(State.CLOSED)) open();
       return this._reader.acquire();
     } catch (IOException ex) {
       LOGGER.error("Failed to book reader", ex);
@@ -480,6 +471,32 @@ public final class LuceneIndexIO implements IndexIO {
 
   private void endWriting() {
     synchronized(this.writing) { this.writing--; }
+  }
+
+  private void open() throws IOException {
+    // create it?
+    boolean createIt = !DirectoryReader.indexExists(this._directory);
+    // read only?
+    boolean readonly = isReadOnly(this._directory);
+    if (readonly) {
+      this._writer = null;
+      this._reader = new ReaderManager(this._directory);
+      this._searcher = new SearcherManager(this._directory, FACTORY);
+    } else {
+      // create writer
+      IndexWriterConfig config = new IndexWriterConfig(this._analyzer);
+      ConcurrentMergeScheduler merger = new ConcurrentMergeScheduler();
+//      merger.setMaxMergesAndThreads(maxMergeCount, maxThreadCount);
+      config.setMergeScheduler(merger);
+      if (createIt) config.setOpenMode(OpenMode.CREATE);
+      this._writer = new IndexWriter(this._directory, config);
+      if (createIt) this._writer.commit();
+      boolean applyAllDeletes = true;
+      // create searcher
+      this._searcher = new SearcherManager(this._writer, applyAllDeletes, FACTORY);
+      // create reader
+      this._reader = new ReaderManager(this._writer, applyAllDeletes);
+    }
   }
 
   // static helpers
