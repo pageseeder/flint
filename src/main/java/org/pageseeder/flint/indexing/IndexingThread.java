@@ -131,7 +131,9 @@ public final class IndexingThread implements Runnable {
       try {
         // clear job?
         if (job.isClearJob()) {
-          try {
+          if (Thread.currentThread().isInterrupted())
+            success = false;
+          else try {
             success = io.clearIndex();
           } catch (Exception ex) {
             this._listener.error(job, "Failed to clear index", ex);
@@ -193,7 +195,9 @@ public final class IndexingThread implements Runnable {
 
     // check if we should delete the document
     if (content.isDeleted()) {
-      try {
+      if (Thread.currentThread().isInterrupted())
+        return false;
+      else try {
         // delete docs from index
         io.deleteDocuments(content.getDeleteRule());
       } catch (Exception ex) {
@@ -226,7 +230,9 @@ public final class IndexingThread implements Runnable {
       }
     }
 
-    try {
+    if (Thread.currentThread().isInterrupted())
+      return false;
+    else try {
       // add docs to index
       if (!io.updateDocuments(content.getDeleteRule(), documents))
         this._listener.warn(job, "Failed to add Lucene Documents to Index");
