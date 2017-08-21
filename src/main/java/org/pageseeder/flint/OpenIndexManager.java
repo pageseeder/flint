@@ -89,6 +89,7 @@ public final class OpenIndexManager {
    */
   public static void closeOldReaders() {
     if (System.currentTimeMillis() - LAST_CHECK > DELAY_BETWEEN_CHECKS) {
+      LAST_CHECK = System.currentTimeMillis();
       while (OPEN_INDEXES.size() > maxOpenedIndexes) {
         // get the oldest one
         IndexIO or = Collections.max(OPEN_INDEXES.values(), OPEN_INDEX_COMPARATOR);
@@ -100,7 +101,6 @@ public final class OpenIndexManager {
           LOGGER.error("Failed closing an opened index {}", or.hashCode());
         }
       }
-      LAST_CHECK = System.currentTimeMillis();
     }
   }
 
