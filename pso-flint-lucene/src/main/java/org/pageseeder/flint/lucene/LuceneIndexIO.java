@@ -156,8 +156,6 @@ public final class LuceneIndexIO implements IndexIO {
     } catch (IOException ex) {
       LOGGER.error("Failed to load last index commit date", ex);
     }
-    // add it to list of opened indexes
-    OpenIndexManager.add(this);
   }
 
   public long getLastTimeUsed() {
@@ -497,6 +495,8 @@ public final class LuceneIndexIO implements IndexIO {
       // create reader
       this._reader = new ReaderManager(this._writer, applyAllDeletes);
     }
+    // add it to list of opened indexes
+    OpenIndexManager.add(this);
   }
 
   // static helpers
