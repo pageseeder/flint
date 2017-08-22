@@ -283,14 +283,16 @@ public class FlintConfig {
     this._directory = directory;
     this._ixml = ixml;
     // solr?
-    String url = GlobalSettings.get("flint.solr.url");
+    String url = GlobalSettings.get("flint.solr.url", GlobalSettings.get("flint.solr")); // legacy
     String zkh = GlobalSettings.get("flint.solr.zookeeper");
     this._useSolr = url != null;
     if (this._useSolr) {
       Collection<String> zkhosts = new ArrayList<>();
-      for (String z : zkh.split(",")) {
-        if (z != null && !z.trim().isEmpty())
-          zkhosts.add(z.trim());
+      if (zkh != null) {
+        for (String z : zkh.split(",")) {
+          if (z != null && !z.trim().isEmpty())
+            zkhosts.add(z.trim());
+        }
       }
       SolrFlintConfig.setup(ixml, url, zkhosts);
     }
