@@ -159,7 +159,7 @@ public final class LuceneIndexIO implements IndexIO {
   }
 
   public long getLastTimeUsed() {
-    return lastTimeUsed.get();
+    return this.lastTimeUsed.get();
   }
 
   /**
@@ -497,6 +497,8 @@ public final class LuceneIndexIO implements IndexIO {
     }
     // add it to list of opened indexes
     OpenIndexManager.add(this);
+    // set state to clean
+    state(State.CLEAN);
   }
 
   // static helpers
