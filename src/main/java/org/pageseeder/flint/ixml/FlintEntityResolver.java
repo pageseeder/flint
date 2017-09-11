@@ -43,11 +43,16 @@ import org.xml.sax.SAXException;
 public final class FlintEntityResolver implements EntityResolver {
 
   /**
+   * The old prefix used by Flint for all public identifiers.
+   */
+  public static final String PUBLIC_ID_PREFIX_LEGACY = "-//Weborganic//DTD::Flint Index Documents ";
+
+  /**
    * The prefix used by Flint for all public identifiers.
    *
-   * Public identifiers starting with any other prefix will be ignored.
+   * Public identifiers starting with any other prefix than this one or the legacy one will be ignored.
    */
-  public static final String PUBLIC_ID_PREFIX = "-//Weborganic//DTD::Flint ";
+  public static final String PUBLIC_ID_PREFIX = "-//Flint//DTD::Index Documents ";
 
   /**
    * The suffix used by Flint for all public identifiers.
@@ -104,10 +109,18 @@ public final class FlintEntityResolver implements EntityResolver {
    */
   protected static String toFileName(String publicId) {
     if (publicId == null) return null;
-    if (!publicId.startsWith(PUBLIC_ID_PREFIX)) return null;
-    int length = publicId.endsWith(PUBLIC_ID_SUFFIX)? publicId.length() - PUBLIC_ID_SUFFIX.length() : publicId.length();
-    if (length <= PUBLIC_ID_PREFIX.length()) return null;
-    return publicId.substring(PUBLIC_ID_PREFIX.length(), length).toLowerCase().replace(' ', '-') + ".dtd";
+    String version = null;
+    if (publicId.startsWith(PUBLIC_ID_PREFIX)) {
+      int length = publicId.endsWith(PUBLIC_ID_SUFFIX)? publicId.length() - PUBLIC_ID_SUFFIX.length() : publicId.length();
+      if (length <= PUBLIC_ID_PREFIX.length()) return null;
+      version = publicId.substring(PUBLIC_ID_PREFIX.length(), length);
+    } else if (publicId.startsWith(PUBLIC_ID_PREFIX_LEGACY)) {
+      int length = publicId.endsWith(PUBLIC_ID_PREFIX_LEGACY)? publicId.length() - PUBLIC_ID_PREFIX_LEGACY.length() : publicId.length();
+      if (length <= PUBLIC_ID_PREFIX_LEGACY.length()) return null;
+      version = publicId.substring(PUBLIC_ID_PREFIX_LEGACY.length(), length);
+    }
+    if (version == null) return null;
+    return "index-documents-" + version + ".dtd";
   }
 
   /**
