@@ -38,20 +38,16 @@ import org.pageseeder.xmlwriter.XMLWriter;
  * A facet implementation using a simple index field.
  *
  * @author Jean-Baptiste Reure
- * @version 14 July 2017
+ *
+ * @version 5.1.3
  */
 @Beta
-public abstract class FlexibleFieldFacet implements XMLWritable {
+public abstract class FlexibleFieldFacet extends FlexibleFacet {
 
   /**
    * The default number of facet values if not specified.
    */
   public static final int DEFAULT_MAX_NUMBER_OF_VALUES = 10;
-
-  /**
-   * The name of this facet
-   */
-  private final String _name;
 
   /**
    * The max nb of terms
@@ -62,11 +58,6 @@ public abstract class FlexibleFieldFacet implements XMLWritable {
    * The queries used to calculate each facet.
    */
   private transient Bucket<String> _bucket;
-
-  /**
-   * If the facet was computed in a "flexible" way
-   */
-  private transient boolean flexible = false;
 
   /**
    * The total number of terms found in the search results
@@ -87,16 +78,8 @@ public abstract class FlexibleFieldFacet implements XMLWritable {
    * @param maxterms The maximum number of terms to return
    */
   protected FlexibleFieldFacet(String name, int maxterms) {
-    this._name = name;
+    super(name);
     this._maxTerms = maxterms;
-  }
-
-  /**
-   * Returns the name of the field.
-   * @return the name of the field.
-   */
-  public String name() {
-    return this._name;
   }
 
   /**
@@ -276,8 +259,6 @@ public abstract class FlexibleFieldFacet implements XMLWritable {
    */
   protected abstract Query termToQuery(Term t);
 
-  protected abstract String getType();
-
   protected abstract void termToXML(String term, int cardinality, XMLWriter xml) throws IOException;
 
   @Override
@@ -311,4 +292,5 @@ public abstract class FlexibleFieldFacet implements XMLWritable {
   public boolean hasResults() {
     return this.hasResults;
   }
+
 }

@@ -42,20 +42,16 @@ import org.pageseeder.xmlwriter.XMLWriter;
  * A facet implementation using a simple index field.
  *
  * @author Jean-Baptiste Reure
- * @version 14 July 2017
+ *
+ * @version 5.1.3
  */
 @Beta
-public abstract class FlexibleIntervalFacet implements XMLWritable {
+public abstract class FlexibleIntervalFacet extends FlexibleFacet {
 
   /**
    * The default number of facet values if not specified.
    */
   public static final int DEFAULT_MAX_NUMBER_OF_VALUES = 10;
-
-  /**
-   * The name of this facet
-   */
-  private final String _name;
 
   /**
    * The point of reference for intervals
@@ -88,11 +84,6 @@ public abstract class FlexibleIntervalFacet implements XMLWritable {
   protected final int _maxIntervals;
 
   /**
-   * If the facet was computed in a "flexible" way
-   */
-  protected transient boolean flexible = false;
-
-  /**
    * The total number of intervals with results
    */
   protected transient int totalIntervals = 0;
@@ -107,20 +98,12 @@ public abstract class FlexibleIntervalFacet implements XMLWritable {
    */
   protected FlexibleIntervalFacet(String name, String start, String end,
       boolean includeLower, boolean includeLastUpper, int maxIntervals) {
-    this._name = name;
+    super(name);
     this._start = start;
     this._end = end;
     this._includeLower = includeLower;
     this._includeLastUpper = includeLastUpper;
     this._maxIntervals = maxIntervals;
-  }
-
-  /**
-   * Returns the name of the field.
-   * @return the name of the field.
-   */
-  public String name() {
-    return this._name;
   }
 
   /**
@@ -321,7 +304,7 @@ public abstract class FlexibleIntervalFacet implements XMLWritable {
    */
   protected abstract Query termToQuery(Term t);
 
-  protected abstract String getType();
+  public abstract String getType();
 
   protected abstract void intervalToXML(Interval interval, int cardinality, XMLWriter xml) throws IOException;
 

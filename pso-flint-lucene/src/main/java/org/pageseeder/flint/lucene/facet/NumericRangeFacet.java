@@ -36,7 +36,8 @@ import org.pageseeder.xmlwriter.XMLWriter;
  * A facet implementation using a simple index field.
  *
  * @author Jean-Baptiste Reure
- * @version 14 July 2017
+ *
+ * @version 5.1.3
  */
 @Beta
 public abstract class NumericRangeFacet extends FlexibleRangeFacet {
@@ -129,7 +130,7 @@ public abstract class NumericRangeFacet extends FlexibleRangeFacet {
   protected abstract Query rangeToQuery(Range r);
 
   @Override
-  protected String getType() {
+  public String getType() {
     return "numeric-range";
   }
 

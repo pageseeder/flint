@@ -27,7 +27,8 @@ import org.pageseeder.xmlwriter.XMLWriter;
  * A facet implementation using a simple index field.
  *
  * @author Jean-Baptiste Reure
- * @version 14 July 2017
+ *
+ * @version 5.1.3
  */
 @Beta
 public class StringIntervalFacet extends FlexibleIntervalFacet {
@@ -68,7 +69,7 @@ public class StringIntervalFacet extends FlexibleIntervalFacet {
   }
 
   @Override
-  protected String getType() {
+  public String getType() {
     return "string-interval";
   }
 

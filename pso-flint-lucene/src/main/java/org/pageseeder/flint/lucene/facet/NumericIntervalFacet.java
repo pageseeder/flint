@@ -36,7 +36,8 @@ import org.pageseeder.xmlwriter.XMLWriter;
  * A facet implementation using a simple index field.
  *
  * @author Jean-Baptiste Reure
- * @version 14 July 2017
+ *
+ * @version 5.1.3
  */
 @Beta
 public abstract class NumericIntervalFacet extends FlexibleIntervalFacet {
@@ -152,7 +153,7 @@ public abstract class NumericIntervalFacet extends FlexibleIntervalFacet {
   protected Query termToQuery(Term t) { return null; }
 
   @Override
-  protected String getType() {
+  public String getType() {
     return "numeric-interval";
   }
 

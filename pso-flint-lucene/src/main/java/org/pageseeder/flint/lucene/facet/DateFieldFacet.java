@@ -35,7 +35,7 @@ import org.slf4j.LoggerFactory;
  * A facet implementation using a simple index field.
  *
  * @author Christophe Lauret
- * @version 16 February 2012
+ * @version 5.1.3
  */
 @Beta
 public class DateFieldFacet extends FlexibleFieldFacet {
@@ -61,8 +61,15 @@ public class DateFieldFacet extends FlexibleFieldFacet {
   }
 
   @Override
-  protected String getType() {
+  public String getType() {
     return "date-field";
+  }
+
+  /**
+   * @return the date resolution.
+   */
+  public Resolution getResolution() {
+    return this._resolution;
   }
 
   /**

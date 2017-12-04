@@ -37,7 +37,7 @@ import org.slf4j.LoggerFactory;
  * A facet implementation using a simple index field.
  *
  * @author Jean-Baptiste Reure
- * @version 14 July 2017
+ * @version 5.1.3
  */
 @Beta
 public class DateRangeFacet extends FlexibleRangeFacet {
@@ -82,7 +82,7 @@ public class DateRangeFacet extends FlexibleRangeFacet {
   }
 
   @Override
-  protected String getType() {
+  public String getType() {
     return "date-range";
   }
 

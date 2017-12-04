@@ -27,7 +27,8 @@ import org.pageseeder.xmlwriter.XMLWriter;
  * A facet implementation using a simple index field.
  *
  * @author Jean-Baptiste Reure
- * @version 14 July 2017
+ *
+ * @version 5.1.3
  */
 @Beta
 public class StringFieldFacet extends FlexibleFieldFacet {
@@ -42,7 +43,6 @@ public class StringFieldFacet extends FlexibleFieldFacet {
     super(name, maxterms);
   }
 
-
   /**
    * Create a query for the term given, using the numeric type if there is one.
    * 
@@ -56,7 +56,7 @@ public class StringFieldFacet extends FlexibleFieldFacet {
   }
 
   @Override
-  protected String getType() {
+  public String getType() {
     return "string-field";
   }
 

@@ -42,20 +42,16 @@ import org.pageseeder.xmlwriter.XMLWriter;
  * A facet implementation using a simple index field.
  *
  * @author Jean-Baptiste Reure
- * @version 14 July 2017
+ *
+ * @version 5.1.3
  */
 @Beta
-public abstract class FlexibleRangeFacet implements XMLWritable {
+public abstract class FlexibleRangeFacet extends FlexibleFacet {
 
   /**
    * The default number of facet values if not specified.
    */
   public static final int DEFAULT_MAX_NUMBER_OF_VALUES = 10;
-
-  /**
-   * The name of this facet
-   */
-  private final String _name;
 
   /**
    * The queries used to calculate each facet.
@@ -80,15 +76,7 @@ public abstract class FlexibleRangeFacet implements XMLWritable {
    * @param r        If this facet is a date
    */
   protected FlexibleRangeFacet(String name) {
-    this._name = name;
-  }
-
-  /**
-   * Returns the name of the field.
-   * @return the name of the field.
-   */
-  public String name() {
-    return this._name;
+    super(name);
   }
 
   /**
@@ -252,7 +240,7 @@ public abstract class FlexibleRangeFacet implements XMLWritable {
     return new TermQuery(t);
   }
 
-  protected abstract String getType();
+  public abstract String getType();
 
   protected abstract void rangeToXML(Range range, int cardinality, XMLWriter xml) throws IOException;
 

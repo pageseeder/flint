@@ -40,7 +40,7 @@ import org.slf4j.LoggerFactory;
  * A facet implementation using a simple index field.
  *
  * @author Jean-Baptiste Reure
- * @version 14 July 2017
+ * @version 5.1.3
  */
 @Beta
 public class DateIntervalFacet extends FlexibleIntervalFacet {
@@ -106,7 +106,7 @@ public class DateIntervalFacet extends FlexibleIntervalFacet {
   }
 
   @Override
-  protected String getType() {
+  public String getType() {
     return "date-interval";
   }
 
