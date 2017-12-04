@@ -6,3 +6,5 @@
 /bin/
 /build/
 /.gradle/
+/pso-flint.iml
+/.idea/
