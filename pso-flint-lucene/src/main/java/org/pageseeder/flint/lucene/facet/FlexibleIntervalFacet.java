@@ -337,59 +337,74 @@ public abstract class FlexibleIntervalFacet extends FlexibleFacet<FlexibleInterv
   }
 
   public static class Interval implements Comparable<Interval> {
-    private final String min;
+    private final String _min;
     private final String max;
-    private boolean includeMin;
-    private boolean includeMax;
-    private Interval(String mi, boolean withMin, String ma, boolean withMax) {
-      this.max = ma;
-      this.min = mi;
-      this.includeMin = withMin;
-      this.includeMax = withMax;
+    private boolean _includeMin;
+    private boolean _includeMax;
+    private final Resolution _resolution;
+    private Interval(String min, boolean withMin, String max, boolean withMax) {
+      this(min, withMin, max, withMax, null);
+    }
+    private Interval(String min, boolean withMin, String max, boolean withMax, Resolution resolution) {
+      this.max = max;
+      this._min = min;
+      this._includeMin = withMin;
+      this._includeMax = withMax;
+      this._resolution = resolution;
     }
     public String getMin() {
-      return this.min;
+      return this._min;
     }
     public String getMax() {
       return this.max;
     }
-    protected boolean includeMax() {
-      return this.includeMax;
+
+    public String getFormattedMin() {
+      return this._resolution != null? toDateString(this._min, this._resolution) : this._min;
     }
-    protected boolean includeMin() {
-      return this.includeMin;
+    public String getFormattedMax() {
+      return this._resolution != null? toDateString(this.max, this._resolution) : this.max;
     }
+
+    public boolean includeMax() {
+      return this._includeMax;
+    }
+    public boolean includeMin() {
+      return this._includeMin;
+    }
+
     @Override
     public String toString() {
-      return (this.includeMin?'[':'{')+this.min+'-'+this.max+(this.includeMax?']':'}');
+      return (this._includeMin ?'[':'{')+this._min +'-'+this.max+(this._includeMax ?']':'}');
     }
+
     @Override
     public boolean equals(Object obj) {
       if (obj instanceof Interval) {
         Interval r = (Interval) obj;
-        return ((r.min == null && this.min == null) || (r.min != null && r.min.equals(this.min))) &&
+        return ((r._min == null && this._min == null) || (r._min != null && r._min.equals(this._min))) &&
                ((r.max == null && this.max == null) || (r.max != null && r.max.equals(this.max))) &&
-               this.includeMin == r.includeMin && this.includeMax == r.includeMax;
+               this._includeMin == r._includeMin && this._includeMax == r._includeMax;
       }
       return false;
     }
     @Override
     public int hashCode() {
-      return (this.min != null ? this.min.hashCode() * 13 : 13) +
+      return (this._min != null ? this._min.hashCode() * 13 : 13) +
              (this.max != null ? this.max.hashCode() * 11 : 11) +
-             (this.includeMin ? 17 : 7) +
-             (this.includeMax ? 5  : 3);
+             (this._includeMin ? 17 : 7) +
+             (this._includeMax ? 5  : 3);
     }
     @Override
     public int compareTo(Interval o) {
-      if (this.min == null) {
-        if (o.min != null) return -1;
+      if (this._min == null) {
+        if (o._min != null) return -1;
         if (this.max == null) return -1;
         if (o.max == null) return 1;
         return this.max.compareTo(o.max);
       } else {
-        if (o.min == null) return 1;
-        return this.min.compareTo(o.min);
+        if (o._min == null) return 1;
+        return this._min.compareTo(o._min);
       }
     }
     public static Interval stringInterval(String mi, String ma) {
@@ -414,7 +429,7 @@ public abstract class FlexibleIntervalFacet extends FlexibleFacet<FlexibleInterv
       return dateInterval(mi, true, ma, false, res);
     }
     public static Interval dateInterval(OffsetDateTime mi, boolean withMin, OffsetDateTime ma, boolean withMax, Resolution res) {
-      return new Interval(Dates.toString(mi, res), withMin, Dates.toString(ma, res), withMax);
+      return new Interval(Dates.toString(mi, res), withMin, Dates.toString(ma, res), withMax, res);
     }
   }
 

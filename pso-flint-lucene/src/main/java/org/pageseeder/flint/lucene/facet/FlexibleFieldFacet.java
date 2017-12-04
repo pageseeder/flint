@@ -16,8 +16,10 @@
 package org.pageseeder.flint.lucene.facet;
 
 import java.io.IOException;
+import java.text.ParseException;
 import java.util.List;
 
+import org.apache.lucene.document.DateTools;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.BooleanQuery;
@@ -31,6 +33,7 @@ import org.pageseeder.flint.lucene.search.Terms;
 import org.pageseeder.flint.lucene.util.Beta;
 import org.pageseeder.flint.lucene.util.Bucket;
 import org.pageseeder.flint.lucene.util.Bucket.Entry;
+import org.pageseeder.flint.lucene.util.Dates;
 import org.pageseeder.xmlwriter.XMLWriter;
 
 /**

@@ -1,7 +1,11 @@
 package org.pageseeder.flint.lucene.facet;
 
+import org.apache.lucene.document.DateTools;
 import org.pageseeder.flint.lucene.util.Bucket;
+import org.pageseeder.flint.lucene.util.Dates;
 import org.pageseeder.xmlwriter.XMLWritable;
+
+import java.text.ParseException;
 
 /**
  * Base class for all flexible facets implementations.
@@ -57,4 +61,13 @@ public abstract class FlexibleFacet<T> implements XMLWritable {
    * @return the type of facet.
    */
   public abstract Bucket<T> getValues();
+
+  final static String toDateString(String date, DateTools.Resolution resolution) {
+    try {
+      return Dates.format(DateTools.stringToDate(date), resolution);
+    } catch (ParseException ex) {
+      // should not happen as the string is coming from the date formatter in the first place
+      throw new IllegalArgumentException(ex);
+    }
+  }
 }

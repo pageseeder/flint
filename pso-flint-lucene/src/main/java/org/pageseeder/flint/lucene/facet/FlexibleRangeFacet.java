@@ -16,11 +16,13 @@
 package org.pageseeder.flint.lucene.facet;
 
 import java.io.IOException;
+import java.text.ParseException;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.lucene.document.DateTools;
 import org.apache.lucene.document.DateTools.Resolution;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BooleanClause.Occur;
@@ -275,80 +277,97 @@ public abstract class FlexibleRangeFacet extends FlexibleFacet<FlexibleRangeFace
   }
 
   public static class Range implements Comparable<Range> {
-    private final String min;
-    private final String max;
-    private boolean includeMin;
-    private boolean includeMax;
-    private Range(String mi, boolean withMin, String ma, boolean withMax) {
-      this.max = ma;
-      this.min = mi;
-      this.includeMin = withMin;
-      this.includeMax = withMax;
+    private final String _min;
+    private final String _max;
+    private boolean _includeMin;
+    private boolean _includeMax;
+    private Resolution _resolution;
+    private Range(String min, boolean withMin, String max, boolean withMax) {
+      this(min, withMin, max, withMax, null);
+    }
+    private Range(String min, boolean withMin, String max, boolean withMax, Resolution resolution) {
+      this._max = max;
+      this._min = min;
+      this._includeMin = withMin;
+      this._includeMax = withMax;
     }
     public String getMin() {
-      return this.min;
+      return this._min;
     }
     public String getMax() {
-      return this.max;
+      return this._max;
     }
-    protected boolean includeMax() {
-      return this.includeMax;
+    public String getFormattedMin() {
+      return this._resolution != null? toDateString(this._min, this._resolution) : this._min;
     }
-    protected boolean includeMin() {
-      return this.includeMin;
+    public String getFormattedMax() {
+      return this._resolution != null? toDateString(this._max, this._resolution) : this._max;
     }
+    public boolean includeMax() {
+      return this._includeMax;
+    }
+    public boolean includeMin() {
+      return this._includeMin;
+    }
+
     @Override
     public String toString() {
-      return (this.includeMin?'[':'{')+this.min+'-'+this.max+(this.includeMax?']':'}');
+      return (this._includeMin?'[':'{')+this._min+'-'+this._max+(this._includeMax?']':'}');
     }
     @Override
     public boolean equals(Object obj) {
       if (obj instanceof Range) {
         Range r = (Range) obj;
-        return ((r.min == null && this.min == null) || (r.min != null && r.min.equals(this.min))) &&
-               ((r.max == null && this.max == null) || (r.max != null && r.max.equals(this.max))) &&
-               this.includeMin == r.includeMin && this.includeMax == r.includeMax;
+        return ((r._min == null && this._min == null) || (r._min != null && r._min.equals(this._min))) &&
+               ((r._max == null && this._max == null) || (r._max != null && r._max.equals(this._max))) &&
+               this._includeMin == r._includeMin && this._includeMax == r._includeMax;
       }
       return false;
     }
+
     @Override
     public int hashCode() {
-      return (this.min != null ? this.min.hashCode() * 13 : 13) +
-             (this.max != null ? this.max.hashCode() * 11 : 11) +
-             (this.includeMin ? 17 : 7) +
-             (this.includeMax ? 5  : 3);
+      return (this._min != null ? this._min.hashCode() * 13 : 13) +
+             (this._max != null ? this._max.hashCode() * 11 : 11) +
+             (this._includeMin ? 17 : 7) +
+             (this._includeMax ? 5  : 3);
     }
     @Override
     public int compareTo(Range o) {
-      if (this.min == null) {
-        if (o.min != null) return -1;
-        if (this.max == null) return -1;
-        if (o.max == null) return 1;
-        return this.max.compareTo(o.max);
+      if (this._min == null) {
+        if (o._min != null) return -1;
+        if (this._max == null) return -1;
+        if (o._max == null) return 1;
+        return this._max.compareTo(o._max);
       } else {
-        if (o.min == null) return 1;
-        return this.min.compareTo(o.min);
+        if (o._min == null) return 1;
+        return this._min.compareTo(o._min);
       }
     }
-    public static Range stringRange(String mi, String ma) {
-      return stringRange(mi, true, ma, true);
+    public static Range stringRange(String min, String max) {
+      return stringRange(min, true, max, true);
     }
-    public static Range stringRange(String mi, boolean withMin, String ma, boolean withMax) {
-      return new Range(mi, withMin, ma, withMax);
+    public static Range stringRange(String min, boolean withMin, String max, boolean withMax) {
+      return new Range(min, withMin, max, withMax);
     }
-    public static Range numericRange(Number mi, Number ma) {
-      return numericRange(mi, true, ma, true);
+    public static Range numericRange(Number min, Number ma) {
+      return numericRange(min, true, ma, true);
     }
-    public static Range numericRange(Number mi, boolean withMin, Number ma, boolean withMax) {
-      return new Range(mi == null ? null : mi.toString(), withMin, ma == null ? null : ma.toString(), withMax);
+    public static Range numericRange(Number min, boolean withMin, Number ma, boolean withMax) {
+      return new Range(min == null ? null : min.toString(), withMin, ma == null ? null : ma.toString(), withMax);
     }
-    public static Range dateRange(Date mi, Date ma, Resolution res) {
-      return dateRange(mi, true, ma, true, res);
+    public static Range dateRange(Date min, Date max, Resolution res) {
+      return dateRange(min, true, max, true, res);
     }
-    public static Range dateRange(Date mi, boolean withMin, Date ma, boolean withMax, Resolution res) {
-      return new Range(Dates.toString(mi, res), withMin, Dates.toString(ma, res), withMax);
+    public static Range dateRange(Date min, boolean withMin, Date max, boolean withMax, Resolution res) {
+      return new Range(Dates.toString(min, res), withMin, Dates.toString(max, res), withMax, res);
     }
   }
 
+  public static boolean isOther(Range range) {
+    return range == OTHER;
+  }
+
   protected static final Range OTHER = new Range((String) null, false, (String) null, false);
+
 }
