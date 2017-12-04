@@ -45,7 +45,7 @@ import org.pageseeder.xmlwriter.XMLWriter;
  * @version 5.1.3
  */
 @Beta
-public abstract class FlexibleIntervalFacet extends FlexibleFacet {
+public abstract class FlexibleIntervalFacet extends FlexibleFacet<FlexibleIntervalFacet.Interval> {
 
   /**
    * The default number of facet values if not specified.
@@ -287,7 +287,7 @@ public abstract class FlexibleIntervalFacet extends FlexibleFacet {
     // set totals
     this.totalIntervals = intervals.size();
     // add to bucket
-    Bucket<Interval> b = new Bucket<Interval>(size);
+    Bucket<Interval> b = new Bucket<>(size);
     for (Interval interval : intervals.keySet()) {
       b.add(interval, intervals.get(interval));
     }

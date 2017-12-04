@@ -41,7 +41,7 @@ import org.pageseeder.xmlwriter.XMLWriter;
  * @version 5.1.3
  */
 @Beta
-public abstract class FlexibleFieldFacet extends FlexibleFacet {
+public abstract class FlexibleFieldFacet extends FlexibleFacet<String> {
 
   /**
    * The default number of facet values if not specified.

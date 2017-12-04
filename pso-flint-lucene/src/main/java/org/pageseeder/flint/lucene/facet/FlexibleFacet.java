@@ -1,5 +1,6 @@
 package org.pageseeder.flint.lucene.facet;
 
+import org.pageseeder.flint.lucene.util.Bucket;
 import org.pageseeder.xmlwriter.XMLWritable;
 
 /**
@@ -9,7 +10,7 @@ import org.pageseeder.xmlwriter.XMLWritable;
  *
  * @version 5.1.3
  */
-public abstract class FlexibleFacet implements XMLWritable {
+public abstract class FlexibleFacet<T> implements XMLWritable {
 
   /**
    * The name of this facet
@@ -33,6 +34,13 @@ public abstract class FlexibleFacet implements XMLWritable {
   }
 
   /**
+   * Indicates if the facet was computed in a "flexible" way.
+   */
+  public boolean isFlexible() {
+    return this.flexible;
+  }
+
+  /**
    * The type of facet.
    *
    * <p>The type is usually fixed for the implementing class.
@@ -42,10 +50,11 @@ public abstract class FlexibleFacet implements XMLWritable {
   public abstract String getType();
 
   /**
-   * Indicates if the facet was computed in a "flexible" way.
+   * The type of facet.
+   *
+   * <p>The type is usually fixed for the implementing class.
+   *
+   * @return the type of facet.
    */
-  public boolean isFlexible() {
-    return this.flexible;
-  }
-
+  public abstract Bucket<T> getValues();
 }
