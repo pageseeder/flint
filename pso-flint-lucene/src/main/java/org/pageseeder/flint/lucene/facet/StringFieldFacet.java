@@ -68,16 +68,12 @@ public class StringFieldFacet extends FlexibleFieldFacet {
     xml.closeElement();
   }
 
-  // Static helpers -------------------------------------------------------------------------------
-
   /**
    * Creates a new facet for the specified field.
    *
    * @param field The name of the facet.
    *
    * @return the corresponding Facet ready to use with a base query.
-   *
-   * @throws IOException if thrown by the reader.
    */
   public static StringFieldFacet newFacet(String field) {
     return new StringFieldFacet(field, -1);
@@ -90,8 +86,6 @@ public class StringFieldFacet extends FlexibleFieldFacet {
    * @param maxValues The maximum number of terms to return
    *
    * @return the corresponding Facet ready to use with a base query.
-   *
-   * @throws IOException if thrown by the reader.
    */
   public static StringFieldFacet newFacet(String field, int maxValues) {
     return new StringFieldFacet(field, maxValues);

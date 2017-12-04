@@ -44,9 +44,6 @@ public class DateRangeFacet extends FlexibleRangeFacet {
 
   private final static Logger LOGGER = LoggerFactory.getLogger(DateRangeFacet.class);
 
-  /**
-   * If this facet is a date
-   */
   private final Resolution _resolution;
 
   private final List<Range> _ranges = new ArrayList<>();
@@ -55,7 +52,6 @@ public class DateRangeFacet extends FlexibleRangeFacet {
    * Creates a new facet with the specified name;
    *
    * @param name     The name of the facet.
-   * @param maxterms The maximum number of terms to return
    */
   private DateRangeFacet(String name, Resolution resolution, List<Range> ranges) {
     super(name);
@@ -141,7 +137,9 @@ public class DateRangeFacet extends FlexibleRangeFacet {
     xml.closeElement();
   }
 
-  // Builder ------------------------------------------------------------------------------------------
+  // Builder
+  // ------------------------------------------------------------------------------------------
+
   public static class Builder {
 
     private final List<DateRange> dateranges = new ArrayList<>();
@@ -174,9 +172,6 @@ public class DateRangeFacet extends FlexibleRangeFacet {
 
     /**
      * Will include min and max.
-     * @param min
-     * @param max
-     * @return
      */
     public Builder addRange(Date min, Date max) {
       return addRange(min, true, max, true);
@@ -188,8 +183,8 @@ public class DateRangeFacet extends FlexibleRangeFacet {
     }
 
     public DateRangeFacet build() {
-      if (this.name == null) throw new NullPointerException("Must have a field name");
-      if (this.resolution == null) throw new NullPointerException("Must have a resolution");
+      if (this.name == null) throw new IllegalStateException("Must have a field name");
+      if (this.resolution == null) throw new IllegalStateException("Must have a resolution");
       for (DateRange dr : this.dateranges) {
         this.ranges.add(Range.dateRange(dr.min, dr.withMin, dr.max, dr.withMax, this.resolution));
       }

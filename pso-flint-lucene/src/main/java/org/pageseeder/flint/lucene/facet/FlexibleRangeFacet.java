@@ -35,7 +35,6 @@ import org.pageseeder.flint.lucene.util.Beta;
 import org.pageseeder.flint.lucene.util.Bucket;
 import org.pageseeder.flint.lucene.util.Bucket.Entry;
 import org.pageseeder.flint.lucene.util.Dates;
-import org.pageseeder.xmlwriter.XMLWritable;
 import org.pageseeder.xmlwriter.XMLWriter;
 
 /**
@@ -56,7 +55,7 @@ public abstract class FlexibleRangeFacet extends FlexibleFacet {
   /**
    * The queries used to calculate each facet.
    */
-  protected transient Bucket<Range> _bucket;
+  protected transient Bucket<Range> bucket;
 
   /**
    * If the facet was computed in a "flexible" way
@@ -72,8 +71,6 @@ public abstract class FlexibleRangeFacet extends FlexibleFacet {
    * Creates a new facet with the specified name;
    *
    * @param name     The name of the facet.
-   * @param numeric  If this facet is numeric
-   * @param r        If this facet is a date
    */
   protected FlexibleRangeFacet(String name) {
     super(name);
@@ -129,11 +126,11 @@ public abstract class FlexibleRangeFacet extends FlexibleFacet {
       }
       this.totalRanges = ranges.size();
       // add to bucket
-      Bucket<Range> b = new Bucket<Range>(size);
+      Bucket<Range> b = new Bucket<>(size);
       for (Range r : ranges.keySet()) {
         b.add(r, ranges.get(r));
       }
-      this._bucket = b;
+      this.bucket = b;
     }
   }
 
@@ -144,7 +141,7 @@ public abstract class FlexibleRangeFacet extends FlexibleFacet {
    *
    * <p>Defaults to 10.
    *
-   * @see #compute(Searcher, Query, int)
+   * @see #compute(IndexSearcher, Query, int)
    *
    * @param searcher the index search to use.
    * @param base     the base query.
@@ -162,7 +159,7 @@ public abstract class FlexibleRangeFacet extends FlexibleFacet {
    *
    * <p>Defaults to 10.
    *
-   * @see #compute(Searcher, Query, int)
+   * @see #compute(IndexSearcher, Query, int)
    *
    * @param searcher the index search to use.
    * @param base     the base query.
@@ -180,7 +177,7 @@ public abstract class FlexibleRangeFacet extends FlexibleFacet {
    *
    * <p>Defaults to 10.
    *
-   * @see #computeFlexible(IndexSearcher, Query, List, int)
+   * @see #compute(IndexSearcher, Query, List, int)
    *
    * @param searcher the index search to use.
    * @param base     the base query.
@@ -222,11 +219,11 @@ public abstract class FlexibleRangeFacet extends FlexibleFacet {
     // set totals
     this.totalRanges = ranges.size();
     // add to bucket
-    Bucket<Range> b = new Bucket<Range>(size);
+    Bucket<Range> b = new Bucket<>(size);
     for (Range r : ranges.keySet()) {
       b.add(r, ranges.get(r));
     }
-    this._bucket = b;
+    this.bucket = b;
   }
 
   /**
@@ -255,8 +252,8 @@ public abstract class FlexibleRangeFacet extends FlexibleFacet {
     if (!this.flexible) {
       xml.attribute("total-ranges", this.totalRanges);
     }
-    if (this._bucket != null) {
-      for (Entry<Range> e : this._bucket.entrySet()) {
+    if (this.bucket != null) {
+      for (Entry<Range> e : this.bucket.entrySet()) {
         if (e.item() == OTHER) {
           xml.openElement("remaining-range");
           xml.attribute("cardinality", e.count());
@@ -270,7 +267,7 @@ public abstract class FlexibleRangeFacet extends FlexibleFacet {
   }
 
   public Bucket<Range> getValues() {
-    return this._bucket;
+    return this.bucket;
   }
 
   public int getTotalRanges() {

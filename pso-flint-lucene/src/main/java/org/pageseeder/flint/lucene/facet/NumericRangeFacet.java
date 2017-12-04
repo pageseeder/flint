@@ -48,7 +48,6 @@ public abstract class NumericRangeFacet extends FlexibleRangeFacet {
    * Creates a new facet with the specified name;
    *
    * @param name     The name of the facet.
-   * @param maxterms The maximum number of terms to return
    */
   private NumericRangeFacet(String name, List<Range> ranges) {
     super(name);
@@ -82,7 +81,7 @@ public abstract class NumericRangeFacet extends FlexibleRangeFacet {
         }
       }
       this.totalRanges = 0;
-      Bucket<Range> bucket = new Bucket<Range>(size);
+      Bucket<Range> bucket = new Bucket<>(size);
       DocumentCounter counter = new DocumentCounter();
       for (Range r : this._ranges) {
         // build query
@@ -96,7 +95,7 @@ public abstract class NumericRangeFacet extends FlexibleRangeFacet {
         counter.reset();
         if (count > 0) this.totalRanges++;
       }
-      this._bucket = bucket;
+      this.bucket = bucket;
     }
   }
 
@@ -110,7 +109,7 @@ public abstract class NumericRangeFacet extends FlexibleRangeFacet {
    */
   protected void compute(IndexSearcher searcher, int size) throws IOException {
     this.totalRanges = 0;
-    Bucket<Range> bucket = new Bucket<Range>(size);
+    Bucket<Range> bucket = new Bucket<>(size);
     DocumentCounter counter = new DocumentCounter();
     for (Range r : this._ranges) {
       // build query
@@ -121,7 +120,7 @@ public abstract class NumericRangeFacet extends FlexibleRangeFacet {
       counter.reset();
       if (count > 0) this.totalRanges++;
     }
-    this._bucket = bucket;
+    this.bucket = bucket;
   }
 
   @Override
@@ -157,6 +156,7 @@ public abstract class NumericRangeFacet extends FlexibleRangeFacet {
           r.includeMin(), r.includeMax()).toQuery();
     }
   }
+
   private static class FloatRangeFacet extends NumericRangeFacet {
     public FloatRangeFacet(String name, List<Range> ranges) {
       super(name, ranges);
@@ -169,6 +169,7 @@ public abstract class NumericRangeFacet extends FlexibleRangeFacet {
           r.includeMin(), r.includeMax()).toQuery();
     }
   }
+
   private static class DoubleRangeFacet extends NumericRangeFacet {
     public DoubleRangeFacet(String name, List<Range> ranges) {
       super(name, ranges);
@@ -181,6 +182,7 @@ public abstract class NumericRangeFacet extends FlexibleRangeFacet {
           r.includeMin(), r.includeMax()).toQuery();
     }
   }
+
   private static class LongRangeFacet extends NumericRangeFacet {
     public LongRangeFacet(String name, List<Range> ranges) {
       super(name, ranges);
@@ -193,7 +195,10 @@ public abstract class NumericRangeFacet extends FlexibleRangeFacet {
           r.includeMin(), r.includeMax()).toQuery();
     }
   }
-  // Builder ------------------------------------------------------------------------------------------
+
+  // Builder
+  // ------------------------------------------------------------------------------------------
+
   public static class Builder {
 
     private final List<Range> ranges = new ArrayList<>();
@@ -233,8 +238,8 @@ public abstract class NumericRangeFacet extends FlexibleRangeFacet {
     }
 
     public NumericRangeFacet build() {
-      if (this.name == null) throw new NullPointerException("Must have a field name");
-      if (this.numeric == null) throw new NullPointerException("Must have a numeric type");
+      if (this.name == null) throw new IllegalStateException("Must have a field name");
+      if (this.numeric == null) throw new IllegalStateException("Must have a numeric type");
       switch (this.numeric) {
         case INT:    return new IntRangeFacet(name, ranges);
         case DOUBLE: return new DoubleRangeFacet(name, ranges);

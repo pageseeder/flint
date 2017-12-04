@@ -35,7 +35,6 @@ import org.pageseeder.flint.lucene.util.Beta;
 import org.pageseeder.flint.lucene.util.Bucket;
 import org.pageseeder.flint.lucene.util.Bucket.Entry;
 import org.pageseeder.flint.lucene.util.Dates;
-import org.pageseeder.xmlwriter.XMLWritable;
 import org.pageseeder.xmlwriter.XMLWriter;
 
 /**
@@ -74,14 +73,14 @@ public abstract class FlexibleIntervalFacet extends FlexibleFacet {
   private final boolean _includeLastUpper;
 
   /**
-   * The queries used to calculate each facet.
-   */
-  protected transient Bucket<Interval> _bucket;
-
-  /**
    * The max nb of intervals
    */
   protected final int _maxIntervals;
+
+  /**
+   * The queries used to calculate each facet.
+   */
+  protected transient Bucket<Interval> bucket;
 
   /**
    * The total number of intervals with results
@@ -196,7 +195,7 @@ public abstract class FlexibleIntervalFacet extends FlexibleFacet {
       for (Interval interval : intervals.keySet()) {
         b.add(interval, intervals.get(interval));
       }
-      this._bucket = b;
+      this.bucket = b;
     }
   }
 
@@ -207,7 +206,7 @@ public abstract class FlexibleIntervalFacet extends FlexibleFacet {
    *
    * <p>Defaults to 10.
    *
-   * @see #compute(Searcher, Query, int)
+   * @see #compute(IndexSearcher, Query, int)
    *
    * @param searcher the index search to use.
    * @param base     the base query.
@@ -225,7 +224,7 @@ public abstract class FlexibleIntervalFacet extends FlexibleFacet {
    *
    * <p>Defaults to 10.
    *
-   * @see #compute(Searcher, Query, int)
+   * @see #compute(IndexSearcher, Query, int)
    *
    * @param searcher the index search to use.
    * @param base     the base query.
@@ -243,7 +242,7 @@ public abstract class FlexibleIntervalFacet extends FlexibleFacet {
    *
    * <p>Defaults to 10.
    *
-   * @see #computeFlexible(IndexSearcher, Query, List, int)
+   * @see #compute(IndexSearcher, Query, List, int)
    *
    * @param searcher the index search to use.
    * @param base     the base query.
@@ -292,7 +291,7 @@ public abstract class FlexibleIntervalFacet extends FlexibleFacet {
     for (Interval interval : intervals.keySet()) {
       b.add(interval, intervals.get(interval));
     }
-    this._bucket = b;
+    this.bucket = b;
   }
 
   /**
@@ -321,8 +320,8 @@ public abstract class FlexibleIntervalFacet extends FlexibleFacet {
     if (!this.flexible) {
       xml.attribute("total-intervals", this.totalIntervals);
     }
-    if (this._bucket != null) {
-      for (Entry<Interval> e : this._bucket.entrySet()) {
+    if (this.bucket != null) {
+      for (Entry<Interval> e : this.bucket.entrySet()) {
         intervalToXML(e.item(), e.count(), xml);
       }
     }
@@ -330,7 +329,7 @@ public abstract class FlexibleIntervalFacet extends FlexibleFacet {
   }
 
   public Bucket<Interval> getValues() {
-    return this._bucket;
+    return this.bucket;
   }
 
   public int getTotalIntervals() {

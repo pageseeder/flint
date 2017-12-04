@@ -56,8 +56,7 @@ public abstract class NumericIntervalFacet extends FlexibleIntervalFacet {
    * Creates a new facet with the specified name;
    *
    * @param name     The name of the facet.
-   * @param maxterms The maximum number of terms to return
-   */
+   *    */
   private NumericIntervalFacet(String name, Number start, Number end, Number interval, boolean includeMin, boolean includeLastMax, int maxIntervals) {
     super(name, String.valueOf(start), String.valueOf(end), includeMin, includeLastMax, maxIntervals);
     this._interval = interval;
@@ -116,7 +115,7 @@ public abstract class NumericIntervalFacet extends FlexibleIntervalFacet {
         counter.reset();
         if (count > 0) this.totalIntervals++;
       }
-      this._bucket = bucket;
+      this.bucket = bucket;
     }
   }
 
@@ -141,7 +140,7 @@ public abstract class NumericIntervalFacet extends FlexibleIntervalFacet {
       counter.reset();
       if (count > 0) this.totalIntervals++;
     }
-    this._bucket = bucket;
+    this.bucket = bucket;
   }
 
   protected abstract Query intervalToQuery(Interval i);
@@ -188,6 +187,7 @@ public abstract class NumericIntervalFacet extends FlexibleIntervalFacet {
       return Math.min(first.intValue(), second.intValue());
     }
   }
+
   private static class FloatIntervalFacet extends NumericIntervalFacet {
     public FloatIntervalFacet(String name, float start, float end, float interval, boolean includeMin, boolean includeLastMax, int maxIntervals) {
       super(name, start, end, interval, includeMin, includeLastMax, maxIntervals);
@@ -208,6 +208,7 @@ public abstract class NumericIntervalFacet extends FlexibleIntervalFacet {
       return Math.min(first.floatValue(), second.floatValue());
     }
   }
+
   private static class DoubleIntervalFacet extends NumericIntervalFacet {
     public DoubleIntervalFacet(String name, double start, double end, double interval, boolean includeMin, boolean includeLastMax, int maxIntervals) {
       super(name, start, end, interval, includeMin, includeLastMax, maxIntervals);
@@ -228,6 +229,7 @@ public abstract class NumericIntervalFacet extends FlexibleIntervalFacet {
       return Math.min(first.doubleValue(), second.doubleValue());
     }
   }
+
   private static class LongIntervalFacet extends NumericIntervalFacet {
     public LongIntervalFacet(String name, long start, long end, long interval, boolean includeMin, boolean includeLastMax, int maxIntervals) {
       super(name, start, end, interval, includeMin, includeLastMax, maxIntervals);
@@ -248,7 +250,10 @@ public abstract class NumericIntervalFacet extends FlexibleIntervalFacet {
       return Math.min(first.longValue(), second.longValue());
     }
   }
-  // Builder ------------------------------------------------------------------------------------------
+
+  // Builder
+  // ------------------------------------------------------------------------------------------
+
   public static class Builder {
 
     private NumericType numeric = null;
@@ -308,11 +313,11 @@ public abstract class NumericIntervalFacet extends FlexibleIntervalFacet {
     }
 
     public NumericIntervalFacet build() {
-      if (this.name == null) throw new NullPointerException("Must have a field name");
-      if (this.start == null) throw new NullPointerException("Must have a start");
-      if (this.end == null) throw new NullPointerException("Must have an end");
-      if (this.interval == null || this.interval.intValue() <= 0) throw new NullPointerException("Must have an interval");
-      if (this.numeric == null) throw new NullPointerException("Must have a numeric type");
+      if (this.name == null) throw new IllegalStateException("Must have a field name");
+      if (this.start == null) throw new IllegalStateException("Must have a start");
+      if (this.end == null) throw new IllegalStateException("Must have an end");
+      if (this.interval == null || this.interval.intValue() <= 0) throw new IllegalStateException("Must have an interval");
+      if (this.numeric == null) throw new IllegalStateException("Must have a numeric type");
       switch (this.numeric) {
         case INT:    return new IntIntervalFacet(name, start.intValue(), end.intValue(), interval.intValue(), includeMin, includeLastMax, maxIntervals);
         case DOUBLE: return new DoubleIntervalFacet(name, start.doubleValue(), end.doubleValue(), interval.doubleValue(), includeMin, includeLastMax, maxIntervals);

@@ -50,14 +50,13 @@ public class DateFieldFacet extends FlexibleFieldFacet {
   /**
    * Creates a new facet with the specified name;
    *
-   * @param name     The name of the facet.
-   * @param numeric  If this facet is numeric
-   * @param r        If this facet is a date
-   * @param maxterms The maximum number of terms to return
+   * @param name       The name of the facet.
+   * @param resolution If this facet is a date
+   * @param maxterms   The maximum number of terms to return
    */
-  protected DateFieldFacet(String name, Resolution r, int maxterms) {
+  protected DateFieldFacet(String name, Resolution resolution, int maxterms) {
     super(name, maxterms);
-    this._resolution = r;
+    this._resolution = resolution;
   }
 
   @Override
@@ -112,8 +111,6 @@ public class DateFieldFacet extends FlexibleFieldFacet {
    * @param r         If this facet is a date.
    *
    * @return the corresponding Facet ready to use with a base query.
-   *
-   * @throws IOException if thrown by the reader.
    */
   public static DateFieldFacet newFacet(String field, Resolution r) {
     return new DateFieldFacet(field, r, -1);
@@ -127,8 +124,6 @@ public class DateFieldFacet extends FlexibleFieldFacet {
    * @param maxValues The maximum number of terms to return
    *
    * @return the corresponding Facet ready to use with a base query.
-   *
-   * @throws IOException if thrown by the reader.
    */
   public static DateFieldFacet newFacet(String field, Resolution r, int maxValues) {
     return new DateFieldFacet(field, r, maxValues);

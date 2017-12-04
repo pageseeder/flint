@@ -76,7 +76,6 @@ public class DateIntervalFacet extends FlexibleIntervalFacet {
    * Creates a new facet with the specified name;
    *
    * @param name     The name of the facet.
-   * @param maxterms The maximum number of terms to return
    */
   private DateIntervalFacet(String name, OffsetDateTime start, OffsetDateTime end, int maxIntervals, Resolution resolution, Period p, Duration d, boolean includeMin, boolean includeLastMax) {
     super(name, Dates.toString(start, resolution), Dates.toString(end, resolution), includeMin, includeLastMax, maxIntervals);
@@ -261,10 +260,10 @@ public class DateIntervalFacet extends FlexibleIntervalFacet {
     }
 
     public DateIntervalFacet build() {
-      if (this.name == null) throw new NullPointerException("Must have a field name");
-      if (this.resolution == null) throw new NullPointerException("Must have a resolution");
-      if (this.start == null) throw new NullPointerException("Must have a start date");
-      if (this.intervalTime == null && this.intervalDate == null) throw new NullPointerException("Must have a valid interval (period or duration)");
+      if (this.name == null) throw new IllegalStateException("Must have a field name");
+      if (this.resolution == null) throw new IllegalStateException("Must have a resolution");
+      if (this.start == null) throw new IllegalStateException("Must have a start date");
+      if (this.intervalTime == null && this.intervalDate == null) throw new IllegalStateException("Must have a valid interval (period or duration)");
       return new DateIntervalFacet(this.name, this.start, this.end, this.maxIntervals, this.resolution, this.intervalDate, this.intervalTime, this.includeMin, this.includeLastMax);
     }
   }

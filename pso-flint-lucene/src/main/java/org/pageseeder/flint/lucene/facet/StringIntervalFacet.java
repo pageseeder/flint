@@ -34,20 +34,22 @@ import org.pageseeder.xmlwriter.XMLWriter;
 public class StringIntervalFacet extends FlexibleIntervalFacet {
 
   /**
-   * The length of an interval
+   * The length of an interval.
    */
   private final int _intervalLength;
 
   /**
-   * If the string comparison is case sensitive
+   * If the string comparison is case sensitive.
    */
   private final boolean _caseSensitive;
 
   /**
    * Creates a new facet with the specified name;
    *
-   * @param name     The name of the facet.
-   * @param maxterms The maximum number of terms to return
+   * @param name  The name of the facet.
+   * @param start The start of the interval
+   * @param end   The end of the interval
+   * @param maxIntervals The maximum number of terms to return
    */
   private StringIntervalFacet(String name, String start, String end, int maxIntervals,
       boolean caseSensitive, int length, boolean includeMin, boolean includeLastMax) {
@@ -120,12 +122,12 @@ public class StringIntervalFacet extends FlexibleIntervalFacet {
 
   private boolean isAfter(String s1, String s2, boolean includeEquals) {
     int comparison = (this._caseSensitive ? s1.compareTo(s2) : s1.compareToIgnoreCase(s2));
-    return comparison > 0 || (includeEquals && comparison == 0); 
+    return comparison > 0 || (includeEquals && comparison == 0);
   }
 
   private boolean isBefore(String s1, String s2, boolean includeEquals) {
     int comparison = (this._caseSensitive ? s1.compareTo(s2) : s1.compareToIgnoreCase(s2));
-    return comparison < 0 || (includeEquals && comparison == 0); 
+    return comparison < 0 || (includeEquals && comparison == 0);
   }
 
   private static String next(String s, int interval, String min, String max, boolean increase) {
@@ -143,7 +145,9 @@ public class StringIntervalFacet extends FlexibleIntervalFacet {
     return nextFirstChar + s.substring(1);
   }
 
-  // Builder ------------------------------------------------------------------------------------------
+  // Builder
+  // ------------------------------------------------------------------------------------------
+
   public static class Builder {
 
     private int intervalLength = -1;
@@ -203,9 +207,9 @@ public class StringIntervalFacet extends FlexibleIntervalFacet {
     }
 
     public StringIntervalFacet build() {
-      if (this.name == null) throw new NullPointerException("Must have a field name");
-      if (this.start == null) throw new NullPointerException("Must have a start");
-      if (this.intervalLength <= 0) throw new NullPointerException("Must have a valid interval length");
+      if (this.name == null) throw new IllegalStateException("Must have a field name");
+      if (this.start == null) throw new IllegalStateException("Must have a start");
+      if (this.intervalLength <= 0) throw new IllegalStateException("Must have a valid interval length");
       return new StringIntervalFacet(this.name, this.start, this.end,
           this.maxIntervals, this.caseSensitive, this.intervalLength, this.includeMin, this.includeLastMax);
     }

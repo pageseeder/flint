@@ -26,7 +26,6 @@ public abstract class FlexibleFacet implements XMLWritable {
   }
 
   /**
-   * Returns the name of the field.
    * @return the name of the field.
    */
   public String name() {
@@ -36,14 +35,14 @@ public abstract class FlexibleFacet implements XMLWritable {
   /**
    * The type of facet.
    *
-   * <p>The type is usually fixed for the implementating class.</p>
+   * <p>The type is usually fixed for the implementing class.
    *
    * @return the type of facet.
    */
   public abstract String getType();
 
   /**
-   * Indicates if the facet was computed in a "flexible" way
+   * Indicates if the facet was computed in a "flexible" way.
    */
   public boolean isFlexible() {
     return this.flexible;

@@ -31,7 +31,6 @@ import org.pageseeder.flint.lucene.search.Terms;
 import org.pageseeder.flint.lucene.util.Beta;
 import org.pageseeder.flint.lucene.util.Bucket;
 import org.pageseeder.flint.lucene.util.Bucket.Entry;
-import org.pageseeder.xmlwriter.XMLWritable;
 import org.pageseeder.xmlwriter.XMLWriter;
 
 /**
@@ -57,7 +56,7 @@ public abstract class FlexibleFieldFacet extends FlexibleFacet {
   /**
    * The queries used to calculate each facet.
    */
-  private transient Bucket<String> _bucket;
+  private transient Bucket<String> bucket;
 
   /**
    * The total number of terms found in the search results
@@ -73,8 +72,6 @@ public abstract class FlexibleFieldFacet extends FlexibleFacet {
    * Creates a new facet with the specified name;
    *
    * @param name     The name of the facet.
-   * @param numeric  If this facet is numeric
-   * @param r        If this facet is a date
    * @param maxterms The maximum number of terms to return
    */
   protected FlexibleFieldFacet(String name, int maxterms) {
@@ -102,7 +99,7 @@ public abstract class FlexibleFieldFacet extends FlexibleFacet {
       // reset
       this.totalTerms = size == 0 ? -1 : 0;
       this.hasResults = false;
-      this._bucket = null;
+      this.bucket = null;
       // re-compute the query without the corresponding filter (for flexible facets)
       Query filtered = base;
       if (filters != null) {
@@ -128,7 +125,7 @@ public abstract class FlexibleFieldFacet extends FlexibleFacet {
       if (this._maxTerms > 0 && terms.size() > this._maxTerms) return;
       // loop through terms
       DocumentCounter counter = new DocumentCounter();
-      Bucket<String> bucket = new Bucket<String>(size);
+      Bucket<String> bucket = new Bucket<>(size);
       for (Term t : terms) {
         BooleanQuery query = new BooleanQuery();
         query.add(filtered, Occur.MUST);
@@ -154,7 +151,7 @@ public abstract class FlexibleFieldFacet extends FlexibleFacet {
         }
       }
       if (size != 0)
-        this._bucket = bucket;
+        this.bucket = bucket;
     }
   }
 
@@ -165,7 +162,7 @@ public abstract class FlexibleFieldFacet extends FlexibleFacet {
    *
    * <p>Defaults to 10.
    *
-   * @see #compute(Searcher, Query, int)
+   * @see #compute(IndexSearcher, Query, int)
    *
    * @param searcher the index search to use.
    * @param base     the base query.
@@ -183,7 +180,7 @@ public abstract class FlexibleFieldFacet extends FlexibleFacet {
    *
    * <p>Defaults to 10.
    *
-   * @see #compute(Searcher, Query, int)
+   * @see #compute(IndexSearcher, Query, int)
    *
    * @param searcher the index search to use.
    * @param base     the base query.
@@ -201,7 +198,7 @@ public abstract class FlexibleFieldFacet extends FlexibleFacet {
    *
    * <p>Defaults to 10.
    *
-   * @see #computeFlexible(IndexSearcher, Query, List, int)
+   * @see #compute(IndexSearcher, Query, List, int)
    *
    * @param searcher the index search to use.
    * @param base     the base query.
@@ -225,18 +222,18 @@ public abstract class FlexibleFieldFacet extends FlexibleFacet {
     if (size == 0) {
       // reset
       this.totalTerms = -1;
-      this._bucket = null;
+      this.bucket = null;
       // check if there are terms
       this.hasResults = !Terms.terms(searcher.getIndexReader(), this._name).isEmpty();
     } else {
       // reset
-      this.totalTerms = size == 0 ? -1 : 0;
+      this.totalTerms = 0;
       this.hasResults = false;
-      this._bucket = null;
+      this.bucket = null;
       // find all terms
       List<Term> terms = Terms.terms(searcher.getIndexReader(), this._name);
       if (this._maxTerms > 0 && terms.size() > this._maxTerms) return;
-      Bucket<String> bucket = new Bucket<String>(size);
+      Bucket<String> bucket = new Bucket<>(size);
       DocumentCounter counter = new DocumentCounter();
       for (Term t : terms) {
         searcher.search(termToQuery(t), counter);
@@ -246,7 +243,7 @@ public abstract class FlexibleFieldFacet extends FlexibleFacet {
         this.hasResults = true;
       }
       // set bucket
-      this._bucket = bucket;
+      this.bucket = bucket;
     }
   }
 
@@ -273,8 +270,8 @@ public abstract class FlexibleFieldFacet extends FlexibleFacet {
       xml.attribute("has-results", this.totalTerms > 0 ? "true" : "false");
       xml.attribute("total-terms", this.totalTerms);
     }
-    if (this._bucket != null) {
-      for (Entry<String> e : this._bucket.entrySet()) {
+    if (this.bucket != null) {
+      for (Entry<String> e : this.bucket.entrySet()) {
         termToXML(e.item(), e.count(), xml);
       }
     }
@@ -282,7 +279,7 @@ public abstract class FlexibleFieldFacet extends FlexibleFacet {
   }
 
   public Bucket<String> getValues() {
-    return this._bucket;
+    return this.bucket;
   }
 
   public int getTotalTerms() {

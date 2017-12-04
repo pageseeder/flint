@@ -109,18 +109,14 @@ public class StringRangeFacet extends FlexibleRangeFacet {
 
     /**
      * Will include min and max.
-     * @param min
-     * @param max
-     * @return
      */
     public Builder addRange(String min, String max) {
       return addRange(min, true, max, true);
     }
 
     public StringRangeFacet build() {
-      if (this.name == null) throw new NullPointerException("Must have a field name");
-      StringRangeFacet fr = new StringRangeFacet(this.name, this.caseSensitive, this.ranges);
-      return fr;
+      if (this.name == null) throw new IllegalStateException("Must have a field name");
+      return new StringRangeFacet(this.name, this.caseSensitive, this.ranges);
     }
   }
 }
