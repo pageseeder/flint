@@ -32,29 +32,17 @@ import org.pageseeder.xmlwriter.XMLWriter;
  * A facet implementation using a simple index field.
  *
  * @author Christophe Lauret
- * @version 16 February 2012
+ *
+ * @version 5.1.3
  */
 @Beta
-public class StringTermFilter implements Filter {
+public class StringTermFilter extends TermFilter<String> implements Filter {
 
   /**
-   * The name of the field
-   */
-  private final String _name;
-
-  /**
-   * The list of terms to filter with
-   */
-  private final Map<String, Occur> _terms = new HashMap<>();
-
-  /**
-   * Creates a new filter with the specified name;
-   *
-   * @param name    The name of the filter.
+   * Creates a new filter from the builder.
    */
   private StringTermFilter(Builder builder) {
-    this._name = builder._name;
-    this._terms.putAll(builder._terms);
+    super(builder._name, builder._terms);
   }
 
   @Override
@@ -65,10 +53,6 @@ public class StringTermFilter implements Filter {
       filterQuery.add(new TermQuery(new Term(this._name, word)), clause);
     }
     return base == null ? filterQuery : Queries.and(base, filterQuery);
-  }
-
-  public String name() {
-    return this._name;
   }
 
   @Override
@@ -91,13 +75,6 @@ public class StringTermFilter implements Filter {
 
   public static StringTermFilter newFilter(String name, String word, Occur occur) {
     return new Builder().name(name).addTerm(word, occur).build();
-  }
-
-  private static String occurToString(Occur occur) {
-    if (occur == Occur.MUST)     return "must";
-    if (occur == Occur.MUST_NOT) return "must_not";
-    if (occur == Occur.SHOULD)   return "should";
-    return "unknown";
   }
 
   public static class Builder {

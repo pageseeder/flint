@@ -33,49 +33,37 @@ import org.pageseeder.xmlwriter.XMLWriter;
  * A facet implementation using a simple index field.
  *
  * @author Christophe Lauret
- * @version 16 February 2012
+ *
+ * @version 5.1.3
  */
 @Beta
-public class NumericTermFilter implements Filter {
-
-  /**
-   * The name of the field
-   */
-  private final String _name;
+public class NumericTermFilter extends TermFilter<Number> implements Filter {
 
   /**
    * A numeric type
    */
-  private NumericType _numeric = null;
+  private NumericType _numeric;
 
   /**
-   * The list of terms to filter with
-   */
-  private final Map<Number, Occur> _values = new HashMap<>();
-
-  /**
-   * Creates a new filter with the specified name;
-   *
-   * @param name    The name of the filter.
+   * Creates a new filter from the builder.
    */
   private NumericTermFilter(Builder builder) {
-    this._name = builder._name;
+    super(builder._name, builder._values);
     this._numeric = builder._numeric;
-    this._values.putAll(builder._values);
+  }
+
+  public NumericType getNumericType() {
+    return this._numeric;
   }
 
   @Override
   public Query filterQuery(Query base) {
     BooleanQuery filterQuery = new BooleanQuery();
-    for (Number value : this._values.keySet()) {
-      Occur clause = this._values.get(value);
+    for (Number value : this._terms.keySet()) {
+      Occur clause = this._terms.get(value);
       filterQuery.add(numberToQuery(value), clause);
     }
     return base == null ? filterQuery : Queries.and(base, filterQuery);
-  }
-
-  public String name() {
-    return this._name;
   }
 
   @Override
@@ -83,10 +71,10 @@ public class NumericTermFilter implements Filter {
     xml.openElement("filter");
     xml.attribute("field", this._name);
     xml.attribute("type", "numeric");
-    for (Number value : this._values.keySet()) {
+    for (Number value : this._terms.keySet()) {
       xml.openElement("term");
       xml.attribute("text", String.valueOf(value));
-      xml.attribute("occur", occurToString(this._values.get(value)));
+      xml.attribute("occur", occurToString(this._terms.get(value)));
       xml.closeElement();
     }
     xml.closeElement();
@@ -109,7 +97,7 @@ public class NumericTermFilter implements Filter {
   /**
    * Create a query for the term given, using the numeric type if there is one.
    * 
-   * @param t the term
+   * @param value the term
    * 
    * @return the query
    */
@@ -125,13 +113,6 @@ public class NumericTermFilter implements Filter {
         return NumberParameter.newFloatParameter(this._name, NumericUtils.sortableIntToFloat((Integer) value)).toQuery();
     }
     return null;
-  }
-
-  private static String occurToString(Occur occur) {
-    if (occur == Occur.MUST)     return "must";
-    if (occur == Occur.MUST_NOT) return "must_not";
-    if (occur == Occur.SHOULD)   return "should";
-    return "unknown";
   }
 
   public static class Builder {
@@ -167,8 +148,8 @@ public class NumericTermFilter implements Filter {
     }
 
     public NumericTermFilter build() {
-      if (this._name == null) throw new NullPointerException("name");
-      if (this._numeric == null) throw new NullPointerException("numeric");
+      if (this._name == null) throw new IllegalStateException("name");
+      if (this._numeric == null) throw new IllegalStateException("numeric");
       if (this._values.isEmpty()) throw new IllegalStateException("no values to filter with!");
       return new NumericTermFilter(this);
     }

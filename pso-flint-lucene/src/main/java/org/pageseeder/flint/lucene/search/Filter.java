@@ -23,7 +23,9 @@ import org.pageseeder.xmlwriter.XMLWritable;
  * A query filter.
  *
  * @author Jean-Baptiste Reure
- * @version 16 June 2016
+ * @author Christophe Lauret
+ *
+ * @version 5.1.3
  */
 @Beta
 public interface Filter extends XMLWritable {
@@ -33,7 +35,7 @@ public interface Filter extends XMLWritable {
    * 
    * @return the name of the filter
    */
-  public String name();
+  String name();
 
   /**
    * Returns the filtered query.
@@ -42,6 +44,6 @@ public interface Filter extends XMLWritable {
    * 
    * @return the filtered query.
    */
-  public Query filterQuery(Query base);
+  Query filterQuery(Query base);
 
 }

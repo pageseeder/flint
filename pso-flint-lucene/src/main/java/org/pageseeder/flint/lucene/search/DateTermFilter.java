@@ -37,15 +37,11 @@ import org.pageseeder.xmlwriter.XMLWriter;
  * A facet implementation using a simple index field.
  *
  * @author Christophe Lauret
- * @version 16 February 2012
+ *
+ * @version 5.1.3
  */
 @Beta
-public class DateTermFilter implements Filter {
-
-  /**
-   * The name of the field
-   */
-  private final String _name;
+public class DateTermFilter extends TermFilter<OffsetDateTime> implements Filter {
 
   /**
    * If this facet is a date
@@ -53,26 +49,22 @@ public class DateTermFilter implements Filter {
   private final Resolution _resolution;
 
   /**
-   * The list of dates to filter with
-   */
-  private final Map<OffsetDateTime, Occur> _dates = new HashMap<>();
-
-  /**
-   * Creates a new filter with the specified name;
-   *
-   * @param name    The name of the filter.
+   * Creates a new filter from the builder.
    */
   private DateTermFilter(Builder builder) {
-    this._name = builder._name;
+    super(builder._name, builder._dates);
     this._resolution = builder._resolution;
-    this._dates.putAll(builder._dates);
+  }
+
+  public Resolution getResolution() {
+    return this._resolution;
   }
 
   @Override
   public Query filterQuery(Query base) {
     BooleanQuery filterQuery = new BooleanQuery();
-    for (OffsetDateTime date : this._dates.keySet()) {
-      Occur clause = this._dates.get(date);
+    for (OffsetDateTime date : this._terms.keySet()) {
+      Occur clause = this._terms.get(date);
       filterQuery.add(new DateParameter(this._name, date, this._resolution, false).toQuery(), clause);
     }
     return base == null ? filterQuery : Queries.and(base, filterQuery);
@@ -87,11 +79,11 @@ public class DateTermFilter implements Filter {
     xml.openElement("filter");
     xml.attribute("field", this._name);
     xml.attribute("type", "date");
-    for (OffsetDateTime date : this._dates.keySet()) {
+    for (OffsetDateTime date : this._terms.keySet()) {
       xml.openElement("term");
       xml.attribute("text", Dates.toString(date, this._resolution));
       xml.attribute("date", Dates.format(date, this._resolution));
-      xml.attribute("occur", occurToString(this._dates.get(date)));
+      xml.attribute("occur", occurToString(this._terms.get(date)));
       xml.closeElement();
     }
     xml.closeElement();
@@ -111,13 +103,6 @@ public class DateTermFilter implements Filter {
 
   public static DateTermFilter newFilter(String name, OffsetDateTime date, Resolution res, Occur occur) {
     return new Builder().name(name).resolution(res).addDate(date, occur).build();
-  }
-
-  private static String occurToString(Occur occur) {
-    if (occur == Occur.MUST)     return "must";
-    if (occur == Occur.MUST_NOT) return "must_not";
-    if (occur == Occur.SHOULD)   return "should";
-    return "unknown";
   }
 
   public static class Builder {
@@ -159,8 +144,8 @@ public class DateTermFilter implements Filter {
     }
 
     public DateTermFilter build() {
-      if (this._name == null) throw new NullPointerException("name");
-      if (this._resolution == null) throw new NullPointerException("resolution");
+      if (this._name == null) throw new IllegalStateException("name");
+      if (this._resolution == null) throw new IllegalStateException("resolution");
       if (this._dates.isEmpty()) throw new IllegalStateException("no dates to filter with!");
       return new DateTermFilter(this);
     }
