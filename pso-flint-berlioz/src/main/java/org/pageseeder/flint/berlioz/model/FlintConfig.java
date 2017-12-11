@@ -85,7 +85,7 @@ public class FlintConfig {
   private static ContentTranslatorFactory TRANSLATORS = new ContentTranslatorFactory() {
 
     public ContentTranslator createTranslator(String mimeType) {
-      if ("psml".equals(mimeType))
+      if ("psml".equals(mimeType) || "xml".equals(mimeType) )
         return new SourceForwarder(mimeType, "UTF-8");
       return null;
     }
@@ -93,7 +93,7 @@ public class FlintConfig {
     public Collection<String> getMimeTypesSupported() {
       ArrayList<String> mimes = new ArrayList<String>();
       mimes.add("psml");
-      // mimes.add("xml");
+      mimes.add("xml");
       return mimes;
     }
   };
