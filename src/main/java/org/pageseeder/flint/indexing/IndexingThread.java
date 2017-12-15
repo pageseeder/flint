@@ -273,6 +273,10 @@ public final class IndexingThread implements Runnable {
     }
     if (source == null)
       throw new IndexException("Failed to translate Content as the Translator returned a null result.", null);
+    
+    if("xml".equals(mediatype))
+    	mediatype="psml";
+    
     // retrieve XSLT script
     Templates templates = index.getTemplates(content.getContentType(), mediatype);
     if (templates == null)
