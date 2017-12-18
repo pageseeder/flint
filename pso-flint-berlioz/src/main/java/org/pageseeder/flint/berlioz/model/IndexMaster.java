@@ -4,7 +4,9 @@ import java.io.File;
 import java.io.FileFilter;
 import java.io.IOException;
 import java.io.Writer;
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -50,27 +52,32 @@ public final class IndexMaster {
   private final File _contentRoot;
   private final LuceneLocalIndex _index;
   private final IndexDefinition _def;
+  private final Collection<String> _extensions = new ArrayList<>();
 
   private final Map<String, org.pageseeder.flint.lucene.search.AutoSuggest> _autosuggests = new HashMap<>();
   
   public static IndexMaster create(IndexManager mgr, String name,
          File content, File index, IndexDefinition def) throws TransformerException {
-    return create(mgr, name, content, index, "psml", def);
+    return create(mgr, name, content, index, Collections.singleton("psml"), def);
   }
 
   public static IndexMaster create(IndexManager mgr, String name,
-         File content, File index, String extension, IndexDefinition def) throws TransformerException {
-    return new IndexMaster(mgr, name, content, index, extension, def);
+         File content, File index, Collection<String> extensions, IndexDefinition def) throws TransformerException {
+    return new IndexMaster(mgr, name, content, index, extensions, def);
   }
 
   private IndexMaster(IndexManager mgr, String name, File content,
-      File index, String extension, IndexDefinition def) throws TransformerException {
+      File index, Collection<String> extensions, IndexDefinition def) throws TransformerException {
     this._manager = mgr;
     this._name = name;
     this._contentRoot = content;
     this._indexRoot = index;
     this._index = new LuceneLocalIndex(this._indexRoot, def.getName(), FlintConfig.newAnalyzer(), this._contentRoot);
-    this._index.setTemplate(extension, def.getTemplate().toURI());
+    // same template used for all extensions (not great...)
+    if (extensions != null) this._extensions.addAll(extensions);
+    for (String extension : this._extensions) {
+      this._index.setTemplate(extension, def.getTemplate().toURI());
+    }
     this._def = def;
     this._indexingFileFilter = def.buildFileFilter(this._contentRoot);
     // create autosuggests
@@ -80,7 +87,9 @@ public final class IndexMaster {
   }
 
   public void reloadTemplate() throws TransformerException {
-    reloadTemplate("psml");
+    for (String extension : this._extensions) {
+      reloadTemplate(extension);
+    }
   }
 
   public void reloadTemplate(String extension) throws TransformerException {

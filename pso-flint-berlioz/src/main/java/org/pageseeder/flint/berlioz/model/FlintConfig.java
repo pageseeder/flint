@@ -82,21 +82,7 @@ public class FlintConfig {
   private final Map<String, IndexMaster> indexes = new HashMap<>();
   private final Map<String, SolrIndexMaster> solrIndexes = new HashMap<>();
   private final FolderWatcher watcher;
-  private static ContentTranslatorFactory TRANSLATORS = new ContentTranslatorFactory() {
-
-    public ContentTranslator createTranslator(String mimeType) {
-      if ("psml".equals(mimeType))
-        return new SourceForwarder(mimeType, "UTF-8");
-      return null;
-    }
-
-    public Collection<String> getMimeTypesSupported() {
-      ArrayList<String> mimes = new ArrayList<String>();
-      mimes.add("psml");
-      // mimes.add("xml");
-      return mimes;
-    }
-  };
+  private final Collection<String> _extensions = new ArrayList<>();
 
   public static void setupFlintConfig(File index, File ixml) {
     SINGLETON = new FlintConfig(index, ixml);
@@ -297,12 +283,14 @@ public class FlintConfig {
       SolrFlintConfig.setup(ixml, url, zkhosts);
     }
     // manager
+    this._extensions.addAll(Arrays.asList(GlobalSettings.get("flint.index.extensions", "psml").split(",")));
+    if (!this._extensions.contains("psml")) LOGGER.warn("PSML should be in the list of supported extensions");
     int nbThreads = GlobalSettings.get("flint.threads.number", 10);
     int threadPriority = GlobalSettings.get("flint.threads.priority", 5);
     this.listener = new QuietListener(LOGGER);
     this.manager = new IndexManager(new LocalFileContentFetcher(), this.listener, nbThreads, false);
     this.manager.setThreadPriority(threadPriority);
-    this.manager.registerTranslatorFactory(TRANSLATORS);
+    this.manager.registerTranslatorFactory(createTranslatorFactory());
     // watch is on?
     boolean watch = GlobalSettings.get("flint.watcher.watch", true);
     if (watch) {
@@ -363,6 +351,27 @@ public class FlintConfig {
         LOGGER.warn("Failed to load solr indexes at startup!", ex);
       }
     }
+  }
+
+  /**
+   * Create a factory that supports the extensions in this config.
+   *
+   * @return a new factory
+   */
+  private ContentTranslatorFactory createTranslatorFactory() {
+    final ArrayList<String> mimes = new ArrayList<>(this._extensions);
+    return new ContentTranslatorFactory() {
+
+      public ContentTranslator createTranslator(String mimeType) {
+        if (mimes.contains(mimeType))
+          return new SourceForwarder(mimeType, "UTF-8");
+        return null;
+      }
+
+      public Collection<String> getMimeTypesSupported() {
+        return mimes;
+      }
+    };
   }
 
   /**
@@ -496,7 +505,7 @@ public class FlintConfig {
     File content = def.buildContentRoot(GlobalSettings.getAppData(), name);
     File index = new File(this._directory, name);
     try {
-      IndexMaster master = IndexMaster.create(getManager(), name, content, index, def);
+      IndexMaster master = IndexMaster.create(getManager(), name, content, index, this._extensions, def);
       def.setTemplateError(null); // reset error
       return master;
     } catch (TransformerException ex) {
@@ -509,7 +518,7 @@ public class FlintConfig {
     // build content path
     File content = def.buildContentRoot(GlobalSettings.getAppData(), name);
     try {
-      SolrIndexMaster master = SolrIndexMaster.create(getManager(), name, content, def);
+      SolrIndexMaster master = SolrIndexMaster.create(getManager(), name, content, this._extensions, def);
       def.setTemplateError(null); // reset error
       return master;
     } catch (TransformerException ex) {

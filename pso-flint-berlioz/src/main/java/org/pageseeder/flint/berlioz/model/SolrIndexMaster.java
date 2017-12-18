@@ -4,6 +4,9 @@ import java.io.File;
 import java.io.FileFilter;
 import java.io.IOException;
 import java.io.Writer;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -37,21 +40,22 @@ public final class SolrIndexMaster {
   private final File _contentRoot;
   private final SolrLocalIndex _index;
   private final IndexDefinition _def;
+  private final Collection<String> _extensions = new ArrayList<>();
 
   private final Map<String, AutoSuggest> _autosuggests = new HashMap<>();
 
   public static SolrIndexMaster create(IndexManager mgr, String name,
          File content, IndexDefinition def) throws TransformerException, SolrFlintException {
-    return create(mgr, name, content, "psml", def);
+    return create(mgr, name, content, Collections.singleton("psml"), def);
   }
 
   public static SolrIndexMaster create(IndexManager mgr, String name,
-         File content, String extension, IndexDefinition def) throws TransformerException, SolrFlintException {
-    return new SolrIndexMaster(mgr, name, content, extension, def);
+         File content, Collection<String> extensions, IndexDefinition def) throws TransformerException, SolrFlintException {
+    return new SolrIndexMaster(mgr, name, content, extensions, def);
   }
 
   private SolrIndexMaster(IndexManager mgr, String name, File content,
-      String extension, IndexDefinition def) throws TransformerException, SolrFlintException {
+      Collection<String> extensions, IndexDefinition def) throws TransformerException, SolrFlintException {
     this._manager = mgr;
     this._contentRoot = content;
     Map<String, String> atts = new HashMap<>();
@@ -68,7 +72,11 @@ public final class SolrIndexMaster {
     value = def.getSolrAttribute("router-field");
     if (value != null) atts.put(SolrCollectionManager.ROUTER_FIELD, value);
     this._index = new SolrLocalIndex(name, def.getName(), content, atts);
-    this._index.setTemplate(extension, def.getTemplate().toURI());
+    // same template used for all extensions (not great...)
+    if (extensions != null) this._extensions.addAll(extensions);
+    for (String extension : this._extensions) {
+      this._index.setTemplate(extension, def.getTemplate().toURI());
+    }
     this._def = def;
     this._indexingFileFilter = def.buildFileFilter(this._contentRoot);
     // create autosuggests
@@ -82,7 +90,9 @@ public final class SolrIndexMaster {
   }
 
   public void reloadTemplate() throws TransformerException {
-    reloadTemplate("psml");
+    for (String extension : this._extensions) {
+      reloadTemplate(extension);
+    }
   }
 
   public void reloadTemplate(String extension) throws TransformerException {
