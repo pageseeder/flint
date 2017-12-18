@@ -58,12 +58,29 @@ public class NumericTermFilter extends TermFilter<Number> implements Filter {
 
   @Override
   public Query filterQuery(Query base) {
-    BooleanQuery filterQuery = new BooleanQuery();
-    for (Number value : this._terms.keySet()) {
-      Occur clause = this._terms.get(value);
-      filterQuery.add(numberToQuery(value), clause);
+    // if should, create filter query
+    if (this._terms.values().contains(Occur.SHOULD)) {
+      BooleanQuery filterQuery = new BooleanQuery();
+      for (Number value : this._terms.keySet()) {
+        filterQuery.add(numberToQuery(value), this._terms.get(value));
+      }
+      // and join to base if there
+      return base == null ? filterQuery : Queries.and(base, filterQuery);
     }
-    return base == null ? filterQuery : Queries.and(base, filterQuery);
+    // otherwise, can we add directly to base?
+    if (base != null && base instanceof BooleanQuery) {
+      for (Number value : this._terms.keySet()) {
+        ((BooleanQuery) base).add(numberToQuery(value), this._terms.get(value));
+      }
+      return base;
+    }
+    // create filter query then
+    BooleanQuery filterQuery = new BooleanQuery();
+    if (base != null) filterQuery.add(base, Occur.MUST);
+    for (Number value : this._terms.keySet()) {
+      filterQuery.add(numberToQuery(value), this._terms.get(value));
+    }
+    return filterQuery;
   }
 
   @Override

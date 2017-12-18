@@ -47,12 +47,29 @@ public class StringTermFilter extends TermFilter<String> implements Filter {
 
   @Override
   public Query filterQuery(Query base) {
-    BooleanQuery filterQuery = new BooleanQuery();
-    for (String word : this._terms.keySet()) {
-      Occur clause = this._terms.get(word);
-      filterQuery.add(new TermQuery(new Term(this._name, word)), clause);
+    // if should, create filter query
+    if (this._terms.values().contains(Occur.SHOULD)) {
+      BooleanQuery filterQuery = new BooleanQuery();
+      for (String word : this._terms.keySet()) {
+        filterQuery.add(new TermQuery(new Term(this._name, word)), this._terms.get(word));
+      }
+      // and join to base if there
+      return base == null ? filterQuery : Queries.and(base, filterQuery);
     }
-    return base == null ? filterQuery : Queries.and(base, filterQuery);
+    // otherwise, can we add directly to base?
+    if (base != null && base instanceof BooleanQuery) {
+      for (String word : this._terms.keySet()) {
+        ((BooleanQuery) base).add(new TermQuery(new Term(this._name, word)), this._terms.get(word));
+      }
+      return base;
+    }
+    // create filter query then
+    BooleanQuery filterQuery = new BooleanQuery();
+    if (base != null) filterQuery.add(base, Occur.MUST);
+    for (String word : this._terms.keySet()) {
+      filterQuery.add(new TermQuery(new Term(this._name, word)), this._terms.get(word));
+    }
+    return filterQuery;
   }
 
   @Override

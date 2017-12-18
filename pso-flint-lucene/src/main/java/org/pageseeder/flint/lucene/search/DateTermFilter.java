@@ -62,12 +62,29 @@ public class DateTermFilter extends TermFilter<OffsetDateTime> implements Filter
 
   @Override
   public Query filterQuery(Query base) {
-    BooleanQuery filterQuery = new BooleanQuery();
-    for (OffsetDateTime date : this._terms.keySet()) {
-      Occur clause = this._terms.get(date);
-      filterQuery.add(new DateParameter(this._name, date, this._resolution, false).toQuery(), clause);
+    // if should, create filter query
+    if (this._terms.values().contains(Occur.SHOULD)) {
+      BooleanQuery filterQuery = new BooleanQuery();
+      for (OffsetDateTime date : this._terms.keySet()) {
+        filterQuery.add(new DateParameter(this._name, date, this._resolution, false).toQuery(), this._terms.get(date));
+      }
+      // and join to base if there
+      return base == null ? filterQuery : Queries.and(base, filterQuery);
     }
-    return base == null ? filterQuery : Queries.and(base, filterQuery);
+    // otherwise, can we add directly to base?
+    if (base != null && base instanceof BooleanQuery) {
+      for (OffsetDateTime date : this._terms.keySet()) {
+        ((BooleanQuery) base).add(new DateParameter(this._name, date, this._resolution, false).toQuery(), this._terms.get(date));
+      }
+      return base;
+    }
+    // create filter query then
+    BooleanQuery filterQuery = new BooleanQuery();
+    if (base != null) filterQuery.add(base, Occur.MUST);
+    for (OffsetDateTime date : this._terms.keySet()) {
+      filterQuery.add(new DateParameter(this._name, date, this._resolution, false).toQuery(), this._terms.get(date));
+    }
+    return filterQuery;
   }
 
   public String name() {
