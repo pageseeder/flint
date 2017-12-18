@@ -17,6 +17,7 @@ package org.pageseeder.flint.lucene;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.AccessDeniedException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -29,6 +30,7 @@ import org.apache.lucene.index.ConcurrentMergeScheduler;
 import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexCommit;
+import org.apache.lucene.index.IndexFormatTooOldException;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
@@ -141,6 +143,21 @@ public final class LuceneIndexIO implements IndexIO {
     this._directory = dir;
     try {
       open();
+    } catch (IndexFormatTooOldException ex) {
+      // try to delete all files and retry
+      if (this._directory != null) try {
+        for (String n : this._directory.listAll()) {
+          this._directory.deleteFile(n);
+        }
+      } catch (IOException ex2) {
+        throw new IndexException("Failed to delete index files from old index", ex);
+      }
+      // retry
+      try {
+        open();
+      } catch (IOException ex2) {
+        throw new IndexException("Failed to create writer on index", ex2);
+      }
     } catch (IOException ex) {
       throw new IndexException("Failed to create writer on index", ex);
     }
@@ -260,8 +277,19 @@ public final class LuceneIndexIO implements IndexIO {
       this._writer.deleteAll();
       this.lastTimeUsed.set(System.currentTimeMillis());
       state(State.DIRTY);
-    } catch (IOException ex) {
-      throw new IndexException("Failed to clear Index", ex);
+    } catch (Exception ex) {
+      // try to delete all files then if possible
+      if (this._directory != null) try {
+        for (String n : this._directory.listAll()) {
+          try {
+            this._directory.deleteFile(n);
+          } catch (AccessDeniedException ex2) {
+            // file must be used by lucene, try other files
+          }
+        }
+      } catch (IOException ex2) {
+        throw new IndexException("Failed to clear Index", ex);
+      }
     } finally {
       this.endWriting();
     }
