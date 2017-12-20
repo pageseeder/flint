@@ -217,8 +217,14 @@ public final class IndexingThread implements Runnable {
       return false;
     }
 
-    // add custom fields
+    // find documents
     List<FlintDocument> documents = parser.getDocuments();
+    if (documents == null || documents.isEmpty()) {
+      this._listener.warn(job, "No Lucene Documents to Index!");
+      return documents != null; // if no documents defined in ixml, it's not an error
+    }
+
+    // add custom fields
     Collection<FlintField> fields = job.getIndex().getFields(content);
     if (fields != null && !fields.isEmpty()) {
       for (FlintDocument doc : documents) {
