@@ -147,8 +147,10 @@ public final class LuceneLocalIndex extends LocalIndex {
     try {
       String rootPath = this._contentRoot.getCanonicalPath();
       String thisPath = f.getCanonicalPath();
-      if (thisPath.startsWith(rootPath))
-        return '/' + thisPath.substring(rootPath.length()).replace('\\', '/');
+      if (thisPath.startsWith(rootPath)) {
+        String p = thisPath.substring(rootPath.length()).replace('\\', '/');
+        return p.isEmpty() || p.charAt(0) != '/' ? '/' + p : p;
+      }
     } catch (IOException ex) {
       LOGGER.error("Failed to compute file relative path", ex);
     }
