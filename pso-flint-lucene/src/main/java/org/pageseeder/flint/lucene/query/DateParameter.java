@@ -22,8 +22,10 @@ import java.time.ZoneOffset;
 import java.util.Date;
 
 import org.apache.lucene.document.DateTools.Resolution;
+import org.apache.lucene.index.Term;
 import org.apache.lucene.search.NumericRangeQuery;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TermRangeQuery;
 import org.apache.lucene.util.BytesRef;
 import org.pageseeder.flint.lucene.util.Dates;
@@ -80,6 +82,17 @@ public final class DateParameter implements SearchParameter {
   private volatile Query _query;
 
 // Implementation methods ----------------------------------------------------------------------
+
+  /**
+   * Creates a new date parameter matching empty values.
+   *
+   * @param field      the date field to search
+   * @param resolution the date resolution
+   * @param numeric    whether it is a numeric field
+   */
+  public DateParameter(String field, Resolution resolution, boolean numeric) {
+    this(field, (OffsetDateTime) null, (OffsetDateTime) null, true, true, resolution, numeric);
+  }
 
   /**
    * Creates a new date parameter.
@@ -243,10 +256,11 @@ public final class DateParameter implements SearchParameter {
    */
   @Override
   public Query toQuery() {
-    if (this._from == null && this._to == null) return null;
     // an including range query on the date
     if (this._query == null)  {
-      if (this._numeric) {
+      if (this._from == null && this._to == null) {
+        this._query = new TermQuery(new Term(this._field, ""));
+      } else if (this._numeric) {
         this._query = toNumericRangeQuery(this._field, this._from, this._to, this._minInclusive, this._maxInclusive, this._resolution);
       } else {
         this._query = toTermRangeQuery(this._field, this._from, this._to, this._minInclusive, this._maxInclusive, this._resolution);
@@ -267,7 +281,9 @@ public final class DateParameter implements SearchParameter {
     boolean exactMatch = this._from != null && this._from.equals(this._to);
     xml.openElement(exactMatch ? "date-parameter" : "date-range", false);
     xml.attribute("field", this._field);
-    if (exactMatch) {
+    if (this._from == null && this._to == null) {
+      xml.attribute("value", "");
+    } else if (exactMatch) {
       xml.attribute("value", Dates.format(this._from, this._resolution));
     } else {
       if (this._from != null) {

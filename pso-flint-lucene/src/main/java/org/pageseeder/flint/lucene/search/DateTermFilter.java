@@ -98,12 +98,16 @@ public class DateTermFilter extends TermFilter<OffsetDateTime> implements Filter
     xml.attribute("type", "date");
     for (OffsetDateTime date : this._terms.keySet()) {
       xml.openElement("term");
-      xml.attribute("text", Dates.toString(date, this._resolution));
-      xml.attribute("date", Dates.format(date, this._resolution));
+      xml.attribute("text", date == null ? "" : Dates.toString(date, this._resolution));
+      xml.attribute("date", date == null ? "" : Dates.format(date, this._resolution));
       xml.attribute("occur", occurToString(this._terms.get(date)));
       xml.closeElement();
     }
     xml.closeElement();
+  }
+
+  public static DateTermFilter newFilterEmpty(String name, Resolution res) {
+    return newFilter(name, (OffsetDateTime) null, res, Occur.MUST);
   }
 
   public static DateTermFilter newFilter(String name, Date date, Resolution res) {
@@ -150,8 +154,7 @@ public class DateTermFilter extends TermFilter<OffsetDateTime> implements Filter
     }
 
     public Builder addDate(Date date, Occur when) {
-      if (date != null)
-        this._dates.put(OffsetDateTime.ofInstant(Instant.ofEpochMilli(date.getTime()), ZoneOffset.UTC), when == null ? Occur.MUST : when);
+      this._dates.put(date == null ? null : OffsetDateTime.ofInstant(Instant.ofEpochMilli(date.getTime()), ZoneOffset.UTC), when == null ? Occur.MUST : when);
       return this;
     }
 

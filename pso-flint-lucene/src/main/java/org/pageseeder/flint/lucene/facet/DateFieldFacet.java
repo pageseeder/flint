@@ -81,6 +81,8 @@ public class DateFieldFacet extends FlexibleFieldFacet {
   @Override
   protected Query termToQuery(Term t) {
     try {
+      // handle potential empty string
+      if (t.text().isEmpty()) return new TermQuery(t);
       Date d = DateTools.stringToDate(t.text());
       return new DateParameter(this.name(), d, this._resolution, false).toQuery();
     } catch (ParseException ex) {

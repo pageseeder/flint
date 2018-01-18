@@ -93,35 +93,38 @@ public class DateFieldFacetTest {
   public void testFacetsNoQuery() throws IndexException, IOException, ParseException {
     DateFieldFacet facet = DateFieldFacet.newFacet("facet1", second_resolution);
     facet.compute(searcher, null);
-    Assert.assertEquals(6, facet.getTotalTerms());
+    Assert.assertEquals(7, facet.getTotalTerms());
     Bucket<String> values = facet.getValues();
-    Assert.assertEquals(6, values.items().size());
+    Assert.assertEquals(7, values.items().size());
     Assert.assertEquals(1, values.count(Dates.toString(format.parse("2017-01-01_12:00:00"), second_resolution)));
     Assert.assertEquals(1, values.count(Dates.toString(format.parse("2017-01-02_12:00:00"), second_resolution)));
     Assert.assertEquals(1, values.count(Dates.toString(format.parse("2017-01-03_12:00:00"), second_resolution)));
     Assert.assertEquals(2, values.count(Dates.toString(format.parse("2017-01-04_12:00:00"), second_resolution)));
     Assert.assertEquals(1, values.count(Dates.toString(format.parse("2017-01-05_12:00:00"), second_resolution)));
     Assert.assertEquals(1, values.count(Dates.toString(format.parse("2017-01-06_12:00:00"), second_resolution)));
+    Assert.assertEquals(1, values.count(""));
     // facets 2
     facet = DateFieldFacet.newFacet("facet2", Resolution.SECOND);
     facet.compute(searcher, null);
-    Assert.assertEquals(6, facet.getTotalTerms());
+    Assert.assertEquals(7, facet.getTotalTerms());
     values = facet.getValues();
-    Assert.assertEquals(6, values.items().size());
+    Assert.assertEquals(7, values.items().size());
     Assert.assertEquals(1, values.count(Dates.toString(format.parse("2017-02-01_12:00:00"), second_resolution)));
     Assert.assertEquals(2, values.count(Dates.toString(format.parse("2017-02-02_12:00:00"), second_resolution)));
     Assert.assertEquals(1, values.count(Dates.toString(format.parse("2017-02-03_12:00:00"), second_resolution)));
     Assert.assertEquals(1, values.count(Dates.toString(format.parse("2017-02-04_12:00:00"), second_resolution)));
     Assert.assertEquals(1, values.count(Dates.toString(format.parse("2017-02-05_12:00:00"), second_resolution)));
     Assert.assertEquals(1, values.count(Dates.toString(format.parse("2017-02-06_12:00:00"), second_resolution)));
+    Assert.assertEquals(1, values.count(""));
     // facets 3
     facet = DateFieldFacet.newFacet("facet3", Resolution.SECOND);
     facet.compute(searcher, null);
-    Assert.assertEquals(2, facet.getTotalTerms());
+    Assert.assertEquals(3, facet.getTotalTerms());
     values = facet.getValues();
-    Assert.assertEquals(2, values.items().size());
+    Assert.assertEquals(3, values.items().size());
     Assert.assertEquals(6, values.count(Dates.toString(format.parse("2017-03-01_12:00:00"), second_resolution)));
     Assert.assertEquals(1, values.count(Dates.toString(format.parse("2017-03-02_12:00:00"), second_resolution)));
+    Assert.assertEquals(1, values.count(""));
   }
 
   @Test
@@ -158,45 +161,6 @@ public class DateFieldFacetTest {
     Assert.assertEquals(6, values.count(Dates.toString(format.parse("2017-03-01_12:00:00"), second_resolution)));
   }
 
-//  @Test
-//  public void testFacetsQuerySearchResults() throws IndexException, IOException, ParseException {
-//    Date d = format.parse("2017-03-01_12:00:00");
-//    SearchQuery base = BasicQuery.newBasicQuery(new DateParameter("facet3", d, second_resolution, false));
-//    // run search
-//    SearchResults results = LuceneIndexQueries.query(index, base);
-//    DateFieldFacet facet = DateFieldFacet.newFacet("facet1", second_resolution);
-//    facet.compute(results);
-//    Assert.assertEquals(6, facet.getTotalResults());
-//    Assert.assertEquals(5, facet.getTotalTerms());
-//    Bucket<String> values = facet.getValues();
-//    Assert.assertEquals(5, values.items().size());
-//    Assert.assertEquals(1, values.count(Dates.toString(format.parse("2017-01-01_12:00:00"), second_resolution)));
-//    Assert.assertEquals(1, values.count(Dates.toString(format.parse("2017-01-02_12:00:00"), second_resolution)));
-//    Assert.assertEquals(1, values.count(Dates.toString(format.parse("2017-01-03_12:00:00"), second_resolution)));
-//    Assert.assertEquals(2, values.count(Dates.toString(format.parse("2017-01-04_12:00:00"), second_resolution)));
-//    Assert.assertEquals(1, values.count(Dates.toString(format.parse("2017-01-05_12:00:00"), second_resolution)));
-//    // facets 2
-//    facet = DateFieldFacet.newFacet("facet2", Resolution.SECOND);
-//    facet.compute(results);
-//    Assert.assertEquals(6, facet.getTotalResults());
-//    Assert.assertEquals(5, facet.getTotalTerms());
-//    values = facet.getValues();
-//    Assert.assertEquals(5, values.items().size());
-//    Assert.assertEquals(1, values.count(Dates.toString(format.parse("2017-02-01_12:00:00"), second_resolution)));
-//    Assert.assertEquals(2, values.count(Dates.toString(format.parse("2017-02-02_12:00:00"), second_resolution)));
-//    Assert.assertEquals(1, values.count(Dates.toString(format.parse("2017-02-03_12:00:00"), second_resolution)));
-//    Assert.assertEquals(1, values.count(Dates.toString(format.parse("2017-02-04_12:00:00"), second_resolution)));
-//    Assert.assertEquals(1, values.count(Dates.toString(format.parse("2017-02-05_12:00:00"), second_resolution)));
-//    // facets 3
-//    facet = DateFieldFacet.newFacet("facet3", Resolution.SECOND);
-//    facet.compute(results);
-//    Assert.assertEquals(6, facet.getTotalResults());
-//    Assert.assertEquals(1, facet.getTotalTerms());
-//    values = facet.getValues();
-//    Assert.assertEquals(1, values.items().size());
-//    Assert.assertEquals(6, values.count(Dates.toString(format.parse("2017-03-01_12:00:00"), second_resolution)));
-//  }
-
   @Test
   public void testFlexibleFacetsQuery() throws IndexException, IOException, ParseException {
     Date d = format.parse("2017-03-01_12:00:00");
@@ -227,11 +191,12 @@ public class DateFieldFacetTest {
     // facets 3
     facet = DateFieldFacet.newFacet("facet3", Resolution.SECOND);
     facet.compute(searcher, base, filters);
-    Assert.assertEquals(2, facet.getTotalTerms());
+    Assert.assertEquals(3, facet.getTotalTerms());
     values = facet.getValues();
-    Assert.assertEquals(2, values.items().size());
+    Assert.assertEquals(3, values.items().size());
     Assert.assertEquals(6, values.count(Dates.toString(format.parse("2017-03-01_12:00:00"), second_resolution)));
     Assert.assertEquals(1, values.count(Dates.toString(format.parse("2017-03-02_12:00:00"), second_resolution)));
+    Assert.assertEquals(1, values.count(""));
   }
 
 }

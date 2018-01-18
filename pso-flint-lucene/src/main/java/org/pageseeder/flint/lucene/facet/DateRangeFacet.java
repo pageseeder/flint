@@ -69,6 +69,8 @@ public class DateRangeFacet extends FlexibleRangeFacet {
   @Override
   protected Query termToQuery(Term t) {
     try {
+      // handle potential empty string
+      if (t.text().isEmpty()) return new TermQuery(t);
       Date d = DateTools.stringToDate(t.text());
       return new DateParameter(this.name(), d, this._resolution, false).toQuery();
     } catch (ParseException ex) {
@@ -84,7 +86,7 @@ public class DateRangeFacet extends FlexibleRangeFacet {
 
   @Override
   protected Range findRange(Term t) {
-    if (t == null) return null;
+    if (t == null || t.text() == null || t.text().isEmpty()) return null;
     Date d;
     try {
       d = DateTools.stringToDate(t.text());

@@ -42,4 +42,10 @@
     <field name="facet2" tokenize="false" date-format="yyyy-MM-dd_HH:mm:ss" date-resolution="second">2017-02-06_12:00:00</field>
     <field name="facet3" tokenize="false" date-format="yyyy-MM-dd_HH:mm:ss" date-resolution="second">2017-03-02_12:00:00</field>
   </document>
+  <document>
+    <field name="field" tokenize="false">value</field>
+    <field name="facet1" tokenize="false" date-format="yyyy-MM-dd_HH:mm:ss" date-resolution="second"></field>
+    <field name="facet2" tokenize="false" date-format="yyyy-MM-dd_HH:mm:ss" date-resolution="second"></field>
+    <field name="facet3" tokenize="false" date-format="yyyy-MM-dd_HH:mm:ss" date-resolution="second"></field>
+  </document>
 </documents>

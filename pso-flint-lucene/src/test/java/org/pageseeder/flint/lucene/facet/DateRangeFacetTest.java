@@ -95,32 +95,35 @@ public class DateRangeFacetTest {
         .addRange(format.parse("2017-01-04_12:00:00"), format.parse("2017-01-06_12:00:00"))
         .addRange(format.parse("2017-01-07_12:00:00"), format.parse("2017-01-10_12:00:00")).build();
     facet.compute(searcher, null);
-    Assert.assertEquals(2, facet.getTotalRanges());
+    Assert.assertEquals(3, facet.getTotalRanges());
     Bucket<Range> ranges = facet.getValues();
-    Assert.assertEquals(2, ranges.items().size());
+    Assert.assertEquals(3, ranges.items().size());
     Assert.assertEquals(3, ranges.count(Range.dateRange(format.parse("2017-01-01_12:00:00"), format.parse("2017-01-03_12:00:00"), second_resolution)));
     Assert.assertEquals(4, ranges.count(Range.dateRange(format.parse("2017-01-04_12:00:00"), format.parse("2017-01-06_12:00:00"), second_resolution)));
+    Assert.assertEquals(1, ranges.count(FlexibleRangeFacet.OTHER));
     // facets 2
     facet = new DateRangeFacet.Builder().name("facet2").resolution(second_resolution)
         .addRange(format.parse("2017-02-01_12:00:00"), format.parse("2017-02-03_12:00:00"))
         .addRange(format.parse("2017-02-04_12:00:00"), format.parse("2017-02-05_12:00:00"))
         .addRange(format.parse("2017-02-06_12:00:00"), format.parse("2017-02-10_12:00:00")).build();
     facet.compute(searcher, null);
-    Assert.assertEquals(3, facet.getTotalRanges());
+    Assert.assertEquals(4, facet.getTotalRanges());
     ranges = facet.getValues();
-    Assert.assertEquals(3, ranges.items().size());
+    Assert.assertEquals(4, ranges.items().size());
     Assert.assertEquals(4, ranges.count(Range.dateRange(format.parse("2017-02-01_12:00:00"), format.parse("2017-02-03_12:00:00"), second_resolution)));
     Assert.assertEquals(2, ranges.count(Range.dateRange(format.parse("2017-02-04_12:00:00"), format.parse("2017-02-05_12:00:00"), second_resolution)));
     Assert.assertEquals(1, ranges.count(Range.dateRange(format.parse("2017-02-06_12:00:00"), format.parse("2017-02-10_12:00:00"), second_resolution)));
+    Assert.assertEquals(1, ranges.count(FlexibleRangeFacet.OTHER));
     // facets 3
     facet = new DateRangeFacet.Builder().name("facet3").resolution(second_resolution)
         .addRange(format.parse("2017-03-01_12:00:00"), format.parse("2017-03-03_12:00:00"))
         .addRange(format.parse("2017-03-06_12:00:00"), format.parse("2017-03-10_12:00:00")).build();
     facet.compute(searcher, null);
-    Assert.assertEquals(1, facet.getTotalRanges());
+    Assert.assertEquals(2, facet.getTotalRanges());
     ranges = facet.getValues();
-    Assert.assertEquals(1, ranges.items().size());
+    Assert.assertEquals(2, ranges.items().size());
     Assert.assertEquals(7, ranges.count(Range.dateRange(format.parse("2017-03-01_12:00:00"), format.parse("2017-03-03_12:00:00"), second_resolution)));
+    Assert.assertEquals(1, ranges.count(FlexibleRangeFacet.OTHER));
   }
 
   @Test
@@ -188,10 +191,11 @@ public class DateRangeFacetTest {
         .addRange(format.parse("2017-03-01_12:00:00"), format.parse("2017-03-03_12:00:00"))
         .addRange(format.parse("2017-03-06_12:00:00"), format.parse("2017-03-10_12:00:00")).build();
     facet.compute(searcher, base, filters);
-    Assert.assertEquals(1, facet.getTotalRanges());
+    Assert.assertEquals(2, facet.getTotalRanges());
     ranges = facet.getValues();
-    Assert.assertEquals(1, ranges.items().size());
+    Assert.assertEquals(2, ranges.items().size());
     Assert.assertEquals(7, ranges.count(Range.dateRange(format.parse("2017-03-01_12:00:00"), format.parse("2017-03-03_12:00:00"), second_resolution)));
+    Assert.assertEquals(1, ranges.count(FlexibleRangeFacet.OTHER));
 
   }
 }

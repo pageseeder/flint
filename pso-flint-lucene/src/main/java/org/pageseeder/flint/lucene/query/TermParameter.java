@@ -66,7 +66,7 @@ public final class TermParameter implements SearchParameter {
    */
   @Override
   public boolean isEmpty() {
-    return this._term.field().isEmpty() || this._term.text().isEmpty();
+    return this._term.field().isEmpty();
   }
 
   /**

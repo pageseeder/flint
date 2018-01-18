@@ -173,7 +173,7 @@ public class LuceneUtils {
         }
       }
     } else if (ffield.dateformat() != null) {
-      Date date = toDate(value, ffield.dateformat());
+      Date date = value.isEmpty() ? null : toDate(value, ffield.dateformat());
       field = new Field(ffield.name(), date != null ? Dates.toString(date, toResolution(ffield.resolution())) : "", type);
     } else {
       field = new Field(ffield.name(), value, type);

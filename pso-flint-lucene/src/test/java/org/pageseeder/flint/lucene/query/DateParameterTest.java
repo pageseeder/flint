@@ -25,9 +25,6 @@ import org.pageseeder.flint.indexing.IndexJob;
 import org.pageseeder.flint.indexing.IndexJob.Priority;
 import org.pageseeder.flint.lucene.LuceneIndex;
 import org.pageseeder.flint.lucene.LuceneIndexQueries;
-import org.pageseeder.flint.lucene.query.BasicQuery;
-import org.pageseeder.flint.lucene.query.DateParameter;
-import org.pageseeder.flint.lucene.query.SearchResults;
 import org.pageseeder.flint.lucene.utils.TestListener;
 import org.pageseeder.flint.lucene.utils.TestUtils;
 
@@ -58,24 +55,29 @@ public class DateParameterTest {
         String xml = "<documents version='5.0'>\n"+
                        "<document>\n"+
                          "<field name='"+TestUtils.ID_FIELD+"' tokenize='false'>doc1</field>\n"+
-                         "<field name='date1' date-format='yyyy-MM-dd' date-resolution='day'>2015-05-12</field>\n"+
-                         "<field name='date2' date-format='yyyy-MM-dd-hh-mm-ss' date-resolution='second' numeric-type='long'>2015-05-12-17-15-33</field>\n"+
-                         "<field name='date3' date-format='yyyy-MM-dd-hh-mm-ss' date-resolution='second'>2015-05-12-17-15-33</field>\n"+
-                         "<field name='date4' date-format='yyyy-MM-dd' date-resolution='day' numeric-type='int'>2015-05-12</field>\n"+
+                         "<field tokenize='false' name='date1' date-format='yyyy-MM-dd' date-resolution='day'>2015-05-12</field>\n"+
+                         "<field tokenize='false' name='date2' date-format='yyyy-MM-dd-hh-mm-ss' date-resolution='second' numeric-type='long'>2015-05-12-17-15-33</field>\n"+
+                         "<field tokenize='false' name='date3' date-format='yyyy-MM-dd-hh-mm-ss' date-resolution='second'>2015-05-12-17-15-33</field>\n"+
+                         "<field tokenize='false' name='date4' date-format='yyyy-MM-dd' date-resolution='day' numeric-type='int'>2015-05-12</field>\n"+
                        "</document>\n"+
                        "<document>\n"+
                          "<field name='"+TestUtils.ID_FIELD+"' tokenize='false'>doc2</field>\n"+
-                         "<field name='date1' date-format='yyyy-MM-dd' date-resolution='day'>2014-11-22</field>\n"+
-                         "<field name='date2' date-format='yyyy-MM-dd-hh-mm-ss' date-resolution='second' numeric-type='long'>2014-11-22-10-02-23</field>\n"+
-                         "<field name='date3' date-format='yyyy-MM-dd-hh-mm-ss' date-resolution='second'>2014-11-22-10-02-23</field>\n"+
-                         "<field name='date4' date-format='yyyy-MM-dd' date-resolution='day' numeric-type='int'>2014-11-22</field>\n"+
+                         "<field tokenize='false' name='date1' date-format='yyyy-MM-dd' date-resolution='day'>2014-11-22</field>\n"+
+                         "<field tokenize='false' name='date2' date-format='yyyy-MM-dd-hh-mm-ss' date-resolution='second' numeric-type='long'>2014-11-22-10-02-23</field>\n"+
+                         "<field tokenize='false' name='date3' date-format='yyyy-MM-dd-hh-mm-ss' date-resolution='second'>2014-11-22-10-02-23</field>\n"+
+                         "<field tokenize='false' name='date4' date-format='yyyy-MM-dd' date-resolution='day' numeric-type='int'>2014-11-22</field>\n"+
                        "</document>\n"+
                        "<document>\n"+
                          "<field name='"+TestUtils.ID_FIELD+"' tokenize='false'>doc3</field>\n"+
-                         "<field name='date1' date-format='yyyy-MM-dd' date-resolution='day'>2015-07-04</field>\n"+
-                         "<field name='date2' date-format='yyyy-MM-dd-hh-mm-ss' date-resolution='second' numeric-type='long'>2015-07-04-21-11-55</field>\n"+
-                         "<field name='date3' date-format='yyyy-MM-dd-hh-mm-ss' date-resolution='second'>2015-07-04-21-11-55</field>\n"+
-                         "<field name='date4' date-format='yyyy-MM-dd' date-resolution='day' numeric-type='int'>2015-07-04</field>\n"+
+                         "<field tokenize='false' name='date1' date-format='yyyy-MM-dd' date-resolution='day'>2015-07-04</field>\n"+
+                         "<field tokenize='false' name='date2' date-format='yyyy-MM-dd-hh-mm-ss' date-resolution='second' numeric-type='long'>2015-07-04-21-11-55</field>\n"+
+                         "<field tokenize='false' name='date3' date-format='yyyy-MM-dd-hh-mm-ss' date-resolution='second'>2015-07-04-21-11-55</field>\n"+
+                         "<field tokenize='false' name='date4' date-format='yyyy-MM-dd' date-resolution='day' numeric-type='int'>2015-07-04</field>\n"+
+                       "</document>\n"+
+                       "<document>\n"+
+                         "<field name='"+TestUtils.ID_FIELD+"' tokenize='false'>doc4</field>\n"+
+                         "<field tokenize='false' name='date1' date-format='yyyy-MM-dd' date-resolution='day'></field>\n"+
+                         "<field tokenize='false' name='date3' date-format='yyyy-MM-dd-hh-mm-ss' date-resolution='second'></field>\n"+
                        "</document>\n"+
                      "</documents>";
         return new TestUtils.TestContent(job.getContentID(), xml);
@@ -269,18 +271,40 @@ public class DateParameterTest {
     }
   }
 
+  @Test
+  public void testEmpty() {
+    try {
+      // test non numeric day
+      DateParameter param = new DateParameter("date1", Resolution.DAY, false);
+      SearchResults results = LuceneIndexQueries.query(index, BasicQuery.newBasicQuery(param));
+      Assert.assertEquals(1, results.getTotalNbOfResults());
+      Iterator<Document> docs = results.documents().iterator();
+      Assert.assertEquals("doc4", docs.next().get(TestUtils.ID_FIELD));
+      // test non numeric second
+      param = new DateParameter("date3", (Date) null, Resolution.SECOND, false);
+      results = LuceneIndexQueries.query(index, BasicQuery.newBasicQuery(param));
+      Assert.assertEquals(1, results.getTotalNbOfResults());
+      docs = results.documents().iterator();
+      Assert.assertEquals("doc4", docs.next().get(TestUtils.ID_FIELD));
+    } catch (Exception ex) {
+      ex.printStackTrace();
+      Assert.fail(ex.getMessage());
+    }
+  }
+
   private static Date buildDate(int y, int m, int d) {
     return buildDate(y, m, d, 0, 0, 0);
   }
 
   private static Date buildDate(int y, int m, int d, int h, int mn, int s) {
-    Calendar cal = Calendar.getInstance(TimeZone.getTimeZone("GMT"));
+    Calendar cal = Calendar.getInstance();
     cal.set(Calendar.YEAR,   y);
     cal.set(Calendar.MONTH,  m-1);
     cal.set(Calendar.DATE,   d);
     cal.set(Calendar.HOUR,   h);
     cal.set(Calendar.MINUTE, mn);
     cal.set(Calendar.SECOND, s);
+    cal.setTimeZone(TimeZone.getTimeZone("GMT"));
     return cal.getTime();
   }
 }

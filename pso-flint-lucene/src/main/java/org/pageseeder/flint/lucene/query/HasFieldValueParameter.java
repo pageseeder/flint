@@ -22,7 +22,7 @@ import org.apache.lucene.search.Query;
 import org.pageseeder.xmlwriter.XMLWriter;
 
 /**
- * A basic search parameter used to find documents that have a value for a specific field.
+ * A basic search parameter used to find documents that have a value for a specific field defined as doc-values.
  *
  * @author Jean-Baptiste Reure
  * @version 21 June 2017

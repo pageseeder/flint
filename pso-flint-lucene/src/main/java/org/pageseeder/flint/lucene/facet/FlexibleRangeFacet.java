@@ -368,6 +368,6 @@ public abstract class FlexibleRangeFacet extends FlexibleFacet<FlexibleRangeFace
     return range == OTHER;
   }
 
-  protected static final Range OTHER = new Range((String) null, false, (String) null, false);
+  public static final Range OTHER = new Range((String) null, false, (String) null, false);
 
 }
