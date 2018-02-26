@@ -56,13 +56,6 @@ public class StringTermFilter extends TermFilter<String> implements Filter {
       // and join to base if there
       return base == null ? filterQuery : Queries.and(base, filterQuery);
     }
-    // otherwise, can we add directly to base?
-    if (base != null && base instanceof BooleanQuery) {
-      for (String word : this._terms.keySet()) {
-        ((BooleanQuery) base).add(new TermQuery(new Term(this._name, word)), this._terms.get(word));
-      }
-      return base;
-    }
     // create filter query then
     BooleanQuery filterQuery = new BooleanQuery();
     if (base != null) filterQuery.add(base, Occur.MUST);

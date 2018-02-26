@@ -67,13 +67,6 @@ public class NumericTermFilter extends TermFilter<Number> implements Filter {
       // and join to base if there
       return base == null ? filterQuery : Queries.and(base, filterQuery);
     }
-    // otherwise, can we add directly to base?
-    if (base != null && base instanceof BooleanQuery) {
-      for (Number value : this._terms.keySet()) {
-        ((BooleanQuery) base).add(numberToQuery(value), this._terms.get(value));
-      }
-      return base;
-    }
     // create filter query then
     BooleanQuery filterQuery = new BooleanQuery();
     if (base != null) filterQuery.add(base, Occur.MUST);
