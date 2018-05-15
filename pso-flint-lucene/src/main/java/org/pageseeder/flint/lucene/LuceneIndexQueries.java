@@ -122,7 +122,6 @@ public final class LuceneIndexQueries {
    *
    * @param index  the Index to run the search on
    * @param query  the query to run
-   * @param paging paging details (can be <code>null</code>)
    *
    * @return the search results
    *
@@ -231,7 +230,8 @@ public final class LuceneIndexQueries {
    * @throws IndexException If an IO error occurred when getting the reader.
    */
   public static IndexReader grabReader(Index index) throws IndexException {
-    return getIndexIO(index).bookReader();
+    LuceneIndexIO io = getIndexIO(index);
+    return io == null ? null : io.bookReader();
   }
 
   /**
@@ -239,17 +239,15 @@ public final class LuceneIndexQueries {
    *
    * <p>It is necessary to release a reader so that it can be reused for other threads.
    *
-   * @see IndexManager#grabReader(Index)
-   *
    * @param index  The index the reader works on.
    * @param reader The actual Lucene index reader.
    *
    * @throws IndexException Wrapping any IO exception
    */
   public static void release(Index index, IndexReader reader) throws IndexException {
-    if (reader == null)
-      return;
-    getIndexIO(index).releaseReader(reader);
+    if (reader == null) return;
+    LuceneIndexIO io = getIndexIO(index);
+    if (io != null) io.releaseReader(reader);
   }
 
   /**
@@ -257,8 +255,6 @@ public final class LuceneIndexQueries {
    * block.
    *
    * <p>It is necessary to release a reader so that it can be reused for other threads.
-   *
-   * @see IndexManager#grabReader(Index)
    *
    * @param index  The index the reader works on.
    * @param reader The actual Lucene index reader.
@@ -302,8 +298,6 @@ public final class LuceneIndexQueries {
    *
    * <p>It is necessary to release a searcher so that it can be reused by other threads.
    *
-   * @see IndexManager#grabSearcher(Index)
-   *
    * @param index    The index the searcher works on.
    * @param searcher The actual Lucene index searcher.
    *
@@ -321,8 +315,6 @@ public final class LuceneIndexQueries {
    * block.
    *
    * <p>It is necessary to release a searcher so that it can be reused for other threads.
-   *
-   * @see IndexManager#grabReader(Index)
    *
    * @param index    The index the searcher works on.
    * @param searcher The actual Lucene index searcher.

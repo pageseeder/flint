@@ -56,7 +56,7 @@ public class AutoSuggestTest {
     indexer.indexFolder(documents, null);
     System.out.println("Documents indexed!");
     // wait a bit
-    TestUtils.wait(1);
+    TestUtils.wait(2);
   }
 
   @AfterClass
