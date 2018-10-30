@@ -15,7 +15,9 @@
  */
 package org.pageseeder.flint.indexing;
 
+import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.Reader;
 import java.util.Collection;
 import java.util.HashMap;
@@ -23,11 +25,19 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.transform.Result;
 import javax.xml.transform.Templates;
 import javax.xml.transform.Transformer;
+import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamSource;
 
+import org.apache.tika.exception.TikaException;
+import org.apache.tika.metadata.Metadata;
+import org.apache.tika.parser.AutoDetectParser;
+import org.apache.tika.parser.ParseContext;
+import org.apache.tika.sax.BodyContentHandler;
 import org.pageseeder.flint.Index;
 import org.pageseeder.flint.IndexException;
 import org.pageseeder.flint.IndexIO;
@@ -42,6 +52,9 @@ import org.pageseeder.flint.ixml.IndexParserFactory;
 import org.pageseeder.flint.templates.FlintErrorListener;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.w3c.dom.Document;
+import org.xml.sax.ContentHandler;
+import org.xml.sax.SAXException;
 
 /**
  * Main class from Flint, applications should create one instance of this class.
@@ -207,24 +220,37 @@ public final class IndexingThread implements Runnable {
       return true;
     }
 
-    // translate content directly into documents
+    
+    List<FlintDocument> documents = null;
+    
+ // translate content directly into documents
     IndexParser parser = IndexParserFactory.getInstanceForTransformation(job.getCatalog());
-    try {
-      translateContent(this._manager, new FlintErrorListener(this._listener, job),
-                       job.getIndex(), content, job.getParameters(), parser.getResult());
-    } catch (IndexException ex) {
-      this._listener.error(job, ex.getMessage(), ex);
-      return false;
+    
+    if(content.getMediaType().equals("pdf") || content.getMediaType().equals("docx")){
+    	try {
+    		
+			translateFileContent(job, job.getIndex(), content, parser.getResult());
+			
+		} catch (IOException | SAXException | TikaException ex) {
+			this._listener.error(job, ex.getMessage(), ex);
+    		return false;
+		}
+    }else{
+    	
+    	
+    	try {
+    		translateContent(this._manager, new FlintErrorListener(this._listener, job),
+    				job.getIndex(), content, job.getParameters(), parser.getResult());
+    	} catch (IndexException ex) {
+    		this._listener.error(job, ex.getMessage(), ex);
+    		return false;
+    	}
+    	
     }
-
-    // find documents
-    List<FlintDocument> documents = parser.getDocuments();
-    if (documents == null || documents.isEmpty()) {
-      this._listener.warn(job, "No Lucene Documents to Index!");
-      return documents != null; // if no documents defined in ixml, it's not an error
-    }
-
+   
     // add custom fields
+    documents = parser.getDocuments();
+    
     Collection<FlintField> fields = job.getIndex().getFields(content);
     if (fields != null && !fields.isEmpty()) {
       for (FlintDocument doc : documents) {
@@ -248,6 +274,64 @@ public final class IndexingThread implements Runnable {
     }
 
     return true;
+
+  }
+  
+  /**
+   * Translate given file content and parameters into Flint Index XML
+   * @param job
+   * @param index
+   * @param content
+   * @param result
+   * @throws IOException
+   * @throws SAXException
+   * @throws TikaException
+   * @throws IndexException
+   */
+  private static  void translateFileContent(IndexJob job, Index index, Content content, Result result) throws IOException, SAXException, TikaException, IndexException{
+
+	  // Get ready to parse the file.
+	  ContentHandler textHandler = new BodyContentHandler(-1);
+	   Map<String, String> params = job.getParameters();
+	 
+	  Metadata metadata = new Metadata();
+	  ParseContext context = new ParseContext();
+	  InputStream input = new FileInputStream(job.getContentID());
+	  
+	  AutoDetectParser autoParser= new AutoDetectParser(); 
+	  autoParser.parse(input, textHandler, metadata, context);
+
+
+	  try{
+		  Templates templates =index.getTemplates(content.getContentType(), "psml");
+		  Transformer t = templates.newTransformer();
+		  for (Entry<String, String> p : params.entrySet()) {
+			  t.setParameter(p.getKey(), p.getValue());
+		  }
+		  //set the file content as a parameter
+		  t.setParameter("file-source", textHandler.toString());
+		  // retrieve parameters
+		  Map<String, String> parameters = new HashMap<String, String>();
+		  Map<String, String> indexParams = index.getParameters(content);
+		  if (indexParams != null) parameters.putAll(indexParams);
+
+		  for (Entry<String, String> p : parameters.entrySet()) {
+			  t.setParameter(p.getKey(), p.getValue());
+		  }
+		  DocumentBuilderFactory docFactory = DocumentBuilderFactory.newInstance();
+
+		  //create an empty document for transformer
+		  DocumentBuilder docBuilder = docFactory.newDocumentBuilder();
+		  Document doc = docBuilder.newDocument();
+		  DOMSource source = new DOMSource(doc);
+		  // run transform
+		  t.transform(source, result);
+		 
+	  } catch (Exception ex) {
+		  throw new IndexException("Failed to create Index XML from Source content.", ex);
+	  }
+
+
 
   }
 
@@ -279,6 +363,10 @@ public final class IndexingThread implements Runnable {
     }
     if (source == null)
       throw new IndexException("Failed to translate Content as the Translator returned a null result.", null);
+    
+    if("xml".equals(mediatype))
+    	mediatype="psml";
+    
     // retrieve XSLT script
     Templates templates = index.getTemplates(content.getContentType(), mediatype);
     if (templates == null)
