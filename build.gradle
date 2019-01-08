@@ -65,7 +65,8 @@ dependencies {
 
   compile (
     'org.slf4j:slf4j-api:1.7.21',
-    'org.pageseeder.xmlwriter:pso-xmlwriter:1.0.2'    
+    'org.pageseeder.xmlwriter:pso-xmlwriter:1.0.2',
+    'org.apache.tika:tika-parsers:1.11'    
   )
 
   // runtime
