@@ -148,9 +148,7 @@ final class IndexDocumentHandler_5_0 extends DefaultHandler implements IndexDocu
   @Override
   public void characters(char[] ch, int start, int length) throws SAXException {
     if (this._isField) {
-      for (int i = start; i < (length+start); i++) {
-        this._value.append(filterChar(ch[i]));
-      }
+      this._value.append(ch, start, length);
     }
   }
 
@@ -252,21 +250,6 @@ final class IndexDocumentHandler_5_0 extends DefaultHandler implements IndexDocu
     this._isField = false;
     this._isCompressed = false;
     this._value.setLength(0);
-  }
-
-  /**
-   * Filter the char specified to be printed.
-   *
-   * @param c The char to filter
-   * @return The char to print
-   */
-  private static char filterChar(char c) {
-    // TODO: Check why we need to filter these characters?
-    switch (c) {
-      case '\n' : return ' ';
-      case '\t' : return ' ';
-      default: return c;
-    }
   }
 
 }

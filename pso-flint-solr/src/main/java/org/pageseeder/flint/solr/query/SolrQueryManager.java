@@ -4,6 +4,7 @@
 package org.pageseeder.flint.solr.query;
 
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -240,7 +241,7 @@ public class SolrQueryManager {
    */
   public Map<String, SolrDocumentList> group(SolrQuery query, String groupingField, int groupLimit) {
     // build consumer
-    final Map<String, SolrDocumentList> results = new HashMap<String, SolrDocumentList>();
+    final Map<String, SolrDocumentList> results = new LinkedHashMap<String, SolrDocumentList>();
     Consumer<GroupCommand> consumer = new Consumer<GroupCommand>() {
       @Override
       public void accept(GroupCommand comm) {
