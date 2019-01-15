@@ -4,6 +4,15 @@
 
 TIKA dependent library to be used with flint-berlioz to index binary files.
 
+To index binary files, simply add this library to the classpath and specify the extensions in the berlioz config file, for example:
+```
+<flint>
+  <index extensions="psml,pdf,docx">
+    ...
+  </index>
+</flint>
+```
+
 Currently supported file extensions are:
   - pdf
   - docx
