@@ -1,29 +1,8 @@
 package org.pageseeder.flint.berlioz.helper;
 
-import static java.nio.file.StandardWatchEventKinds.ENTRY_CREATE;
-import static java.nio.file.StandardWatchEventKinds.ENTRY_DELETE;
-
-import java.io.File;
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.LinkOption;
-import java.nio.file.Path;
-import java.nio.file.WatchEvent.Kind;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.Consumer;
-
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.Term;
 import org.apache.solr.client.solrj.SolrQuery;
-import org.apache.solr.common.SolrDocument;
 import org.pageseeder.berlioz.GlobalSettings;
 import org.pageseeder.berlioz.util.Pair;
 import org.pageseeder.flint.IndexException;
@@ -45,6 +24,20 @@ import org.pageseeder.flint.solr.query.SolrQueryManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.LinkOption;
+import java.nio.file.Path;
+import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicInteger;
+
+import static java.nio.file.StandardWatchEventKinds.ENTRY_CREATE;
+import static java.nio.file.StandardWatchEventKinds.ENTRY_DELETE;
+
 public class FolderWatcher {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(FolderWatcher.class);
@@ -53,6 +46,8 @@ public class FolderWatcher {
   private final int _maxFolders;
   private final DelayedIndexer _delayedIndexer;
   private final ExecutorService _indexThread;
+  private final List<Path> _ignore = new ArrayList<>();
+  private FileTreeCrawler crawler = null;
 
   /**
    * @param root          the root folder
@@ -70,7 +65,19 @@ public class FolderWatcher {
       this._indexThread = null;
     }
   }
-  
+
+  /**
+   * Set a list of paths (relative to root) that the watcher should ignore
+   *
+   * @param toignore list of paths to ignore
+   */
+  public void setIgnore(List<String> toignore) {
+    for (String ig : toignore) {
+      if (ig != null && !ig.isEmpty())
+        this._ignore.add(new File(this._root, ig).toPath());
+    }
+  }
+
   /**
    * Start the folder watcher
    */
@@ -81,32 +88,31 @@ public class FolderWatcher {
       this._indexThread.execute(this._delayedIndexer);
     }
     // go through folder hierarchy to add watchers
-    FileTreeCrawler crawler = new FileTreeCrawler(this._root.toPath(), null, new WatchListener() {
-      @Override
-      public void received(Path path, Kind<Path> kind) {
-        // if deleted, file does not exist anymore so
-        // can't check for folder, use filename TODO is this the best?
-        if (kind == ENTRY_DELETE && path.getFileName().toString().indexOf('.') == -1) {
-          folderDeleted(path.toFile());
-        } else if (kind == ENTRY_CREATE && Files.isDirectory(path, LinkOption.NOFOLLOW_LINKS)) {
-          folderAdded(path.toFile());
-        } else if (!Files.isDirectory(path, LinkOption.NOFOLLOW_LINKS)) {
-          fileChanged(path.toFile());
-        }
+    this.crawler = new FileTreeCrawler(this._root.toPath(), this._ignore, (path, kind) -> {
+      // if deleted, file does not exist anymore so
+      // can't check for folder, use filename TODO is this the best?
+      if (kind == ENTRY_DELETE && path.getFileName().toString().indexOf('.') == -1) {
+        folderDeleted(path.toFile());
+      } else if (kind == ENTRY_CREATE && Files.isDirectory(path, LinkOption.NOFOLLOW_LINKS)) {
+        folderAdded(path.toFile());
+      } else if (!Files.isDirectory(path, LinkOption.NOFOLLOW_LINKS)) {
+        fileChanged(path.toFile());
       }
     }, this._maxFolders);
     // start crawling
     try {
-      crawler.start();
+      this.crawler.start();
     } catch (IOException ex) {
       LOGGER.error("Failed to start watcher", ex);
     }
   }
 
   /**
-   * Stop delayed indexing thread if setup.
+   * Stop watcher and delayed indexing thread if setup.
    */
   public void stop() {
+    if (this.crawler != null)
+      this.crawler.stop();
     if (this._delayedIndexer != null) {
       this._delayedIndexer.stop();
       this._indexThread.shutdown();
@@ -153,6 +159,8 @@ public class FolderWatcher {
   }
 
   private void folderAdded(File file) {
+    File[] files = file.listFiles();
+    if (files == null) return;
     LOGGER.debug("Folder added {}", file);
     FlintConfig config = FlintConfig.get();
     // lucene
@@ -163,7 +171,7 @@ public class FolderWatcher {
       if (this._delayedIndexer == null) {
         LOGGER.debug("Re-indexing file {}", file);
         Requester req = new Requester("Berlioz File Watcher");
-        for (File afile : file.listFiles()) {
+        for (File afile : files) {
           if (Files.isDirectory(afile.toPath(), LinkOption.NOFOLLOW_LINKS)) {
             folderAdded(afile);
           } else {
@@ -175,7 +183,7 @@ public class FolderWatcher {
         }
       } else {
         LOGGER.debug("Delay re-indexing of file {}", file);
-        for (File afile : file.listFiles()) {
+        for (File afile : files) {
           if (Files.isDirectory(afile.toPath(), LinkOption.NOFOLLOW_LINKS)) {
             folderAdded(afile);
           } else {
@@ -194,7 +202,7 @@ public class FolderWatcher {
       if (this._delayedIndexer == null) {
         LOGGER.debug("Re-indexing file {}", file);
         Requester req = new Requester("Berlioz File Watcher");
-        for (File afile : file.listFiles()) {
+        for (File afile : files) {
           if (Files.isDirectory(afile.toPath(), LinkOption.NOFOLLOW_LINKS)) {
             folderAdded(afile);
           } else {
@@ -206,7 +214,7 @@ public class FolderWatcher {
         }
       } else {
         LOGGER.debug("Delay re-indexing of file {}", file);
-        for (File afile : file.listFiles()) {
+        for (File afile : files) {
           if (Files.isDirectory(afile.toPath(), LinkOption.NOFOLLOW_LINKS)) {
             folderAdded(afile);
           } else {
@@ -226,7 +234,7 @@ public class FolderWatcher {
     Collection<IndexMaster> destinations = getLuceneDestinations(file, config);
     // index it if there's a destination
     for (IndexMaster destination : destinations) {
-      Collection<File> toReIndex = new ArrayList<File>();
+      Collection<File> toReIndex = new ArrayList<>();
       // find all files located in there
       try {
         String path = destination.getIndex().fileToPath(file);
@@ -265,15 +273,12 @@ public class FolderWatcher {
     Collection<SolrIndexMaster> solrDestinations = getSolrDestinations(file, config);
     // index it if there's a destination
     for (SolrIndexMaster destination : solrDestinations) {
-      Collection<File> toReIndex = new ArrayList<File>();
+      Collection<File> toReIndex = new ArrayList<>();
       // find all files located in there
       String path = destination.getIndex().fileToPath(file);
-      new SolrQueryManager(destination.getIndex()).select(new SolrQuery("_path:"+path+'*'), new Consumer<SolrDocument>() {
-        @Override
-        public void accept(SolrDocument doc) {
-          String p = (String) doc.get("_path");
-          if (p != null) toReIndex.add(destination.getIndex().pathToFile(p));
-        }
+      new SolrQueryManager(destination.getIndex()).select(new SolrQuery("_path:"+path+'*'), doc -> {
+        String p = (String) doc.get("_path");
+        if (p != null) toReIndex.add(destination.getIndex().pathToFile(p));
       });
       // delayed indexing?
       if (this._delayedIndexer == null) {
@@ -353,24 +358,24 @@ public class FolderWatcher {
     /**
      * @param delay the indexing delay in seconds
      */
-    public DelayedIndexer(int delay) {
+    DelayedIndexer(int delay) {
       this._delay = delay;
     }
 
     /**
      * Mark the thread so that is will stop when possible next.
      */
-    public void stop() {
+    void stop() {
       this.keepGoing = false;
     }
 
     /**
      * Add a new file to be indexed
      * @param index the index
-     * @param file  the file
+     * @param path  the file
      */
     public void index(LuceneLocalIndex index, String path) {
-      Pair<String, LuceneLocalIndex> key = new Pair<String, LuceneLocalIndex>(path, index);
+      Pair<String, LuceneLocalIndex> key = new Pair<>(path, index);
       synchronized (this._delayedLuceneIndexing) {
         AtomicInteger delay = this._delayedLuceneIndexing.get(key);
         // add it if not there
@@ -384,10 +389,10 @@ public class FolderWatcher {
     /**
      * Add a new file to be indexed
      * @param index the index
-     * @param file  the file
+     * @param path  the file
      */
     public void index(SolrLocalIndex index, String path) {
-      Pair<String, SolrLocalIndex> key = new Pair<String, SolrLocalIndex>(path, index);
+      Pair<String, SolrLocalIndex> key = new Pair<>(path, index);
       synchronized (this._delayedSolrIndexing) {
         AtomicInteger delay = this._delayedSolrIndexing.get(key);
         // add it if not there
@@ -406,7 +411,7 @@ public class FolderWatcher {
         try {
           Thread.sleep(1000);
         } catch (InterruptedException ex) {
-          if (!this.keepGoing) break bigloop;
+          if (!this.keepGoing) break;
           LOGGER.error("Failed to wait 1s in delayed indexer", ex);
           break;
         }

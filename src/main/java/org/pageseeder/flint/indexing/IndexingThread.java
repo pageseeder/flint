@@ -15,6 +15,19 @@
  */
 package org.pageseeder.flint.indexing;
 
+import org.pageseeder.flint.*;
+import org.pageseeder.flint.content.Content;
+import org.pageseeder.flint.content.ContentTranslator;
+import org.pageseeder.flint.ixml.IndexParser;
+import org.pageseeder.flint.ixml.IndexParserFactory;
+import org.pageseeder.flint.templates.FlintErrorListener;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import javax.xml.transform.Result;
+import javax.xml.transform.Templates;
+import javax.xml.transform.Transformer;
+import javax.xml.transform.stream.StreamSource;
 import java.io.IOException;
 import java.io.Reader;
 import java.util.Collection;
@@ -23,36 +36,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
-import javax.xml.transform.Result;
-import javax.xml.transform.Templates;
-import javax.xml.transform.Transformer;
-import javax.xml.transform.stream.StreamSource;
-
-import org.pageseeder.flint.Index;
-import org.pageseeder.flint.IndexException;
-import org.pageseeder.flint.IndexIO;
-import org.pageseeder.flint.IndexManager;
-import org.pageseeder.flint.OpenIndexManager;
-import org.pageseeder.flint.Requester;
-import org.pageseeder.flint.content.Content;
-import org.pageseeder.flint.content.ContentTranslator;
-import org.pageseeder.flint.indexing.IndexJob.Priority;
-import org.pageseeder.flint.ixml.IndexParser;
-import org.pageseeder.flint.ixml.IndexParserFactory;
-import org.pageseeder.flint.templates.FlintErrorListener;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 /**
- * Main class from Flint, applications should create one instance of this class.
- *
- * <ul>
- *   <li>To start and stop the indexing thread, use the methods {@link #start()} and {@link #stop()}.</li>
- *   <li>To register IndexConfigs, use the methods registerIndexConfig() and getConfig().</li>
- *   <li>To add/modify/delete content from an Index, use the method {@link #index(ContentId, Index, IndexConfig, Requester, Priority, Map)}</li>
- *   <li>To search an Index, use the methods {@link IndexingThread#query()}</li>
- *   <li>to load an Index's statuses, use the method {@link #getStatus()}</li>
- * </ul>
+ * Class used to index the content using iXML XSLT template.
  *
  * @author Jean-Baptiste Reure
  * @authro Christophe Lauret
@@ -89,7 +74,7 @@ public final class IndexingThread implements Runnable {
   /**
    * Simple Constructor.
    *
-   * @param cf       the Content Fetcher used to retrieve the content to index.
+   * @param manager  the manager used to retrieve the content to index.
    * @param listener an object used to record events
    */
   public IndexingThread(IndexManager manager, IndexListener listener, IndexJobQueue queue, boolean singleThread) {
@@ -109,7 +94,7 @@ public final class IndexingThread implements Runnable {
       try {
         job = this._singleThread ? this._indexQueue.nextSingleThreadJob() : this._indexQueue.nextMultiThreadJob();
       } catch (InterruptedException ex) {
-        this._listener.error(job, "Interrupted indexing: " + ex.getMessage(), ex);
+        this._listener.error(null, "Interrupted indexing: " + ex.getMessage(), ex);
         // the thread was shutdown, let's die then
         return;
       }
@@ -131,9 +116,7 @@ public final class IndexingThread implements Runnable {
       try {
         // clear job?
         if (job.isClearJob()) {
-          if (Thread.currentThread().isInterrupted())
-            success = false;
-          else try {
+          if (!Thread.currentThread().isInterrupted()) try {
             success = io.clearIndex();
           } catch (Exception ex) {
             this._listener.error(job, "Failed to clear index", ex);
@@ -179,7 +162,7 @@ public final class IndexingThread implements Runnable {
     } catch (Throwable ex) {
       this._listener.error(job, "Unexpected general error: " + ex.getMessage(), ex);
     }
-  };
+  }
 
   // private methods
   // ----------------------------------------------------------------------------------------------
@@ -254,12 +237,12 @@ public final class IndexingThread implements Runnable {
   /**
    * Translate the provided content into Flint Index XML
    *
+   * @param manager         the manager
    * @param errorListener   a listener for the XSLT transformation errors
-   * @param type            the type of the content
-   * @param config          the config used to retrieve the XSLT templates
+   * @param index           the index used
    * @param content         the content
    * @param params          list of parameters to add to the XSLT templates
-   * @param out             where the result should be written to
+   * @param result          where the result should be written to
    * @throws IndexException if anything went wrong
    */
   public static void translateContent(IndexManager manager, FlintErrorListener errorListener,
@@ -271,7 +254,7 @@ public final class IndexingThread implements Runnable {
     // load translator
     ContentTranslator translator = manager.getTranslator(mediatype);
     // ok translate now
-    Reader source = null;
+    Reader source;
     try {
       source = translator.translate(content);
     } catch (IndexException ex) {
@@ -291,7 +274,7 @@ public final class IndexingThread implements Runnable {
         t.setErrorListener(errorListener);
       }
       // retrieve parameters
-      Map<String, String> parameters = new HashMap<String, String>();
+      Map<String, String> parameters = new HashMap<>();
       Map<String, String> indexParams = index.getParameters(content);
       if (indexParams != null) parameters.putAll(indexParams);
       if (params != null)      parameters.putAll(params);

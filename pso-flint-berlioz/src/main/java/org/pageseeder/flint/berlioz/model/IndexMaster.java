@@ -1,18 +1,5 @@
 package org.pageseeder.flint.berlioz.model;
 
-import java.io.File;
-import java.io.FileFilter;
-import java.io.IOException;
-import java.io.Writer;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
-import javax.xml.transform.TransformerException;
-
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.queryparser.classic.ParseException;
 import org.apache.lucene.queryparser.classic.QueryParser;
@@ -25,6 +12,7 @@ import org.pageseeder.berlioz.util.MD5;
 import org.pageseeder.flint.IndexException;
 import org.pageseeder.flint.IndexManager;
 import org.pageseeder.flint.Requester;
+import org.pageseeder.flint.content.ContentTranslator;
 import org.pageseeder.flint.indexing.FlintDocument;
 import org.pageseeder.flint.indexing.IndexJob;
 import org.pageseeder.flint.local.LocalFileContent;
@@ -35,6 +23,10 @@ import org.pageseeder.flint.lucene.query.SearchQuery;
 import org.pageseeder.flint.lucene.query.SearchResults;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import javax.xml.transform.TransformerException;
+import java.io.*;
+import java.util.*;
 
 /**
  * 
@@ -221,14 +213,33 @@ public final class IndexMaster {
       clearAutoSuggest(name, this._autosuggests.get(name));
     }
   }
+  public void generateContent(File f, Writer out) throws IndexException, IOException {
+    // create content
+    LocalFileContent content = new LocalFileContent(f, null);
+    // load translator
+    ContentTranslator translator = this._manager.getTranslator(content.getMediaType());
+    if (translator == null) {
+      // assuming XML
+      out.write("<error>No translator found for media type "+content.getMediaType()+"</error>");
+    } else {
+      // ok translate now
+      Reader source = translator.translate(content);
+      // write it to output
+      char[] buffer = new char[1024];
+      int read;
+      while ((read = source.read(buffer)) != -1) {
+        out.write(buffer, 0, read);
+      }
+    }
+  }
 
-  public void generateIXML(File f, Writer out) throws IndexException, IOException {
+  public void generateIXML(File f, Writer out) throws IndexException {
     // create content
     LocalFileContent content = new LocalFileContent(f, null);
     this._manager.contentToIXML(this._index, content, this._index.getParameters(f), out);
   }
 
-  public List<FlintDocument> generateLuceneDocuments(File f) throws IndexException, IOException {
+  public List<FlintDocument> generateLuceneDocuments(File f) throws IndexException {
     // create content
     LocalFileContent content = new LocalFileContent(f, null);
     return this._manager.contentToDocuments(this._index, content, this._index.getParameters(f));
@@ -264,6 +275,7 @@ public final class IndexMaster {
     // create auto suggest object
     org.pageseeder.flint.lucene.search.AutoSuggest.Builder aBuilder = new org.pageseeder.flint.lucene.search.AutoSuggest.Builder();
     aBuilder.index(this._index)
+            .name(autosuggestIndexName)
             .directory(autosuggestDir)
             .minChars(min)
             .useTerms(terms)

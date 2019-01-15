@@ -1,5 +1,6 @@
 rootProject.name = 'pso-flint'
 
 include ':pso-flint-berlioz'
+include ':pso-flint-berlioz-tika'
 include ':pso-flint-lucene'
 include ':pso-flint-solr'

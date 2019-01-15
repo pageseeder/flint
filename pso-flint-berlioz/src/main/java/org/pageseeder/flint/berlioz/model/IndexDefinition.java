@@ -1,5 +1,10 @@
 package org.pageseeder.flint.berlioz.model;
 
+import org.pageseeder.xmlwriter.XMLWritable;
+import org.pageseeder.xmlwriter.XMLWriter;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.io.File;
 import java.io.FileFilter;
 import java.io.IOException;
@@ -8,21 +13,10 @@ import java.nio.file.FileVisitor;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.attribute.BasicFileAttributes;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.Map.Entry;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
-import org.pageseeder.flint.berlioz.util.FileFilters;
-import org.pageseeder.xmlwriter.XMLWritable;
-import org.pageseeder.xmlwriter.XMLWriter;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * Contains the definition of an index as loaded from Berlioz config file.
@@ -48,7 +42,12 @@ public class IndexDefinition implements XMLWritable {
   /**
    * The content paths to exclude (static or dynamic)
    */
-  private final List<String> _pathExcludes = new ArrayList<String>();
+  private final List<String> _pathExcludes = new ArrayList<>();
+
+  /**
+   * The file extensions to include
+   */
+  private final List<String> _extensions = new ArrayList<>();
 
   /**
    * A regex matching the files to include when indexing
@@ -87,8 +86,8 @@ public class IndexDefinition implements XMLWritable {
    * 
    * @throws InvalidIndexDefinitionException if template deos not exist or path and name don't match
    */
-  public IndexDefinition(String name, String indexname, String path,
-                         Collection<String> excludes, File template) throws InvalidIndexDefinitionException {
+  public IndexDefinition(String name, String indexname, String path, Collection<String> excludes,
+                         File template, Collection<String> extensions) throws InvalidIndexDefinitionException {
     if (name == null) throw new NullPointerException("name");
     if (indexname == null) throw new NullPointerException("indexname");
     if (path == null) throw new NullPointerException("path");
@@ -101,6 +100,9 @@ public class IndexDefinition implements XMLWritable {
         this._pathExcludes.add(exclude.replaceFirst("/$", "")); //remove trailing '/'
       }
     }
+    if (extensions == null || extensions.isEmpty())
+      throw new InvalidIndexDefinitionException("no extensions defined");
+    for (String ext : extensions) this._extensions.add(ext.toLowerCase());
     this._template = template;
     if (!template.exists() || !template.isFile())
       throw new InvalidIndexDefinitionException("invalid template file "+template.getAbsolutePath());
@@ -156,24 +158,21 @@ public class IndexDefinition implements XMLWritable {
   }
 
   public FileFilter buildFileFilter(final File root) {
-    // no regex ? just match PSML files then
-    if (this.includeFilesRegex != null || this.excludeFilesRegex != null) {
-      return new FileFilter() {
-        @Override
-        public boolean accept(File file) {
-          String path = org.pageseeder.flint.berlioz.util.Files.path(root, file);
-          // can't compute the path? means they are not related, don't index
-          if (path == null) return false;
-          // include
-          if (includeFilesRegex != null && !path.matches(includeFilesRegex)) return false;
-          // exclude
-          if (excludeFilesRegex != null && path.matches(excludeFilesRegex)) return false;
-          return true;
-        }
-      };
-    }
-    // default is all PSML files
-    return FileFilters.getPSMLFiles();
+    // use extensions
+    return file -> {
+      String path = org.pageseeder.flint.berlioz.util.Files.path(root, file);
+      // can't compute the path? means they are not related, don't index
+      if (path == null) return false;
+      // extension
+      int dot = path.lastIndexOf('.');
+      if (dot == -1) return false;
+      if (!this._extensions.contains(path.substring(dot+1).toLowerCase())) return false;
+      // include
+      if (includeFilesRegex != null && !path.matches(includeFilesRegex)) return false;
+      // exclude
+      if (excludeFilesRegex != null && path.matches(excludeFilesRegex)) return false;
+      return true;
+    };
   }
 
   public boolean indexNameClash(IndexDefinition other) {
@@ -202,7 +201,7 @@ public class IndexDefinition implements XMLWritable {
   }
 
   /**
-   * @param error new error message
+   * @param templateError new error message
    */
   public void setTemplateError(String templateError) {
     this.templateError = templateError;
@@ -232,8 +231,7 @@ public class IndexDefinition implements XMLWritable {
    * Build the root folder for the content using the root and the index name provided.
    * 
    * @param root the root folder
-   * @param name the index name
-   * 
+   *
    * @return the file
    */
   public Collection<File> findContentRoots(final File root) {
@@ -333,8 +331,9 @@ public class IndexDefinition implements XMLWritable {
    *  idx-{name}    /a/b/d/{name}/e   /a/b/c/d/e/f                null
    *  index-{name}  /a/b/files-{name} /a/b/files-001c/d/e/f       index-001
    *  
-   * @param path
-   * @return
+   * @param path the path of the file
+   *
+   * @return an index name if found, null otherwise
    */
   public String findIndexName(String path) {
     if (path == null) return null;

@@ -1,12 +1,5 @@
 package org.pageseeder.flint.lucene.search;
 
-import java.io.File;
-import java.io.IOException;
-import java.io.Serializable;
-import java.util.List;
-
-import javax.xml.transform.TransformerException;
-
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.store.FSDirectory;
@@ -24,10 +17,15 @@ import org.pageseeder.flint.local.LocalFileContentType;
 import org.pageseeder.flint.local.LocalIndexer;
 import org.pageseeder.flint.lucene.LuceneIndexQueries;
 import org.pageseeder.flint.lucene.LuceneLocalIndex;
-import org.pageseeder.flint.lucene.search.AutoSuggest;
 import org.pageseeder.flint.lucene.search.AutoSuggest.Suggestion;
 import org.pageseeder.flint.lucene.utils.TestListener;
 import org.pageseeder.flint.lucene.utils.TestUtils;
+
+import javax.xml.transform.TransformerException;
+import java.io.File;
+import java.io.IOException;
+import java.io.Serializable;
+import java.util.List;
 
 public class AutoSuggestTest {
 
@@ -71,7 +69,7 @@ public class AutoSuggestTest {
   public void testAutoSuggestTerms() throws IndexException {
     IndexReader reader;
     try {
-      AutoSuggest as = new AutoSuggest.Builder().index(index).useTerms(true).build();
+      AutoSuggest as = new AutoSuggest.Builder().name("testAutoSuggestTerms").index(index).useTerms(true).build();
       reader = LuceneIndexQueries.grabReader(index);
       as.addSearchField("fulltext");
       as.build(reader);
@@ -97,7 +95,7 @@ public class AutoSuggestTest {
     File tempRoot = new File("tmp/index-as");
     IndexReader reader;
     try {
-      AutoSuggest as = new AutoSuggest.Builder().index(index).useTerms(false).directory(FSDirectory.open(tempRoot.toPath())).build();
+      AutoSuggest as = new AutoSuggest.Builder().name("testAutoSuggestReuseFields1").index(index).useTerms(false).directory(FSDirectory.open(tempRoot.toPath())).build();
       File doc5 = null;
       try {
         reader = LuceneIndexQueries.grabReader(index);
@@ -126,7 +124,7 @@ public class AutoSuggestTest {
         tempRoot.delete();
       }
       // try again
-      as = new AutoSuggest.Builder().index(index).useTerms(false).directory(FSDirectory.open(tempRoot.toPath())).build();
+      as = new AutoSuggest.Builder().index(index).name("testAutoSuggestReuseFields2").useTerms(false).directory(FSDirectory.open(tempRoot.toPath())).build();
       as.addSearchField("name");
       try {
         // rebuild autosuggest
@@ -158,7 +156,7 @@ public class AutoSuggestTest {
       // test current
       Assert.assertFalse(as.isCurrent(manager));
       // try again
-      as = new AutoSuggest.Builder().index(index).useTerms(false).directory(FSDirectory.open(tempRoot.toPath())).build();
+      as = new AutoSuggest.Builder().index(index).name("testAutoSuggestReuseFields3").useTerms(false).directory(FSDirectory.open(tempRoot.toPath())).build();
       as.addSearchField("name");
       try {
         // check again
@@ -189,7 +187,7 @@ public class AutoSuggestTest {
   public void testAutoSuggestFields() throws IndexException {
     IndexReader reader;
     try {
-      AutoSuggest as = new AutoSuggest.Builder().index(index).useTerms(false).build();
+      AutoSuggest as = new AutoSuggest.Builder().name("testAutoSuggestFields").index(index).useTerms(false).build();
       reader = LuceneIndexQueries.grabReader(index);
       as.addSearchField("name");
       as.build(reader);
@@ -221,7 +219,7 @@ public class AutoSuggestTest {
   public void testAutoSuggestFieldsWithCriteria() throws IndexException {
     IndexReader reader;
     try {
-      AutoSuggest as = new AutoSuggest.Builder().index(index).useTerms(false).build();
+      AutoSuggest as = new AutoSuggest.Builder().name("testAutoSuggestFieldsWithCriteria").index(index).useTerms(false).build();
       reader = LuceneIndexQueries.grabReader(index);
       as.addSearchField("name");
       as.setCriteriaField("color");
@@ -265,7 +263,7 @@ public class AutoSuggestTest {
     try {
       reader = LuceneIndexQueries.grabReader(index);
       // use weight1 only
-      AutoSuggest as = new AutoSuggest.Builder().index(index).useTerms(false).build();
+      AutoSuggest as = new AutoSuggest.Builder().name("testAutoSuggestWeights1").index(index).useTerms(false).build();
       as.addSearchField("weighted-search");
       as.setWeight("weight1", 1);
       as.build(reader);
@@ -281,7 +279,7 @@ public class AutoSuggestTest {
       Assert.assertEquals("weight 0.5 2",    suggestions.get(3).text);// 0.5
       as.close();
       // use weight1 and weight2
-      as = new AutoSuggest.Builder().index(index).useTerms(false).build();
+      as = new AutoSuggest.Builder().index(index).name("testAutoSuggestWeights2").useTerms(false).build();
       as.addSearchField("weighted-search");
       as.setWeights("weight1:0.5,weight2:10");
       as.build(reader);
@@ -297,7 +295,7 @@ public class AutoSuggestTest {
       Assert.assertEquals("weight 10 0.25",  suggestions.get(3).text);// 7.5
       as.close();
       // use weight2 only
-      as = new AutoSuggest.Builder().index(index).useTerms(false).build();
+      as = new AutoSuggest.Builder().index(index).name("testAutoSuggestWeights3").useTerms(false).build();
       as.addSearchField("weighted-search");
       as.setWeight("weight1", 0);
       as.setWeight("weight2", 4);
@@ -324,7 +322,7 @@ public class AutoSuggestTest {
   public void testAutoSuggestObjects() throws IndexException {
     IndexReader reader;
     try {
-      AutoSuggest as = new AutoSuggest.Builder().index(index).useTerms(false).build();
+      AutoSuggest as = new AutoSuggest.Builder().index(index).name("testAutoSuggestObjects").useTerms(false).build();
       reader = LuceneIndexQueries.grabReader(index);
       as.addSearchField("name");
       as.addResultField("name");

@@ -1,29 +1,10 @@
 package org.pageseeder.flint.lucene.search;
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
-import java.util.Set;
-
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.analysis.util.CharArraySet;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.LeafReader;
-import org.apache.lucene.index.LeafReaderContext;
-import org.apache.lucene.index.MultiFields;
-import org.apache.lucene.index.TermsEnum;
+import org.apache.lucene.index.*;
 import org.apache.lucene.search.suggest.Lookup.LookupResult;
 import org.apache.lucene.search.suggest.analyzing.AnalyzingInfixSuggester;
 import org.apache.lucene.store.Directory;
@@ -36,6 +17,10 @@ import org.pageseeder.flint.IndexManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.*;
+import java.util.*;
+import java.util.Map.Entry;
+
 public class AutoSuggest {
 
   private final static Logger LOGGER = LoggerFactory.getLogger(AutoSuggest.class);
@@ -43,6 +28,8 @@ public class AutoSuggest {
   private AnalyzingInfixSuggester suggester;
 
   private final List<String> _resultFields = new ArrayList<>();
+
+  private final String _name;
 
   private final Index _index;
 
@@ -56,13 +43,14 @@ public class AutoSuggest {
 
   private long lastBuilt = -1;
   
-  private AutoSuggest(Index index, Directory dir, Analyzer indexAnalyzer, Analyzer searchAnalyzer, boolean useTerms, int minChars) throws IndexException {
+  private AutoSuggest(String name, Index index, Directory dir, Analyzer indexAnalyzer, Analyzer searchAnalyzer, boolean useTerms, int minChars) throws IndexException {
+    this._name = name;
     this._index = index;
     this._useTerms = useTerms;
     try {
       this.suggester = new AnalyzingInfixSuggester(dir, indexAnalyzer, searchAnalyzer, minChars, true, true, true);
     } catch (IOException ex) {
-      LOGGER.error("Failed to build autosuggest", ex);
+      LOGGER.error("Failed to build autosuggest {}", this._name, ex);
       throw new IndexException("Failed to build autosuggest", ex);
     }
   }
@@ -110,7 +98,7 @@ public class AutoSuggest {
         try {
           this._weights.put(parts[0], Float.valueOf(parts[1]));
         } catch (NumberFormatException ex) {
-          LOGGER.error("Ignoring invalid autosuggest weight for field {}: not a number! ()", parts[0], parts[1]);
+          LOGGER.error("Ignoring invalid autosuggest {} weight for field {}: not a number! ({})", this._name, parts[0], parts[1]);
         }
       }
     }
@@ -157,7 +145,7 @@ public class AutoSuggest {
           this.lastBuilt = System.currentTimeMillis();
         }
       } catch (IOException | IllegalStateException ex) {
-        LOGGER.error("Failed to build autosuggest dictionary", ex);
+        LOGGER.error("Failed to build dictionary for autosuggest {}", this._name, ex);
       }
     }
   }
@@ -165,7 +153,7 @@ public class AutoSuggest {
   /**
    * Add entries to the suggester
    * 
-   * @param subReader    where to read the documents from
+   * @param context    where to read the documents from
    * @param fieldsToLoad the fields to add
    * 
    * @return <code>true</code> if something was added
@@ -223,11 +211,15 @@ public class AutoSuggest {
         String[] texts = doc.getValues(field);
         if (texts != null) {
           for (String text : texts) {
-            this.suggester.add(new BytesRef(text), contexts, weight, payload);
+            try {
+              this.suggester.add(new BytesRef(text), contexts, weight, payload);
+            } catch (Exception ex) {
+              LOGGER.error("Failed to add text for field {} to autosuggest {}", field, this._name);
+            }
             buildit = true;
           }
         } else {
-          LOGGER.error("Failed to load values for field {}", field);
+          LOGGER.error("Failed to load values for field {} in autosuggest {}", field, this._name);
         }
       }
     }
@@ -290,7 +282,7 @@ public class AutoSuggest {
   public List<Suggestion> suggest(String text, Collection<String> criteria, int nb) {
     List<Suggestion> suggestions = new ArrayList<>();
     if (this.lastBuilt == -1) {
-      LOGGER.warn("Loading suggestions with empty suggester!");
+      LOGGER.warn("Loading suggestions with empty suggester for autosuggest {}!", this._name);
       return suggestions;
     }
     if (this.suggester == null) return suggestions;
@@ -308,7 +300,7 @@ public class AutoSuggest {
       try {
         results = this.suggester.lookup(text, contexts, false, nb);
       } catch (IOException ex) {
-        LOGGER.error("Failed to lookup autosuggest suggestions", ex);
+        LOGGER.error("Failed to lookup suggestions for autosuggest {}", this._name, ex);
       }
     }
     if (results != null) {
@@ -335,7 +327,7 @@ public class AutoSuggest {
     try {
       this.suggester.close();
     } catch (IOException ex) {
-      LOGGER.error("Failed to close autosuggestor", ex);
+      LOGGER.error("Failed to close autosuggest {}", this._name, ex);
     }
   }
   // --------------------------------------------------------------------------------------
@@ -344,6 +336,7 @@ public class AutoSuggest {
 
   public static class Builder {
     private Boolean _terms = null;
+    private String _name = null;
     private Index _index = null;
     private Directory _dir = null;
     private Analyzer _indexAnalyzer = null;
@@ -365,8 +358,12 @@ public class AutoSuggest {
       this._searchAnalyzer = analyzer;
       return this;
     }
+    public Builder name(String name) {
+      this._name = name;
+      return this;
+    }
     public Builder useTerms(boolean terms) {
-      this._terms = Boolean.valueOf(terms);
+      this._terms = terms;
       return this;
     }
     public Builder directory(Directory dir) {
@@ -395,11 +392,12 @@ public class AutoSuggest {
     }
     public AutoSuggest build() throws IndexException {
       if (this._terms == null) throw new IllegalStateException("missing terms");
+      if (this._name  == null) throw new IllegalStateException("missing name");
       if (this._index == null) throw new IllegalStateException("missing index");
       Directory dir = this._dir == null ? new RAMDirectory() : this._dir;
       Analyzer indexAnalyzer  = this._indexAnalyzer  == null ? new StandardAnalyzer(CharArraySet.EMPTY_SET) : this._indexAnalyzer;
       Analyzer searchAnalyzer = this._searchAnalyzer == null ? new StandardAnalyzer(CharArraySet.EMPTY_SET) : this._searchAnalyzer;
-      AutoSuggest as = new AutoSuggest(this._index, dir, indexAnalyzer, searchAnalyzer, this._terms.booleanValue(), this._minChars);
+      AutoSuggest as = new AutoSuggest(this._name, this._index, dir, indexAnalyzer, searchAnalyzer, this._terms, this._minChars);
       as.setCriteriaField(this._criteria);
       as.addSearchFields(this._searchFields);
       as.addResultFields(this._resultFields);

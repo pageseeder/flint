@@ -17,17 +17,6 @@
  */
 package org.pageseeder.flint.berlioz.model;
 
-import java.io.File;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
-import javax.xml.transform.TransformerException;
-
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.pageseeder.berlioz.GlobalSettings;
@@ -36,9 +25,7 @@ import org.pageseeder.flint.berlioz.helper.FolderWatcher;
 import org.pageseeder.flint.berlioz.helper.QuietListener;
 import org.pageseeder.flint.berlioz.model.IndexDefinition.InvalidIndexDefinitionException;
 import org.pageseeder.flint.catalog.Catalogs;
-import org.pageseeder.flint.content.ContentTranslator;
 import org.pageseeder.flint.content.ContentTranslatorFactory;
-import org.pageseeder.flint.content.SourceForwarder;
 import org.pageseeder.flint.indexing.IndexBatch;
 import org.pageseeder.flint.local.LocalFileContentFetcher;
 import org.pageseeder.flint.solr.SolrCollectionManager;
@@ -47,6 +34,10 @@ import org.pageseeder.flint.solr.SolrFlintException;
 import org.pageseeder.flint.templates.TemplatesCache;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import javax.xml.transform.TransformerException;
+import java.io.File;
+import java.util.*;
 
 /**
  * Flint config in berlioz config: <flint> <watcher [watch="true|false"]
@@ -135,7 +126,7 @@ public class FlintConfig {
    * @return the index master with the name provided
    */
   public IndexMaster getMaster(String name) {
-    return getMaster(name, false);
+    return getMaster(name, true);
   }
 
   /**
@@ -148,7 +139,7 @@ public class FlintConfig {
     String key = name == null ? DEFAULT_INDEX_NAME : name;
     // make sure only one gets created
     synchronized (this.indexes) {
-      if (!this.indexes.containsKey(key)) {
+      if (!this.indexes.containsKey(key) && createIfNotFound) {
         IndexDefinition def = getIndexDefinitionFromIndexName(key);
         if (def == null) {
           // no config found
@@ -223,30 +214,29 @@ public class FlintConfig {
     String key = name == null ? DEFAULT_INDEX_NAME : name;
     if (this.indexes.containsKey(key)) {
       // close index
-      IndexMaster master = this.indexes.remove(name);
+      IndexMaster master = this.indexes.remove(key);
       master.getIndex().close();
       // remove files
-      File root = new File(this._directory, name);
+      File root = new File(this._directory, key);
       if (root.exists() && root.isDirectory()) {
-        for (File f : root.listFiles()) {
-          f.delete();
-        }
+        File[] ff = root.listFiles();
+        if (ff != null) for (File f : ff) f.delete();
         return root.delete();
       }
       return true; // ???
-    } else if (this.solrIndexes.containsKey(name)) {
+    } else if (this.solrIndexes.containsKey(key)) {
       // close index
-      SolrIndexMaster master = this.solrIndexes.get(name);
+      SolrIndexMaster master = this.solrIndexes.get(key);
       master.getIndex().close();
       // delete collection from solr
       try {
-        new SolrCollectionManager().deleteCollection(name);
+        new SolrCollectionManager().deleteCollection(key);
       } catch (SolrFlintException ex) {
-        LOGGER.error("Failed to delete collection {} from Solr server", name, ex);
+        LOGGER.error("Failed to delete collection {} from Solr server", key, ex);
         return false;
       }
       // remove from local list
-      this.solrIndexes.remove(name);
+      this.solrIndexes.remove(key);
       return true;
     }
     return false;
@@ -258,9 +248,11 @@ public class FlintConfig {
     Catalogs.setRoot(catalogs);
     // create config
     File index = new File(GlobalSettings.getAppData(), DEFAULT_INDEX_LOCATION);
+    if (!index.exists()) index.mkdirs();
     File ixml = new File(GlobalSettings.getAppData(), DEFAULT_ITEMPLATES_LOCATION);
-    if (!index.exists()) {
-      index.mkdirs();
+    if (!ixml.exists()) {
+      File wixml = new File(GlobalSettings.getWebInf(), DEFAULT_ITEMPLATES_LOCATION);
+      if (wixml.exists()) ixml = wixml;
     }
     return new FlintConfig(index, ixml);
   }
@@ -290,7 +282,7 @@ public class FlintConfig {
     this.listener = new QuietListener(LOGGER);
     this.manager = new IndexManager(new LocalFileContentFetcher(), this.listener, nbThreads, false);
     this.manager.setThreadPriority(threadPriority);
-    this.manager.registerTranslatorFactory(createTranslatorFactory());
+    createTranslatorFactories();
     // watch is on?
     boolean watch = GlobalSettings.get("flint.watcher.watch", true);
     if (watch) {
@@ -298,7 +290,9 @@ public class FlintConfig {
           GlobalSettings.get("flint.watcher.root", DEFAULT_CONTENT_LOCATION));
       int maxFolders = GlobalSettings.get("flint.watcher.max-folders", DEFAULT_MAX_WATCH_FOLDERS);
       int indexingDelay = GlobalSettings.get("flint.watcher.delay", DEFAULT_WATCHER_DELAY_IN_SECONDS);
+      String excludes = GlobalSettings.get("flint.watcher.excludes");
       this.watcher = new FolderWatcher(root, maxFolders, indexingDelay);
+      if (excludes != null) this.watcher.setIgnore(Arrays.asList(excludes.split(",")));
       this.watcher.start();
     } else {
       this.watcher = null;
@@ -312,8 +306,9 @@ public class FlintConfig {
       File template = new File(ixml, GlobalSettings.get("flint.index." + type + ".template", indexName + ".xsl"));
       IndexDefinition def;
       try {
-        def = new IndexDefinition(type, indexName, path, excludes == null ? null : Arrays.asList(excludes.split(",")),
-            template);
+        def = new IndexDefinition(type, indexName, path,
+            excludes == null ? null : Arrays.asList(excludes.split(",")),
+            template, this._extensions);
         LOGGER.debug("New index config for {} with index name {}, path {} and template {}", type, indexName, path,
             template.getAbsolutePath());
       } catch (InvalidIndexDefinitionException ex) {
@@ -354,24 +349,23 @@ public class FlintConfig {
   }
 
   /**
-   * Create a factory that supports the extensions in this config.
-   *
-   * @return a new factory
+   * Create factories that supports the extensions in this config.
    */
-  private ContentTranslatorFactory createTranslatorFactory() {
-    final ArrayList<String> mimes = new ArrayList<>(this._extensions);
-    return new ContentTranslatorFactory() {
-
-      public ContentTranslator createTranslator(String mimeType) {
-        if (mimes.contains(mimeType))
-          return new SourceForwarder(mimeType, "UTF-8");
-        return null;
+  private void createTranslatorFactories() {
+    if (this._extensions.contains("psml") || this._extensions.contains("xml"))
+      this.manager.registerTranslatorFactory(new PSMLContentTranslatorFactory());
+    String tikaRequired = this._extensions.stream().filter(s -> !s.equals("psml") && !s.equals("xml")).findFirst().orElse(null);
+    if (tikaRequired != null) {
+      try {
+        Class tikaFactory = FlintConfig.class.getClassLoader().loadClass("org.pageseeder.flint.berlioz.tika.TikaTranslatorFactory");
+        if (tikaFactory != null)
+          this.manager.registerTranslatorFactory((ContentTranslatorFactory) tikaFactory.newInstance());
+      } catch (ClassNotFoundException ex) {
+        LOGGER.warn("Flint TIKA Translator Factory class not available, make sure library pso-flint-berlioz-tika is on the classpath to support extension {}", tikaRequired);
+      } catch (IllegalAccessException | InstantiationException ex) {
+        LOGGER.error("Failed to create TIKA Translator Factory", ex);
       }
-
-      public Collection<String> getMimeTypesSupported() {
-        return mimes;
-      }
-    };
+    }
   }
 
   /**
@@ -445,7 +439,7 @@ public class FlintConfig {
   }
 
   public Collection<IndexDefinition> listDefinitions() {
-    return new ArrayList<IndexDefinition>(this.indexConfigs.values());
+    return new ArrayList<>(this.indexConfigs.values());
   }
 
   public static synchronized void setAnalyzerFactory(AnalyzerFactory factory) {
@@ -561,7 +555,7 @@ public class FlintConfig {
           def.addAutoSuggest(autosuggest, Arrays.asList(suggesters.split(",")));
         } else {
           LOGGER.warn("Ignoring invalid autosuggest definition for {}: fields {}, terms {}, result fields {}",
-              autosuggest, fields, terms, rfields);
+              autosuggest, null, terms, rfields);
         }
       }
     }

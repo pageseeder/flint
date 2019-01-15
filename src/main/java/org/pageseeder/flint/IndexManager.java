@@ -15,51 +15,27 @@
  */
 package org.pageseeder.flint;
 
-import java.io.Writer;
-import java.util.Collection;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ThreadFactory;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicLong;
-
-import javax.xml.transform.stream.StreamResult;
-
-import org.pageseeder.flint.content.Content;
-import org.pageseeder.flint.content.ContentFetcher;
-import org.pageseeder.flint.content.ContentTranslator;
-import org.pageseeder.flint.content.ContentTranslatorFactory;
-import org.pageseeder.flint.content.ContentType;
-import org.pageseeder.flint.content.FlintTranslatorFactory;
-import org.pageseeder.flint.indexing.FlintDocument;
-import org.pageseeder.flint.indexing.IndexBatch;
-import org.pageseeder.flint.indexing.IndexJob;
+import org.pageseeder.flint.content.*;
+import org.pageseeder.flint.indexing.*;
 import org.pageseeder.flint.indexing.IndexJob.Priority;
-import org.pageseeder.flint.indexing.IndexJobQueue;
-import org.pageseeder.flint.indexing.IndexListener;
-import org.pageseeder.flint.indexing.IndexingThread;
 import org.pageseeder.flint.ixml.IndexParser;
 import org.pageseeder.flint.ixml.IndexParserFactory;
 import org.pageseeder.flint.log.NoOpListener;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.xml.transform.stream.StreamResult;
+import java.io.Writer;
+import java.util.Collection;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.*;
+
 /**
  * Main class from Flint, applications should create one instance of this class.
  *
- * <ul>
- *   <li>To start and stop the indexing thread, use the methods {@link #start()} and {@link #stop()}.</li>
- *   <li>To register IndexConfigs, use the methods registerIndexConfig() and getConfig().</li>
- *   <li>To add/modify/delete content from an Index, use the method {@link #index(ContentId, Index, IndexConfig, Requester, Priority, Map)}</li>
- *   <li>To search an Index, use the methods {@link IndexManager#query()}</li>
- *   <li>to load an Index's statuses, use the method {@link #getStatus()}</li>
- * </ul>
- *
  * @author Jean-Baptiste Reure
- * @authro Christophe Lauret
+ * @author Christophe Lauret
  *
  * @version 27 February 2013
  */
@@ -93,17 +69,12 @@ public final class IndexManager {
   /**
    * Maps index ID to the indexes IO.
    */
-  private static final ConcurrentHashMap<String, Index> ALL_INDEXES = new ConcurrentHashMap<String, Index>(100, 0.75f, 11);
+  private static final ConcurrentHashMap<String, Index> ALL_INDEXES = new ConcurrentHashMap<>(100, 0.75f, 11);
 
   /**
    * Maps MIME types to the ContentTranslator factory to use.
    */
   private final ConcurrentHashMap<String, ContentTranslatorFactory> translatorFactories;
-
-  /**
-   * Time since the last activity on this manager.
-   */
-  private final AtomicLong _lastActivity = new AtomicLong(0);
 
   /**
    * Priority of the thread, default to NORM_PRIORITY (5)
@@ -156,9 +127,8 @@ public final class IndexManager {
     this._listener = listener;
     this._indexQueue = new IndexJobQueue(withSingleThread);
     // Register default XML factory
-    this.translatorFactories = new ConcurrentHashMap<String, ContentTranslatorFactory>(16, 0.8f, 2);
+    this.translatorFactories = new ConcurrentHashMap<>(16, 0.8f, 2);
     registerTranslatorFactory(new FlintTranslatorFactory());
-    this._lastActivity.set(System.currentTimeMillis());
     // create the worker thread pool
     this.multiThreadExecutor = Executors.newFixedThreadPool(nbThreads, new ThreadFactory() {
       private int threadCount = 1;
@@ -172,13 +142,10 @@ public final class IndexManager {
     });
     // create separate single thread if needed
     if (withSingleThread) {
-      this.singleThreadExecutor = Executors.newSingleThreadExecutor(new ThreadFactory() {
-        @Override
-        public Thread newThread(Runnable r) {
-          Thread t = new Thread(r, "indexing-p" + IndexManager.this.threadPriority + "-single");
-          t.setPriority(IndexManager.this.threadPriority);
-          return t;
-        }
+      this.singleThreadExecutor = Executors.newSingleThreadExecutor(r -> {
+        Thread t = new Thread(r, "indexing-p" + IndexManager.this.threadPriority + "-single");
+        t.setPriority(IndexManager.this.threadPriority);
+        return t;
       });
     }
   }
@@ -278,7 +245,6 @@ public final class IndexManager {
    * @param contents the batch contents
    * @param r        the Requester calling this method (used for logging)
    * @param p        the Priority of this job
-   * @param params   the dynamic XSLT parameters
    */
   public void indexBatch(Map<String, ContentType> contents, Index i, Requester r, Priority p) {
     IndexBatch batch = new IndexBatch(i.getIndexID(), contents.size());
@@ -489,10 +455,8 @@ public final class IndexManager {
    * @param job the index job
    * 
    * @return the content
-   * 
-   * @throws IndexException
    */
-  public Content getContent(IndexJob job) throws IndexException {
+  public Content getContent(IndexJob job) {
     // retrieve content
     return this._fetcher.getContent(job);
   }

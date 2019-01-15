@@ -15,10 +15,10 @@
  */
 package org.pageseeder.flint;
 
-import java.util.List;
-
 import org.pageseeder.flint.content.DeleteRule;
 import org.pageseeder.flint.indexing.FlintDocument;
+
+import java.util.List;
 
 /**
  * Provides a set of utility methods to deal with IO operations on an Index.
@@ -35,26 +35,24 @@ import org.pageseeder.flint.indexing.FlintDocument;
  */
 public interface IndexIO {
 
-  public long getLastTimeUsed();
+  long getLastTimeUsed();
 
   /**
    * Closes the index.
    *
-   * @throws IndexException.
+   * @throws IndexException if closing failed.
    */
-  public abstract void stop() throws IndexException;
+  void stop() throws IndexException;
 
   /**
    * Commit any changes if the state of the index requires it.
    */
-  public abstract void maybeCommit();
+  void maybeCommit();
 
   /**
    * Commit any changes if the state of the index requires it.
-   *
-   * @throws IndexException should any error be thrown by Lucene while committing.
    */
-  public abstract void maybeRefresh();
+  void maybeRefresh();
 
   /**
    * Clears the index as soon as possible (asynchronously).
@@ -63,7 +61,7 @@ public interface IndexIO {
    *         <code>false</code> otherwise.
    * @throws IndexException should any error be thrown by Lucene.
    */
-  public abstract boolean clearIndex() throws IndexException;
+  boolean clearIndex() throws IndexException;
 
   /**
    * Delete the documents defined in the delete rule as soon as possible
@@ -74,7 +72,7 @@ public interface IndexIO {
    *         <code>false</code>
    * @throws IndexException should any error be thrown by Lucene.
    */
-  public abstract boolean deleteDocuments(DeleteRule rule) throws IndexException;
+  boolean deleteDocuments(DeleteRule rule) throws IndexException;
 
   /**
    * Update the documents defined in the delete rule as soon as possible
@@ -90,6 +88,6 @@ public interface IndexIO {
    *         <code>false</code>
    * @throws IndexException should any error be thrown by Lucene
    */
-  public abstract boolean updateDocuments(DeleteRule rule, List<FlintDocument> documents) throws IndexException;
+  boolean updateDocuments(DeleteRule rule, List<FlintDocument> documents) throws IndexException;
 
 }

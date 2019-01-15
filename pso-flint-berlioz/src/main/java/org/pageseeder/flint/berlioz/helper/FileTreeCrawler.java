@@ -3,31 +3,21 @@
  */
 package org.pageseeder.flint.berlioz.helper;
 
-import static java.nio.file.StandardWatchEventKinds.ENTRY_CREATE;
-import static java.nio.file.StandardWatchEventKinds.ENTRY_DELETE;
-import static java.nio.file.StandardWatchEventKinds.ENTRY_MODIFY;
-import static java.nio.file.StandardWatchEventKinds.OVERFLOW;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.nio.file.ClosedWatchServiceException;
-import java.nio.file.FileSystems;
-import java.nio.file.FileVisitResult;
-import java.nio.file.FileVisitor;
-import java.nio.file.Files;
-import java.nio.file.LinkOption;
-import java.nio.file.Path;
-import java.nio.file.WatchEvent;
-import java.nio.file.WatchKey;
-import java.nio.file.WatchService;
+import java.nio.file.*;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import static java.nio.file.StandardWatchEventKinds.*;
 
 /**
  * Monitors a folder and its sub-folders for changes.
@@ -61,7 +51,7 @@ public final class FileTreeCrawler implements Runnable {
   private AtomicBoolean running;
 
   private WatchService watchService;
-  private Thread watchThread;
+  private ExecutorService watchExecutor;
 
   /** Maps Watch keys to the watched directory path. */
   private final Map<WatchKey,Path> _keys;
@@ -73,7 +63,7 @@ public final class FileTreeCrawler implements Runnable {
    * @param ignore   A list of paths to ignore
    * @param listener The listener which receives the events
    */
-  public FileTreeCrawler(Path root, List<Path> ignore, WatchListener listener, int max) {
+  FileTreeCrawler(Path root, List<Path> ignore, WatchListener listener, int max) {
     this._root = root;
     this._ignore = ignore == null ? new ArrayList<Path>() : ignore;
     this._listener = listener;
@@ -83,7 +73,7 @@ public final class FileTreeCrawler implements Runnable {
     this.running = new AtomicBoolean(false);
 
     this.watchService = null;
-    this.watchThread = null;
+    this.watchExecutor = null;
   }
 
   /**
@@ -95,21 +85,21 @@ public final class FileTreeCrawler implements Runnable {
    * until all directories are being monitored. For normal cases (1-100 folders), this
    * should not take longer than a few milliseconds.
    */
-  public void start() throws IOException {
+  void start() throws IOException {
     this.watchService = FileSystems.getDefault().newWatchService();
-    this.watchThread = new Thread(this, "Watcher");
-    this.watchThread.start();
+    this.watchExecutor = Executors.newSingleThreadExecutor();
+    this.watchExecutor.execute(this);
   }
 
   /**
    * Stops the file tree watcher and any associated thread,
    */
-  public synchronized void stop() {
-    if (this.watchThread != null) {
+  synchronized void stop() {
+    if (this.watchExecutor != null) {
       try {
-        this.watchService.close();
         this.running.set(false);
-        this.watchThread.interrupt();
+        this.watchService.close();
+        this.watchExecutor.shutdownNow();
       } catch (IOException ex) {
         // Don't care
       }
@@ -182,6 +172,7 @@ public final class FileTreeCrawler implements Runnable {
         break;
       }
     }
+    LOGGER.info("Watch service terminated");
   }
 
   // Private helpers
@@ -194,7 +185,8 @@ public final class FileTreeCrawler implements Runnable {
    * @param start The directory to start from.
    */
   private synchronized void registerAll(final Path start) {
-    LOGGER.debug("Registering new folders from {} to watch service...", start);
+    LOGGER.info("Registering new folders from {} to watch service...", start);
+    if (!this._ignore.isEmpty()) LOGGER.info("Ignoring folders {}", this._ignore);
     try {
       int before = this._keys.size();
       Files.walkFileTree(start, new FileVisitor<Path>() {
