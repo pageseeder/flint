@@ -23,7 +23,8 @@ The file content is parsed by TIKA auto parser and the output is used as
 the source to be transformed by the XSLT producing iXML content understood by Flint.
 The content is wrapped in the element `<content source="tika">`, for example:
 
-```<content source="tika">
+```
+<content source="tika">
   <html>
     <head>
       <meta name="date" content="2003-06-01T19:39:59Z"/>
@@ -35,4 +36,5 @@ The content is wrapped in the element `<content source="tika">`, for example:
       <div class="page">[PDF content]</div>
     </body>
   </html>
-</content>```
+</content>
+```
