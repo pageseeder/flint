@@ -15,20 +15,18 @@
  */
 package org.pageseeder.flint.lucene.query;
 
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
-
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BooleanClause.Occur;
-import org.apache.lucene.search.BooleanQuery;
-import org.apache.lucene.search.Query;
-import org.apache.lucene.search.Sort;
-import org.apache.lucene.search.TermQuery;
+import org.apache.lucene.search.*;
 import org.pageseeder.flint.lucene.search.Terms;
 import org.pageseeder.flint.lucene.util.Beta;
 import org.pageseeder.xmlwriter.XMLWriter;
+
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
 
 /**
  * A Search query for use as auto suggest.
@@ -82,34 +80,39 @@ public final class SuggestionQuery implements SearchQuery {
    */
   public void compute(IndexReader reader) throws IOException {
     // Compute the list of terms
-    List<Term> terms = new ArrayList<Term>();
+    HashMap<Term, Boolean> terms = new HashMap<>();
     for (Term term : this._terms) {
       // try exact match
-      terms.add(term);
+      terms.put(term, true);
       // try prefixed terms
       List<String> values = Terms.prefix(reader, term);
       for (String v : values) {
         Term t = new Term(term.field(), v);
-        if (!terms.contains(t)) terms.add(t);
+        if (!terms.containsKey(t)) terms.put(t, false);
       }
     }
     // When the number of term exceeds Max Clause Count
     if (terms.size() >= BooleanQuery.getMaxClauseCount()) {
-      terms = terms.subList(0, BooleanQuery.getMaxClauseCount()-1);
+      List<Term> tokeep = new ArrayList<>(terms.keySet()).subList(0, BooleanQuery.getMaxClauseCount()-1);
+      terms.keySet().retainAll(tokeep);
     }
     // Generate the query
-    BooleanQuery bq = new BooleanQuery();
-    for (Term t : terms) {
-      TermQuery q = new TermQuery(t);
-      bq.add(q, Occur.SHOULD);
+    BooleanQuery.Builder bq = new BooleanQuery.Builder();
+    for (Term t : terms.keySet()) {
+      if (terms.get(t)) {
+        bq.add(new BoostQuery(new TermQuery(t), 2.0f), Occur.SHOULD);
+      } else {
+        bq.add(new TermQuery(t), Occur.SHOULD);
+      }
     }
     // Any condition ?
     if (this._condition != null) {
-      this.query = new BooleanQuery();
-      this.query.add(this._condition, Occur.MUST);
-      this.query.add(bq, Occur.MUST);
+      BooleanQuery.Builder dad = new BooleanQuery.Builder();
+      dad.add(this._condition, Occur.MUST);
+      dad.add(bq.build(), Occur.MUST);
+      this.query = dad.build();
     } else {
-      this.query = bq;
+      this.query = bq.build();
     }
   }
 

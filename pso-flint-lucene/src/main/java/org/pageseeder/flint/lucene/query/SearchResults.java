@@ -15,19 +15,6 @@
  */
 package org.pageseeder.flint.lucene.query;
 
-import java.io.IOException;
-import java.text.ParseException;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.NoSuchElementException;
-import java.util.Set;
-import java.util.TimeZone;
-
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.IndexReader;
@@ -51,6 +38,10 @@ import org.pageseeder.xmlwriter.XMLWritable;
 import org.pageseeder.xmlwriter.XMLWriter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.io.IOException;
+import java.text.ParseException;
+import java.util.*;
 
 /**
  * A container for search results.
@@ -296,7 +287,7 @@ public final class SearchResults implements XMLWritable {
    *         <code>false</code> if there is more than one hit.
    */
   public boolean isEmpty() {
-    return this.totalNbOfResults > 0;
+    return this.totalNbOfResults == 0;
   }
 
   /**
