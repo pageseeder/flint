@@ -3,33 +3,39 @@
   <document>
     <field name="id">doc1</field>
     <field name="name">electric scooter</field>
+    <field name="description">this is a really nice scooter, it's not a train!</field>
     <field name="color">green</field>
     <field name="color">yellow</field>
   </document>
   <document>
     <field name="id">doc2</field>
     <field name="name">electric train</field>
+    <field name="description">this train is really fast</field>
     <field name="color">blue</field>
   </document>
   <document>
     <field name="id">doc3</field>
     <field name="name">electric train</field>
+    <field name="description">this is train is yellow and electric</field>
     <field name="color">yellow</field>
   </document>
   <document>
     <field name="id">doc4</field>
     <field name="name">acoustic guitar</field>
+    <field name="description">this guitar has no plug</field>
     <field name="color">green</field>
   </document>
   <document>
     <field name="id">doc5</field>
     <field name="name">electric guitar</field>
+    <field name="description">a two-colored guitar</field>
     <field name="color">red</field>
     <field name="color">blue</field>
   </document>
   <document>
     <field name="id">doc6</field>
     <field name="name">action figure guerilla</field>
+    <field name="description">named rambo</field>
     <field name="color">green</field>
     <field name="color">gold</field>
   </document>

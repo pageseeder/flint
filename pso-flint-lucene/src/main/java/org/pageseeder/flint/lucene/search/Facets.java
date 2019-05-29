@@ -15,14 +15,6 @@
  */
 package org.pageseeder.flint.lucene.search;
 
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
-
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.MultiReader;
 import org.apache.lucene.search.IndexSearcher;
@@ -30,6 +22,10 @@ import org.apache.lucene.search.Query;
 import org.pageseeder.flint.Index;
 import org.pageseeder.flint.IndexException;
 import org.pageseeder.flint.lucene.LuceneIndexQueries;
+
+import java.io.IOException;
+import java.util.*;
+import java.util.Map.Entry;
 
 /**
  * A collection of utility methods to manipulate and extract terms.
@@ -111,9 +107,8 @@ public final class Facets {
    * Returns the list of term and how frequently they are used by performing a fuzzy match on the
    * specified term.
    *
-   * @param fields the fields to use as facets
-   * @param upTo   the max number of values to return
-   * @param query  a predicate to apply on the facet (can be null or empty)
+   * @param maxValues  the max number of values to return
+   * @param index      the index to search
    *
    * @throws IndexException if there was an error reading the indexes or creating the condition query
    * @throws IllegalStateException If one of the indexes is not initialised
@@ -126,9 +121,9 @@ public final class Facets {
    * Returns the list of term and how frequently they are used by performing a fuzzy match on the
    * specified term.
    *
-   * @param fields the fields to use as facets
-   * @param upTo   the max number of values to return
-   * @param query  a predicate to apply on the facet (can be null or empty)
+   * @param fields     the fields to use as facets
+   * @param maxValues  the max number of values to return
+   * @param index      the index to search
    *
    * @throws IndexException if there was an error reading the indexes or creating the condition query
    * @throws IllegalStateException If one of the indexes is not initialised
@@ -209,9 +204,8 @@ public final class Facets {
    * Returns the list of term and how frequently they are used by performing a fuzzy match on the
    * specified term.
    *
-   * @param fields the fields to use as facets
-   * @param upTo   the max number of values to return
-   * @param query  a predicate to apply on the facet (can be null or empty)
+   * @param maxValues  the max number of values to return
+   * @param indexes    the indexes to search
    *
    * @throws IndexException if there was an error reading the indexes or creating the condition query
    * @throws IllegalStateException If one of the indexes is not initialised
@@ -224,9 +218,9 @@ public final class Facets {
    * Returns the list of term and how frequently they are used by performing a fuzzy match on the
    * specified term.
    *
-   * @param fields the fields to use as facets
-   * @param upTo   the max number of values to return
-   * @param query  a predicate to apply on the facet (can be null or empty)
+   * @param fields     the fields to use as facets
+   * @param maxValues  the max number of values to return
+   * @param indexes    the indexes to search
    *
    * @throws IndexException if there was an error reading the indexes or creating the condition query
    * @throws IllegalStateException If one of the indexes is not initialised

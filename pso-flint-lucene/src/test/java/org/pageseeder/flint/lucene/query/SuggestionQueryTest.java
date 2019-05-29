@@ -274,4 +274,49 @@ public class SuggestionQueryTest {
     results2.terminate();
   }
 
+  @Test
+  public void testMultiTermsMultiFieldsAND() throws IndexException, IOException {
+
+    List<Term> terms2 = new ArrayList<>();
+    terms2.add(new Term("name", "elec"));
+    terms2.add(new Term("name", "tra"));
+    terms2.add(new Term("description", "elec"));
+    terms2.add(new Term("description", "tra"));
+    SuggestionQuery query2 = new SuggestionQuery(terms2, false);
+
+    List<Term> terms3 = new ArrayList<>();
+    terms3.add(new Term("name", "elec"));
+    terms3.add(new Term("name", "tra"));
+    terms3.add(new Term("description", "elec"));
+    terms3.add(new Term("description", "tra"));
+    terms3.add(new Term("color", "elec"));
+    terms3.add(new Term("color", "tra"));
+    SuggestionQuery query3 = new SuggestionQuery(terms3, false);
+
+    IndexReader reader = null;
+    try {
+      reader = LuceneIndexQueries.grabReader(index);
+      query2.compute(reader);
+      query3.compute(reader);
+    } finally {
+      LuceneIndexQueries.releaseQuietly(index, reader);
+    }
+
+    SearchResults results2 = LuceneIndexQueries.query(index, query2);
+    Assert.assertEquals(2, results2.getTotalNbOfResults());
+    for (Document doc : results2.documents()) {
+      String id = doc.get("id");
+      Assert.assertTrue(id.equals("doc2") || id.equals("doc3"));
+    }
+    results2.terminate();
+
+    SearchResults results3 = LuceneIndexQueries.query(index, query3);
+    Assert.assertEquals(2, results3.getTotalNbOfResults());
+    for (Document doc : results3.documents()) {
+      String id = doc.get("id");
+      Assert.assertTrue(id.equals("doc2") || id.equals("doc3"));
+    }
+    results3.terminate();
+  }
+
 }

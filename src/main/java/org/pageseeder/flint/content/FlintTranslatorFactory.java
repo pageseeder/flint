@@ -32,7 +32,7 @@ public class FlintTranslatorFactory implements ContentTranslatorFactory {
   /**
    * XML MIME types supported.
    */
-  protected static final List<String> XML_MIME_TYPES = new ArrayList<String>();
+  private static final List<String> XML_MIME_TYPES = new ArrayList<>();
   static {
     XML_MIME_TYPES.add("text/xml");
     XML_MIME_TYPES.add("application/xml");
@@ -45,7 +45,7 @@ public class FlintTranslatorFactory implements ContentTranslatorFactory {
   private final ContentTranslator xmlTranslator;
 
   /**
-   * <p>Creates a new factory for {@value XML_MIME_TYPES}.</p>
+   * <p>Creates a new factory for supported XML mime types.</p>
    *
    * @see <a href="https://www3.tools.ietf.org/html/rfc3023">XML Media Types</a>
    * @see <a href="http://www.w3.org/TR/xhtml-media-types/">XHTML Media Types</a>
@@ -55,7 +55,7 @@ public class FlintTranslatorFactory implements ContentTranslatorFactory {
   }
 
   /**
-   * Only creates a translator if the specified MIME type matches one of {@value XML_MIME_TYPES}.
+   * Only creates a translator if the specified MIME type matches one of the supported XML mime types.
    *
    * {@inheritDoc}
    */
@@ -66,7 +66,7 @@ public class FlintTranslatorFactory implements ContentTranslatorFactory {
   }
 
   /**
-   * Returns a list containing the {@value XML_MIME_TYPES}.
+   * Returns a list containing the supported XML mime types.
    *
    * {@inheritDoc}
    */

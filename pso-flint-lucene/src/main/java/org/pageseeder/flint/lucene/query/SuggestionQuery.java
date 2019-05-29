@@ -237,23 +237,25 @@ public final class SuggestionQuery implements SearchQuery {
       return builder.build();
     }
     // group queries by word
-    HashMap<String, BooleanQuery.Builder> wordQueries = new HashMap<>();
+    HashMap<String, BooleanQuery.Builder> fieldQueries = new HashMap<>();
     // Compute the list of terms
     for (Term term : this._terms) {
       try {
-        BooleanQuery.Builder q = wordQueries.computeIfAbsent(term.text(), s -> new BooleanQuery.Builder());
         // find prefixed terms
+        BooleanQuery.Builder thisTermQuery = new BooleanQuery.Builder();
         List<String> values = Terms.prefix(reader, term);
         for (String v : values) {
-          addTermQuery(term, v, q);
+          addTermQuery(term, v, thisTermQuery);
         }
+        // add it to the field queries
+        fieldQueries.computeIfAbsent(term.field(), s -> new BooleanQuery.Builder()).add(thisTermQuery.build(), Occur.MUST);
       } catch (BooleanQuery.TooManyClauses ex) {
         this.tooManyPrefixes = true;
       }
     }
     BooleanQuery.Builder bq = new BooleanQuery.Builder();
-    for (BooleanQuery.Builder subq : wordQueries.values()) {
-      bq.add(subq.build(), Occur.MUST);
+    for (BooleanQuery.Builder subq : fieldQueries.values()) {
+      bq.add(subq.build(), Occur.SHOULD);
     }
     return bq.build();
   }

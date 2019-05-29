@@ -15,10 +15,6 @@
  */
 package org.pageseeder.flint.lucene.search;
 
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
-
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BooleanClause.Occur;
@@ -31,6 +27,10 @@ import org.pageseeder.flint.lucene.util.Bucket;
 import org.pageseeder.flint.lucene.util.Bucket.Entry;
 import org.pageseeder.xmlwriter.XMLWritable;
 import org.pageseeder.xmlwriter.XMLWriter;
+
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * A facet implementation using a simple index field.
@@ -139,8 +139,6 @@ public final class FieldFacet implements XMLWritable, Facet {
    * <p>Same as <code>compute(searcher, base, 10);</code>.
    *
    * <p>Defaults to 10.
-   *
-   * @see #compute(Searcher, Query, int)
    *
    * @param searcher the index search to use.
    * @param base     the base query.

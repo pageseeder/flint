@@ -15,46 +15,29 @@
  */
 package org.pageseeder.flint.lucene;
 
-import java.io.IOException;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.MultiReader;
-import org.apache.lucene.search.Collector;
-import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.search.Query;
-import org.apache.lucene.search.Sort;
-import org.apache.lucene.search.TopFieldCollector;
-import org.apache.lucene.search.TopFieldDocs;
+import org.apache.lucene.search.*;
 import org.pageseeder.flint.Index;
 import org.pageseeder.flint.IndexException;
 import org.pageseeder.flint.IndexIO;
-import org.pageseeder.flint.IndexManager;
-import org.pageseeder.flint.Requester;
-import org.pageseeder.flint.indexing.IndexJob.Priority;
 import org.pageseeder.flint.lucene.query.SearchPaging;
 import org.pageseeder.flint.lucene.query.SearchQuery;
 import org.pageseeder.flint.lucene.query.SearchResults;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
 /**
- * Main class from Flint, applications should create one instance of this class.
- *
- * <ul>
- *   <li>To start and stop the indexing thread, use the methods {@link #start()} and {@link #stop()}.</li>
- *   <li>To register IndexConfigs, use the methods registerIndexConfig() and getConfig().</li>
- *   <li>To add/modify/delete content from an Index, use the method {@link #index(ContentId, Index, IndexConfig, Requester, Priority, Map)}</li>
- *   <li>To search an Index, use the methods {@link IndexManager#query()}</li>
- *   <li>to load an Index's statuses, use the method {@link #getStatus()}</li>
- * </ul>
+ * Utility class to handle lucene queries.
  *
  * @author Jean-Baptiste Reure
- * @authro Christophe Lauret
  *
- * @version 27 February 2013
+ * @version 27 May 2019
  */
 public final class LuceneIndexQueries {
 
@@ -120,10 +103,9 @@ public final class LuceneIndexQueries {
   /**
    * Run a search on the given Index.
    *
-   * @param index  the Index to run the search on
-   * @param query  the query to run
-   *
-   * @return the search results
+   * @param index    the Index to run the search on
+   * @param query    the query to run
+   * @param results  the results' collector
    *
    * @throws IndexException if any error occurred while performing the search
    */
@@ -226,10 +208,8 @@ public final class LuceneIndexQueries {
    *
    * @param index the index that the Index Reader will point to.
    * @return the Index Reader to read from the index
-   *
-   * @throws IndexException If an IO error occurred when getting the reader.
    */
-  public static IndexReader grabReader(Index index) throws IndexException {
+  public static IndexReader grabReader(Index index) {
     LuceneIndexIO io = getIndexIO(index);
     return io == null ? null : io.bookReader();
   }
@@ -241,10 +221,8 @@ public final class LuceneIndexQueries {
    *
    * @param index  The index the reader works on.
    * @param reader The actual Lucene index reader.
-   *
-   * @throws IndexException Wrapping any IO exception
    */
-  public static void release(Index index, IndexReader reader) throws IndexException {
+  public static void release(Index index, IndexReader reader) {
     if (reader == null) return;
     LuceneIndexIO io = getIndexIO(index);
     if (io != null) io.releaseReader(reader);
@@ -262,11 +240,7 @@ public final class LuceneIndexQueries {
   public static void releaseQuietly(Index index, IndexReader reader) {
     if (reader == null)
       return;
-    try {
-      getIndexIO(index).releaseReader(reader);
-    } catch (IndexException ex) {
-      LOGGER.error("Failed to release a reader because of an Index problem", ex);
-    }
+    getIndexIO(index).releaseReader(reader);
   }
 
   /**
@@ -285,10 +259,8 @@ public final class LuceneIndexQueries {
    *
    * @param index the index that the searcher will work on.
    * @return the index searcher to use on the index
-   *
-   * @throws IndexException If an IO error occurred when getting the reader.
    */
-  public static IndexSearcher grabSearcher(Index index) throws IndexException {
+  public static IndexSearcher grabSearcher(Index index) {
     LuceneIndexIO io = getIndexIO(index);
     return io.bookSearcher();
   }
@@ -300,10 +272,8 @@ public final class LuceneIndexQueries {
    *
    * @param index    The index the searcher works on.
    * @param searcher The actual Lucene index searcher.
-   *
-   * @throws IndexException Wrapping any IO exception
    */
-  public static void release(Index index, IndexSearcher searcher) throws IndexException {
+  public static void release(Index index, IndexSearcher searcher) {
     if (searcher == null)
       return;
     LuceneIndexIO io = getIndexIO(index);
@@ -322,11 +292,7 @@ public final class LuceneIndexQueries {
   public static void releaseQuietly(Index index, IndexSearcher searcher) {
     if (searcher == null)
       return;
-    try {
-      getIndexIO(index).releaseSearcher(searcher);
-    } catch (IndexException ex) {
-      LOGGER.error("Failed to release a searcher - quietly ignoring", ex);
-    }
+    getIndexIO(index).releaseSearcher(searcher);
   }
 
   // Private helpers
@@ -336,10 +302,10 @@ public final class LuceneIndexQueries {
    * Retrieves an IndexIO, creates it if non existent.
    *
    * @param index the index requiring the IO utility.
-   * @return
-   * @throws IndexException
+   *
+   * @return the Index IO operations manager
    */
-  private static LuceneIndexIO getIndexIO(Index index) throws IndexException {
+  private static LuceneIndexIO getIndexIO(Index index) {
     if (index == null) return null;
     IndexIO io = index.getIndexIO();
     if (io instanceof LuceneIndexIO)

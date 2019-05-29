@@ -1,11 +1,11 @@
 package org.pageseeder.flint.solr.query;
 
+import org.apache.solr.client.solrj.response.FacetField;
+
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
-import org.apache.solr.client.solrj.response.FacetField;
 
 public class Facets {
   protected final List<String> _facets = new ArrayList<>();
@@ -55,7 +55,8 @@ public class Facets {
   }
 
   /**
-   * @param prefixes the prefixes to set
+   * @param field  the field to set the prefix for
+   * @param prefix the prefix to set
    */
   public void setPrefix(String field, String prefix) {
     if (this.prefixes == null)

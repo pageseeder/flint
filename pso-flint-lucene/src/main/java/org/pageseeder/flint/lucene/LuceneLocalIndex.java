@@ -15,13 +15,6 @@
  */
 package org.pageseeder.flint.lucene;
 
-import java.io.File;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.Map;
-
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
@@ -34,6 +27,13 @@ import org.pageseeder.flint.indexing.FlintField;
 import org.pageseeder.flint.local.LocalIndex;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.io.File;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * A basic implementation of a local index.
@@ -59,8 +59,9 @@ public final class LuceneLocalIndex extends LocalIndex {
   /**
    * Create a new local index.
    *
-   * @param location The location of the local index.
-   * @param analyzer The analyzer of the local index.
+   * @param indexLocation   The location of the local index.
+   * @param analyzer        The analyzer of the local index.
+   * @param contentLocation The location of the content to index
    *
    * @throws NullPointerException if the location is <code>null</code>.
    */
@@ -71,8 +72,11 @@ public final class LuceneLocalIndex extends LocalIndex {
   /**
    * Create a new local index.
    *
-   * @param location The location of the local index.
-   * @param analyzer The analyzer of the local index.
+   *
+   * @param indexLocation   The location of the local index.
+   * @param catalog         The name of the catalog
+   * @param analyzer        The analyzer of the local index.
+   * @param contentLocation The location of the content to index
    *
    * @throws NullPointerException if the location is <code>null</code>.
    */

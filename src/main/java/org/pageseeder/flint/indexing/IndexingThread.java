@@ -40,7 +40,7 @@ import java.util.Map.Entry;
  * Class used to index the content using iXML XSLT template.
  *
  * @author Jean-Baptiste Reure
- * @authro Christophe Lauret
+ * @author Christophe Lauret
  *
  * @version 27 February 2013
  */
