@@ -15,20 +15,8 @@
  */
 package org.pageseeder.flint.lucene.search;
 
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-
 import org.apache.lucene.index.Fields;
-import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.MultiFields;
-import org.apache.lucene.index.Term;
-import org.apache.lucene.index.TermsEnum;
+import org.apache.lucene.index.*;
 import org.apache.lucene.search.FuzzyTermsEnum;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.PrefixQuery;
@@ -42,6 +30,9 @@ import org.pageseeder.flint.lucene.util.Bucket.Entry;
 import org.pageseeder.xmlwriter.XMLWriter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.io.IOException;
+import java.util.*;
 
 /**
  * A collection of utility methods to manipulate and extract terms.
@@ -103,8 +94,6 @@ public final class Terms {
   /**
    * Returns the list of fuzzy terms given a term and using the specified index reader.
    *
-   * @see #loadPrefixTerms(IndexReader, List, Term)
-   *
    * @param reader Index reader to use.
    * @param term   The term to use.
    *
@@ -120,8 +109,6 @@ public final class Terms {
 
   /**
    * Returns the list of prefix terms given a term and using the specified index reader.
-   *
-   * @see #loadPrefixTerms(IndexReader, List, Term)
    *
    * @param reader Index reader to use.
    * @param term   The term to use.
@@ -175,9 +162,9 @@ public final class Terms {
   /**
    * Loads all the fuzzy terms in the list of terms given the reader.
    *
-   * @param reader Index reader to use.
-   * @param terms  The bucket of terms to load.
-   * @param term   The term to use.
+   * @param reader  Index reader to use.
+   * @param bucket  Where to store the terms.
+   * @param term    The term to use.
    *
    * @throws IOException If an error is thrown by the fuzzy term enumeration.
    */
@@ -189,9 +176,9 @@ public final class Terms {
   /**
    * Loads all the fuzzy terms in the list of terms given the reader.
    *
-   * @param reader Index reader to use.
-   * @param terms  The bucket of terms to load.
-   * @param term   The term to use.
+   * @param reader  Index reader to use.
+   * @param bucket  Where to store the terms.
+   * @param term    The term to use.
    *
    * @throws IOException If an error is thrown by the fuzzy term enumeration.
    */
@@ -225,7 +212,7 @@ public final class Terms {
     Fields fields = MultiFields.getFields(reader);
     org.apache.lucene.index.Terms terms = fields == null ? null : fields.terms(term.field());
     if (terms == null) return;
-    TermsEnum prefixes = terms.intersect(new CompiledAutomaton(PrefixQuery.toAutomaton(term.bytes())), term.bytes());
+    TermsEnum prefixes = terms.intersect(new CompiledAutomaton(PrefixQuery.toAutomaton(term.bytes())), null);
     BytesRef val;
     while ((val = prefixes.next()) != null) {
       values.add(val.utf8ToString());
@@ -236,7 +223,7 @@ public final class Terms {
    * Loads all the prefix terms in the list of terms given the reader.
    *
    * @param reader  Index reader to use.
-   * @param values  The list of values to load.
+   * @param bucket  Where to store the terms.
    * @param term    The term to use.
    *
    * @throws IOException If an error is thrown by the prefix term enumeration.
@@ -283,7 +270,7 @@ public final class Terms {
    *
    * @return the list of terms for this field
    *
-   * @throws IOException should any IO error be reported by the {@link IndexReader#terms(Term)} method.
+   * @throws IOException should any IO error be reported.
    */
   @Beta public static List<Term> terms(IndexReader reader, String field) throws IOException {
     LOGGER.debug("Loading terms for field {}", field);
@@ -291,7 +278,7 @@ public final class Terms {
     if (terms == null) return Collections.emptyList();
     TermsEnum termsEnum = terms.iterator();
     if (termsEnum == TermsEnum.EMPTY) return Collections.emptyList();
-    Map<BytesRef, Term> termsList = new HashMap<BytesRef, Term>(); // TODO use map with byte as key
+    Map<BytesRef, Term> termsList = new HashMap<BytesRef, Term>();
     while (termsEnum.next() != null) {
       BytesRef t = termsEnum.term();
       if (t == null) break;
@@ -330,7 +317,7 @@ public final class Terms {
    *
    * @return the list of terms for this field
    *
-   * @throws IOException should any IO error be reported by the {@link IndexReader#terms(Term)} method.
+   * @throws IOException should any IO error be reported.
    */
   @Beta public static List<String> values(IndexReader reader, String field) throws IOException {
     LOGGER.debug("Loading term values for field {}", field);
