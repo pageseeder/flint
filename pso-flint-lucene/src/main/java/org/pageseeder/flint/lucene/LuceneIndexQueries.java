@@ -208,8 +208,10 @@ public final class LuceneIndexQueries {
    *
    * @param index the index that the Index Reader will point to.
    * @return the Index Reader to read from the index
+   *
+   * @throws IndexException If an IO error occurred when getting the reader.
    */
-  public static IndexReader grabReader(Index index) {
+  public static IndexReader grabReader(Index index) throws IndexException {
     LuceneIndexIO io = getIndexIO(index);
     return io == null ? null : io.bookReader();
   }
@@ -221,8 +223,10 @@ public final class LuceneIndexQueries {
    *
    * @param index  The index the reader works on.
    * @param reader The actual Lucene index reader.
+   *
+   * @throws IndexException Wrapping any IO exception
    */
-  public static void release(Index index, IndexReader reader) {
+  public static void release(Index index, IndexReader reader) throws IndexException {
     if (reader == null) return;
     LuceneIndexIO io = getIndexIO(index);
     if (io != null) io.releaseReader(reader);
@@ -259,8 +263,10 @@ public final class LuceneIndexQueries {
    *
    * @param index the index that the searcher will work on.
    * @return the index searcher to use on the index
+   *
+   * @throws IndexException If an IO error occurred when getting the reader.
    */
-  public static IndexSearcher grabSearcher(Index index) {
+  public static IndexSearcher grabSearcher(Index index) throws IndexException {
     LuceneIndexIO io = getIndexIO(index);
     return io.bookSearcher();
   }
@@ -272,8 +278,10 @@ public final class LuceneIndexQueries {
    *
    * @param index    The index the searcher works on.
    * @param searcher The actual Lucene index searcher.
+   *
+   * @throws IndexException Wrapping any IO exception
    */
-  public static void release(Index index, IndexSearcher searcher) {
+  public static void release(Index index, IndexSearcher searcher) throws IndexException {
     if (searcher == null)
       return;
     LuceneIndexIO io = getIndexIO(index);
