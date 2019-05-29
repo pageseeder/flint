@@ -165,18 +165,24 @@ public class SuggestionQueryTest {
     List<Term> terms1 = new ArrayList<>();
     terms1.add(new Term("name", "elec"));
     terms1.add(new Term("name", "gui"));
-    SuggestionQuery query1 = new SuggestionQuery(terms1, null, false);
+    SuggestionQuery query1 = new SuggestionQuery(terms1, false);
 
     List<Term> terms2 = new ArrayList<>();
     terms2.add(new Term("name", "ac"));
     terms2.add(new Term("name", "gu"));
-    SuggestionQuery query2 = new SuggestionQuery(terms2, null, false);
+    SuggestionQuery query2 = new SuggestionQuery(terms2, false);
+
+    List<Term> terms3 = new ArrayList<>();
+    terms3.add(new Term("name", "ac"));
+    terms3.add(new Term("name", "invalid"));
+    SuggestionQuery query3 = new SuggestionQuery(terms3, false);
 
     IndexReader reader = null;
     try {
       reader = LuceneIndexQueries.grabReader(index);
       query1.compute(reader);
       query2.compute(reader);
+      query3.compute(reader);
     } finally {
       LuceneIndexQueries.releaseQuietly(index, reader);
     }
@@ -193,6 +199,10 @@ public class SuggestionQueryTest {
       Assert.assertTrue(id.equals("doc4") || id.equals("doc6"));
     }
     results2.terminate();
+
+    SearchResults results3 = LuceneIndexQueries.query(index, query3);
+    Assert.assertEquals(0, results3.getTotalNbOfResults());
+    results3.terminate();
   }
 
   @Test

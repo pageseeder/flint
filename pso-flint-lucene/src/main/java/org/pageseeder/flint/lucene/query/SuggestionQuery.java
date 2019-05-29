@@ -84,6 +84,16 @@ public final class SuggestionQuery implements SearchQuery {
    * Create a new auto-suggest query for the specified list of terms.
    *
    * @param terms             The list of terms that should be matched.
+   * @param unionTermResults  If the suggest query uses OR or AND between term results.
+   */
+  public SuggestionQuery(List<Term> terms, boolean unionTermResults) {
+    this(terms, null, unionTermResults);
+  }
+
+  /**
+   * Create a new auto-suggest query for the specified list of terms.
+   *
+   * @param terms             The list of terms that should be matched.
    * @param condition         The condition that must be met by all suggested results (may be <code>null</code>).
    * @param unionTermResults  If the suggest query uses OR or AND between term results.
    */
@@ -243,9 +253,7 @@ public final class SuggestionQuery implements SearchQuery {
     }
     BooleanQuery.Builder bq = new BooleanQuery.Builder();
     for (BooleanQuery.Builder subq : wordQueries.values()) {
-      BooleanQuery q = subq.build();
-      if (!q.clauses().isEmpty())
-        bq.add(subq.build(), Occur.MUST);
+      bq.add(subq.build(), Occur.MUST);
     }
     return bq.build();
   }
