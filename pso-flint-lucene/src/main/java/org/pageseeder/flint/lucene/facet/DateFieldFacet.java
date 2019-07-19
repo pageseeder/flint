@@ -15,10 +15,6 @@
  */
 package org.pageseeder.flint.lucene.facet;
 
-import java.io.IOException;
-import java.text.ParseException;
-import java.util.Date;
-
 import org.apache.lucene.document.DateTools;
 import org.apache.lucene.document.DateTools.Resolution;
 import org.apache.lucene.index.Term;
@@ -30,6 +26,10 @@ import org.pageseeder.flint.lucene.util.Dates;
 import org.pageseeder.xmlwriter.XMLWriter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.io.IOException;
+import java.text.ParseException;
+import java.util.Date;
 
 /**
  * A facet implementation using a simple index field.
@@ -72,6 +72,19 @@ public class DateFieldFacet extends FlexibleFieldFacet {
   }
 
   /**
+   * @param luceneDate the date as a String stored in the index
+   *
+   * @return the date formatted as ISO 8601, or original string if original is null or empty
+   *
+   * @throws ParseException if the date is invalid
+   */
+  public String toISODateString(String luceneDate) throws ParseException {
+    if (luceneDate == null) return null;
+    if (luceneDate.isEmpty()) return "";
+    return Dates.format(DateTools.stringToDate(luceneDate), this._resolution);
+  }
+
+  /**
    * Create a query for the term given, using the numeric type if there is one.
    * 
    * @param t the term
@@ -96,7 +109,7 @@ public class DateFieldFacet extends FlexibleFieldFacet {
     xml.openElement("term");
     xml.attribute("text", term);
     try {
-      xml.attribute("date", Dates.format(DateTools.stringToDate(term), this._resolution));
+      xml.attribute("date", toISODateString(term));
     } catch (ParseException ex) {
       // should not happen as the string is coming from the date formatter in the first place
     }

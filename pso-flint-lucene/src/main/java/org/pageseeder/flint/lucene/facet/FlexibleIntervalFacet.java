@@ -15,13 +15,6 @@
  */
 package org.pageseeder.flint.lucene.facet;
 
-import java.io.IOException;
-import java.time.OffsetDateTime;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
 import org.apache.lucene.document.DateTools.Resolution;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BooleanClause.Occur;
@@ -36,6 +29,13 @@ import org.pageseeder.flint.lucene.util.Bucket;
 import org.pageseeder.flint.lucene.util.Bucket.Entry;
 import org.pageseeder.flint.lucene.util.Dates;
 import org.pageseeder.xmlwriter.XMLWriter;
+
+import java.io.IOException;
+import java.time.OffsetDateTime;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 /**
  * A facet implementation using a simple index field.
@@ -423,7 +423,7 @@ public abstract class FlexibleIntervalFacet extends FlexibleFacet<FlexibleInterv
       return dateInterval(mi, true, ma, false, res);
     }
     public static Interval dateInterval(Date mi, boolean withMin, Date ma, boolean withMax, Resolution res) {
-      return new Interval(Dates.toString(mi, res), withMin, Dates.toString(ma, res), withMax);
+      return new Interval(Dates.toString(mi, res), withMin, Dates.toString(ma, res), withMax, res);
     }
     public static Interval dateInterval(OffsetDateTime mi, OffsetDateTime ma, Resolution res) {
       return dateInterval(mi, true, ma, false, res);

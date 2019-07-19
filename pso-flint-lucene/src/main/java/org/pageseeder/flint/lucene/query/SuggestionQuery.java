@@ -84,16 +84,6 @@ public final class SuggestionQuery implements SearchQuery {
    * Create a new auto-suggest query for the specified list of terms.
    *
    * @param terms             The list of terms that should be matched.
-   * @param unionTermResults  If the suggest query uses OR or AND between term results.
-   */
-  public SuggestionQuery(List<Term> terms, boolean unionTermResults) {
-    this(terms, null, unionTermResults);
-  }
-
-  /**
-   * Create a new auto-suggest query for the specified list of terms.
-   *
-   * @param terms             The list of terms that should be matched.
    * @param condition         The condition that must be met by all suggested results (may be <code>null</code>).
    * @param unionTermResults  If the suggest query uses OR or AND between term results.
    */
@@ -237,25 +227,25 @@ public final class SuggestionQuery implements SearchQuery {
       return builder.build();
     }
     // group queries by word
-    HashMap<String, BooleanQuery.Builder> fieldQueries = new HashMap<>();
+    HashMap<String, BooleanQuery.Builder> wordQueries = new HashMap<>();
     // Compute the list of terms
     for (Term term : this._terms) {
       try {
+        BooleanQuery.Builder q = wordQueries.computeIfAbsent(term.text(), s -> new BooleanQuery.Builder());
         // find prefixed terms
-        BooleanQuery.Builder thisTermQuery = new BooleanQuery.Builder();
         List<String> values = Terms.prefix(reader, term);
         for (String v : values) {
-          addTermQuery(term, v, thisTermQuery);
+          addTermQuery(term, v, q);
         }
-        // add it to the field queries
-        fieldQueries.computeIfAbsent(term.field(), s -> new BooleanQuery.Builder()).add(thisTermQuery.build(), Occur.MUST);
       } catch (BooleanQuery.TooManyClauses ex) {
         this.tooManyPrefixes = true;
       }
     }
     BooleanQuery.Builder bq = new BooleanQuery.Builder();
-    for (BooleanQuery.Builder subq : fieldQueries.values()) {
-      bq.add(subq.build(), Occur.SHOULD);
+    for (BooleanQuery.Builder subq : wordQueries.values()) {
+      BooleanQuery q = subq.build();
+      if (!q.clauses().isEmpty())
+        bq.add(subq.build(), Occur.MUST);
     }
     return bq.build();
   }

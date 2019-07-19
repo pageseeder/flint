@@ -15,21 +15,12 @@
  */
 package org.pageseeder.flint.lucene.query;
 
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
-import java.util.Set;
-
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.BooleanQuery;
+import org.apache.lucene.search.BoostQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermQuery;
 import org.pageseeder.flint.catalog.Catalog;
@@ -38,6 +29,10 @@ import org.pageseeder.flint.lucene.search.Terms;
 import org.pageseeder.flint.lucene.util.Beta;
 import org.pageseeder.xmlwriter.XMLWritable;
 import org.pageseeder.xmlwriter.XMLWriter;
+
+import java.io.IOException;
+import java.util.*;
+import java.util.Map.Entry;
 
 /**
  * A simple parameter to capture a search entered by a user.
@@ -55,9 +50,14 @@ import org.pageseeder.xmlwriter.XMLWriter;
 public final class Question implements SearchParameter, XMLWritable {
 
   /**
-   * The search value
+   * If operators are supported in the question
    */
   private final boolean _supportOperators;
+
+  /**
+   * If the default operator between terms is OR or AND
+   */
+  private final boolean _defaultOperatorOR;
 
   /**
    * The search value
@@ -86,15 +86,17 @@ public final class Question implements SearchParameter, XMLWritable {
    * @param fields            The fields to search mapped to their respective boost.
    * @param question          The text entered by the user.
    * @param supportOperators  If operators (AND, OR) are supported in the question
+   * @param defaultOperatorOR If the default operator between terms is OR or AND
    *
    * @throws NullPointerException If either argument is <code>null</code>.
    */
-  protected Question(Map<String, Float> fields, String question, boolean supportOperators) throws NullPointerException {
+  protected Question(Map<String, Float> fields, String question, boolean supportOperators, boolean defaultOperatorOR) throws NullPointerException {
     if (fields == null) throw new NullPointerException("fields");
     if (question == null) throw new NullPointerException("question");
     this._fields = fields;
     this._question = question;
     this._supportOperators = supportOperators;
+    this._defaultOperatorOR = defaultOperatorOR;
   }
 
   // Methods
@@ -150,36 +152,37 @@ public final class Question implements SearchParameter, XMLWritable {
    * @param catalog  The catalog to know if a field is analyzed or not
    */
   private void compute(Analyzer analyzer, Catalog catalog) {
-    BooleanQuery query = new BooleanQuery();
+    BooleanQuery.Builder query = new BooleanQuery.Builder();
     if (this._supportOperators) {
       for (Entry<String, Float> e : this._fields.entrySet()) {
         Query q = catalog != null && !catalog.isTokenized(e.getKey()) ?
                   new TermQuery(new Term(e.getKey(), this._question)) :
-                  Queries.parseToQuery(e.getKey(), this._question, analyzer);
-        q.setBoost(e.getValue());
+                  Queries.parseToQuery(e.getKey(), this._question, analyzer, this._defaultOperatorOR);
+        if (e.getValue() != 1f) q = new BoostQuery(q, e.getValue());
         query.add(q, Occur.SHOULD);
       }
     } else {
+      Occur with = this._defaultOperatorOR ? Occur.SHOULD : Occur.MUST;
       List<String> values = Fields.toValues(this._question);
       for (Entry<String, Float> e : this._fields.entrySet()) {
         boolean analyzed = catalog == null || catalog.isTokenized(e.getKey());
-        BooleanQuery sub = new BooleanQuery();
+        BooleanQuery.Builder fieldQuery = new BooleanQuery.Builder();
         for (String value : values) {
           if (!analyzed) {
             Query q = new TermQuery(new Term(e.getKey(), value));
-            q.setBoost(e.getValue());
-            sub.add(q, Occur.SHOULD);
+            if (e.getValue() != 1f) q = new BoostQuery(q, e.getValue());
+            fieldQuery.add(q, with);
           } else {
             for(Query q : Queries.toTermOrPhraseQueries(e.getKey(), value, analyzer)) {
-              q.setBoost(e.getValue());
-              sub.add(q, Occur.SHOULD);
+              if (e.getValue() != 1f) q = new BoostQuery(q, e.getValue());
+              fieldQuery.add(q, with);
             }
           }
         }
-        query.add(sub, Occur.SHOULD);
+        query.add(fieldQuery.build(), Occur.SHOULD);
       }
     }
-    this._query = query;
+    this._query = query.build();
   }
 
   /**
@@ -276,6 +279,8 @@ public final class Question implements SearchParameter, XMLWritable {
     xml.openElement("question", true);
     // indicate whether this search term is empty
     xml.attribute("is-empty", Boolean.toString(isEmpty()));
+    xml.attribute("operators", this._supportOperators ? "true" : "false");
+    xml.attribute("default-operator", this._defaultOperatorOR ? "or" : "and");
     if (this._query != null) {
       xml.attribute("query", this._query.toString());
     }
@@ -387,7 +392,20 @@ public final class Question implements SearchParameter, XMLWritable {
    * @return a new question.
    */
   public static Question newQuestion(Map<String, Float> fields, String question) {
-    Question q = new Question(fields, question, false);
+    return newQuestion(fields, question, true);
+  }
+
+  /**
+   * A factory method to create a new question and compute it using the basic syntax.
+   *
+   * @param fields The list of fields for the question.
+   * @param question The question itself.
+   * @param defaultOperatorOR If the default operator between terms is OR
+   *
+   * @return a new question.
+   */
+  public static Question newQuestion(Map<String, Float> fields, String question, boolean defaultOperatorOR) {
+    Question q = new Question(fields, question, false, defaultOperatorOR);
     q.compute();
     return q;
   }
@@ -414,8 +432,22 @@ public final class Question implements SearchParameter, XMLWritable {
    *
    * @return a new question.
    */
-  public static Question newQuestion(Map<String, Float> fields, String question, Analyzer analyzer,  Catalog catalog) {
-    Question q = new Question(fields, question, false);
+  public static Question newQuestion(Map<String, Float> fields, String question, Analyzer analyzer, Catalog catalog) {
+    return newQuestion(fields, question, analyzer, catalog, true);
+  }
+
+  /**
+   * A factory method to create a new question and compute it using a simple tokenizer.
+   *
+   * @param fields The list of fields for the question.
+   * @param question The question itself.
+   * @param analyzer The analyser to use when parsing the question.
+   * @param defaultOperatorOR If the default operator between terms is OR
+   *
+   * @return a new question.
+   */
+  public static Question newQuestion(Map<String, Float> fields, String question, Analyzer analyzer, Catalog catalog, boolean defaultOperatorOR) {
+    Question q = new Question(fields, question, false, defaultOperatorOR);
     q.compute(analyzer, catalog);
     return q;
   }
@@ -505,7 +537,7 @@ public final class Question implements SearchParameter, XMLWritable {
    * @return a new question.
    */
   public static Question newQuestionWithOperators(Map<String, Float> fields, String question) {
-    Question q = new Question(fields, question, true);
+    Question q = new Question(fields, question, true, true);
     q.compute();
     return q;
   }
@@ -533,7 +565,21 @@ public final class Question implements SearchParameter, XMLWritable {
    * @return a new question.
    */
   public static Question newQuestionWithOperators(Map<String, Float> fields, String question, Analyzer analyzer, Catalog catalog) {
-    Question q = new Question(fields, question, true);
+    return newQuestionWithOperators(fields, question, analyzer, catalog, true);
+  }
+
+  /**
+   * A factory method to create a new question and compute it using a simple tokenizer.
+   *
+   * @param fields The list of fields for the question.
+   * @param question The question itself.
+   * @param analyzer The analyser to use when parsing the question.
+   * @param defaultOperatorOR If the default operator between terms is OR
+   *
+   * @return a new question.
+   */
+  public static Question newQuestionWithOperators(Map<String, Float> fields, String question, Analyzer analyzer, Catalog catalog, boolean defaultOperatorOR) {
+    Question q = new Question(fields, question, true, defaultOperatorOR);
     q.compute(analyzer, catalog);
     return q;
   }

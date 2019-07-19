@@ -15,6 +15,18 @@
  */
 package org.pageseeder.flint.lucene.query;
 
+import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
+import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
+import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.Term;
+import org.apache.lucene.search.*;
+import org.apache.lucene.search.BooleanClause.Occur;
+import org.pageseeder.flint.lucene.search.Fields;
+import org.pageseeder.flint.lucene.search.Terms;
+import org.pageseeder.flint.lucene.util.Beta;
+
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -22,22 +34,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
-import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
-import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
-import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.Term;
-import org.apache.lucene.search.BooleanClause;
-import org.apache.lucene.search.BooleanClause.Occur;
-import org.apache.lucene.search.BooleanQuery;
-import org.apache.lucene.search.PhraseQuery;
-import org.apache.lucene.search.Query;
-import org.apache.lucene.search.TermQuery;
-import org.pageseeder.flint.lucene.search.Fields;
-import org.pageseeder.flint.lucene.search.Terms;
-import org.pageseeder.flint.lucene.util.Beta;
 
 /**
  * A set of utility methods related to query objects in Lucene.
@@ -63,15 +59,15 @@ public final class Queries {
    * as it is were an AND operator.
    *
    * @param queries the queries to combine with an AND.
-   * @return The combined queries.
+   * @return The combined queries, may be empty if no arguments/empty argument provided.
    */
   public static Query and(Query... queries) {
     if (queries.length == 1) return queries[0];
-    BooleanQuery query = new BooleanQuery();
+    BooleanQuery.Builder query = new BooleanQuery.Builder();
     for (Query q : queries) {
       query.add(q, Occur.MUST);
     }
-    return query;
+    return query.build();
   }
 
   /**
@@ -79,15 +75,26 @@ public final class Queries {
    * as it is were an OR operator.
    *
    * @param queries the queries to combine with an OR.
-   * @return The combined queries.
+   * @return The combined queries, may be empty if no arguments/empty argument provided.
    */
   public static Query or(Query... queries) {
     if (queries.length == 1) return queries[0];
-    BooleanQuery query = new BooleanQuery();
+    BooleanQuery.Builder query = new BooleanQuery.Builder();
     for (Query q : queries) {
       query.add(q, Occur.SHOULD);
     }
-    return query;
+    return query.build();
+  }
+
+  /**
+   * Returns a boolean query combining all the specified queries using OR or AND operator.
+   *
+   * @param withOR  whether to use OR or AND between queries
+   * @param queries the queries to combine with an OR.
+   * @return The combined queries, may be empty if no arguments/empty argument provided.
+   */
+  public static Query combine(boolean withOR, List<Query> queries) {
+    return withOR ? or(queries.toArray(new Query[]{})) : and(queries.toArray(new Query[]{}));
   }
 
   /**
@@ -136,12 +143,12 @@ public final class Queries {
     if (text == null) throw new NullPointerException("text");
     boolean isPhrase = isAPhrase(text);
     if (isPhrase) {
-      PhraseQuery phrase = new PhraseQuery();
+      PhraseQuery.Builder phrase = new PhraseQuery.Builder();
       String[] terms = text.substring(1, text.length()-1).split("\\s+");
       for (String t : terms) {
         phrase.add(new Term(field, t));
       }
-      return phrase;
+      return phrase.build();
     } else return new TermQuery(new Term(field, text));
   }
 
@@ -154,8 +161,9 @@ public final class Queries {
    *
    * <p>Note: Quotation marks are thrown away.
    *
-   * @param field the field to construct the terms.
-   * @param text  the text to construct the query from.
+   * @param field     the field to construct the terms.
+   * @param text      the text to construct the query from.
+   * @param analyzer  used to analyze the text
    *
    * @return the corresponding query.
    */
@@ -163,13 +171,14 @@ public final class Queries {
   public static List<Query> toTermOrPhraseQueries(String field, String text, Analyzer analyzer) {
     if (field == null) throw new NullPointerException("field");
     if (text == null) throw new NullPointerException("text");
+    if (analyzer == null) return Collections.singletonList(toTermOrPhraseQuery(field, text));
     boolean isPhrase = isAPhrase(text);
-    if (isPhrase && (analyzer == null || isTokenized(field, analyzer))) {
-      PhraseQuery phrase = new PhraseQuery();
+    if (isPhrase && isTokenized(field, analyzer)) {
+      PhraseQuery.Builder phrase = new PhraseQuery.Builder();
       addTermsToPhrase(field, text.substring(1, text.length()-1), analyzer, phrase);
-      return Collections.singletonList((Query)phrase);
+      return Collections.singletonList(phrase.build());
     } else {
-      List<Query> q = new ArrayList<Query>();
+      List<Query> q = new ArrayList<>();
       for (String t : Fields.toTerms(field, text, analyzer)) {
         q.add(new TermQuery(new Term(field, t)));
       }
@@ -195,21 +204,54 @@ public final class Queries {
    * |First AND (Big Bang)|  => +field:First +(field:Big field:Bang)
    * </pre>
    *
-   * @param field the field to construct the terms.
-   * @param text  the text to construct the query from.
-   * 
+   * @param field     the field to construct the terms.
+   * @param text      the text to construct the query from.
+   * @param analyzer  used to analyze the text
+   *
    * @return the corresponding query.
    */
   @Beta
   public static Query parseToQuery(String field, String text, Analyzer analyzer) {
+    return parseToQuery(field, text, analyzer, true);
+  }
+
+  /**
+   * Returns the query corresponding to the specified text after parsing it.
+   * <p>Supported operators are <code>AND</code> and <code>OR</code>, parentheses are also handled.
+   *
+   * <p>The examples below show the resulting query as a Lucene predicate from the text specified using "field" as the field name:
+   * <pre>
+   * |Big|             => field:Big
+   * |Big Bang|        => field:Big field:Bang
+   * |   Big   bang |  => field:Big field:Bang
+   * |"Big Bang"|      => field:"Big Bang"
+   * |Big AND Bang|    => +field:Big +field:Bang
+   * |Big OR Bang|     => field:Big field:Bang
+   * |"Big AND Bang"|  => field:"Big AND Bang"
+   * |First "Big Bang"|  => field:First field:"Big bang"
+   * |First "Big Bang|   => field:First field:"Big field:Bang
+   * |First AND (Big Bang)|  => +field:First +(field:Big field:Bang)
+   * </pre>
+   *
+   * @param field     the field to construct the terms.
+   * @param text      the text to construct the query from.
+   * @param analyzer  used to analyze the text
+   * @param defaultOperatorOR if the operator between terms is OR or AND
+   * 
+   * @return the corresponding query.
+   */
+  @Beta
+  public static Query parseToQuery(String field, String text, Analyzer analyzer, boolean defaultOperatorOR) {
     if (field == null) throw new NullPointerException("field");
     if (text == null) throw new NullPointerException("text");
     // shortcut for single word or single sentence
-    if (!text.trim().matches(".*?\\s.*?") || isAPhrase(text) || (analyzer != null && !isTokenized(field, analyzer)))
-      return analyzer == null ? toTermOrPhraseQuery(field, text) : or(toTermOrPhraseQueries(field, text, analyzer).toArray(new Query[] {}));
+    if (!text.trim().matches(".*?\\s.*?") || isAPhrase(text) || (analyzer != null && !isTokenized(field, analyzer))) {
+      if (analyzer == null) return toTermOrPhraseQuery(field, text);
+      return combine(defaultOperatorOR, toTermOrPhraseQueries(field, text, analyzer));
+    }
     // get last query
     Query query = null;
-    boolean lastIsAND = false;
+    boolean lastIsAND = !defaultOperatorOR;
     // parse text
     Pattern p = Pattern.compile("(\\([^\\(]+\\))|(\\S+)");
     Matcher m = p.matcher(text);
@@ -223,8 +265,12 @@ public final class Queries {
         lastIsAND = true;
       } else if ("OR".equals(g)) {                                              // OR?
         lastIsAND = false;
+      } else if (analyzer == null) {                                            // phrase or normal word then
+        thisQuery = toTermOrPhraseQuery(field, g);
       } else {                                                                  // phrase or normal word then
-        thisQuery = analyzer == null ? toTermOrPhraseQuery(field, g) : or(toTermOrPhraseQueries(field, g, analyzer).toArray(new Query[] {}));
+        List<Query> combined = toTermOrPhraseQueries(field, g, analyzer);
+        // check if no resulting queries (word is a stop word for example)
+        if (!combined.isEmpty()) thisQuery = combine(defaultOperatorOR, combined);
       }
       if (thisQuery != null) {
         if (query == null) {
@@ -234,7 +280,7 @@ public final class Queries {
         } else {
           query = or(query, thisQuery);
         }
-        lastIsAND = false;
+        lastIsAND = !defaultOperatorOR;
       }
     }
     return query;
@@ -248,10 +294,8 @@ public final class Queries {
    * @param analyzer The analyzer
    *
    * @return the corresponding list of terms produced by the analyzer.
-   *
-   * @throws IOException
    */
-  private static void addTermsToPhrase(String field, String text, Analyzer analyzer, PhraseQuery phrase) {
+  private static void addTermsToPhrase(String field, String text, Analyzer analyzer, PhraseQuery.Builder phrase) {
     try {
       TokenStream stream = analyzer.tokenStream(field, text);
       PositionIncrementAttribute increment = stream.addAttribute(PositionIncrementAttribute.class);
@@ -319,6 +363,7 @@ public final class Queries {
     if (query instanceof TermQuery) return substitute((TermQuery)query, original, replacement);
     else if (query instanceof PhraseQuery) return substitute((PhraseQuery)query, original, replacement);
     else if (query instanceof BooleanQuery) return substitute((BooleanQuery)query, original, replacement);
+    else if (query instanceof BoostQuery) return substitute((BoostQuery)query, original, replacement);
     else return query;
   }
 
@@ -336,13 +381,29 @@ public final class Queries {
    */
   @Beta
   public static Query substitute(BooleanQuery query, Term original, Term replacement) {
-    BooleanQuery q = new BooleanQuery();
-    for (BooleanClause clause : query.getClauses()) {
+    BooleanQuery.Builder q = new BooleanQuery.Builder();
+    for (BooleanClause clause : query.clauses()) {
       Query qx = substitute(clause.getQuery(), original, replacement);
       q.add(qx, clause.getOccur());
     }
-    q.setBoost(query.getBoost());
-    return q;
+    return q.build();
+  }
+
+  /**
+   * Substitutes one term in the term query for another.
+   *
+   * <p>This method only creates new query object if required; it does not modify the given query.
+   *
+   * @param query       the query where the substitution should occur.
+   * @param original    the original term to replace.
+   * @param replacement the term it should be replaced with.
+   *
+   * @return A new term query where the term has been substituted;
+   *         or the same query if no substitution was needed.
+   */
+  @Beta
+  public static Query substitute(BoostQuery query, Term original, Term replacement) {
+    return new BoostQuery(substitute(query.getQuery(), original, replacement), query.getBoost());
   }
 
   /**
@@ -392,13 +453,12 @@ public final class Queries {
     }
     // Substitute if required
     if (doSubstitute) {
-      PhraseQuery q = new PhraseQuery();
+      PhraseQuery.Builder q = new PhraseQuery.Builder();
       for (Term t : query.getTerms()) {
         q.add(t.equals(original)? replacement : t);
       }
       q.setSlop(query.getSlop());
-      q.setBoost(query.getBoost());
-      return q;
+      return q.build();
     // No substitution return the query
     } else return query;
   }

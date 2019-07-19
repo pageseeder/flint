@@ -1,12 +1,5 @@
 package org.pageseeder.flint.catalog;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileWriter;
-import java.io.IOException;
-import java.text.SimpleDateFormat;
-import java.util.HashMap;
-
 import org.pageseeder.flint.indexing.FlintField;
 import org.pageseeder.flint.indexing.FlintField.DocValuesType;
 import org.pageseeder.flint.indexing.FlintField.NumericType;
@@ -21,6 +14,10 @@ import org.xml.sax.SAXException;
 import org.xml.sax.XMLReader;
 import org.xml.sax.helpers.DefaultHandler;
 import org.xml.sax.helpers.XMLReaderFactory;
+
+import java.io.*;
+import java.text.SimpleDateFormat;
+import java.util.HashMap;
 
 public class Catalogs {
 
@@ -48,7 +45,7 @@ public class Catalogs {
 
   /**
    * Store a new catalog.
-   * 
+   *
    * @param catalog the new catalog
    */
   public static void newField(String catalog, FlintField builder) {
@@ -65,7 +62,7 @@ public class Catalogs {
 
   /**
    * Store a new catalog.
-   * 
+   *
    * @param catalog the new catalog
    */
   public static void putCatalog(Catalog catalog) {
@@ -75,9 +72,9 @@ public class Catalogs {
 
   /**
    * Get a catalog from the internal cache or the persistent one.
-   * 
+   *
    * @param name the catalog name.
-   * 
+   *
    * @return the catalog if found, <code>null</code> otherwise.
    */
   public static Catalog getCatalog(String name) {
@@ -85,8 +82,21 @@ public class Catalogs {
     // cached?
     Catalog cat = CACHE.get(name);
     if (cat == null) {
-      // ok load it from persistent cache
-      cat = loadCatalog(name);
+      // is there a place to load it from?
+      if (ROOT == null) return null;
+      // find file
+      File file = new File(ROOT, name+"-catalog.xml");
+      if (!file.exists()) {
+        LOGGER.warn("Looking for non existent catalog file for {}", name);
+        return null;
+      }
+      try {
+        cat = loadCatalog(name, new FileInputStream(file));
+      } catch (FileNotFoundException ex) {
+        // should not happen as we checked before but still
+        LOGGER.warn("Looking for non invalid catalog file for {}", name, ex);
+        return null;
+      }
       if (cat != null) CACHE.put(name, cat);
     }
     return cat;
@@ -95,7 +105,7 @@ public class Catalogs {
   /**
    * Save the catalog specified in the persistent cache.
    * Nothing happens if catalog is not found.
-   * 
+   *
    * @param catalog the catalog name
    */
   public static void save(String catalog) {
@@ -112,11 +122,37 @@ public class Catalogs {
     }
   }
 
+  /**
+   * Load a catalog defined by the name and the content stream provided.
+   *
+   * @param name  the catalog name
+   * @param in    the stream provided
+   *
+   * @return the catalog object, null if there was an error
+   */
+  public static Catalog loadCatalog(String name, InputStream in) {
+    // parse it
+    CatalogHandler handler = new CatalogHandler(name);
+    try {
+      XMLReader reader = XMLReaderFactory.createXMLReader();
+      reader.setContentHandler(handler);
+      reader.parse(new InputSource(in));
+    } catch (IOException ex) {
+      LOGGER.error("Failed to load catalog file for {}", name, ex);
+      return null;
+    } catch (SAXException ex) {
+      LOGGER.error("Failed to parse catalog file for {}", name, ex);
+      return null;
+    }
+    // handler built the catalog
+    return handler.catalog;
+  }
+
   // ---------------------- private helpers --------------------------------
 
   /**
    * Save a catalog in the persistent cache.
-   * 
+   *
    * @param catalog the catalog to save.
    */
   private static void saveCatalog(Catalog catalog) {
@@ -145,41 +181,8 @@ public class Catalogs {
       catalog.toXML(xml);
       xml.close();
     } catch (IOException ex) {
-      LOGGER.warn("Failed to save catalog file for {}", catalog.name(), ex); 
+      LOGGER.warn("Failed to save catalog file for {}", catalog.name(), ex);
     }
-  }
-
-  /**
-   * Load a catalog from persistent cache.
-   * 
-   * @param name the catalog name
-   * 
-   * @return the catalog if found, <code>null</code> otherwise.
-   */
-  private static Catalog loadCatalog(String name) {
-    // is there a place to store them?
-    if (ROOT == null) return null;
-    // find catalog file
-    File file = new File(ROOT, name+"-catalog.xml");
-    if (!file.exists()) {
-      LOGGER.warn("Looking for inexistent catalog file for {}", name);
-      return null;
-    }
-    // parse it
-    CatalogHandler handler = new CatalogHandler(name);
-    try (FileInputStream in = new FileInputStream(file)) {
-      XMLReader reader = XMLReaderFactory.createXMLReader();
-      reader.setContentHandler(handler);
-      reader.parse(new InputSource(in));
-    } catch (IOException ex) {
-      LOGGER.error("Failed to load catalog file for {}", name, ex);
-      return null;
-    } catch (SAXException ex) {
-      LOGGER.error("Failed to parse catalog file for {}", name, ex);
-      return null;
-    }
-    // handler built the catalog
-    return handler.catalog;
   }
 
   /**
