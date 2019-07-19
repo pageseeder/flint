@@ -83,9 +83,9 @@ public final class SuggestionQuery implements SearchQuery {
   /**
    * Create a new auto-suggest query for the specified list of terms.
    *
-   * @param terms             The list of terms that should be matched.
-   * @param condition         The condition that must be met by all suggested results (may be <code>null</code>).
-   * @param unionTermResults  If the suggest query uses OR or AND between term results.
+   * @param terms              The list of terms that should be matched.
+   * @param condition          The condition that must be met by all suggested results (may be <code>null</code>).
+   * @param unionTermResults   If the suggest query uses OR or AND between term results.
    */
   public SuggestionQuery(List<Term> terms, Query condition, boolean unionTermResults) {
     this._terms = terms;
@@ -146,6 +146,7 @@ public final class SuggestionQuery implements SearchQuery {
   public void toXML(XMLWriter xml) throws IOException {
     xml.openElement("suggestion-query");
     if (this.tooManyPrefixes) xml.attribute("incomplete", "true");
+    xml.attribute("operator-between-terms", this._unionTermResults ? "or" : "and");
     xml.openElement("terms");
     for (Term t : this._terms) {
       xml.openElement("term");
@@ -195,16 +196,10 @@ public final class SuggestionQuery implements SearchQuery {
   private BooleanQuery computeORQuery(IndexReader reader) throws IOException {
     // Generate the query
     BooleanQuery.Builder builder = new BooleanQuery.Builder();
-    try {
-      for (Term term : this._terms) {
-        // find prefixed terms
-        List<String> values = Terms.prefix(reader, term);
-        for (String v : values) {
-          addTermQuery(term, v, builder);
-        }
-      }
-    } catch (BooleanQuery.TooManyClauses ex) {
-      this.tooManyPrefixes = true;
+    for (Term term : this._terms) {
+      // find prefixed terms
+      addPrefixedTermsQuery(term, builder, reader);
+      if (this.tooManyPrefixes) break;
     }
     return builder.build();
   }
@@ -213,16 +208,8 @@ public final class SuggestionQuery implements SearchQuery {
     // one term, simpler query
     if (this._terms.size() == 1) {
       BooleanQuery.Builder builder = new BooleanQuery.Builder();
-      Term only = this._terms.get(0);
       // find prefixed terms
-      List<String> values = Terms.prefix(reader, only);
-      try {
-        for (String v : values) {
-          addTermQuery(only, v, builder);
-        }
-      } catch (BooleanQuery.TooManyClauses ex) {
-        this.tooManyPrefixes = true;
-      }
+      addPrefixedTermsQuery(this._terms.get(0), builder, reader);
       // if empty, will match nothing, that's ok
       return builder.build();
     }
@@ -230,16 +217,10 @@ public final class SuggestionQuery implements SearchQuery {
     HashMap<String, BooleanQuery.Builder> wordQueries = new HashMap<>();
     // Compute the list of terms
     for (Term term : this._terms) {
-      try {
-        BooleanQuery.Builder q = wordQueries.computeIfAbsent(term.text(), s -> new BooleanQuery.Builder());
-        // find prefixed terms
-        List<String> values = Terms.prefix(reader, term);
-        for (String v : values) {
-          addTermQuery(term, v, q);
-        }
-      } catch (BooleanQuery.TooManyClauses ex) {
-        this.tooManyPrefixes = true;
-      }
+      // find prefixed terms
+      BooleanQuery.Builder q = wordQueries.computeIfAbsent(term.text(), s -> new BooleanQuery.Builder());
+      addPrefixedTermsQuery(term, q, reader);
+      if (this.tooManyPrefixes) break;
     }
     BooleanQuery.Builder bq = new BooleanQuery.Builder();
     for (BooleanQuery.Builder subq : wordQueries.values()) {
@@ -250,11 +231,23 @@ public final class SuggestionQuery implements SearchQuery {
     return bq.build();
   }
 
-  private void addTermQuery(Term original, String value, BooleanQuery.Builder query) throws BooleanQuery.TooManyClauses {
-    if (value.equals(original.text())) {
-      query.add(new BoostQuery(new TermQuery(original), 2.0f), Occur.SHOULD);
-    } else {
-      query.add(new TermQuery(new Term(original.field(), value)), Occur.SHOULD);
+  private void addPrefixedTermsQuery(Term term, BooleanQuery.Builder q, IndexReader reader) throws IOException {
+    // find prefixed terms
+    for (String v : Terms.prefix(reader, term)) {
+      addTermQuery(term, v, q);
+      if (this.tooManyPrefixes) return;
+    }
+  }
+
+  private void addTermQuery(Term original, String value, BooleanQuery.Builder query) {
+    try {
+      if (value.equals(original.text())) {
+        query.add(new BoostQuery(new TermQuery(original), 2.0f), Occur.SHOULD);
+      } else {
+        query.add(new TermQuery(new Term(original.field(), value)), Occur.SHOULD);
+      }
+    } catch (BooleanQuery.TooManyClauses ex) {
+      this.tooManyPrefixes = true;
     }
   }
 }

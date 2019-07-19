@@ -15,16 +15,6 @@
  */
 package org.pageseeder.flint.lucene.search;
 
-import java.io.IOException;
-import java.io.StringReader;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-import java.util.zip.DataFormatException;
-
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
@@ -33,6 +23,16 @@ import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.util.BytesRef;
 import org.pageseeder.flint.lucene.util.Beta;
 import org.slf4j.LoggerFactory;
+
+import java.io.IOException;
+import java.io.StringReader;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+import java.util.zip.DataFormatException;
 
 /**
  * A set of utility methods for dealing with search fields.
@@ -54,7 +54,7 @@ public final class Fields {
    */
   @Beta
   public static Map<String, Float> asBoostMap(List<String> fields) {
-    Map<String, Float> map = new HashMap<String, Float>();
+    Map<String, Float> map = new LinkedHashMap<>();
     for (String f : fields) {
       map.put(f, 1.0f);
     }

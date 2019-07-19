@@ -1,7 +1,5 @@
 package org.pageseeder.flint.lucene.query;
 
-import java.io.IOException;
-
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
@@ -17,7 +15,7 @@ import org.junit.Test;
 public class QueriesTest {
 
   @Test
-  public void testToQuery() throws IOException {
+  public void testToQuery() {
     Analyzer analyzer = new WhitespaceAnalyzer(); // include stopwords so AND is actually a valid search word
 
     // simple one word
@@ -27,6 +25,10 @@ public class QueriesTest {
     // two words
     q = Queries.parseToQuery("field", "value1 value2", analyzer);
     Assert.assertEquals("field:value1 field:value2", q.toString());
+
+    // two words with AND by default
+    q = Queries.parseToQuery("field", "value1 value2", analyzer, false);
+    Assert.assertEquals("+field:value1 +field:value2", q.toString());
 
     // phrase
     q = Queries.parseToQuery("field", "\"value1 value2\"", analyzer);
@@ -65,20 +67,28 @@ public class QueriesTest {
   public void testToQuery2() {
     Analyzer analyzer = new TestAnalyzer();
 
-    // tokenized
+    // not tokenized
     Query q = Queries.parseToQuery("field", "value1 value2", analyzer);
     Assert.assertEquals("field:value1 value2", q.toString());
 
-    // tokenized
+    // not tokenized
     q = Queries.parseToQuery("field", "\"value1 value2\"", analyzer);
     Assert.assertEquals("field:\"value1 value2\"", q.toString());
 
-    // not tokenized
+    // tokenized
     q = Queries.parseToQuery("field-tokenized", "value1 value2", analyzer);
     Assert.assertEquals("field-tokenized:value1 field-tokenized:value2", q.toString());
 
-    // not tokenized
+    // tokenized with AND
+    q = Queries.parseToQuery("field-tokenized", "value1 value2", analyzer, false);
+    Assert.assertEquals("+field-tokenized:value1 +field-tokenized:value2", q.toString());
+
+    // tokenized
     q = Queries.parseToQuery("field-tokenized", "\"value1 value2\"", analyzer);
+    Assert.assertEquals("field-tokenized:\"value1 value2\"", q.toString());
+
+    // tokenized with AND
+    q = Queries.parseToQuery("field-tokenized", "\"value1 value2\"", analyzer, false);
     Assert.assertEquals("field-tokenized:\"value1 value2\"", q.toString());
 
   }
@@ -91,7 +101,7 @@ public class QueriesTest {
    */
   private static final class TestAnalyzer extends Analyzer {
 
-    public TestAnalyzer() {
+    TestAnalyzer() {
       super(new ReuseStrategy() {
         @Override
         public void setReusableComponents(Analyzer analyzer, String fieldName, TokenStreamComponents components) {
