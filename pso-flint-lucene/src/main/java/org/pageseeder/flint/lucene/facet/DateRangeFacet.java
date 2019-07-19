@@ -15,12 +15,6 @@
  */
 package org.pageseeder.flint.lucene.facet;
 
-import java.io.IOException;
-import java.text.ParseException;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.List;
-
 import org.apache.lucene.document.DateTools;
 import org.apache.lucene.document.DateTools.Resolution;
 import org.apache.lucene.index.Term;
@@ -32,6 +26,12 @@ import org.pageseeder.flint.lucene.util.Dates;
 import org.pageseeder.xmlwriter.XMLWriter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.io.IOException;
+import java.text.ParseException;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.List;
 
 /**
  * A facet implementation using a simple index field.
@@ -57,6 +57,13 @@ public class DateRangeFacet extends FlexibleRangeFacet {
     super(name);
     this._resolution = resolution;
     this._ranges.addAll(ranges);
+  }
+
+  /**
+   * @return the resolution
+   */
+  public Resolution getResolution() {
+    return this._resolution;
   }
 
   /**
@@ -122,21 +129,13 @@ public class DateRangeFacet extends FlexibleRangeFacet {
 
   @Override
   protected void rangeToXML(Range range, int cardinality, XMLWriter xml) throws IOException {
-    xml.openElement("range");
-    if (range.getMin() != null) try {
-      xml.attribute("min", Dates.format(DateTools.stringToDate(range.getMin()), this._resolution));
+    try {
+      String fmin = range.getMin() == null ? null : Dates.format(DateTools.stringToDate(range.getMin()), this._resolution);
+      String fmax = range.getMax() == null ? null : Dates.format(DateTools.stringToDate(range.getMax()), this._resolution);
+      Dates.dateRangeToXML("range", fmin, fmax, range.includeMin(), range.includeMax(), cardinality, xml);
     } catch (ParseException ex) {
       // should not happen as the string is coming from the date formatter in the first place
     }
-    if (range.getMax() != null) try {
-      xml.attribute("max", Dates.format(DateTools.stringToDate(range.getMax()), this._resolution));
-    } catch (ParseException ex) {
-      // should not happen as the string is coming from the date formatter in the first place
-    }
-    if (range.getMin() != null) xml.attribute("include-min", range.includeMin() ? "true" : "false");
-    if (range.getMax() != null) xml.attribute("include-max", range.includeMax() ? "true" : "false");
-    xml.attribute("cardinality", cardinality);
-    xml.closeElement();
   }
 
   // Builder

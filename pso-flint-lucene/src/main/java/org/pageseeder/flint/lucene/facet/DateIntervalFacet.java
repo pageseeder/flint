@@ -15,15 +15,6 @@
  */
 package org.pageseeder.flint.lucene.facet;
 
-import java.io.IOException;
-import java.text.ParseException;
-import java.time.Duration;
-import java.time.Instant;
-import java.time.OffsetDateTime;
-import java.time.Period;
-import java.time.ZoneId;
-import java.util.Date;
-
 import org.apache.lucene.document.DateTools;
 import org.apache.lucene.document.DateTools.Resolution;
 import org.apache.lucene.index.Term;
@@ -35,6 +26,11 @@ import org.pageseeder.flint.lucene.util.Dates;
 import org.pageseeder.xmlwriter.XMLWriter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.io.IOException;
+import java.text.ParseException;
+import java.time.*;
+import java.util.Date;
 
 /**
  * A facet implementation using a simple index field.
@@ -84,6 +80,33 @@ public class DateIntervalFacet extends FlexibleIntervalFacet {
     this._resolution = resolution;
     this._intervalDate = p;
     this._intervalTime = d;
+  }
+
+  @Override
+  public String formattedStart() {
+    try {
+      return Dates.format(DateTools.stringToDate(this.start()), this._resolution);
+    } catch (ParseException ex) {
+      LOGGER.warn("Ignoring invalid facet start {} for field {}", this.start(), this.name(), ex);
+      return super.start();
+    }
+  }
+
+  @Override
+  public String formattedEnd() {
+    try {
+      return Dates.format(DateTools.stringToDate(this.end()), this._resolution);
+    } catch (ParseException ex) {
+      LOGGER.warn("Ignoring invalid facet end {} for field {}", this.end(), this.name(), ex);
+      return super.start();
+    }
+  }
+
+  /**
+   * @return the resolution
+   */
+  public Resolution getResolution() {
+    return this._resolution;
   }
 
   /**
@@ -168,21 +191,13 @@ public class DateIntervalFacet extends FlexibleIntervalFacet {
 
   @Override
   protected void intervalToXML(Interval interval, int cardinality, XMLWriter xml) throws IOException {
-    xml.openElement("interval");
-    if (interval.getMin() != null) try {
-      xml.attribute("min", Dates.format(DateTools.stringToDate(interval.getMin()), this._resolution));
+    try {
+      String fmin = interval.getMin() == null ? null : Dates.format(DateTools.stringToDate(interval.getMin()), this._resolution);
+      String fmax = interval.getMax() == null ? null : Dates.format(DateTools.stringToDate(interval.getMax()), this._resolution);
+      Dates.dateRangeToXML("interval", fmin, fmax, interval.includeMin(), interval.includeMax(), cardinality, xml);
     } catch (ParseException ex) {
       // should not happen as the string is coming from the date formatter in the first place
     }
-    if (interval.getMax() != null) try {
-      xml.attribute("max", Dates.format(DateTools.stringToDate(interval.getMax()), this._resolution));
-    } catch (ParseException ex) {
-      // should not happen as the string is coming from the date formatter in the first place
-    }
-    if (interval.getMin() != null) xml.attribute("include-min", interval.includeMin() ? "true" : "false");
-    if (interval.getMax() != null) xml.attribute("include-max", interval.includeMax() ? "true" : "false");
-    xml.attribute("cardinality", cardinality);
-    xml.closeElement();
   }
 
   // Builder ------------------------------------------------------------------------------------------

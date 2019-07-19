@@ -114,10 +114,26 @@ public abstract class FlexibleIntervalFacet extends FlexibleFacet<FlexibleInterv
   }
 
   /**
+   * Returns the point of reference for intervals.
+   * @return the point of reference for intervals.
+   */
+  public String formattedStart() {
+    return this._start;
+  }
+
+  /**
    * Returns the end value not to search past.
    * @return the end value not to search past.
    */
   public String end() {
+    return this._end;
+  }
+
+  /**
+   * Returns the end value not to search past.
+   * @return the end value not to search past.
+   */
+  public String formattedEnd() {
     return this._end;
   }
 

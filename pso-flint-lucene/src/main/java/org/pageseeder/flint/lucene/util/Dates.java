@@ -15,6 +15,11 @@
  */
 package org.pageseeder.flint.lucene.util;
 
+import org.apache.lucene.document.DateTools;
+import org.apache.lucene.document.DateTools.Resolution;
+import org.pageseeder.xmlwriter.XMLWriter;
+
+import java.io.IOException;
 import java.text.DateFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
@@ -24,9 +29,6 @@ import java.util.Calendar;
 import java.util.Date;
 import java.util.GregorianCalendar;
 import java.util.TimeZone;
-
-import org.apache.lucene.document.DateTools;
-import org.apache.lucene.document.DateTools.Resolution;
 
 /**
  * A collection of utility methods to deal with dates.
@@ -264,6 +266,30 @@ public final class Dates {
   public static Number toNumber(OffsetDateTime date, Resolution resolution) {
     if (date == null) return null;
     return toNumber(date.toInstant().toEpochMilli(), resolution);
+  }
+
+  /**
+   * Output a range or interval as XML
+   * @param element      the tag name
+   * @param min          the min value
+   * @param max          the max value
+   * @param withMin      if the min is included in the range/interval
+   * @param withMax      if the max is included in the range/interval
+   * @param cardinality  the nb of occurrences
+   * @param xml          where to write the output
+   *
+   * @throws IOException if writing the output failed
+   */
+  public static void dateRangeToXML(String element, String min, String max,
+                                    boolean withMin, boolean withMax,
+                                    int cardinality, XMLWriter xml) throws IOException {
+    xml.openElement(element);
+    if (min != null) xml.attribute("min", min);
+    if (max != null) xml.attribute("max", max);
+    if (min != null) xml.attribute("include-min", withMin ? "true" : "false");
+    if (max != null) xml.attribute("include-max", withMax ? "true" : "false");
+    xml.attribute("cardinality", cardinality);
+    xml.closeElement();
   }
 
   // private helpers ------------------------------------------------------------------------------
