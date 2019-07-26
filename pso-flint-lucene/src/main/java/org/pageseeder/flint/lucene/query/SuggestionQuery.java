@@ -71,6 +71,16 @@ public final class SuggestionQuery implements SearchQuery {
   }
 
   /**
+   * Create a new auto-suggest query for the specified list of terms with no condition.
+   *
+   * @param terms             The list of terms that should be matched.
+   * @param unionTermResults  If the suggest query uses OR or AND between term results.
+   */
+  public SuggestionQuery(List<Term> terms, boolean unionTermResults) {
+    this(terms, null, unionTermResults);
+  }
+
+  /**
    * Create a new auto-suggest query for the specified list of terms.
    *
    * @param terms     The list of terms that should be matched.

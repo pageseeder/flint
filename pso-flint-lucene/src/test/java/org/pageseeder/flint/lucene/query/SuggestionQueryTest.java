@@ -201,7 +201,11 @@ public class SuggestionQueryTest {
     results2.terminate();
 
     SearchResults results3 = LuceneIndexQueries.query(index, query3);
-    Assert.assertEquals(0, results3.getTotalNbOfResults());
+    Assert.assertEquals(2, results3.getTotalNbOfResults());
+    for (Document doc : results3.documents()) {
+      String id = doc.get("id");
+      Assert.assertTrue(id.equals("doc4") || id.equals("doc6"));
+    }
     results3.terminate();
   }
 
@@ -303,18 +307,18 @@ public class SuggestionQueryTest {
     }
 
     SearchResults results2 = LuceneIndexQueries.query(index, query2);
-    Assert.assertEquals(2, results2.getTotalNbOfResults());
+    Assert.assertEquals(3, results2.getTotalNbOfResults());
     for (Document doc : results2.documents()) {
       String id = doc.get("id");
-      Assert.assertTrue(id.equals("doc2") || id.equals("doc3"));
+      Assert.assertTrue(id.equals("doc1") || id.equals("doc2") || id.equals("doc3"));
     }
     results2.terminate();
 
     SearchResults results3 = LuceneIndexQueries.query(index, query3);
-    Assert.assertEquals(2, results3.getTotalNbOfResults());
+    Assert.assertEquals(3, results3.getTotalNbOfResults());
     for (Document doc : results3.documents()) {
       String id = doc.get("id");
-      Assert.assertTrue(id.equals("doc2") || id.equals("doc3"));
+      Assert.assertTrue(id.equals("doc1") || id.equals("doc2") || id.equals("doc3"));
     }
     results3.terminate();
   }
