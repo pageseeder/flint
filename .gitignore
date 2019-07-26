@@ -8,3 +8,11 @@
 /.gradle/
 /pso-flint.iml
 /.idea/
+/out/
+/*/bin/
+/*/.settings/
+/*/.classpath
+/*/.project
+/*/build/
+/*/tmp/
+/*/out/

@@ -23,6 +23,8 @@ public class Highlighter {
 
   private String markerName = "term";
 
+  private boolean escape = true;
+
   public Highlighter(Query query, Analyzer analyzer) {
     this(query, null, analyzer);
   }
@@ -35,6 +37,13 @@ public class Highlighter {
 
   public void setMarkerTag(String name) {
     this.markerName = name;
+  }
+
+  /**
+   * @param esc if the highlighted text should be XML escaped
+   */
+  public void setEscape(boolean esc) {
+    this.escape = esc;
   }
 
   public String highlight(String field, String text, int length) {
@@ -59,7 +68,11 @@ public class Highlighter {
   private org.apache.lucene.search.highlight.Highlighter createHighlighter(String field, int length) {
     QueryScorer scorer = new QueryScorer(this._query, this._reader, field);
     Formatter formatter = new SimpleHTMLFormatter("<"+this.markerName+">", "</"+this.markerName+">");
-    org.apache.lucene.search.highlight.Highlighter highlighter = new org.apache.lucene.search.highlight.Highlighter(formatter, scorer);
+    org.apache.lucene.search.highlight.Highlighter highlighter;
+    if (this.escape)
+      highlighter = new org.apache.lucene.search.highlight.Highlighter(formatter, new SimpleHTMLEncoder(), scorer);
+    else
+      highlighter = new org.apache.lucene.search.highlight.Highlighter(formatter, scorer);
     highlighter.setTextFragmenter(new SimpleSpanFragmenter(scorer, length));
     highlighter.setMaxDocCharsToAnalyze(Integer.MAX_VALUE);
     return highlighter;

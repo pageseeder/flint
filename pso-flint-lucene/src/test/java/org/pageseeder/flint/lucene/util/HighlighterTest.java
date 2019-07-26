@@ -75,4 +75,20 @@ public class HighlighterTest {
     highlighter.setMarkerTag("span");
     Assert.assertEquals("Lorem <span>ipsum</span> dolor", highlighter.highlight("content", lipsum, 20));
   }
+
+  @Test
+  public void testHighlightEscape() {
+
+    String content = "test1 & test2 > test3 < test4";
+
+    BooleanQuery.Builder query = new BooleanQuery.Builder();
+    query.add(new TermQuery(new Term("content", "test2")), BooleanClause.Occur.MUST);
+    Highlighter highlighter = new Highlighter(query.build(), new StandardAnalyzer());
+    highlighter.setMarkerTag("m");
+    highlighter.setEscape(false);
+    Assert.assertEquals("test1 & <m>test2</m> > test3 < test4", highlighter.highlight("content", content, 20));
+
+    highlighter.setEscape(true);
+    Assert.assertEquals("test1 &amp; <m>test2</m> &gt; test3 &lt; test4", highlighter.highlight("content", content, 20));
+  }
 }
