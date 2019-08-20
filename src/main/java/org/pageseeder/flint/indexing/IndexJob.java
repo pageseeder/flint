@@ -15,12 +15,12 @@
  */
 package org.pageseeder.flint.indexing;
 
-import java.util.HashMap;
-import java.util.Map;
-
 import org.pageseeder.flint.Index;
 import org.pageseeder.flint.Requester;
 import org.pageseeder.flint.content.ContentType;
+
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * A job to run by the IndexManager.
@@ -162,6 +162,10 @@ public class IndexJob implements Comparable<IndexJob> {
     return this._index.getCatalog();
   }
 
+  public Priority getPriority() {
+    return this._priority;
+  }
+
   /**
    * Return the Index that this job is to be run on.
    *
@@ -217,6 +221,25 @@ public class IndexJob implements Comparable<IndexJob> {
   @Override
   public int compareTo(IndexJob job) {
     return this._priority == job._priority? Long.compare(this._created, job._created) : this._priority == Priority.HIGH ? -1 : 1;
+  }
+
+  /**
+   * Used to find similar job:
+   *  - same content id
+   *  - same content type
+   *  - same index id
+   *  - same parameters
+   *
+   * @param other the other job
+   *
+   * @return true if same
+   */
+  public boolean isSimilar(IndexJob other) {
+    return other != null &&
+        this._contentid.equals(other.getContentID()) &&
+        this._contenttype.equals(other.getContentType()) &&
+        this._index.getIndexID().equals(other.getIndex().getIndexID()) &&
+        sameParameters(other.getParameters());
   }
 
   /**
@@ -327,6 +350,26 @@ public class IndexJob implements Comparable<IndexJob> {
    */
   public static IndexJob newClearJob(Index index, Priority priority, Requester requester) {
     return new IndexJob(null, CLEAR_CONTENT_ID, CLEAR_CONTENT_TYPE, index, priority, requester, null);
+  }
+
+  /**
+   * Compare a list of parameters with the current one
+   * @param params the other list
+   * @return true is same params
+   */
+  private boolean sameParameters(Map<String, String> params) {
+    if (params == null) return true;
+    if (this.parameters.size() != params.size()) return false;
+    if (this.parameters.isEmpty()) return true;
+    for (Map.Entry<String, String> e : this.parameters.entrySet()) {
+      if (!params.containsKey(e.getKey())) return false;
+      if (!params.get(e.getKey()).equals(e.getValue())) return false;
+    }
+    for (Map.Entry<String, String> e : params.entrySet()) {
+      if (!this.parameters.containsKey(e.getKey())) return false;
+      if (!this.parameters.get(e.getKey()).equals(e.getValue())) return false;
+    }
+    return true;
   }
 
 }

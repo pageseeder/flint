@@ -15,12 +15,12 @@
  */
 package org.pageseeder.flint.indexing;
 
+import org.pageseeder.flint.Index;
+import org.pageseeder.flint.Requester;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.PriorityBlockingQueue;
-
-import org.pageseeder.flint.Index;
-import org.pageseeder.flint.Requester;
 
 /**
  * The queue containing index jobs.
@@ -49,7 +49,7 @@ public final class IndexJobQueue {
   /**
    * Simple Constructor.
    *
-   * @param pollDelay the poll delay on the queue (in milliseconds)
+   * @param withSingleThreadQueue if there's only one queue
    */
   public IndexJobQueue(boolean withSingleThreadQueue) {
     this._queue = new PriorityBlockingQueue<IndexJob>();
@@ -65,7 +65,7 @@ public final class IndexJobQueue {
    * @param job The job to add to this queue.
    */
   public void addSingleThreadJob(IndexJob job) {
-    (this._singleThreadQueue == null ? this._queue : this._singleThreadQueue).put(job);
+    addJob(job, true);
   }
 
   /**
@@ -74,7 +74,7 @@ public final class IndexJobQueue {
    * @param job The job to add to this queue.
    */
   public void addMultiThreadJob(IndexJob job) {
-    this._queue.put(job);
+    addJob(job, false);
   }
 
   /**
@@ -106,12 +106,13 @@ public final class IndexJobQueue {
   }
 
   /**
-   * Returns the number of jobs for the specified provided.
+   * Returns the number of jobs for the specified requester.
    *
    * <p>Not that some job have have been processed by the time this method returns.
    *
-   * @param index the index
-   * @return the number of jobs for the specified provided.
+   * @param requester the requester
+   *
+   * @return the number of jobs for the specified requester.
    */
   public int countJobsForRequester(Requester requester) {
     if (requester == null) return this._queue.size();
@@ -283,7 +284,7 @@ public final class IndexJobQueue {
    *         <code>false</code> otherwise.
    */
   public boolean isSingleThreadEmpty() {
-    return this._singleThreadQueue != null ? this._singleThreadQueue.isEmpty() : true;
+    return this._singleThreadQueue == null || this._singleThreadQueue.isEmpty();
   }
   
   /**
@@ -295,4 +296,44 @@ public final class IndexJobQueue {
       this._singleThreadQueue.clear();
   }
 
+  // -----------------------------------------------------------------------
+  // private methods
+  // -----------------------------------------------------------------------
+
+  private void addJob(IndexJob job, boolean singleThread) {
+    // check if similar job already there
+    IndexJob existing;
+    synchronized (this._queue) {
+      existing = this._queue.stream().filter(ajob -> ajob.isSimilar(job)).findFirst().orElse(null);
+    }
+    // in the other queue?
+    boolean foundInSingleQueue = false;
+    if (existing == null && this._singleThreadQueue != null) {
+      synchronized (this._singleThreadQueue) {
+        existing = this._singleThreadQueue.stream().filter(ajob -> ajob.isSimilar(job)).findFirst().orElse(null);
+        foundInSingleQueue = existing != null;
+      }
+    }
+
+    // if there is one similar, and this one has higher priority, add this one and remove the old one
+    if (existing == null || (existing.getPriority() == IndexJob.Priority.LOW && job.getPriority() == IndexJob.Priority.HIGH)) {
+      if (singleThread && this._singleThreadQueue != null) {
+        synchronized (this._singleThreadQueue) {
+          if (existing != null) {
+            if (foundInSingleQueue) this._singleThreadQueue.remove(existing);
+            else this._queue.remove(existing);
+          }
+          this._singleThreadQueue.put(job);
+        }
+      } else {
+        synchronized (this._queue) {
+          if (existing != null) {
+            if (foundInSingleQueue) this._singleThreadQueue.remove(existing);
+            else this._queue.remove(existing);
+          }
+          this._queue.put(job);
+        }
+      }
+    }
+  }
 }
