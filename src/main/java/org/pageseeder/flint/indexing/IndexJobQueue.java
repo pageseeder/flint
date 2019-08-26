@@ -52,8 +52,8 @@ public final class IndexJobQueue {
    * @param withSingleThreadQueue if there's only one queue
    */
   public IndexJobQueue(boolean withSingleThreadQueue) {
-    this._queue = new PriorityBlockingQueue<IndexJob>();
-    this._singleThreadQueue = withSingleThreadQueue ? new PriorityBlockingQueue<IndexJob>() : null;
+    this._queue = new PriorityBlockingQueue<>();
+    this._singleThreadQueue = withSingleThreadQueue ? new PriorityBlockingQueue<>() : null;
   }
 
   // public external methods
@@ -90,7 +90,7 @@ public final class IndexJobQueue {
    */
   public List<IndexJob> getJobsForRequester(Requester requester) {
     if (requester == null) return getAllJobs();
-    List<IndexJob> jobs = new ArrayList<IndexJob>();
+    List<IndexJob> jobs = new ArrayList<>();
     for (IndexJob job : this._queue) {
       if (job.isForRequester(requester)) {
         jobs.add(job);
@@ -138,7 +138,7 @@ public final class IndexJobQueue {
    */
   public void clearJobsForIndex(Index index) {
     if (index == null) return;
-    List<IndexJob> jobs = new ArrayList<IndexJob>();
+    List<IndexJob> jobs = new ArrayList<>();
     for (IndexJob job : this._queue) {
       if (job.isForIndex(index)) {
         jobs.add(job);
@@ -169,7 +169,7 @@ public final class IndexJobQueue {
    */
   public List<IndexJob> getJobsForIndex(Index index) {
     if (index == null) return getAllJobs();
-    List<IndexJob> jobs = new ArrayList<IndexJob>();
+    List<IndexJob> jobs = new ArrayList<>();
     for (IndexJob job : this._queue) {
       if (job.isForIndex(index)) {
         jobs.add(job);
@@ -239,7 +239,7 @@ public final class IndexJobQueue {
    * @return the list of jobs waiting (never <code>null</code>)
    */
   public List<IndexJob> getAllJobs() {
-    ArrayList<IndexJob> list = new ArrayList<IndexJob>(this._queue);
+    ArrayList<IndexJob> list = new ArrayList<>(this._queue);
     if (this._singleThreadQueue != null)
       list.addAll(this._singleThreadQueue);
     return list;
@@ -319,21 +319,33 @@ public final class IndexJobQueue {
     if (existing == null || (existing.getPriority() == IndexJob.Priority.LOW && job.getPriority() == IndexJob.Priority.HIGH)) {
       if (singleThread && this._singleThreadQueue != null) {
         synchronized (this._singleThreadQueue) {
-          if (existing != null) {
-            if (foundInSingleQueue) this._singleThreadQueue.remove(existing);
-            else this._queue.remove(existing);
-          }
+          if (existing != null)
+            this.removeExistingJob(job, existing, foundInSingleQueue);
           this._singleThreadQueue.put(job);
         }
       } else {
         synchronized (this._queue) {
-          if (existing != null) {
-            if (foundInSingleQueue) this._singleThreadQueue.remove(existing);
-            else this._queue.remove(existing);
-          }
+          if (existing != null)
+            this.removeExistingJob(job, existing, foundInSingleQueue);
           this._queue.put(job);
         }
       }
+    } else {
+      // if batch, decrease total except if last job
+      IndexBatch batch = job.getBatch();
+      if (batch != null && batch.getCurrentCount() != batch.getTotalDocuments() - 1)
+        batch.remove(1);
     }
   }
+
+  private void removeExistingJob(IndexJob job, IndexJob existing, boolean foundInSingleQueue) {
+    // don't remove last job of batch
+    IndexBatch batch = existing.getBatch();
+    if (batch != null && batch.getCurrentCount() != batch.getTotalDocuments() - 1)
+      batch.remove(1);
+    // remove from queue
+    if (foundInSingleQueue) this._singleThreadQueue.remove(existing);
+    else this._queue.remove(existing);
+  }
+
 }

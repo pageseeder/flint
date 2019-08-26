@@ -68,6 +68,10 @@ public class IndexBatch {
     this.cancelCount = currentCount;
   }
 
+  public synchronized void remove(int removed) {
+    this.totalCount -= removed;
+  }
+
   public synchronized void setComputed() {
     this.computed = true;
     this.computeTime = System.currentTimeMillis() - this.createTime;

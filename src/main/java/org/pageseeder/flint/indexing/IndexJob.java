@@ -110,7 +110,7 @@ public class IndexJob implements Comparable<IndexJob> {
   /**
    * The parameters.
    */
-  private final Map<String, String> parameters = new HashMap<String, String>();
+  private final Map<String, String> parameters = new HashMap<>();
 
   /**
    * Private constructor, to build a job, use one of the static methods newAddJob(), newUpdateJob() or newDeleteJob().
@@ -236,10 +236,10 @@ public class IndexJob implements Comparable<IndexJob> {
    */
   public boolean isSimilar(IndexJob other) {
     return other != null &&
-        this._contentid.equals(other.getContentID()) &&
-        this._contenttype.equals(other.getContentType()) &&
-        this._index.getIndexID().equals(other.getIndex().getIndexID()) &&
-        sameParameters(other.getParameters());
+        this._contentid.equals(other._contentid) &&
+        this._contenttype.equals(other._contenttype) &&
+        this._index.getIndexID().equals(other._index.getIndexID()) &&
+        this.parameters.equals(other.parameters); // map.equals() will use equals() method on key and object
   }
 
   /**
@@ -350,26 +350,6 @@ public class IndexJob implements Comparable<IndexJob> {
    */
   public static IndexJob newClearJob(Index index, Priority priority, Requester requester) {
     return new IndexJob(null, CLEAR_CONTENT_ID, CLEAR_CONTENT_TYPE, index, priority, requester, null);
-  }
-
-  /**
-   * Compare a list of parameters with the current one
-   * @param params the other list
-   * @return true is same params
-   */
-  private boolean sameParameters(Map<String, String> params) {
-    if (params == null) return true;
-    if (this.parameters.size() != params.size()) return false;
-    if (this.parameters.isEmpty()) return true;
-    for (Map.Entry<String, String> e : this.parameters.entrySet()) {
-      if (!params.containsKey(e.getKey())) return false;
-      if (!params.get(e.getKey()).equals(e.getValue())) return false;
-    }
-    for (Map.Entry<String, String> e : params.entrySet()) {
-      if (!this.parameters.containsKey(e.getKey())) return false;
-      if (!this.parameters.get(e.getKey()).equals(e.getValue())) return false;
-    }
-    return true;
   }
 
 }
