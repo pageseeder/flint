@@ -65,9 +65,9 @@ public final class FileTreeCrawler implements Runnable {
    */
   FileTreeCrawler(Path root, List<Path> ignore, WatchListener listener, int max) {
     this._root = root;
-    this._ignore = ignore == null ? new ArrayList<Path>() : ignore;
+    this._ignore = ignore == null ? new ArrayList<>() : ignore;
     this._listener = listener;
-    this._keys = new HashMap<WatchKey,Path>();
+    this._keys = new HashMap<>();
     this._maxKeys = max;
 
     this.running = new AtomicBoolean(false);
@@ -137,12 +137,13 @@ public final class FileTreeCrawler implements Runnable {
           if (lastEvent != null && lastEvent.kind().equals(event.kind()) && lastEvent.context().equals(event.context()))
             continue;
           WatchEvent.Kind<?> kind = event.kind();
-          if (kind == OVERFLOW) { continue; }
+          if (kind == OVERFLOW) continue;
 
           // Context for directory entry event is the file name of entry
           WatchEvent<Path> ev = cast(event);
           Path name = ev.context();
           Path child = dir.resolve(name);
+          if (shouldIgnore(child)) continue; // just in case
           LOGGER.debug("New event {} for {}", kind, child);
 
           // Register new folders
@@ -187,13 +188,14 @@ public final class FileTreeCrawler implements Runnable {
   private synchronized void registerAll(final Path start) {
     LOGGER.info("Registering new folders from {} to watch service...", start);
     if (!this._ignore.isEmpty()) LOGGER.info("Ignoring folders {}", this._ignore);
+    if (shouldIgnore(start)) return;
     try {
       int before = this._keys.size();
       Files.walkFileTree(start, new FileVisitor<Path>() {
         @Override
         public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) {
           // ignore folder?
-          if (FileTreeCrawler.this._ignore.contains(dir))
+          if (shouldIgnore(dir))
             return FileVisitResult.SKIP_SUBTREE;
           // add it to registry then
           register(dir);
@@ -248,4 +250,14 @@ public final class FileTreeCrawler implements Runnable {
     return (WatchEvent<T>)event;
   }
 
+  /**
+   * @param path the path to check
+   * @return true if this path should be ignored
+   */
+  private boolean shouldIgnore(Path path) {
+    for (Path parent : this._ignore) {
+      if (path.equals(parent) || path.startsWith(parent)) return true;
+    }
+    return false;
+  }
 }
