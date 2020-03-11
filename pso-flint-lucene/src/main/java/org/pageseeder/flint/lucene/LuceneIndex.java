@@ -15,15 +15,15 @@
  */
 package org.pageseeder.flint.lucene;
 
-import java.io.File;
-import java.io.IOException;
-
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
 import org.pageseeder.flint.Index;
 import org.pageseeder.flint.IndexException;
 import org.pageseeder.flint.IndexIO;
+
+import java.io.File;
+import java.io.IOException;
 
 /**
  * Provides the details needed to build the data to index from the original content.
@@ -43,22 +43,15 @@ public class LuceneIndex extends Index {
 
   private final IndexIO _io;
 
-  public LuceneIndex(String id, File dir, Analyzer analyzer) throws IOException {
+  public LuceneIndex(String id, File dir, Analyzer analyzer) throws IOException, IndexException {
     this(id, FSDirectory.open(dir.toPath()), analyzer);
   }
 
-  public LuceneIndex(String id, Directory dir, Analyzer analyzer) {
+  public LuceneIndex(String id, Directory dir, Analyzer analyzer) throws IndexException {
     super(id);
     this._directory = dir;
     this._analyzer = analyzer;
-    IndexIO io;
-    try {
-      io = new LuceneIndexIO(this._directory, this._analyzer);
-    } catch (IndexException ex) {
-      ex.printStackTrace();
-      io = null;
-    }
-    this._io = io;
+    this._io = new LuceneIndexIO(this._directory, this._analyzer);
   }
 
   public Analyzer getAnalyzer() {

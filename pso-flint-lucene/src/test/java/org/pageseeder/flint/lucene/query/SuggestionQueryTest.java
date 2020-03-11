@@ -19,7 +19,6 @@ import org.pageseeder.flint.lucene.LuceneLocalIndex;
 import org.pageseeder.flint.lucene.utils.TestListener;
 import org.pageseeder.flint.lucene.utils.TestUtils;
 
-import javax.xml.transform.TransformerException;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -40,10 +39,10 @@ public class SuggestionQueryTest {
     // clean up previous test's data
     for (File f : indexRoot.listFiles()) f.delete();
     indexRoot.delete();
-    index = new LuceneLocalIndex(indexRoot, new StandardAnalyzer(), documents);
     try {
+      index = new LuceneLocalIndex(indexRoot, new StandardAnalyzer(), documents);
       index.setTemplate("xml", template.toURI());
-    } catch (TransformerException ex) {
+    } catch (Exception ex) {
       ex.printStackTrace();
     }
     manager = new IndexManager(new LocalFileContentFetcher(), new TestListener());

@@ -1,9 +1,5 @@
 package org.pageseeder.flint.lucene.utils;
 
-import java.io.File;
-
-import javax.xml.transform.TransformerException;
-
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.store.RAMDirectory;
 import org.junit.AfterClass;
@@ -19,6 +15,9 @@ import org.pageseeder.flint.indexing.IndexJob;
 import org.pageseeder.flint.indexing.IndexJob.Priority;
 import org.pageseeder.flint.lucene.LuceneIndex;
 import org.pageseeder.flint.lucene.query.NumberParameterTest;
+import org.pageseeder.flint.lucene.query.TermParameterTest;
+
+import java.io.File;
 
 public class DocValuesUpdaterTest {
 
@@ -29,10 +28,10 @@ public class DocValuesUpdaterTest {
   
   @BeforeClass
   public static void init() {
-    index = new LuceneIndex(NumberParameterTest.class.getName(), new RAMDirectory(), new StandardAnalyzer());
     try {
+      index = new LuceneIndex(TermParameterTest.class.getName(), new RAMDirectory(), new StandardAnalyzer());
       index.setTemplates(TestUtils.TYPE, TestUtils.MEDIA_TYPE, template.toURI());
-    } catch (TransformerException ex) {
+    } catch (Exception ex) {
       ex.printStackTrace();
     }
     manager = new IndexManager(new ContentFetcher() {

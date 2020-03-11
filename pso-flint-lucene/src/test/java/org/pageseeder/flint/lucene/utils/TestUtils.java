@@ -1,18 +1,20 @@
 package org.pageseeder.flint.lucene.utils;
 
-import java.io.ByteArrayInputStream;
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.nio.charset.StandardCharsets;
-
 import org.junit.Assert;
+import org.junit.runners.BlockJUnit4ClassRunner;
+import org.junit.runners.model.InitializationError;
+import org.junit.runners.model.RunnerScheduler;
 import org.pageseeder.flint.IndexException;
 import org.pageseeder.flint.content.Content;
 import org.pageseeder.flint.content.ContentType;
 import org.pageseeder.flint.content.DeleteRule;
 import org.pageseeder.flint.lucene.LuceneDeleteRule;
+
+import java.io.*;
+import java.nio.charset.StandardCharsets;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
 public class TestUtils {
 
@@ -78,6 +80,36 @@ public class TestUtils {
     @Override
     public boolean isDeleted() throws IndexException {
       return this._deleted;
+    }
+  }
+
+  public static class ParallelScheduler implements RunnerScheduler {
+
+    private ExecutorService threadPool = Executors.newFixedThreadPool(
+        Runtime.getRuntime().availableProcessors());
+
+    @Override
+    public void schedule(Runnable childStatement) {
+      threadPool.submit(childStatement);
+    }
+
+    @Override
+    public void finished() {
+      try {
+        threadPool.shutdown();
+        threadPool.awaitTermination(Long.MAX_VALUE, TimeUnit.NANOSECONDS);
+      } catch (InterruptedException e) {
+        Thread.currentThread().interrupt();
+        throw new RuntimeException("Got interrupted", e);
+      }
+    }
+  }
+
+  public static class ParallelRunner extends BlockJUnit4ClassRunner {
+
+    public ParallelRunner(Class<?> klass) throws InitializationError {
+      super(klass);
+      setScheduler(new ParallelScheduler());
     }
   }
 }

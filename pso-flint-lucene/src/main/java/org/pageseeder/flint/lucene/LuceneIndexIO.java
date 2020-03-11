@@ -25,8 +25,10 @@ import org.apache.lucene.search.SearcherFactory;
 import org.apache.lucene.search.SearcherManager;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
+import org.apache.lucene.store.LockObtainFailedException;
 import org.pageseeder.flint.IndexException;
 import org.pageseeder.flint.IndexIO;
+import org.pageseeder.flint.IndexOpenException;
 import org.pageseeder.flint.OpenIndexManager;
 import org.pageseeder.flint.content.DeleteRule;
 import org.pageseeder.flint.indexing.FlintDocument;
@@ -151,13 +153,15 @@ public final class LuceneIndexIO implements IndexIO {
       } catch (IOException ex2) {
         throw new IndexException("Failed to create writer on index", ex2);
       }
+    } catch (LockObtainFailedException ex) {
+      throw new IndexOpenException("Failed to create index: there's already a writer on this index!", ex);
     } catch (IOException ex) {
       throw new IndexException("Failed to create writer on index", ex);
     }
     // get last commit data as last time used
     try {
       List<IndexCommit> commits = DirectoryReader.listCommits(dir);
-      if (commits != null && !commits.isEmpty()) {
+      if (!commits.isEmpty()) {
         String lastCommitDate = commits.get(commits.size()-1).getUserData().get(LuceneIndexIO.LAST_COMMIT_DATE);
         if (lastCommitDate != null) {
           this.lastTimeUsed.set(Long.parseLong(lastCommitDate));
@@ -223,8 +227,6 @@ public final class LuceneIndexIO implements IndexIO {
 
   /**
    * Commit any changes if the state of the index requires it.
-   *
-   * @throws IndexException should any error be thrown by Lucene while committing.
    */
   public synchronized void maybeCommit() {
     if (this._writer == null|| isState(State.CLOSING) || isState(State.CLOSED) ||
@@ -532,10 +534,9 @@ public final class LuceneIndexIO implements IndexIO {
    * <p>This method will try to return a read/write IndexIO instance if possible;
    * otherwise it will return a read only instance.
    *
-   * @param index The index object.
-   * @return The most appropriate IndexIO implementation to use.
+   * @param directory The index location.
    *
-   * @throws IOException If thrown by the constructors
+   * @return The most appropriate IndexIO implementation to use.
    */
   private static boolean isReadOnly(Directory directory) {
     // not using file system? not read only
@@ -545,7 +546,9 @@ public final class LuceneIndexIO implements IndexIO {
       File f = ((FSDirectory) directory).getDirectory().toFile();
       // ensure all files can write.
       if (!f.canWrite()) return true;
-      for (File tf : f.listFiles()) {
+      File[] files = f.listFiles();
+      if (files == null) return true;
+      for (File tf : files) {
         if (!tf.canWrite()) return true;
       }
     } catch (Exception ex) {

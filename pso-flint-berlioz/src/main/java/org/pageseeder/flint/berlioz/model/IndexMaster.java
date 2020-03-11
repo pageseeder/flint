@@ -40,7 +40,6 @@ public final class IndexMaster {
   private final IndexManager _manager;
   private final String _name;
   private final FileFilter _indexingFileFilter;
-  private final File _indexRoot;
   private final File _contentRoot;
   private final LuceneLocalIndex _index;
   private final IndexDefinition _def;
@@ -49,22 +48,21 @@ public final class IndexMaster {
   private final Map<String, org.pageseeder.flint.lucene.search.AutoSuggest> _autosuggests = new HashMap<>();
   
   public static IndexMaster create(IndexManager mgr, String name,
-         File content, File index, IndexDefinition def) throws TransformerException {
+         File content, File index, IndexDefinition def) throws TransformerException, IndexException {
     return create(mgr, name, content, index, Collections.singleton("psml"), def);
   }
 
   public static IndexMaster create(IndexManager mgr, String name,
-         File content, File index, Collection<String> extensions, IndexDefinition def) throws TransformerException {
+         File content, File index, Collection<String> extensions, IndexDefinition def) throws TransformerException, IndexException {
     return new IndexMaster(mgr, name, content, index, extensions, def);
   }
 
   private IndexMaster(IndexManager mgr, String name, File content,
-      File index, Collection<String> extensions, IndexDefinition def) throws TransformerException {
+      File index, Collection<String> extensions, IndexDefinition def) throws TransformerException, IndexException {
     this._manager = mgr;
     this._name = name;
     this._contentRoot = content;
-    this._indexRoot = index;
-    this._index = new LuceneLocalIndex(this._indexRoot, def.getName(), FlintConfig.newAnalyzer(), this._contentRoot);
+    this._index = new LuceneLocalIndex(index, def.getName(), FlintConfig.newAnalyzer(), this._contentRoot);
     // same template used for all extensions (not great...)
     if (extensions != null) this._extensions.addAll(extensions);
     for (String extension : this._extensions) {
@@ -168,7 +166,7 @@ public final class IndexMaster {
             LOGGER.error("Failed to create autosuggest {}", name, ex);
             return null;
           }
-        } else if (asd == null) {
+        } else {
           LOGGER.error("Failed to find autosuggest definition with name {}", name);
           return null;
         }
@@ -218,18 +216,13 @@ public final class IndexMaster {
     LocalFileContent content = new LocalFileContent(f, null);
     // load translator
     ContentTranslator translator = this._manager.getTranslator(content.getMediaType());
-    if (translator == null) {
-      // assuming XML
-      out.write("<error>No translator found for media type "+content.getMediaType()+"</error>");
-    } else {
-      // ok translate now
-      Reader source = translator.translate(content);
-      // write it to output
-      char[] buffer = new char[1024];
-      int read;
-      while ((read = source.read(buffer)) != -1) {
-        out.write(buffer, 0, read);
-      }
+    // ok translate now
+    Reader source = translator.translate(content);
+    // write it to output
+    char[] buffer = new char[1024];
+    int read;
+    while ((read = source.read(buffer)) != -1) {
+      out.write(buffer, 0, read);
     }
   }
 
