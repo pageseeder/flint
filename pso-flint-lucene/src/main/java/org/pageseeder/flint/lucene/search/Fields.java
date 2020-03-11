@@ -133,6 +133,7 @@ public final class Fields {
    * @return The value of the field as a string.
    */
   public static String toString(IndexableField f) {
+    if (f == null) return null;
     String value = f.stringValue();
     // is it a compressed field?
     if (value == null) {

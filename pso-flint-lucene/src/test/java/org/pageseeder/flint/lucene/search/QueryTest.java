@@ -1,20 +1,11 @@
 package org.pageseeder.flint.lucene.search;
 
-import java.io.File;
-import java.io.IOException;
-import java.util.Iterator;
-
-import javax.xml.transform.TransformerException;
-
+import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.search.Query;
-import org.apache.lucene.search.Sort;
-import org.apache.lucene.search.SortField;
+import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.search.*;
 import org.apache.lucene.search.SortField.Type;
-import org.apache.lucene.search.SortedNumericSortField;
-import org.apache.lucene.search.SortedSetSortField;
-import org.apache.lucene.search.TopFieldCollector;
 import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.BeforeClass;
@@ -24,14 +15,14 @@ import org.pageseeder.flint.local.LocalIndexManager;
 import org.pageseeder.flint.local.LocalIndexManagerFactory;
 import org.pageseeder.flint.lucene.LuceneIndexQueries;
 import org.pageseeder.flint.lucene.LuceneLocalIndex;
-import org.pageseeder.flint.lucene.query.BasicQuery;
-import org.pageseeder.flint.lucene.query.PredicateSearchQuery;
-import org.pageseeder.flint.lucene.query.Queries;
-import org.pageseeder.flint.lucene.query.SearchQuery;
-import org.pageseeder.flint.lucene.query.SearchResults;
-import org.pageseeder.flint.lucene.query.TermParameter;
+import org.pageseeder.flint.lucene.query.*;
 import org.pageseeder.flint.lucene.utils.TestListener;
 import org.pageseeder.flint.lucene.utils.TestUtils;
+
+import javax.xml.transform.TransformerException;
+import java.io.File;
+import java.io.IOException;
+import java.util.Iterator;
 
 public class QueryTest {
 
@@ -41,13 +32,14 @@ public class QueryTest {
 
   private static LuceneLocalIndex index;
   private static LocalIndexManager manager;
+  private static Analyzer analyser = new StandardAnalyzer();
   
   @BeforeClass
   public static void init() {
     // clean up previous test's data
     for (File f : indexRoot.listFiles()) f.delete();
     indexRoot.delete();
-    index = new LuceneLocalIndex(indexRoot, new StandardAnalyzer(), documents);
+    index = new LuceneLocalIndex(indexRoot, analyser, documents);
     try {
       index.setTemplate("xml", template.toURI());
     } catch (TransformerException ex) {
@@ -122,6 +114,64 @@ public class QueryTest {
       // TODO Auto-generated catch block
       e.printStackTrace();
     }
+  }
+
+  @Test
+  public void testWildcard1() throws IndexException {
+    BasicQuery<WildcardParameter> query = BasicQuery.newBasicQuery(new WildcardParameter("wildcard", "ele*"));
+    SearchResults results = LuceneIndexQueries.query(index, query);
+    Assert.assertEquals(2, results.getTotalNbOfResults());
+    Iterator<Document> docs = results.documents().iterator();
+    while (docs.hasNext()) {
+      String id = docs.next().get("id");
+      Assert.assertTrue("doc4".equals(id) || "doc2".equals(id));
+    }
+    results.terminate();
+  }
+
+  @Test
+  public void testWildcard2() throws IndexException {
+    BasicQuery<WildcardParameter> query = BasicQuery.newBasicQuery(new WildcardParameter("wildcard", "elep*"));
+    SearchResults results = LuceneIndexQueries.query(index, query);
+    Assert.assertEquals(1, results.getTotalNbOfResults());
+    Iterator<Document> docs = results.documents().iterator();
+    Assert.assertEquals("doc4", docs.next().get("id"));
+    results.terminate();
+  }
+
+  @Test
+  public void testWildcard3() throws IndexException {
+    Query query = new Question.Builder().field("wildcard").question("wat*").supportWildcards(true).build().toQuery();
+    TopFieldCollector results;
+    IndexReader reader = null;
+    try {
+      results = TopFieldCollector.create(Sort.INDEXORDER, 10, true, false, false);
+      LuceneIndexQueries.query(index, query, results);
+      Assert.assertEquals(2, results.getTotalHits());
+      reader = LuceneIndexQueries.grabReader(index);
+      Assert.assertNotNull(reader);
+      for (ScoreDoc scoreDoc : results.topDocs().scoreDocs) {
+        Document doc = reader.document(scoreDoc.doc);
+        Assert.assertNotNull(doc);
+        String id = Fields.toString(doc.getField("id"));
+        Assert.assertTrue("doc1".equals(id) || "doc2".equals(id));
+      }
+    } catch (IOException e) {
+      // TODO Auto-generated catch block
+      e.printStackTrace();
+    } finally {
+      LuceneIndexQueries.releaseQuietly(index, reader);
+    }
+  }
+
+  @Test
+  public void testWildcard4() throws IndexException {
+    BasicQuery<WildcardParameter> query = BasicQuery.newBasicQuery(new WildcardParameter("wildcard", "water?elon"));
+    SearchResults results = LuceneIndexQueries.query(index, query);
+    Assert.assertEquals(1, results.getTotalNbOfResults());
+    Iterator<Document> docs = results.documents().iterator();
+    Assert.assertEquals("doc1", docs.next().get("id"));
+    results.terminate();
   }
 
   @Test

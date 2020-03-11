@@ -4,6 +4,7 @@
     <field name="id" store="true" index="docs">doc2</field>
     <field name="field1" store="true" index="docs-and-freqs-and-positions-and-offsets">value1 value2</field>
     <field name="field2" store="true"  index="docs" >value2</field>
+    <field name="wildcard" store="true"  index="docs" >elementary my dear watson</field>
     <field name="sorting1" store="true"  index="docs" doc-values="sorted">bbbbbbbbb</field>
     <field name="sorting2" store="true"  index="docs" doc-values="sorted-set">wwwwwwwww</field>
     <field name="sorting2" store="true"  index="docs" doc-values="sorted-set">aaaaaaaaa</field>

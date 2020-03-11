@@ -126,6 +126,18 @@ public final class Queries {
   }
 
   /**
+   * Build a query from the term provided, could be wildcard query or term query.
+   * @param field             the term field name
+   * @param text              the term value
+   * @param supportWildcards  if wildcards are supported
+   * @return the query
+   */
+  public static Query termQuery(String field, String text, boolean supportWildcards) {
+    Term t = new Term(field, text);
+    return supportWildcards && hasWildcards(text) ? new WildcardQuery(t) : new TermQuery(t);
+  }
+
+  /**
    * Returns the term or phrase query corresponding to the specified text.
    *
    * <p>If the text is surrounded by double quotes, this method will
@@ -139,6 +151,24 @@ public final class Queries {
    */
   @Beta
   public static Query toTermOrPhraseQuery(String field, String text) {
+    return toTermOrPhraseQuery(field, text, false);
+  }
+
+  /**
+   * Returns the term or phrase query corresponding to the specified text.
+   *
+   * <p>If the text is surrounded by double quotes, this method will
+   * return a {@link PhraseQuery} otherwise, it will return a simple {@link TermQuery}.
+   *
+   * <p>Note: Quotation marks are thrown away.
+   *
+   * @param field the field to construct the terms.
+   * @param text  the text to construct the query from.
+   * @param supportWildcards  if wildcards are supported.
+   * @return the corresponding query.
+   */
+  @Beta
+  public static Query toTermOrPhraseQuery(String field, String text, boolean supportWildcards) {
     if (field == null) throw new NullPointerException("field");
     if (text == null) throw new NullPointerException("text");
     boolean isPhrase = isAPhrase(text);
@@ -149,9 +179,10 @@ public final class Queries {
         phrase.add(new Term(field, t));
       }
       return phrase.build();
-    } else return new TermQuery(new Term(field, text));
+    } else {
+      return termQuery(field, text, supportWildcards);
+    }
   }
-
 
   /**
    * Returns the term or phrase query corresponding to the specified text.
@@ -169,18 +200,48 @@ public final class Queries {
    */
   @Beta
   public static List<Query> toTermOrPhraseQueries(String field, String text, Analyzer analyzer) {
+    return toTermOrPhraseQueries(field, text, false, analyzer);
+  }
+
+  /**
+   * Returns the term or phrase query corresponding to the specified text.
+   *
+   * <p>If the text is surrounded by double quotes, this method will
+   * return a {@link PhraseQuery} otherwise, it will return a simple {@link TermQuery}.
+   *
+   * <p>Note: Quotation marks are thrown away.
+   *
+   * @param field     the field to construct the terms.
+   * @param text      the text to construct the query from.
+   * @param supportWildcards  if wildcards are supported.
+   * @param analyzer  used to analyze the text
+   *
+   * @return the corresponding query.
+   */
+  @Beta
+  public static List<Query> toTermOrPhraseQueries(String field, String text, boolean supportWildcards, Analyzer analyzer) {
     if (field == null) throw new NullPointerException("field");
     if (text == null) throw new NullPointerException("text");
-    if (analyzer == null) return Collections.singletonList(toTermOrPhraseQuery(field, text));
+    if (analyzer == null) return Collections.singletonList(toTermOrPhraseQuery(field, text, supportWildcards));
     boolean isPhrase = isAPhrase(text);
     if (isPhrase && isTokenized(field, analyzer)) {
       PhraseQuery.Builder phrase = new PhraseQuery.Builder();
-      addTermsToPhrase(field, text.substring(1, text.length()-1), analyzer, phrase);
+      addTermsToPhrase(field, text.substring(1, text.length() - 1), analyzer, phrase);
       return Collections.singletonList(phrase.build());
+    } else if (supportWildcards && hasWildcards(text)) {
+      if (isTokenized(field, analyzer)) {
+        List<Query> q = new ArrayList<>();
+        for (String t : text.split("\\s+")) {
+          q.add(termQuery(field, t, true));
+        }
+        return q;
+      } else {
+        return Collections.singletonList(termQuery(field, text, true));
+      }
     } else {
       List<Query> q = new ArrayList<>();
       for (String t : Fields.toTerms(field, text, analyzer)) {
-        q.add(new TermQuery(new Term(field, t)));
+        q.add(termQuery(field, t, supportWildcards));
       }
       return q;
     }
@@ -237,17 +298,47 @@ public final class Queries {
    * @param text      the text to construct the query from.
    * @param analyzer  used to analyze the text
    * @param defaultOperatorOR if the operator between terms is OR or AND
-   * 
+   *
    * @return the corresponding query.
    */
   @Beta
   public static Query parseToQuery(String field, String text, Analyzer analyzer, boolean defaultOperatorOR) {
+    return parseToQuery(field, text, analyzer, defaultOperatorOR, false);
+  }
+
+  /**
+   * Returns the query corresponding to the specified text after parsing it.
+   * <p>Supported operators are <code>AND</code> and <code>OR</code>, parentheses are also handled.
+   *
+   * <p>The examples below show the resulting query as a Lucene predicate from the text specified using "field" as the field name:
+   * <pre>
+   * |Big|             => field:Big
+   * |Big Bang|        => field:Big field:Bang
+   * |   Big   bang |  => field:Big field:Bang
+   * |"Big Bang"|      => field:"Big Bang"
+   * |Big AND Bang|    => +field:Big +field:Bang
+   * |Big OR Bang|     => field:Big field:Bang
+   * |"Big AND Bang"|  => field:"Big AND Bang"
+   * |First "Big Bang"|  => field:First field:"Big bang"
+   * |First "Big Bang|   => field:First field:"Big field:Bang
+   * |First AND (Big Bang)|  => +field:First +(field:Big field:Bang)
+   * </pre>
+   *
+   * @param field     the field to construct the terms.
+   * @param text      the text to construct the query from.
+   * @param analyzer  used to analyze the text
+   * @param defaultOperatorOR if the operator between terms is OR or AND
+   * 
+   * @return the corresponding query.
+   */
+  @Beta
+  public static Query parseToQuery(String field, String text, Analyzer analyzer, boolean defaultOperatorOR, boolean supportWildcards) {
     if (field == null) throw new NullPointerException("field");
     if (text == null) throw new NullPointerException("text");
     // shortcut for single word or single sentence
     if (!text.trim().matches(".*?\\s.*?") || isAPhrase(text) || (analyzer != null && !isTokenized(field, analyzer))) {
-      if (analyzer == null) return toTermOrPhraseQuery(field, text);
-      return combine(defaultOperatorOR, toTermOrPhraseQueries(field, text, analyzer));
+      if (analyzer == null) return toTermOrPhraseQuery(field, text, supportWildcards);
+      return combine(defaultOperatorOR, toTermOrPhraseQueries(field, text, supportWildcards, analyzer));
     }
     // get last query
     Query query = null;
@@ -260,15 +351,15 @@ public final class Queries {
       Query thisQuery = null;
       String g = m.group().trim();
       if (g.charAt(0) == '(' && g.charAt(g.length()-1) == ')') {                // parentheses?
-        thisQuery = parseToQuery(field, g.substring(1, g.length()-1), analyzer);
+        thisQuery = parseToQuery(field, g.substring(1, g.length()-1), analyzer, true, supportWildcards);
       } else if ("AND".equals(g)) {                                             // AND?
         lastIsAND = true;
       } else if ("OR".equals(g)) {                                              // OR?
         lastIsAND = false;
       } else if (analyzer == null) {                                            // phrase or normal word then
-        thisQuery = toTermOrPhraseQuery(field, g);
+        thisQuery = toTermOrPhraseQuery(field, g, supportWildcards);
       } else {                                                                  // phrase or normal word then
-        List<Query> combined = toTermOrPhraseQueries(field, g, analyzer);
+        List<Query> combined = toTermOrPhraseQueries(field, g, supportWildcards, analyzer);
         // check if no resulting queries (word is a stop word for example)
         if (!combined.isEmpty()) thisQuery = combine(defaultOperatorOR, combined);
       }
@@ -337,6 +428,10 @@ public final class Queries {
       }
     }
     return false;
+  }
+
+  private static boolean hasWildcards(String text) {
+    return text != null && (text.indexOf('?') != -1 || text.indexOf('*') != -1);
   }
 
   // Substitutions

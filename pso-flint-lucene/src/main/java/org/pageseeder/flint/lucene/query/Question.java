@@ -22,7 +22,6 @@ import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.BoostQuery;
 import org.apache.lucene.search.Query;
-import org.apache.lucene.search.TermQuery;
 import org.pageseeder.flint.catalog.Catalog;
 import org.pageseeder.flint.lucene.search.Fields;
 import org.pageseeder.flint.lucene.search.Terms;
@@ -60,6 +59,11 @@ public final class Question implements SearchParameter, XMLWritable {
   private final boolean _defaultOperatorOR;
 
   /**
+   * If wildcards '?' and '*' are supported
+   */
+  private final boolean _supportWildcards;
+
+  /**
    * The search value
    */
   private final String _question;
@@ -85,16 +89,19 @@ public final class Question implements SearchParameter, XMLWritable {
    *
    * @param fields            The fields to search mapped to their respective boost.
    * @param question          The text entered by the user.
+   * @param supportWildcards  If wildcards ('?', '*') are supported in the question
    * @param supportOperators  If operators (AND, OR) are supported in the question
    * @param defaultOperatorOR If the default operator between terms is OR or AND
    *
    * @throws NullPointerException If either argument is <code>null</code>.
    */
-  protected Question(Map<String, Float> fields, String question, boolean supportOperators, boolean defaultOperatorOR) throws NullPointerException {
+  protected Question(Map<String, Float> fields, String question, boolean supportWildcards,
+                     boolean supportOperators, boolean defaultOperatorOR) throws NullPointerException {
     if (fields == null) throw new NullPointerException("fields");
     if (question == null) throw new NullPointerException("question");
     this._fields = fields;
     this._question = question;
+    this._supportWildcards = supportWildcards;
     this._supportOperators = supportOperators;
     this._defaultOperatorOR = defaultOperatorOR;
   }
@@ -156,8 +163,8 @@ public final class Question implements SearchParameter, XMLWritable {
     if (this._supportOperators) {
       for (Entry<String, Float> e : this._fields.entrySet()) {
         Query q = catalog != null && !catalog.isTokenized(e.getKey()) ?
-                  new TermQuery(new Term(e.getKey(), this._question)) :
-                  Queries.parseToQuery(e.getKey(), this._question, analyzer, this._defaultOperatorOR);
+            Queries.termQuery(e.getKey(), this._question, this._supportWildcards) :
+            Queries.parseToQuery(e.getKey(), this._question, analyzer, this._defaultOperatorOR, this._supportWildcards);
         if (e.getValue() != 1f) q = new BoostQuery(q, e.getValue());
         query.add(q, Occur.SHOULD);
       }
@@ -169,11 +176,11 @@ public final class Question implements SearchParameter, XMLWritable {
         BooleanQuery.Builder fieldQuery = new BooleanQuery.Builder();
         for (String value : values) {
           if (!analyzed) {
-            Query q = new TermQuery(new Term(e.getKey(), value));
+            Query q = Queries.termQuery(e.getKey(), value, this._supportWildcards);
             if (e.getValue() != 1f) q = new BoostQuery(q, e.getValue());
             fieldQuery.add(q, with);
           } else {
-            for(Query q : Queries.toTermOrPhraseQueries(e.getKey(), value, analyzer)) {
+            for(Query q : Queries.toTermOrPhraseQueries(e.getKey(), value, this._supportWildcards, analyzer)) {
               if (e.getValue() != 1f) q = new BoostQuery(q, e.getValue());
               fieldQuery.add(q, with);
             }
@@ -195,7 +202,7 @@ public final class Question implements SearchParameter, XMLWritable {
     BooleanQuery query = new BooleanQuery();
     if (this._supportOperators) {
       for (Entry<String, Float> e : this._fields.entrySet()) {
-        Query q = Queries.parseToQuery(e.getKey(), this._question, null);
+        Query q = Queries.parseToQuery(e.getKey(), this._question, null, false, this._supportWildcards);
         q.setBoost(e.getValue());
         query.add(q, Occur.SHOULD);
       }
@@ -204,7 +211,7 @@ public final class Question implements SearchParameter, XMLWritable {
       for (Entry<String, Float> e : this._fields.entrySet()) {
         BooleanQuery sub = new BooleanQuery();
         for (String value : values) {
-          Query q = Queries.toTermOrPhraseQuery(e.getKey(), value);
+          Query q = Queries.toTermOrPhraseQuery(e.getKey(), value, this._supportWildcards);
           q.setBoost(e.getValue());
           sub.add(q, Occur.SHOULD);
         }
@@ -240,7 +247,7 @@ public final class Question implements SearchParameter, XMLWritable {
         // collect fuzzy terms based on index
         for (String field : this._fields.keySet()) {
           List<String> fuzzies = Terms.fuzzy(reader, new Term(field, value));
-          if (fuzzies != null) fuzzy.addAll(fuzzies);
+          fuzzy.addAll(fuzzies);
         }
         // rewrite question
         for (String x : fuzzy) {
@@ -280,6 +287,7 @@ public final class Question implements SearchParameter, XMLWritable {
     // indicate whether this search term is empty
     xml.attribute("is-empty", Boolean.toString(isEmpty()));
     xml.attribute("operators", this._supportOperators ? "true" : "false");
+    xml.attribute("wildcards", this._supportWildcards ? "true" : "false");
     xml.attribute("default-operator", this._defaultOperatorOR ? "or" : "and");
     if (this._query != null) {
       xml.attribute("query", this._query.toString());
@@ -313,6 +321,8 @@ public final class Question implements SearchParameter, XMLWritable {
    * @param field The field for the question.
    * @param question The question itself.
    *
+   * @deprecated use {@link Builder} class
+   *
    * @return a new question.
    */
   public static Question newQuestion(String field, String question) {
@@ -325,6 +335,8 @@ public final class Question implements SearchParameter, XMLWritable {
    * @param field    The field for the question.
    * @param question The question itself.
    * @param analyzer The analyser to use when parsing the question.
+   *
+   * @deprecated use {@link Builder} class
    *
    * @return a new question.
    */
@@ -339,6 +351,8 @@ public final class Question implements SearchParameter, XMLWritable {
    * @param question The question itself.
    * @param analyzer The analyser to use when parsing the question.
    *
+   * @deprecated use {@link Builder} class
+   *
    * @return a new question.
    */
   public static Question newQuestion(String field, String question, Analyzer analyzer, Catalog catalog) {
@@ -350,6 +364,8 @@ public final class Question implements SearchParameter, XMLWritable {
    *
    * @param fields The list of fields for the question.
    * @param question The question itself.
+   *
+   * @deprecated use {@link Builder} class
    *
    * @return a new question.
    */
@@ -364,6 +380,8 @@ public final class Question implements SearchParameter, XMLWritable {
    * @param question The question itself.
    * @param analyzer The analyser to use when parsing the question.
    *
+   * @deprecated use {@link Builder} class
+   *
    * @return a new question.
    */
   public static Question newQuestion(List<String> fields, String question, Analyzer analyzer) {
@@ -377,6 +395,8 @@ public final class Question implements SearchParameter, XMLWritable {
    * @param question The question itself.
    * @param analyzer The analyser to use when parsing the question.
    *
+   * @deprecated use {@link Builder} class
+   *
    * @return a new question.
    */
   public static Question newQuestion(List<String> fields, String question, Analyzer analyzer, Catalog catalog) {
@@ -388,6 +408,8 @@ public final class Question implements SearchParameter, XMLWritable {
    *
    * @param fields The list of fields for the question.
    * @param question The question itself.
+   *
+   * @deprecated use {@link Builder} class
    *
    * @return a new question.
    */
@@ -402,12 +424,16 @@ public final class Question implements SearchParameter, XMLWritable {
    * @param question The question itself.
    * @param defaultOperatorOR If the default operator between terms is OR
    *
+   * @deprecated use {@link Builder} class
+   *
    * @return a new question.
    */
   public static Question newQuestion(Map<String, Float> fields, String question, boolean defaultOperatorOR) {
-    Question q = new Question(fields, question, false, defaultOperatorOR);
-    q.compute();
-    return q;
+    return new Builder()
+        .fields(fields)
+        .question(question)
+        .defaultOperatorOR(defaultOperatorOR)
+        .supportOperators(false).build();
   }
 
   /**
@@ -416,6 +442,8 @@ public final class Question implements SearchParameter, XMLWritable {
    * @param fields The list of fields for the question.
    * @param question The question itself.
    * @param analyzer The analyser to use when parsing the question.
+   *
+   * @deprecated use {@link Builder} class
    *
    * @return a new question.
    */
@@ -429,6 +457,8 @@ public final class Question implements SearchParameter, XMLWritable {
    * @param fields The list of fields for the question.
    * @param question The question itself.
    * @param analyzer The analyser to use when parsing the question.
+   *
+   * @deprecated use {@link Builder} class
    *
    * @return a new question.
    */
@@ -444,12 +474,18 @@ public final class Question implements SearchParameter, XMLWritable {
    * @param analyzer The analyser to use when parsing the question.
    * @param defaultOperatorOR If the default operator between terms is OR
    *
+   * @deprecated use {@link Builder} class
+   *
    * @return a new question.
    */
-  public static Question newQuestion(Map<String, Float> fields, String question, Analyzer analyzer, Catalog catalog, boolean defaultOperatorOR) {
-    Question q = new Question(fields, question, false, defaultOperatorOR);
-    q.compute(analyzer, catalog);
-    return q;
+  public static Question newQuestion(Map<String, Float> fields, String question, Analyzer analyzer,
+                                     Catalog catalog, boolean defaultOperatorOR) {
+    return new Builder()
+        .fields(fields)
+        .question(question)
+        .analyzerAndCatalog(analyzer, catalog)
+        .defaultOperatorOR(defaultOperatorOR)
+        .supportOperators(false).build();
   }
 
   /**
@@ -457,6 +493,8 @@ public final class Question implements SearchParameter, XMLWritable {
    *
    * @param field The field for the question.
    * @param question The question itself.
+   *
+   * @deprecated use {@link Builder} class
    *
    * @return a new question.
    */
@@ -471,6 +509,8 @@ public final class Question implements SearchParameter, XMLWritable {
    * @param question The question itself.
    * @param analyzer The analyser to use when parsing the question.
    *
+   * @deprecated use {@link Builder} class
+   *
    * @return a new question.
    */
   public static Question newQuestionWithOperators(String field, String question, Analyzer analyzer) {
@@ -484,6 +524,8 @@ public final class Question implements SearchParameter, XMLWritable {
    * @param question The question itself.
    * @param analyzer The analyser to use when parsing the question.
    *
+   * @deprecated use {@link Builder} class
+   *
    * @return a new question.
    */
   public static Question newQuestionWithOperators(String field, String question, Analyzer analyzer, Catalog catalog) {
@@ -495,6 +537,8 @@ public final class Question implements SearchParameter, XMLWritable {
    *
    * @param fields The list of fields for the question.
    * @param question The question itself.
+   *
+   * @deprecated use {@link Builder} class
    *
    * @return a new question.
    */
@@ -509,6 +553,8 @@ public final class Question implements SearchParameter, XMLWritable {
    * @param question The question itself.
    * @param analyzer The analyser to use when parsing the question.
    *
+   * @deprecated use {@link Builder} class
+   *
    * @return a new question.
    */
   public static Question newQuestionWithOperators(List<String> fields, String question, Analyzer analyzer) {
@@ -522,9 +568,12 @@ public final class Question implements SearchParameter, XMLWritable {
    * @param question The question itself.
    * @param analyzer The analyser to use when parsing the question.
    *
+   * @deprecated use {@link Builder} class
+   *
    * @return a new question.
    */
-  public static Question newQuestionWithOperators(List<String> fields, String question, Analyzer analyzer, Catalog catalog) {
+  public static Question newQuestionWithOperators(List<String> fields, String question,
+                                                  Analyzer analyzer, Catalog catalog) {
     return newQuestionWithOperators(Fields.asBoostMap(Fields.filterNames(fields)), question, analyzer, catalog);
   }
 
@@ -534,12 +583,12 @@ public final class Question implements SearchParameter, XMLWritable {
    * @param fields The list of fields for the question.
    * @param question The question itself.
    *
+   * @deprecated use {@link Builder} class
+   *
    * @return a new question.
    */
   public static Question newQuestionWithOperators(Map<String, Float> fields, String question) {
-    Question q = new Question(fields, question, true, true);
-    q.compute();
-    return q;
+    return new Question.Builder().fields(fields).question(question).build();
   }
 
   /**
@@ -548,6 +597,8 @@ public final class Question implements SearchParameter, XMLWritable {
    * @param fields The list of fields for the question.
    * @param question The question itself.
    * @param analyzer The analyser to use when parsing the question.
+   *
+   * @deprecated use {@link Builder} class
    *
    * @return a new question.
    */
@@ -562,9 +613,12 @@ public final class Question implements SearchParameter, XMLWritable {
    * @param question The question itself.
    * @param analyzer The analyser to use when parsing the question.
    *
+   * @deprecated use {@link Builder} class
+   *
    * @return a new question.
    */
-  public static Question newQuestionWithOperators(Map<String, Float> fields, String question, Analyzer analyzer, Catalog catalog) {
+  public static Question newQuestionWithOperators(Map<String, Float> fields, String question,
+                                                  Analyzer analyzer, Catalog catalog) {
     return newQuestionWithOperators(fields, question, analyzer, catalog, true);
   }
 
@@ -576,12 +630,70 @@ public final class Question implements SearchParameter, XMLWritable {
    * @param analyzer The analyser to use when parsing the question.
    * @param defaultOperatorOR If the default operator between terms is OR
    *
+   * @deprecated use {@link Builder} class
+   *
    * @return a new question.
    */
-  public static Question newQuestionWithOperators(Map<String, Float> fields, String question, Analyzer analyzer, Catalog catalog, boolean defaultOperatorOR) {
-    Question q = new Question(fields, question, true, defaultOperatorOR);
-    q.compute(analyzer, catalog);
-    return q;
+  public static Question newQuestionWithOperators(Map<String, Float> fields, String question,
+                                                  Analyzer analyzer, Catalog catalog, boolean defaultOperatorOR) {
+    return new Question.Builder()
+        .fields(fields)
+        .question(question)
+        .analyzerAndCatalog(analyzer, catalog)
+        .defaultOperatorOR(defaultOperatorOR)
+        .build();
   }
 
+  public static class Builder {
+    private boolean supportOperators = true;
+    private boolean defaultOperatorOR = true;
+    private boolean supportWildcards = false;
+    private String question = null;
+    private Map<String, Float> fields = null;
+    private Analyzer analyzer = null;
+    private Catalog catalog = null;
+    public Builder field(String fieldname) {
+      this.fields = Fields.asBoostMap(Fields.filterNames(Collections.singletonList(fieldname)));
+      return this;
+    }
+    public Builder fields(List<String> fs) {
+      this.fields = Fields.asBoostMap(Fields.filterNames(fs));
+      return this;
+    }
+    public Builder fields(Map<String, Float> fs) {
+      this.fields = fs;
+      return this;
+    }
+    public Builder question(String q) {
+      this.question = q;
+      return this;
+    }
+    public Builder supportWildcards(boolean support) {
+      this.supportWildcards = support;
+      return this;
+    }
+    public Builder supportOperators(boolean support) {
+      this.supportOperators = support;
+      return this;
+    }
+    public Builder defaultOperatorOR(boolean or) {
+      this.defaultOperatorOR = or;
+      return this;
+    }
+    public Builder analyzerAndCatalog(Analyzer a, Catalog c) {
+      this.analyzer = a;
+      this.catalog = c;
+      return this;
+    }
+    public Question build() {
+      if (this.fields == null) throw new IllegalStateException("Missing fields");
+      if (this.question == null) throw new IllegalStateException("Missing question");
+      Question q = new Question(this.fields, this.question, this.supportWildcards, this.supportOperators, this.defaultOperatorOR);
+      if (this.analyzer == null && this.catalog == null)
+        q.compute();
+      else
+        q.compute(this.analyzer, this.catalog);
+      return q;
+    }
+  }
 }
