@@ -177,7 +177,14 @@ public final class IndexingThread implements Runnable {
     }
 
     // check if we should delete the document
-    if (content.isDeleted()) {
+    boolean deleted;
+    try {
+      deleted = content.isDeleted();
+    } catch (IndexException ex) {
+      this._listener.error(job, ex.getMessage(), ex);
+      return false;
+    }
+    if (deleted) {
       if (Thread.currentThread().isInterrupted())
         return false;
       else try {
