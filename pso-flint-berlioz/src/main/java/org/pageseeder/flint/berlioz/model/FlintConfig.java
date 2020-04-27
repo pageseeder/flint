@@ -553,6 +553,7 @@ public class FlintConfig {
         String fields = GlobalSettings.get(propPrefix + autosuggest + ".fields");
         String terms = GlobalSettings.get(propPrefix + autosuggest + ".terms", "false");
         String rfields = GlobalSettings.get(propPrefix + autosuggest + ".result-fields");
+        String criteriafields = GlobalSettings.get(propPrefix + autosuggest + ".criteria-fields");
         String weight = GlobalSettings.get(propPrefix + autosuggest + ".weight", "");
         String suggesters = GlobalSettings.get(propPrefix + autosuggest + ".suggesters");
         if (fields != null) {
@@ -573,7 +574,7 @@ public class FlintConfig {
               }
             }
           }
-          def.addAutoSuggest(autosuggest, fields, terms, rfields, weights);
+          def.addAutoSuggest(autosuggest, fields, terms, rfields, criteriafields, weights);
         } else if (this._useSolr && suggesters != null) {
           def.addAutoSuggest(autosuggest, Arrays.asList(suggesters.split(",")));
         } else {

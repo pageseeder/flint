@@ -37,6 +37,7 @@ public class AutoSuggest {
   
   private final List<String> _searchFields = new ArrayList<>();
 
+  //TODO maybe it should be a list
   private String _withField = null;
 
   private Map<String, Float> _weights = new HashMap<>();
@@ -341,6 +342,7 @@ public class AutoSuggest {
     private Directory _dir = null;
     private Analyzer _indexAnalyzer = null;
     private Analyzer _searchAnalyzer = null;
+    //TODO it should be a list
     private String _criteria = null;
     private Map<String, Float> _weights = new HashMap<>();
     private int _minChars = 2;
