@@ -40,6 +40,8 @@ public final class AutoSuggest extends LuceneIndexGenerator {
     String results = req.getParameter("results", "10");
     boolean terms  = "true".equals(req.getParameter("terms", "false"));
     String rfields = req.getParameter("return-fields", req.getParameter("return-field"));
+    String criteriaFields = req.getParameter("criteria-fields", "");
+    String criteriaValues = req.getParameter("criteria-values", "");
     String weight  = req.getParameter("weight", "");
     // validate fields
     if (term == null) {
@@ -68,7 +70,10 @@ public final class AutoSuggest extends LuceneIndexGenerator {
           }
         }
       }
-      suggestor = index.getAutoSuggest(Arrays.asList(fields.split(",")), terms, 2, rfields == null ? null : Arrays.asList(rfields.split(",")), weights);
+      suggestor = index.getAutoSuggest(Arrays.asList(fields.split(",")), terms, 2,
+          rfields == null ? null : Arrays.asList(rfields.split(",")),
+          criteriaFields == null ? null : Arrays.asList(criteriaFields.split(",")),
+          weights);
       if (suggestor == null) {
         GeneratorErrors.error(req, xml, "server", "Failed to create autosuggest", ContentStatus.INTERNAL_SERVER_ERROR);
         return;
@@ -80,7 +85,10 @@ public final class AutoSuggest extends LuceneIndexGenerator {
         return;
       }
     }
-    List<Suggestion> suggestions = suggestor.suggest(term, nbresults);
+
+    List<String> criteria =  criteriaValues == null ? null : Arrays.asList(criteriaValues.split(","));
+
+    List<Suggestion> suggestions = suggestor.suggest(term, criteria, nbresults);
 
     // output
     xml.openElement("suggestions");

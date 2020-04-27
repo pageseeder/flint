@@ -133,7 +133,14 @@ public final class IndexMaster {
     return this._indexingFileFilter;
   }
 
+  /**
+   * @deprecated you should use the method which has criteriaFields in the paramater list.
+   */
   public org.pageseeder.flint.lucene.search.AutoSuggest getAutoSuggest(List<String> fields, boolean terms, int min, List<String> resultFields, Map<String, Float> weights) {
+    return getAutoSuggest(fields, terms, min, resultFields, new ArrayList<>(), weights);
+  }
+
+  public org.pageseeder.flint.lucene.search.AutoSuggest getAutoSuggest(List<String> fields, boolean terms, int min, List<String> resultFields, List<String> criteriaFields, Map<String, Float> weights) {
     String name = createAutoSuggestTempName(fields, terms, min, resultFields);
     // block the list of suggesters so another thread doesn't try to create the same one
     synchronized (this._autosuggests) {
@@ -142,7 +149,7 @@ public final class IndexMaster {
       if (existing == null || !existing.isCurrent(this._manager)) {
         try {
           if (existing != null) clearAutoSuggest(name, existing);
-          return createAutoSuggest(name, terms, fields, min, resultFields, weights);
+          return createAutoSuggest(name, terms, fields, min, resultFields, criteriaFields, weights);
         } catch (IndexException | IOException ex) {
           LOGGER.error("Failed to create autosuggest {}", name, ex);
           return null;
@@ -163,7 +170,7 @@ public final class IndexMaster {
           try {
             if (existing != null) clearAutoSuggest(name, existing);
             return createAutoSuggest(name, asd.useTerms(), asd.getSearchFields(),
-                asd.minChars(), asd.getResultFields(), asd.getWeights());
+                asd.minChars(), asd.getResultFields(), asd.getCriteriaFields(), asd.getWeights());
           } catch (IndexException | IOException ex) {
             LOGGER.error("Failed to create autosuggest {}", name, ex);
             return null;
@@ -265,7 +272,7 @@ public final class IndexMaster {
   }
 
   private org.pageseeder.flint.lucene.search.AutoSuggest createAutoSuggest(String name, boolean terms, Collection<String> fields,
-      int min, Collection<String> resultFields, Map<String, Float> weights) throws IndexException, IOException {
+      int min, Collection<String> resultFields, List<String> criteriaFields, Map<String, Float> weights) throws IndexException, IOException {
     // build name
     String autosuggestIndexName = this._name+"_"+name+"_autosuggest";
     // create folder
@@ -274,6 +281,7 @@ public final class IndexMaster {
     Directory autosuggestDir = FSDirectory.open(autosuggestIndex.toPath());
     // create auto suggest object
     org.pageseeder.flint.lucene.search.AutoSuggest.Builder aBuilder = new org.pageseeder.flint.lucene.search.AutoSuggest.Builder();
+    String criteria = criteriaFields != null && !criteriaFields.isEmpty()? criteriaFields.get(0) : null;
     aBuilder.index(this._index)
             .name(autosuggestIndexName)
             .directory(autosuggestDir)
@@ -281,7 +289,8 @@ public final class IndexMaster {
             .useTerms(terms)
             .searchFields(fields)
             .weights(weights)
-            .resultFields(resultFields);
+            .resultFields(resultFields)
+            .criteria(criteria);
     // build it
     org.pageseeder.flint.lucene.search.AutoSuggest as = aBuilder.build();
     IndexReader reader = null;
