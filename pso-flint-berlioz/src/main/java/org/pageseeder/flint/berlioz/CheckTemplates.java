@@ -15,6 +15,7 @@ import java.io.Closeable;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.util.Collection;
 
 import javax.xml.transform.Templates;
 import javax.xml.transform.TransformerException;
@@ -27,6 +28,7 @@ import org.pageseeder.berlioz.Beta;
 import org.pageseeder.berlioz.content.ContentGenerator;
 import org.pageseeder.berlioz.content.ContentRequest;
 import org.pageseeder.flint.berlioz.model.FlintConfig;
+import org.pageseeder.flint.berlioz.model.IndexDefinition;
 import org.pageseeder.xmlwriter.XMLWriter;
 
 @Beta
@@ -34,10 +36,12 @@ public final class CheckTemplates implements ContentGenerator {
 
   public void process(ContentRequest req, XMLWriter xml) throws BerliozException, IOException {
     FlintConfig config = FlintConfig.get();
-    File[] templates = config.getTemplatesDirectory().listFiles();
     xml.openElement("index-templates");
-    for (File xslt : templates) {
-      CheckTemplates.toXML(xslt, xml);
+    Collection<IndexDefinition> indexDefinitions = config.listDefinitions();
+    if (indexDefinitions != null) {
+      for (IndexDefinition indexDefinition:indexDefinitions) {
+        CheckTemplates.toXML(indexDefinition.getTemplate(), xml);
+      }
     }
     xml.closeElement();
   }
