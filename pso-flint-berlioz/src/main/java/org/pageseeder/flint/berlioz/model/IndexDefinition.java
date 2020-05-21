@@ -511,7 +511,7 @@ public class IndexDefinition implements XMLWritable {
     }
 
     public List<String> getCriteriaFields() {
-      return Collections.unmodifiableList(this._criteriaFields);
+      return this._criteriaFields != null ? Collections.unmodifiableList(this._criteriaFields) : Collections.EMPTY_LIST;
     }
 
     public boolean useTerms() {
