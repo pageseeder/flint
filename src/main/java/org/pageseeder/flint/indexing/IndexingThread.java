@@ -218,9 +218,12 @@ public final class IndexingThread implements Runnable {
     Collection<FlintField> fields = job.getIndex().getFields(content);
     if (fields != null && !fields.isEmpty()) {
       for (FlintDocument doc : documents) {
+        // remove existing ones with same name
         for (FlintField field : fields) {
-          // remove existing ones with same name
           doc.removeFields(field.name());
+        }
+        for (FlintField field : fields) {
+          // add fields
           doc.add(field);
         }
       }
