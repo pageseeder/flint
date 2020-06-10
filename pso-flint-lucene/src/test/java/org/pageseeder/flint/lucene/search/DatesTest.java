@@ -1,17 +1,5 @@
 package org.pageseeder.flint.lucene.search;
 
-import java.io.ByteArrayInputStream;
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStream;
-import java.nio.charset.StandardCharsets;
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
-import java.util.Collections;
-import java.util.Date;
-
-import javax.xml.transform.TransformerException;
-
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.document.DateTools.Resolution;
 import org.apache.lucene.search.Sort;
@@ -22,27 +10,28 @@ import org.junit.BeforeClass;
 import org.pageseeder.flint.IndexException;
 import org.pageseeder.flint.IndexManager;
 import org.pageseeder.flint.Requester;
-import org.pageseeder.flint.content.Content;
-import org.pageseeder.flint.content.ContentFetcher;
-import org.pageseeder.flint.content.ContentType;
-import org.pageseeder.flint.content.DeleteRule;
-import org.pageseeder.flint.content.SourceForwarder;
+import org.pageseeder.flint.content.*;
 import org.pageseeder.flint.indexing.IndexBatch;
 import org.pageseeder.flint.indexing.IndexJob;
 import org.pageseeder.flint.indexing.IndexJob.Priority;
 import org.pageseeder.flint.lucene.LuceneIndexQueries;
 import org.pageseeder.flint.lucene.LuceneLocalIndex;
-import org.pageseeder.flint.lucene.query.BasicQuery;
-import org.pageseeder.flint.lucene.query.NumericRange;
-import org.pageseeder.flint.lucene.query.PredicateSearchQuery;
-import org.pageseeder.flint.lucene.query.SearchQuery;
-import org.pageseeder.flint.lucene.query.SearchResults;
-import org.pageseeder.flint.lucene.query.TermRange;
+import org.pageseeder.flint.lucene.query.*;
 import org.pageseeder.flint.lucene.util.Dates;
 import org.pageseeder.flint.lucene.utils.TestListener;
 import org.pageseeder.flint.lucene.utils.TestUtils;
 import org.pageseeder.xmlwriter.XML.NamespaceAware;
 import org.pageseeder.xmlwriter.XMLStringWriter;
+
+import java.io.ByteArrayInputStream;
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.Collections;
+import java.util.Date;
 
 public class DatesTest {
 
@@ -61,16 +50,16 @@ public class DatesTest {
     // clean up previous test data
 //    for (File f : indexNumericRoot.listFiles()) f.delete();
 //    for (File f : indexStringRoot.listFiles()) f.delete();
-    indexNumeric = new LuceneLocalIndex(indexNumericRoot, new StandardAnalyzer(), documents);
     try {
+      indexNumeric = new LuceneLocalIndex(indexNumericRoot, new StandardAnalyzer(), documents);
       indexNumeric.setTemplates(TestUtils.TYPE, TestUtils.MEDIA_TYPE, template.toURI());
-    } catch (TransformerException ex) {
+    } catch (Exception ex) {
       ex.printStackTrace();
     }
-    indexString = new LuceneLocalIndex(indexStringRoot, new StandardAnalyzer(), documents);
     try {
+      indexString = new LuceneLocalIndex(indexStringRoot, new StandardAnalyzer(), documents);
       indexString.setTemplates(TestUtils.TYPE, TestUtils.MEDIA_TYPE, template.toURI());
-    } catch (TransformerException ex) {
+    } catch (Exception ex) {
       ex.printStackTrace();
     }
     manager = new IndexManager(new DatesContentFetcher(), new TestListener(), 10, false);

@@ -1,16 +1,5 @@
 package org.pageseeder.flint.lucene.facet;
 
-import java.io.File;
-import java.io.FileFilter;
-import java.io.IOException;
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
-import java.util.Collections;
-import java.util.List;
-import java.util.TimeZone;
-
-import javax.xml.transform.TransformerException;
-
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.document.DateTools.Resolution;
 import org.apache.lucene.index.Term;
@@ -34,6 +23,15 @@ import org.pageseeder.flint.lucene.util.Bucket;
 import org.pageseeder.flint.lucene.utils.TestListener;
 import org.pageseeder.flint.lucene.utils.TestUtils;
 
+import java.io.File;
+import java.io.FileFilter;
+import java.io.IOException;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.Collections;
+import java.util.List;
+import java.util.TimeZone;
+
 public class DateRangeFacetTest {
 
   private static File template  = new File("src/test/resources/template.xsl");
@@ -52,10 +50,10 @@ public class DateRangeFacetTest {
     // clean up previous test's data
     for (File f : indexRoot.listFiles()) f.delete();
     indexRoot.delete();
-    index = new LuceneLocalIndex(indexRoot, new StandardAnalyzer(), documents);
     try {
+      index = new LuceneLocalIndex(indexRoot, new StandardAnalyzer(), documents);
       index.setTemplate("xml", template.toURI());
-    } catch (TransformerException ex) {
+    } catch (Exception ex) {
       ex.printStackTrace();
     }
     manager = LocalIndexManagerFactory.createMultiThreads(new TestListener());

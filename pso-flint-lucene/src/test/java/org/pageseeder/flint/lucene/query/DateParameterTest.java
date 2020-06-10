@@ -17,7 +17,6 @@ import org.pageseeder.flint.lucene.LuceneIndexQueries;
 import org.pageseeder.flint.lucene.utils.TestListener;
 import org.pageseeder.flint.lucene.utils.TestUtils;
 
-import javax.xml.transform.TransformerException;
 import java.io.File;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
@@ -33,10 +32,10 @@ public class DateParameterTest {
   
   @BeforeClass
   public static void init() {
-    index = new LuceneIndex("DateParameterTest", new RAMDirectory(), new StandardAnalyzer());
     try {
+      index = new LuceneIndex("DateParameterTest", new RAMDirectory(), new StandardAnalyzer());
       index.setTemplates(TestUtils.TYPE, TestUtils.MEDIA_TYPE, template.toURI());
-    } catch (TransformerException ex) {
+    } catch (Exception ex) {
       ex.printStackTrace();
     }
 

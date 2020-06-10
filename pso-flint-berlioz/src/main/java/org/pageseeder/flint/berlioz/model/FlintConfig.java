@@ -20,7 +20,9 @@ package org.pageseeder.flint.berlioz.model;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.pageseeder.berlioz.GlobalSettings;
+import org.pageseeder.flint.IndexException;
 import org.pageseeder.flint.IndexManager;
+import org.pageseeder.flint.IndexOpenException;
 import org.pageseeder.flint.berlioz.helper.FolderWatcher;
 import org.pageseeder.flint.berlioz.helper.QuietListener;
 import org.pageseeder.flint.berlioz.model.IndexDefinition.InvalidIndexDefinitionException;
@@ -145,7 +147,28 @@ public class FlintConfig {
           // no config found
           LOGGER.error("Failed to create index {}, no matching index definition found in configuration", key);
         } else {
-          IndexMaster master = createLuceneMaster(key, def);
+          IndexMaster master;
+          try {
+            master = createLuceneMaster(key, def);
+          } catch (IndexOpenException ex) {
+            // two threads trying to open at the same time? wait a bit and try again
+            try {
+              Thread.sleep(2000); // wait 2 seconds
+            } catch (InterruptedException ex2) {
+              LOGGER.warn("Failed to wait 2s to check if index was created", ex);
+            }
+            try {
+              master = createLuceneMaster(key, def);
+            } catch (IndexException ex2) {
+              // ok really failed, throw error
+              LOGGER.error("Failed to create index after retrying", ex2);
+              master = null;
+            }
+          } catch (IndexException ex) {
+            // ok really failed, throw error
+            LOGGER.error("Failed to create index", ex);
+            master = null;
+          }
           if (master != null)
             this.indexes.put(key, master);
         }
@@ -494,7 +517,7 @@ public class FlintConfig {
     return this.listener.getBatches();
   }
 
-  private IndexMaster createLuceneMaster(String name, IndexDefinition def) {
+  private IndexMaster createLuceneMaster(String name, IndexDefinition def) throws IndexException {
     // build content path
     File content = def.buildContentRoot(GlobalSettings.getAppData(), name);
     File index = new File(this._directory, name);

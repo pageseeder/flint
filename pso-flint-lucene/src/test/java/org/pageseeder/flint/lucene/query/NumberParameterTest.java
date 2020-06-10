@@ -1,9 +1,5 @@
 package org.pageseeder.flint.lucene.query;
 
-import java.io.File;
-
-import javax.xml.transform.TransformerException;
-
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.store.RAMDirectory;
 import org.junit.AfterClass;
@@ -19,11 +15,10 @@ import org.pageseeder.flint.indexing.IndexJob;
 import org.pageseeder.flint.indexing.IndexJob.Priority;
 import org.pageseeder.flint.lucene.LuceneIndex;
 import org.pageseeder.flint.lucene.LuceneIndexQueries;
-import org.pageseeder.flint.lucene.query.BasicQuery;
-import org.pageseeder.flint.lucene.query.NumberParameter;
-import org.pageseeder.flint.lucene.query.SearchResults;
 import org.pageseeder.flint.lucene.utils.TestListener;
 import org.pageseeder.flint.lucene.utils.TestUtils;
+
+import java.io.File;
 
 public class NumberParameterTest {
 
@@ -34,10 +29,10 @@ public class NumberParameterTest {
   
   @BeforeClass
   public static void init() {
-    index = new LuceneIndex(NumberParameterTest.class.getName(), new RAMDirectory(), new StandardAnalyzer());
     try {
+      index = new LuceneIndex(NumberParameterTest.class.getName(), new RAMDirectory(), new StandardAnalyzer());
       index.setTemplates(TestUtils.TYPE, TestUtils.MEDIA_TYPE, template.toURI());
-    } catch (TransformerException ex) {
+    } catch (Exception ex) {
       ex.printStackTrace();
     }
     manager = new IndexManager(new ContentFetcher() {

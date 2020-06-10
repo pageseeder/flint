@@ -1,9 +1,5 @@
 package org.pageseeder.flint.lucene.local;
 
-import java.io.File;
-
-import javax.xml.transform.TransformerException;
-
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.index.IndexReader;
 import org.junit.AfterClass;
@@ -16,6 +12,8 @@ import org.pageseeder.flint.lucene.LuceneIndexQueries;
 import org.pageseeder.flint.lucene.LuceneLocalIndex;
 import org.pageseeder.flint.lucene.utils.TestListener;
 import org.pageseeder.flint.lucene.utils.TestUtils;
+
+import java.io.File;
 
 public class LocalIndexerTest {
 
@@ -36,11 +34,11 @@ public class LocalIndexerTest {
     // clean up previous test's data
     for (File f : indexRoot1.listFiles()) f.delete();
     indexRoot1.delete();
-    index1 = new LuceneLocalIndex(indexRoot1, new StandardAnalyzer(), indexing);
     try {
+      index1 = new LuceneLocalIndex(indexRoot1, new StandardAnalyzer(), indexing);
       index1.setTemplate("xml", template.toURI());
       index1.setTemplate("psml", templatePSML.toURI());
-    } catch (TransformerException ex) {
+    } catch (Exception ex) {
       ex.printStackTrace();
     }
     manager = LocalIndexManagerFactory.createMultiThreads(5, new TestListener());
@@ -51,11 +49,11 @@ public class LocalIndexerTest {
     // clean up previous test's data
     for (File f : indexRoot2.listFiles()) f.delete();
     indexRoot2.delete();
-    index2 = new LuceneLocalIndex(indexRoot2, new StandardAnalyzer(), indexing);
     try {
+      index2 = new LuceneLocalIndex(indexRoot2, new StandardAnalyzer(), indexing);
       index2.setTemplate("xml", template.toURI());
       index2.setTemplate("psml", templatePSML.toURI());
-    } catch (TransformerException ex) {
+    } catch (Exception ex) {
       ex.printStackTrace();
     }
   }

@@ -23,12 +23,12 @@ package org.pageseeder.flint;
  * @author Christophe Lauret (Weborganic)
  * @version 9 February 2007
  */
-public final class IndexException extends Exception {
+public class IndexException extends Exception {
 
   /**
    * The serial version UID as required by the Serializable interface.
    */
-  private static final long serialVersionUID = 200702022618001L;
+  private static final long serialVersionUID = 4L;
 
   /**
    * Creates a new IndexException.

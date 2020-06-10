@@ -1,13 +1,5 @@
 package org.pageseeder.flint.lucene.search;
 
-import java.io.File;
-import java.io.FileFilter;
-import java.io.IOException;
-import java.util.Arrays;
-import java.util.List;
-
-import javax.xml.transform.TransformerException;
-
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.index.Term;
 import org.junit.AfterClass;
@@ -21,6 +13,12 @@ import org.pageseeder.flint.lucene.LuceneLocalIndex;
 import org.pageseeder.flint.lucene.util.Bucket;
 import org.pageseeder.flint.lucene.utils.TestListener;
 import org.pageseeder.flint.lucene.utils.TestUtils;
+
+import java.io.File;
+import java.io.FileFilter;
+import java.io.IOException;
+import java.util.Arrays;
+import java.util.List;
 
 public class FacetsTest {
 
@@ -37,10 +35,10 @@ public class FacetsTest {
     // clean up previous test's data
     for (File f : indexRoot.listFiles()) f.delete();
     indexRoot.delete();
-    index = new LuceneLocalIndex(indexRoot, new StandardAnalyzer(), documents);
     try {
+      index = new LuceneLocalIndex(indexRoot, new StandardAnalyzer(), documents);
       index.setTemplate("xml", template.toURI());
-    } catch (TransformerException ex) {
+    } catch (Exception ex) {
       ex.printStackTrace();
     }
     manager = LocalIndexManagerFactory.createMultiThreads(new TestListener());

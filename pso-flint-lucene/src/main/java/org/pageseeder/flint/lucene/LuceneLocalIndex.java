@@ -64,8 +64,9 @@ public final class LuceneLocalIndex extends LocalIndex {
    * @param contentLocation The location of the content to index
    *
    * @throws NullPointerException if the location is <code>null</code>.
+   * @throws IndexException if creating the index failed (for example: there's already in index running pointing to that location)
    */
-  public LuceneLocalIndex(File indexLocation, Analyzer analyzer, File contentLocation) {
+  public LuceneLocalIndex(File indexLocation, Analyzer analyzer, File contentLocation) throws IndexException {
     this(indexLocation, "lucene", analyzer, contentLocation);
   }
 
@@ -79,19 +80,14 @@ public final class LuceneLocalIndex extends LocalIndex {
    * @param contentLocation The location of the content to index
    *
    * @throws NullPointerException if the location is <code>null</code>.
+   * @throws IndexException if creating the index failed (for example: there's already in index running pointing to that location)
    */
-  public LuceneLocalIndex(File indexLocation, String catalog, Analyzer analyzer, File contentLocation) {
+  public LuceneLocalIndex(File indexLocation, String catalog, Analyzer analyzer, File contentLocation)
+      throws IndexException {
     super(indexLocation.getName(), catalog);
     this._directory = ensureFolderExists(indexLocation);
     this._analyzer = analyzer;
-    IndexIO io;
-    try {
-      io = new LuceneIndexIO(this._directory, this._analyzer);
-    } catch (IndexException ex) {
-      ex.printStackTrace();
-      io = null;
-    }
-    this._io = io;
+    this._io = new LuceneIndexIO(this._directory, this._analyzer);
     this._contentRoot = contentLocation;
   }
 
