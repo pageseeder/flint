@@ -288,7 +288,7 @@ public class AutoSuggest {
     }
     if (this.suggester == null) return suggestions;
     Set<BytesRef> contexts = null;
-    if (criteria != null) {
+    if (criteria != null && !criteria.isEmpty()) {
       if (this._useTerms)
         throw new IllegalStateException("Illogical to use criteria for words suggestions!");
       contexts = new HashSet<>();

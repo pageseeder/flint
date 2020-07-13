@@ -86,7 +86,8 @@ public final class AutoSuggest extends LuceneIndexGenerator {
       }
     }
 
-    List<String> criteria =  criteriaValues == null ? null : Arrays.asList(criteriaValues.split(","));
+
+    List<String> criteria =  (criteriaValues == null || criteriaValues.trim().length() == 0)? null : Arrays.asList(criteriaValues.split(","));
 
     List<Suggestion> suggestions = suggestor.suggest(term, criteria, nbresults);
 
