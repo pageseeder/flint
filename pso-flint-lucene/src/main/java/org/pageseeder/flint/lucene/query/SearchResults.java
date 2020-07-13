@@ -148,7 +148,7 @@ public final class SearchResults implements XMLWritable {
    * @param query    The search query that was used to produce these results.
    * @param docs     The actual search results from Lucene in TopFieldDocs.
    * @param paging   The paging configuration.
-   * @param io       The IndexIO object, used to release the searcher when terminated
+   * @param readers  The ...
    * @param searcher The Lucene searcher.
    *
    * @throws IndexException if the documents could not be retrieved from the Index

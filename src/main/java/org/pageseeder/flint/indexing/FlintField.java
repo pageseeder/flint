@@ -304,8 +304,6 @@ public final class FlintField {
   /**
    * Set the field index for the field to build.
    *
-   * @see #toFieldIndex(String)
-   *
    * @param index The field index for the field to build as a string.
    * @return this builder.
    */

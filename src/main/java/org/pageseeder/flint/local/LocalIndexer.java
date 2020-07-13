@@ -79,8 +79,8 @@ public final class LocalIndexer implements FileVisitor<Path> {
   /**
    * Create a new local index.
    *
-   * @param location The location of the local index.
-   * @param analyzer The analyzer of the local index.
+   * @param index The ...
+   * @param manager The ...
    *
    * @throws NullPointerException if the location is <code>null</code>.
    */
