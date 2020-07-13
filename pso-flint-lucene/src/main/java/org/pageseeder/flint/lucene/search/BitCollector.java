@@ -84,8 +84,7 @@ public final class BitCollector extends SimpleCollector {
   /**
    * Changes the document base to re-base the document position in the bit set.
    *
-   * @param reader  the next index reader
-   * @param docbase used to re-base document ids for the index.
+   * @param context the
    */
   @Override
   protected void doSetNextReader(LeafReaderContext context) throws IOException {

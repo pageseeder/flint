@@ -30,8 +30,6 @@ import org.pageseeder.xmlwriter.XMLWriter;
  * This is API is still experimental and subject to change in Lucene, any change in Lucene may also
  * be reflected in this API.
  *
- * @param <T> The number type for this numeric range
- *
  * @author Christophe Lauret (Weborganic)
  * @author Jean-Baptiste Reure (Weborganic)
  *

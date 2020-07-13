@@ -310,7 +310,7 @@ public final class Dates {
    *
    * <p>Note: dates returned in local time.
    *
-   * @param date       The date to format
+   * @param timems     The time in mile seconds.
    * @param resolution The resolution for the formatting
    *
    * @return the formatted date as ISO8601 or <code>null</code>.

@@ -97,7 +97,7 @@ public final class IndexParser {
   /**
    * Creates a new IndexParser.
    *
-   * @param result     The SAX Result to use.
+   * @param catalog  The..
    */
   protected IndexParser(String catalog) {
     this._reader = null;
