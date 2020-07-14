@@ -31,7 +31,7 @@ public class QuestionTest {
 
   private static LuceneIndex index;
   private static IndexManager manager;
-  
+
   @BeforeClass
   public static void init() {
     try {
@@ -79,13 +79,52 @@ public class QuestionTest {
 
   @Test
   public void testSimilar() throws IOException, IndexException {
-    Question q = Question.newQuestion("term1", "value");
+    Question q = new Question.Builder().field("term1").question("value").build();
     IndexReader reader = LuceneIndexQueries.grabReader(index);
     List<Question> qs = q.similar(reader);
     Assert.assertEquals(3, qs.size());
     Assert.assertThat(qs.get(0).question(), CoreMatchers.anyOf(CoreMatchers.equalTo("value1"), CoreMatchers.equalTo("value2"), CoreMatchers.equalTo("value3")));
     Assert.assertThat(qs.get(1).question(), CoreMatchers.anyOf(CoreMatchers.equalTo("value1"), CoreMatchers.equalTo("value2"), CoreMatchers.equalTo("value3")));
     Assert.assertThat(qs.get(2).question(), CoreMatchers.anyOf(CoreMatchers.equalTo("value1"), CoreMatchers.equalTo("value2"), CoreMatchers.equalTo("value3")));
+    LuceneIndexQueries.releaseQuietly(index, reader);
+
+  }
+
+  @Test
+  public void testSimilarBig() throws IOException, IndexException {
+    Question q = new Question.Builder().field("term1").question(
+        "value value value value value value value value value value value value value value value value value value value value "+
+        "value value value value value value value value value value value value value value value value value value value value "+
+        "value value value value value value value value value value value value value value value value value value value value "+
+        "value value value value value value value value value value value value value value value value value value value value "+
+        "value value value value value value value value value value value value value value value value value value value value "+
+        "value value value value value value value value value value value value value value value value value value value value "+
+        "value value value value value value value value value value value value value value value value value value value value "+
+        "value value value value value value value value value value value value value value value value value value value value "+
+        "value value value value value value value value value value value value value value value value value value value value "+
+        "value value value value value value value value value value value value value value value value value value value value "+
+        "value value value value value value value value value value value value value value value value value value value value "+
+        "value value value value value value value value value value value value value value value value value value value value "+
+        "value value value value value value value value value value value value value value value value value value value value "+
+        "value value value value value value value value value value value value value value value value value value value value "+
+        "value value value value value value value value value value value value value value value value value value value value "+
+        "value value value value value value value value value value value value value value value value value value value value "+
+        "value value value value value value value value value value value value value value value value value value value value "+
+        "value value value value value value value value value value value value value value value value value value value value "+
+        "value value value value value value value value value value value value value value value value value value value value "+
+        "value value value value value value value value value value value value value value value value value value value value "+
+        "value value value value value value value value value value value value value value value value value value value value "+
+        "value value value value value value value value value value value value value value value value value value value value "+
+        "value value value value value value value value value value value value value value value value value value value value "+
+        "value value value value value value value value value value value value value value value value value value value value "+
+        "value value value value value value value value value value value value value value value value value value value value "+
+        "value value value value value value value value value value value value value value value value value value value value "+
+        "value value value value value value value value value value value value value value value value value value value value "+
+        "value value value value value value value value value value value value value value value value value value value value "+
+        "value value value value value value value value value value").build();
+    IndexReader reader = LuceneIndexQueries.grabReader(index);
+    List<Question> qs = q.similar(reader, 5);
+    Assert.assertEquals(5, qs.size());
     LuceneIndexQueries.releaseQuietly(index, reader);
 
   }
