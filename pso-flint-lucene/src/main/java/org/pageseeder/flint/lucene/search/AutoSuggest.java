@@ -24,7 +24,7 @@ import java.util.Map.Entry;
 public class AutoSuggest {
 
   private final static Logger LOGGER = LoggerFactory.getLogger(AutoSuggest.class);
-  
+
   private AnalyzingInfixSuggester suggester;
 
   private final List<String> _resultFields = new ArrayList<>();
@@ -34,7 +34,7 @@ public class AutoSuggest {
   private final Index _index;
 
   private final boolean _useTerms;
-  
+
   private final List<String> _searchFields = new ArrayList<>();
 
   //TODO maybe it should be a list
@@ -43,7 +43,7 @@ public class AutoSuggest {
   private Map<String, Float> _weights = new HashMap<>();
 
   private long lastBuilt = -1;
-  
+
   private AutoSuggest(String name, Index index, Directory dir, Analyzer indexAnalyzer, Analyzer searchAnalyzer, boolean useTerms, int minChars) throws IndexException {
     this._name = name;
     this._index = index;
@@ -137,7 +137,7 @@ public class AutoSuggest {
           if (this._withField != null) fieldsToLoad.add(this._withField);
           for (LeafReaderContext ctxt : reader.leaves()) {
             if (addEntries(ctxt, fieldsToLoad)) {
-              buildit = true; 
+              buildit = true;
             }
           }
         }
@@ -153,12 +153,12 @@ public class AutoSuggest {
 
   /**
    * Add entries to the suggester
-   * 
+   *
    * @param context    where to read the documents from
    * @param fieldsToLoad the fields to add
-   * 
+   *
    * @return <code>true</code> if something was added
-   * 
+   *
    * @throws IOException if reading/adding entries failed
    */
   private boolean addEntries(LeafReaderContext context, Set<String> fieldsToLoad) throws IOException {
@@ -170,7 +170,7 @@ public class AutoSuggest {
       if (leaves.size() > 1 || leaves.get(0) != context) {
         for (LeafReaderContext ctxt : leaves) {
           if (addEntries(ctxt, fieldsToLoad)) {
-            buildit = true; 
+            buildit = true;
           }
         }
         return buildit;
@@ -229,10 +229,10 @@ public class AutoSuggest {
 
   /**
    * Serialize the fields provided into a payload for a suggester entry.
-   * 
+   *
    * @param fields  list of fields to load from the document
    * @param doc     the document
-   * 
+   *
    * @return the payload as a byte array
    */
   private static byte[] serialize(Collection<String> fields, Document doc) {
@@ -267,7 +267,7 @@ public class AutoSuggest {
       throw new IOException("Class not found when deserializing", ex);
     }
   }
-  
+
   public List<Suggestion> suggest(String text) {
     return suggest(text, 10);
   }
@@ -277,7 +277,7 @@ public class AutoSuggest {
   }
 
   public List<Suggestion> suggest(String text, String with, int nb) {
-    return suggest(text, Collections.singleton(with), nb);
+    return suggest(text, with == null ? null : Collections.singleton(with), nb);
   }
 
   public List<Suggestion> suggest(String text, Collection<String> criteria, int nb) {
@@ -419,7 +419,7 @@ public class AutoSuggest {
       if (!(obj instanceof Suggestion)) return false;
       Suggestion s = (Suggestion) obj;
       return this.text.equals(s.text) &&
-             this.highlight.equals(s.highlight) && 
+             this.highlight.equals(s.highlight) &&
              ((this.document == null && s.document == null) || this.document.equals(s.document));
     }
     @Override
