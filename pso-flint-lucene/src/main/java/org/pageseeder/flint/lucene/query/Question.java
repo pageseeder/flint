@@ -224,6 +224,7 @@ public final class Question implements SearchParameter, XMLWritable {
   /**
    * Returns a list of questions which are considered similar, that where one term was substituted
    * for a similar term.
+   * Max size is set to 50.
    *
    * @param reader the reader to use to extract the similar (fuzzy) terms.
    *
@@ -232,6 +233,21 @@ public final class Question implements SearchParameter, XMLWritable {
    * @throws IOException If thrown by the reader while getting the fuzzy terms.
    */
   public List<Question> similar(IndexReader reader) throws IOException {
+    return similar(reader, 50);
+  }
+
+  /**
+   * Returns a list of questions which are considered similar, that where one term was substituted
+   * for a similar term.
+   *
+   * @param reader  the reader to use to extract the similar (fuzzy) terms.
+   * @param maxSize the maximum number of suggestions to return
+   *
+   * @return a list of similar questions.
+   *
+   * @throws IOException If thrown by the reader while getting the fuzzy terms.
+   */
+  public List<Question> similar(IndexReader reader, int maxSize) throws IOException {
     List<Question> similar = new ArrayList<Question>();
     // If the question contains a phrase, try removing the phrase
     if (this._question.indexOf('"') >= 0) {
@@ -242,7 +258,7 @@ public final class Question implements SearchParameter, XMLWritable {
     // No phrase, try substitution for each term
     } else {
       List<String> values = Fields.toValues(this._question);
-      for (String value : values) {
+      big: for (String value : values) {
         Set<String> fuzzy = new HashSet<String>();
         // collect fuzzy terms based on index
         for (String field : this._fields.keySet()) {
@@ -254,6 +270,7 @@ public final class Question implements SearchParameter, XMLWritable {
           Question q = newQuestion(this._fields, this._question.replaceAll("\\Q"+value+"\\E", x));
           q.compute();
           similar.add(q);
+          if (similar.size() >= maxSize) break big;
         }
       }
     }
