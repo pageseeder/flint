@@ -19,7 +19,7 @@ allprojects {
 
   apply plugin: 'java'
   apply plugin: 'com.jfrog.bintray'
-  
+
   sourceCompatibility = 1.8
   targetCompatibility = 1.8
 
@@ -34,7 +34,7 @@ allprojects {
     maven { url 'http://dl.bintray.com/pageseeder/maven' }
     jcenter()
   }
-  
+
   jar {
     manifest {
       attributes 'Implementation-Vendor':  'Allette Systems',
@@ -45,7 +45,7 @@ allprojects {
 }
 
 task wrapper(type: Wrapper) {
-  gradleVersion = '4.2.1'
+  gradleVersion = "6.4.1"
   description 'Generates the Gradle wrapper scripts'
 }
 
@@ -65,7 +65,7 @@ dependencies {
 
   compile (
     'org.slf4j:slf4j-api:1.7.21',
-    'org.pageseeder.xmlwriter:pso-xmlwriter:1.0.2'    
+    'org.pageseeder.xmlwriter:pso-xmlwriter:1.0.2'
   )
 
   // runtime
