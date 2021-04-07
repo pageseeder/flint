@@ -1,6 +1,6 @@
 /*
  * Decompiled with CFR 0_110.
- * 
+ *
  * Could not load the following classes:
  *  org.apache.lucene.analysis.Analyzer
  *  org.apache.lucene.analysis.standard.StandardAnalyzer
@@ -18,7 +18,6 @@
 package org.pageseeder.flint.berlioz.model;
 
 import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.pageseeder.berlioz.GlobalSettings;
 import org.pageseeder.flint.IndexException;
 import org.pageseeder.flint.IndexManager;
@@ -51,7 +50,7 @@ import java.util.*;
  * <schools name="school" path="/psml/content/schools" template="school.xsl"/>
  * <products name="product" path="/psml/content/products"
  * [template="products.xsl"]/> </index> </flint>
- * 
+ *
  * @author jbreure
  *
  */
@@ -64,7 +63,7 @@ public class FlintConfig {
   private static final String DEFAULT_ITEMPLATES_LOCATION = "ixml";
   private static final int DEFAULT_MAX_WATCH_FOLDERS = 100000;
   private static final int DEFAULT_WATCHER_DELAY_IN_SECONDS = 5;
-  private static volatile AnalyzerFactory analyzerFactory = null;
+  private static volatile AnalyzerFactory analyzerFactory = new DefaultAnalyzerFactory();
   private final File _directory;
   private final File _ixml;
   private final boolean _useSolr;
@@ -97,10 +96,10 @@ public class FlintConfig {
 
   /**
    * Build an object used to query multiple indexes at the same time.
-   * 
+   *
    * @param names
    *          list of index names
-   * 
+   *
    * @return the multi indexes master object
    */
   public MultipleIndexesMaster getMultiMaster(Collection<String> names) {
@@ -122,9 +121,9 @@ public class FlintConfig {
 
   /**
    * The index master is not created if not in memory.
-   * 
+   *
    * @param name the master name
-   * 
+   *
    * @return the index master with the name provided
    */
   public IndexMaster getMaster(String name) {
@@ -134,7 +133,7 @@ public class FlintConfig {
   /**
    * @param name              the master name
    * @param createIfNotFound  whether or not to create the index if not existing
-   * 
+   *
    * @return the index master with the name provided
    */
   public IndexMaster getMaster(String name, boolean createIfNotFound) {
@@ -186,7 +185,7 @@ public class FlintConfig {
 
   /**
    * @param name the master name
-   * 
+   *
    * @return the index master with the name provided
    */
   public SolrIndexMaster getSolrMaster(String name) {
@@ -202,7 +201,7 @@ public class FlintConfig {
   /**
    * @param name              the master name
    * @param createIfNotFound  whether or not to create the index if not existing
-   * 
+   *
    * @return the index master with the name provided
    */
   public SolrIndexMaster getSolrMaster(String name, boolean createIfNotFound) throws SolrFlintException {
@@ -227,10 +226,10 @@ public class FlintConfig {
   /**
    * Close and removes index from list. Also deletes index files from index root
    * folder.
-   * 
+   *
    * @param name
    *          the index name
-   * 
+   *
    * @return true if completely removed
    */
   public boolean deleteMaster(String name) {
@@ -338,6 +337,7 @@ public class FlintConfig {
         LOGGER.warn("Ignoring invalid index definition {}: {}", type, ex.getMessage());
         continue;
       }
+      def.setWithStopWords(!"true".equals(GlobalSettings.get("flint.index." + type + ".no-stop-words")));
       // check for clashes
       for (IndexDefinition existing : this.indexConfigs.values()) {
         if (def.indexNameClash(existing)) {
@@ -469,10 +469,17 @@ public class FlintConfig {
     analyzerFactory = factory;
   }
 
+  /**
+   * @deprecated
+   */
   public static synchronized Analyzer newAnalyzer() {
+    return newAnalyzer(null);
+  }
+
+  public static synchronized Analyzer newAnalyzer(IndexDefinition definition) {
     if (analyzerFactory == null)
-      return new StandardAnalyzer();
-    return analyzerFactory.getAnalyzer();
+      return new DefaultAnalyzerFactory().getAnalyzer(definition);
+    return analyzerFactory.getAnalyzer(definition);
   }
 
   public IndexDefinition getIndexDefinition(String defname) {

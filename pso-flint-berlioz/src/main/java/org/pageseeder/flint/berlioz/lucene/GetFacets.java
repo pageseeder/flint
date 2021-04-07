@@ -1,6 +1,6 @@
 /*
  * Decompiled with CFR 0_110.
- * 
+ *
  * Could not load the following classes:
  *  org.apache.lucene.search.Query
  *  org.pageseeder.berlioz.BerliozException
@@ -32,6 +32,7 @@ import org.pageseeder.berlioz.content.ContentStatus;
 import org.pageseeder.berlioz.util.MD5;
 import org.pageseeder.flint.Index;
 import org.pageseeder.flint.IndexException;
+import org.pageseeder.flint.berlioz.model.IndexDefinition;
 import org.pageseeder.flint.berlioz.model.IndexMaster;
 import org.pageseeder.flint.lucene.search.Facet;
 import org.pageseeder.flint.lucene.search.Facets;
@@ -67,8 +68,8 @@ public final class GetFacets extends LuceneIndexGenerator implements Cacheable {
       return;
     }
     Query query = null;
-    if (!base.isEmpty()) {
-      query = buildQuery(base, req, xml);
+    if (!base.isEmpty() && !indexes.isEmpty()) {
+      query = buildQuery(base, indexes.iterator().next().getIndexDefinition(), req, xml);
       if (query == null) return;
     }
     ArrayList<Index> theIndexes = new ArrayList<Index>();
@@ -97,7 +98,7 @@ public final class GetFacets extends LuceneIndexGenerator implements Cacheable {
     }
     Query query = null;
     if (!base.isEmpty()) {
-      query = buildQuery(base, req, xml);
+      query = buildQuery(base, index.getIndexDefinition(), req, xml);
       if (query == null) return;
     }
     try {
@@ -109,12 +110,12 @@ public final class GetFacets extends LuceneIndexGenerator implements Cacheable {
     }
   }
 
-  public Query buildQuery(String base, ContentRequest req, XMLWriter xml) throws IOException {
+  public Query buildQuery(String base, IndexDefinition def, ContentRequest req, XMLWriter xml) throws IOException {
     Query query;
     try {
-      query = IndexMaster.toQuery(base);
+      query = IndexMaster.toQuery(base, def);
     } catch (IndexException ex) {
-      LOGGER.error("Unable to parse query", (Throwable) ex);
+      LOGGER.error("Unable to parse query", ex);
       xml.openElement("error");
       xml.attribute("type", "invalid-parameter");
       xml.attribute("message", "Unable to create query from condition " + base);

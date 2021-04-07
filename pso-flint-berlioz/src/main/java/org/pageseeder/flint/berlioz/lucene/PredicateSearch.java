@@ -13,6 +13,7 @@ import org.pageseeder.berlioz.content.ContentRequest;
 import org.pageseeder.flint.Index;
 import org.pageseeder.flint.IndexException;
 import org.pageseeder.flint.berlioz.model.FlintConfig;
+import org.pageseeder.flint.berlioz.model.IndexDefinition;
 import org.pageseeder.flint.berlioz.model.IndexMaster;
 import org.pageseeder.flint.berlioz.util.GeneratorErrors;
 import org.pageseeder.flint.lucene.LuceneIndexQueries;
@@ -31,7 +32,8 @@ public final class PredicateSearch extends LuceneIndexGenerator {
   @Override
   public void processMultiple(Collection<IndexMaster> indexes, ContentRequest req, XMLWriter xml) throws BerliozException, IOException {
     SearchPaging paging = buildPaging(req);
-    SearchQuery query   = buildQuery(req, xml);
+    if (indexes.isEmpty()) return;
+    SearchQuery query   = buildQuery(req, indexes.iterator().next().getIndexDefinition(), xml);
     if (query == null) return;
     ArrayList<Index> theIndexes = new ArrayList<Index>();
     for (IndexMaster index : indexes) {
@@ -47,7 +49,7 @@ public final class PredicateSearch extends LuceneIndexGenerator {
   @Override
   public void processSingle(IndexMaster index, ContentRequest req, XMLWriter xml) throws BerliozException, IOException {
     SearchPaging paging = buildPaging(req);
-    SearchQuery query   = buildQuery(req, xml);
+    SearchQuery query   = buildQuery(req, index.getIndexDefinition(), xml);
     if (query == null) return;
     try {
       outputResults(query, index.query(query, paging), xml);
@@ -56,7 +58,7 @@ public final class PredicateSearch extends LuceneIndexGenerator {
     }
   }
 
-  private SearchQuery buildQuery(ContentRequest req, XMLWriter xml) throws IOException {
+  private SearchQuery buildQuery(ContentRequest req, IndexDefinition def, XMLWriter xml) throws IOException {
     String predicate = req.getParameter("predicate", "");
     if (predicate.isEmpty()) {
       GeneratorErrors.noParameter(req, xml, "predicate");
@@ -74,7 +76,7 @@ public final class PredicateSearch extends LuceneIndexGenerator {
       GeneratorErrors.invalidParameter(req, xml, "predicate");
       return null;
     }
-    Analyzer analyzer = tokenize ? FlintConfig.newAnalyzer() : new KeywordAnalyzer();
+    Analyzer analyzer = tokenize ? FlintConfig.newAnalyzer(def) : new KeywordAnalyzer();
     PredicateSearchQuery query = new PredicateSearchQuery(predicate, analyzer);
     Query q = query.toQuery();
     if (q == null) {
