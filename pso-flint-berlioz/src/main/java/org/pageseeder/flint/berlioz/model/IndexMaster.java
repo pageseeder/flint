@@ -29,7 +29,7 @@ import java.io.*;
 import java.util.*;
 
 /**
- * 
+ *
  */
 public final class IndexMaster {
 
@@ -46,7 +46,7 @@ public final class IndexMaster {
   private final Collection<String> _extensions = new ArrayList<>();
 
   private final Map<String, org.pageseeder.flint.lucene.search.AutoSuggest> _autosuggests = new HashMap<>();
-  
+
   public static IndexMaster create(IndexManager mgr, String name,
          File content, File index, IndexDefinition def) throws TransformerException, IndexException {
     return create(mgr, name, content, index, Collections.singleton("psml"), def);
@@ -62,7 +62,7 @@ public final class IndexMaster {
     this._manager = mgr;
     this._name = name;
     this._contentRoot = content;
-    this._index = new LuceneLocalIndex(index, def.getName(), FlintConfig.newAnalyzer(), this._contentRoot);
+    this._index = new LuceneLocalIndex(index, def.getName(), FlintConfig.newAnalyzer(def), this._contentRoot);
     // same template used for all extensions (not great...)
     if (extensions != null) this._extensions.addAll(extensions);
     for (String extension : this._extensions) {
@@ -182,8 +182,15 @@ public final class IndexMaster {
     }
   }
 
+  /**
+   * @deprecated
+   */
   public static Query toQuery(String predicate) throws IndexException {
-    QueryParser parser = new QueryParser("type", FlintConfig.newAnalyzer());
+    return toQuery(predicate, null);
+  }
+
+  public static Query toQuery(String predicate, IndexDefinition def) throws IndexException {
+    QueryParser parser = new QueryParser("type", FlintConfig.newAnalyzer(def));
     Query condition = null;
     if (predicate != null && !"".equals(predicate)) {
       try {

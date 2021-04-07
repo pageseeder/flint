@@ -35,6 +35,11 @@ public class IndexDefinition implements XMLWritable {
    * The index name (static or dynamic)
    */
   private final String _indexName;
+
+  /**
+   * If stop words are considered when indexing
+   */
+  private boolean _withStopWords = true;
   /**
    * The content paths to include (static or dynamic)
    */
@@ -83,7 +88,7 @@ public class IndexDefinition implements XMLWritable {
    * @param name      the index name
    * @param path      the content path
    * @param template  the iXML template
-   * 
+   *
    * @throws InvalidIndexDefinitionException if template deos not exist or path and name don't match
    */
   public IndexDefinition(String name, String indexname, String path, Collection<String> excludes,
@@ -109,6 +114,10 @@ public class IndexDefinition implements XMLWritable {
     // validate definition
     if (staticIndex() != staticToken(this._path))
       throw new InvalidIndexDefinitionException("name and path must be both dynamic or both static");
+  }
+
+  public void setWithStopWords(boolean withStopWords) {
+    this._withStopWords = withStopWords;
   }
 
   public String getName() {
@@ -170,6 +179,10 @@ public class IndexDefinition implements XMLWritable {
   public AutoSuggestDefinition getAutoSuggest(String name) {
     assert name != null;
     return this._autosuggests.get(name);
+  }
+
+  public boolean withStopWords() {
+    return this._withStopWords;
   }
 
   public void setSolrAttribute(String name, String value) {
@@ -239,7 +252,7 @@ public class IndexDefinition implements XMLWritable {
 
   /**
    * @param name an index name
-   * 
+   *
    * @return <code>true</code> if the name provided matches this index definition's pattern (or static name)
    */
   public boolean indexNameMatches(String name) {
@@ -252,7 +265,7 @@ public class IndexDefinition implements XMLWritable {
 
   /**
    * Build the root folder for the content using the root and the index name provided.
-   * 
+   *
    * @param root the root folder
    *
    * @return the file
@@ -284,17 +297,17 @@ public class IndexDefinition implements XMLWritable {
             }
             return FileVisitResult.CONTINUE;
           }
-  
+
           @Override
           public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) {
             return FileVisitResult.CONTINUE;
           }
-  
+
           @Override
           public FileVisitResult visitFileFailed(Path file, IOException ex)  {
             return FileVisitResult.CONTINUE;
           }
-  
+
           @Override
           public FileVisitResult postVisitDirectory(Path dir, IOException ex)  {
             return FileVisitResult.CONTINUE;
@@ -309,10 +322,10 @@ public class IndexDefinition implements XMLWritable {
 
   /**
    * Build the root folder for the content using the root and the index name provided.
-   * 
+   *
    * @param root the root folder
    * @param name the index name
-   * 
+   *
    * @return the file
    */
   public File buildContentRoot(File root, String name) {
@@ -321,9 +334,9 @@ public class IndexDefinition implements XMLWritable {
 
   /**
    * Build the root folder path for the content using the index name provided.
-   * 
+   *
    * @param name the index name
-   * 
+   *
    * @return the resolved path
    */
   public String buildContentPath(String name) {
@@ -353,7 +366,7 @@ public class IndexDefinition implements XMLWritable {
    *  idx-{name}    /a/b/c/d/{name}   /a/b/c/d/e/f                idx-e
    *  idx-{name}    /a/b/d/{name}/e   /a/b/c/d/e/f                null
    *  index-{name}  /a/b/files-{name} /a/b/files-001c/d/e/f       index-001
-   *  
+   *
    * @param path the path of the file
    *
    * @return an index name if found, null otherwise
@@ -421,7 +434,7 @@ public class IndexDefinition implements XMLWritable {
 
   /**
    * @param token the token to check if it's static (does not contain {name})
-   * 
+   *
    * @return <code>true</code> if the token is static.
    */
   private boolean staticToken(String token) {
@@ -430,7 +443,7 @@ public class IndexDefinition implements XMLWritable {
 
   /**
    * @param path the path to check
-   * 
+   *
    * @return <code>true</code> if the path matches an exclude pattern
    */
   private boolean isExcluded(String path, boolean startsWith) {
@@ -458,7 +471,7 @@ public class IndexDefinition implements XMLWritable {
       super(msg);
     }
   }
-  
+
   /**
    * An exception used when creating a definition.
    */
