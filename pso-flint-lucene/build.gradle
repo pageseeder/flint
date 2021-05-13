@@ -1,13 +1,8 @@
-
-apply plugin: 'maven-publish'
-apply plugin: 'com.jfrog.bintray'
-apply from: "$rootDir/gradle/publishing.gradle"
-
 dependencies {
 
-  compile rootProject
+  implementation project (':pso-flint')
 
-  compile (
+  implementation (
     'org.slf4j:slf4j-api:1.7.21',
     'org.pageseeder.xmlwriter:pso-xmlwriter:1.0.2',
 
@@ -25,7 +20,7 @@ dependencies {
 //    'org.apache.lucene:lucene-suggest:6.3.0'
   )
 
-  testCompile (
+  testImplementation (
     'junit:junit:4.12',
     'org.slf4j:slf4j-simple:1.7.21'
   )

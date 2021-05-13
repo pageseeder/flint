@@ -1,6 +1,6 @@
 /*
  * Decompiled with CFR 0_110.
- * 
+ *
  * Could not load the following classes:
  *  org.apache.lucene.util.IOUtils
  *  org.pageseeder.berlioz.BerliozException
@@ -11,18 +11,6 @@
  */
 package org.pageseeder.flint.berlioz;
 
-import java.io.Closeable;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.util.Collection;
-
-import javax.xml.transform.Templates;
-import javax.xml.transform.TransformerException;
-import javax.xml.transform.TransformerFactory;
-import javax.xml.transform.stream.StreamSource;
-
-import org.apache.lucene.util.IOUtils;
 import org.pageseeder.berlioz.BerliozException;
 import org.pageseeder.berlioz.Beta;
 import org.pageseeder.berlioz.content.ContentGenerator;
@@ -30,6 +18,15 @@ import org.pageseeder.berlioz.content.ContentRequest;
 import org.pageseeder.flint.berlioz.model.FlintConfig;
 import org.pageseeder.flint.berlioz.model.IndexDefinition;
 import org.pageseeder.xmlwriter.XMLWriter;
+
+import javax.xml.transform.Templates;
+import javax.xml.transform.TransformerException;
+import javax.xml.transform.TransformerFactory;
+import javax.xml.transform.stream.StreamSource;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.util.Collection;
 
 @Beta
 public final class CheckTemplates implements ContentGenerator {
@@ -72,18 +69,12 @@ public final class CheckTemplates implements ContentGenerator {
   }
 
   private static Templates compile(File itemplate) throws IOException, TransformerException {
-    FileInputStream in = null;
-    Templates templates = null;
-    try {
-      in = new FileInputStream(itemplate);
+    Templates templates;
+    try (FileInputStream in = new FileInputStream(itemplate)) {
       StreamSource source = new StreamSource(in);
       source.setSystemId(itemplate.toURI().toString());
       TransformerFactory factory = TransformerFactory.newInstance();
       templates = factory.newTemplates(source);
-      IOUtils.close((Closeable[]) new Closeable[] { in });
-    } catch (IOException | TransformerException ex) {
-      IOUtils.close((Closeable[]) new Closeable[] { in });
-      throw ex;
     }
     return templates;
   }
