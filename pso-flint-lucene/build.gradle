@@ -1,8 +1,7 @@
 dependencies {
 
-  implementation project (':pso-flint')
-
   implementation (
+    rootProject,
     'org.slf4j:slf4j-api:1.7.21',
     'org.pageseeder.xmlwriter:pso-xmlwriter:1.0.2',
 

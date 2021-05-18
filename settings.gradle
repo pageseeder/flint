@@ -1,7 +1,6 @@
-include ':pso-flint-core'
+rootProject.name = "pso-flint"
+
 include ':pso-flint-berlioz'
 include ':pso-flint-berlioz-tika'
 include ':pso-flint-lucene'
 include ':pso-flint-solr'
-
-project(":pso-flint-core").name = "pso-flint"

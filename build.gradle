@@ -7,31 +7,22 @@ plugins {
 ext {
   globalVersion = file('version.txt').text
 }
-group       = 'org.pageseeder.flint'
-description = "$title"
-version     = "$globalVersion"
 
-subprojects {
+allprojects {
   group   = 'org.pageseeder.flint'
   version = "$globalVersion"
 
-  apply plugin: 'java'
+  apply plugin: 'java-library'
   apply from: "$rootDir/gradle/publish-mavencentral.gradle"
 
   sourceCompatibility = JavaVersion.VERSION_1_8
   targetCompatibility = JavaVersion.VERSION_1_8
 
   repositories {
-    // allette ivy
-//    ivy   {
-//      url 'http://ivy.pageseeder.com/shared/'
-//      layout "pattern", {
-//        artifact  "[organisation]/[module]/[module]-[revision].[ext]"
-//      }
-//    }
     mavenCentral {
       url = uri("https://maven-central.storage.googleapis.com/maven2")
     }
+    maven { url 'https://s01.oss.sonatype.org/content/groups/public/' }
   }
 
   jar {
@@ -43,8 +34,26 @@ subprojects {
   }
 }
 
-task publishAllToMavenLocal {
-  allprojects.each {
-    dependsOn("${it.path}:publishToMavenLocal" )
-  }
+dependencies {
+
+  implementation (
+    'org.slf4j:slf4j-api:1.7.21',
+    'org.pageseeder.xmlwriter:pso-xmlwriter:1.0.2'
+  )
+
+  // runtime
+  runtimeOnly (
+    'net.sf.saxon:Saxon-HE:9.6.0-6'
+  )
+
+  testImplementation (
+    'junit:junit:4.12',
+    'org.slf4j:slf4j-simple:1.7.21'
+  )
+
+}
+
+wrapper {
+  gradleVersion = '7.0'
+  distributionType = Wrapper.DistributionType.ALL
 }
