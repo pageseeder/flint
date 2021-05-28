@@ -1,4 +1,4 @@
-rootProject.name = 'pso-flint'
+rootProject.name = "pso-flint"
 
 include ':pso-flint-berlioz'
 include ':pso-flint-berlioz-tika'

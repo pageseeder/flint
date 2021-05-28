@@ -1,18 +1,15 @@
-
-apply plugin: 'maven-publish'
-apply plugin: 'com.jfrog.bintray'
-apply from: "$rootDir/gradle/publishing.gradle"
-
 dependencies {
 
-  compile project (':pso-flint-berlioz')
-
-  compile (
+  implementation (
+    rootProject,
+    project (':pso-flint-berlioz'),
+    'org.pageseeder.berlioz:pso-berlioz:0.11.1',
     'org.slf4j:slf4j-api:1.7.21',
+    'org.pageseeder.xmlwriter:pso-xmlwriter:1.0.2',
     'org.apache.tika:tika-parsers:1.11'
   )
 
-  testCompile (
+  testImplementation (
     'junit:junit:4.12',
     'org.slf4j:slf4j-simple:1.7.21'
   )

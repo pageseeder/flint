@@ -1,20 +1,13 @@
-
-apply plugin: 'maven-publish'
-apply plugin: 'com.jfrog.bintray'
-apply from: "$rootDir/gradle/publishing.gradle"
-
 dependencies {
 
-  compile rootProject
-
-  compile (
+  implementation (
+    rootProject,
     'org.slf4j:slf4j-api:1.7.21',
     'org.pageseeder.xmlwriter:pso-xmlwriter:1.0.2',
-//    'com.allette.solr:solr-utils:1.0.3',
     'org.apache.solr:solr-solrj:6.5.1'
   )
 
-  testCompile (
+  testImplementation (
     'junit:junit:4.12',
     'org.slf4j:slf4j-simple:1.7.21'
   )

@@ -1,38 +1,28 @@
 plugins {
-  id "com.jfrog.bintray" version "1.7"
+  id 'java-library'
+  id 'maven-publish'
+  id 'io.codearte.nexus-staging' version '0.30.0'
 }
 
 ext {
   globalVersion = file('version.txt').text
 }
-group       = 'org.pageseeder.flint'
-description = "$title"
-version     = "$globalVersion"
-
-apply plugin: 'java'
-apply plugin: 'maven-publish'
-apply from: 'gradle/publishing.gradle'
 
 allprojects {
   group   = 'org.pageseeder.flint'
   version = "$globalVersion"
 
-  apply plugin: 'java'
-  apply plugin: 'com.jfrog.bintray'
+  apply plugin: 'java-library'
+  apply from: "$rootDir/gradle/publish-mavencentral.gradle"
 
-  sourceCompatibility = 1.8
-  targetCompatibility = 1.8
+  sourceCompatibility = JavaVersion.VERSION_1_8
+  targetCompatibility = JavaVersion.VERSION_1_8
 
   repositories {
-    // allette ivy
-    ivy   {
-      url 'http://ivy.pageseeder.com/shared/'
-      layout "pattern", {
-        artifact  "[organisation]/[module]/[module]-[revision].[ext]"
-      }
+    mavenCentral {
+      url = uri("https://maven-central.storage.googleapis.com/maven2")
     }
-    maven { url 'http://dl.bintray.com/pageseeder/maven' }
-    jcenter()
+    maven { url 'https://s01.oss.sonatype.org/content/groups/public/' }
   }
 
   jar {
@@ -44,38 +34,26 @@ allprojects {
   }
 }
 
-task wrapper(type: Wrapper) {
-  gradleVersion = "6.4.1"
-  description 'Generates the Gradle wrapper scripts'
-}
-
-task publishAllToBintray {
-  allprojects.each {
-    dependsOn("${it.path}:bintrayUpload" )
-  }
-}
-
-task publishAllToMavenLocal {
-  allprojects.each {
-    dependsOn("${it.path}:publishToMavenLocal" )
-  }
-}
-
 dependencies {
 
-  compile (
+  implementation (
     'org.slf4j:slf4j-api:1.7.21',
     'org.pageseeder.xmlwriter:pso-xmlwriter:1.0.2'
   )
 
   // runtime
-  runtime (
+  runtimeOnly (
     'net.sf.saxon:Saxon-HE:9.6.0-6'
   )
 
-  testCompile (
+  testImplementation (
     'junit:junit:4.12',
     'org.slf4j:slf4j-simple:1.7.21'
   )
 
+}
+
+wrapper {
+  gradleVersion = '7.0'
+  distributionType = Wrapper.DistributionType.ALL
 }

@@ -15,15 +15,19 @@
  */
 package org.pageseeder.flint.lucene.search;
 
+import org.apache.lucene.document.Document;
 import org.apache.lucene.index.Fields;
 import org.apache.lucene.index.*;
-import org.apache.lucene.search.FuzzyTermsEnum;
-import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.search.PrefixQuery;
-import org.apache.lucene.search.Query;
+import org.apache.lucene.search.*;
 import org.apache.lucene.util.AttributeSource;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.automaton.CompiledAutomaton;
+import org.pageseeder.flint.Index;
+import org.pageseeder.flint.IndexException;
+import org.pageseeder.flint.IndexIO;
+import org.pageseeder.flint.lucene.LuceneIndexIO;
+import org.pageseeder.flint.lucene.LuceneIndexQueries;
+import org.pageseeder.flint.lucene.query.SearchResults;
 import org.pageseeder.flint.lucene.util.Beta;
 import org.pageseeder.flint.lucene.util.Bucket;
 import org.pageseeder.flint.lucene.util.Bucket.Entry;
@@ -254,9 +258,8 @@ public final class Terms {
     List<String> fieldnames = new ArrayList<>();
     Fields fields = MultiFields.getFields(reader);
     if (fields == null) return fieldnames;
-    Iterator<String> it = fields.iterator();
-    while (it.hasNext()) {
-      fieldnames.add(it.next());
+    for (String field : fields) {
+      fieldnames.add(field);
     }
     return fieldnames;
   }
@@ -278,7 +281,7 @@ public final class Terms {
     if (terms == null) return Collections.emptyList();
     TermsEnum termsEnum = terms.iterator();
     if (termsEnum == TermsEnum.EMPTY) return Collections.emptyList();
-    Map<BytesRef, Term> termsList = new HashMap<BytesRef, Term>();
+    Map<BytesRef, Term> termsList = new HashMap<>();
     while (termsEnum.next() != null) {
       BytesRef t = termsEnum.term();
       if (t == null) break;
@@ -300,7 +303,7 @@ public final class Terms {
    */
   @Beta public static List<String> fields(IndexSearcher searcher, Query query, List<String> candidates) throws IOException {
     LOGGER.debug("Loading fields for query {}", query);
-    List<String> fields = new ArrayList<String>();
+    List<String> fields = new ArrayList<>();
     for (String field : candidates) {
       FieldDocumentChecker checker = new FieldDocumentChecker(field);
       searcher.search(query, checker);
@@ -321,7 +324,7 @@ public final class Terms {
    */
   @Beta public static List<String> values(IndexReader reader, String field) throws IOException {
     LOGGER.debug("Loading term values for field {}", field);
-    List<String> values = new ArrayList<String>();
+    List<String> values = new ArrayList<>();
     org.apache.lucene.index.Terms terms = MultiFields.getTerms(reader, field);
     if (terms == null) return values;
     TermsEnum termsEnum = terms.iterator();

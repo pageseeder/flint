@@ -328,7 +328,7 @@ public final class Queries {
    * @param text      the text to construct the query from.
    * @param analyzer  used to analyze the text
    * @param defaultOperatorOR if the operator between terms is OR or AND
-   * 
+   *
    * @return the corresponding query.
    */
   @Beta
@@ -336,7 +336,8 @@ public final class Queries {
     if (field == null) throw new NullPointerException("field");
     if (text == null) throw new NullPointerException("text");
     // shortcut for single word or single sentence
-    if (!text.trim().matches(".*?\\s.*?") || isAPhrase(text) || (analyzer != null && !isTokenized(field, analyzer))) {
+    if (!text.trim().matches(".*?\\s.*?") || isAPhrase(text)  ||
+        (analyzer != null && !isTokenized(field, analyzer) && hasNoOperators(text))) {
       if (analyzer == null) return toTermOrPhraseQuery(field, text, supportWildcards);
       return combine(defaultOperatorOR, toTermOrPhraseQueries(field, text, supportWildcards, analyzer));
     }
@@ -375,6 +376,14 @@ public final class Queries {
       }
     }
     return query;
+  }
+
+  /**
+   * @param text the text
+   * @return true if the text has no " OR " and no " AND " (in or out of quotes)
+   */
+  public static boolean hasNoOperators(String text) {
+    return text != null && !text.contains(" OR ") && !text.contains(" AND ");
   }
 
   /**

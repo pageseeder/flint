@@ -3,7 +3,6 @@
  */
 package org.pageseeder.flint.solr.query;
 
-import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -91,7 +90,7 @@ public class SolrQueryManager {
    * @param documentConsumer   how to handle the results
    * @param facets             the {@link Facets}
    * @param highlights         the {@link Highlights}
-   * 
+   *
    * @return the {@link SearchResultsMetadata}
    */
   public SearchResultsMetadata select(SolrQuery query, Consumer<SolrDocument> documentConsumer, Facets facets, Highlights highlights) {
@@ -171,7 +170,7 @@ public class SolrQueryManager {
 
   /**
    * @param query the {@link SolrQuery}
-   * 
+   *
    * @return the {@link QueryResponse}
    */
   public QueryResponse query(SolrQuery query) {
@@ -183,7 +182,7 @@ public class SolrQueryManager {
    * @param phrase     the phrase to search for
    * @param facets     the facets details
    * @param highlights the highlights details
-   * 
+   *
    * @return the {@link QueryResponse}
    */
   public QueryResponse query(String field, String phrase, Facets facets, Highlights highlights) {
@@ -194,7 +193,7 @@ public class SolrQueryManager {
    * @param query      the {@link SolrQuery}
    * @param facets     the facets details
    * @param highlights the highlights details
-   * 
+   *
    * @return the {@link QueryResponse}
    */
   public QueryResponse query(SolrQuery query, Facets facets, Highlights highlights) {
@@ -212,7 +211,7 @@ public class SolrQueryManager {
       query.setHighlightSimplePre(highlights.pre);
       query.setHighlightSimplePost(highlights.post);
     }
-    
+
     if (facets != null) {
       query.setFacet(true);
       for (String facet : facets._facets)
@@ -236,7 +235,7 @@ public class SolrQueryManager {
    * @param query          the {@link SolrQuery}
    * @param groupingField  the name of the field to group with
    * @param groupLimit     the number of results per group
-   * 
+   *
    * @return the list of groups loaded
    */
   public Map<String, SolrDocumentList> group(SolrQuery query, String groupingField, int groupLimit) {
@@ -353,6 +352,6 @@ public class SolrQueryManager {
     }
   }
 
-  
+
 }
 
