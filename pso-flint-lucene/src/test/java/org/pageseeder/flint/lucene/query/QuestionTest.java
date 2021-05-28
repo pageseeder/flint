@@ -1,5 +1,6 @@
 package org.pageseeder.flint.lucene.query;
 
+import org.apache.lucene.analysis.core.KeywordAnalyzer;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.store.RAMDirectory;
@@ -11,6 +12,8 @@ import org.junit.Test;
 import org.pageseeder.flint.IndexException;
 import org.pageseeder.flint.IndexManager;
 import org.pageseeder.flint.Requester;
+import org.pageseeder.flint.catalog.Catalog;
+import org.pageseeder.flint.catalog.Catalogs;
 import org.pageseeder.flint.content.Content;
 import org.pageseeder.flint.content.ContentFetcher;
 import org.pageseeder.flint.content.SourceForwarder;
@@ -35,7 +38,7 @@ public class QuestionTest {
   @BeforeClass
   public static void init() {
     try {
-      index = new LuceneIndex(TermParameterTest.class.getName(), new RAMDirectory(), new StandardAnalyzer());
+      index = new LuceneIndex("QuestionTest", new RAMDirectory(), new StandardAnalyzer());
       index.setTemplates(TestUtils.TYPE, TestUtils.MEDIA_TYPE, template.toURI());
     } catch (Exception ex) {
       ex.printStackTrace();
@@ -127,5 +130,25 @@ public class QuestionTest {
     Assert.assertEquals(5, qs.size());
     LuceneIndexQueries.releaseQuietly(index, reader);
 
+  }
+
+  @Test
+  public void testOperators() {
+    Question q = new Question.Builder()
+        .analyzerAndCatalog(new KeywordAnalyzer(), null)
+        .field("term1").question("value1 value2").build();
+    Assert.assertEquals("term1:value1 value2", q.toQuery().toString());
+    q = new Question.Builder()
+        .analyzerAndCatalog(new KeywordAnalyzer(), null)
+        .field("term1").question("value1 OR value2").build();
+    Assert.assertEquals("(term1:value1 term1:value2)", q.toQuery().toString());
+    q = new Question.Builder()
+        .analyzerAndCatalog(new KeywordAnalyzer(), null)
+        .field("term1").question("\"value1 value2\"").build();
+    Assert.assertEquals("term1:\"value1 value2\"", q.toQuery().toString());
+    q = new Question.Builder()
+        .analyzerAndCatalog(new KeywordAnalyzer(), null)
+        .field("term1").question("\"value1 OR value2\"").build();
+    Assert.assertEquals("term1:\"value1 OR value2\"", q.toQuery().toString());
   }
 }

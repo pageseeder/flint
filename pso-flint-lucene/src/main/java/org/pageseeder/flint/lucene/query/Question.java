@@ -162,7 +162,7 @@ public final class Question implements SearchParameter, XMLWritable {
     BooleanQuery.Builder query = new BooleanQuery.Builder();
     if (this._supportOperators) {
       for (Entry<String, Float> e : this._fields.entrySet()) {
-        Query q = catalog != null && !catalog.isTokenized(e.getKey()) ?
+        Query q = catalog != null && !catalog.isTokenized(e.getKey()) && Queries.hasNoOperators(this._question) ?
             Queries.termQuery(e.getKey(), this._question, this._supportWildcards) :
             Queries.parseToQuery(e.getKey(), this._question, analyzer, this._defaultOperatorOR, this._supportWildcards);
         if (e.getValue() != 1f) q = new BoostQuery(q, e.getValue());
