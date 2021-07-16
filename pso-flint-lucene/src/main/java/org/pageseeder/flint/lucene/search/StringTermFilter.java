@@ -49,20 +49,20 @@ public class StringTermFilter extends TermFilter<String> implements Filter {
   public Query filterQuery(Query base) {
     // if should, create filter query
     if (this._terms.values().contains(Occur.SHOULD)) {
-      BooleanQuery filterQuery = new BooleanQuery();
+      BooleanQuery.Builder filterQuery = new BooleanQuery.Builder();
       for (String word : this._terms.keySet()) {
         filterQuery.add(new TermQuery(new Term(this._name, word)), this._terms.get(word));
       }
       // and join to base if there
-      return base == null ? filterQuery : Queries.and(base, filterQuery);
+      return base == null ? filterQuery.build() : Queries.and(base, filterQuery.build());
     }
     // create filter query then
-    BooleanQuery filterQuery = new BooleanQuery();
+    BooleanQuery.Builder filterQuery = new BooleanQuery.Builder();
     if (base != null) filterQuery.add(base, Occur.MUST);
     for (String word : this._terms.keySet()) {
       filterQuery.add(new TermQuery(new Term(this._name, word)), this._terms.get(word));
     }
-    return filterQuery;
+    return filterQuery.build();
   }
 
   @Override

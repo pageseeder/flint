@@ -1,8 +1,8 @@
 package org.pageseeder.flint.lucene.search;
 
 import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.CharArraySet;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
-import org.apache.lucene.analysis.util.CharArraySet;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.*;
 import org.apache.lucene.search.suggest.Lookup.LookupResult;
@@ -120,7 +120,7 @@ public class AutoSuggest {
         boolean buildit = false;
         if (this._useTerms) {
           for (String field : this._searchFields) {
-            org.apache.lucene.index.Terms terms = MultiFields.getTerms(reader, field);
+            org.apache.lucene.index.Terms terms = MultiTerms.getTerms(reader, field);
             if (terms == null) continue;
             TermsEnum termsEnum = terms.iterator();
             BytesRef text;

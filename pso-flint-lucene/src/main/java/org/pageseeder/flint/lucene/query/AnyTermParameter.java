@@ -108,7 +108,7 @@ public final class AnyTermParameter implements SearchParameter {
   public Query toQuery() {
     if (isEmpty()) return null;
     if (this._query == null) {
-      this._query = toQuery(this._terms);
+      this._query = buildQuery();
     }
     return this._query;
   }
@@ -151,18 +151,17 @@ public final class AnyTermParameter implements SearchParameter {
   /**
    * Returns the query that would match any one of the terms in the list.
    *
-   * @param terms the list of terms
    * @return the corresponding query.
    */
-  private Query toQuery(List<Term> terms) {
+  private Query buildQuery() {
     if (isEmpty()) return null;
     if (this._terms.size() == 1) return new TermQuery(this._terms.get(0));
     else {
-      BooleanQuery q = new BooleanQuery();
+      BooleanQuery.Builder q = new BooleanQuery.Builder();
       for (Term t : this._terms) {
         q.add(new TermQuery(t), Occur.SHOULD);
       }
-      return q;
+      return q.build();
     }
   }
 

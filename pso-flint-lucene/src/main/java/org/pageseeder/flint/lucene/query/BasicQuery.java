@@ -260,12 +260,12 @@ public class BasicQuery<T extends SearchParameter> implements SearchQuery {
     // No parameters, just use the base.
     if (parameters.isEmpty()) return base.toQuery();
     // Make an AND of all parameters
-    BooleanQuery query = new BooleanQuery();
+    BooleanQuery.Builder query = new BooleanQuery.Builder();
     query.add(base.toQuery(), Occur.MUST);
     for (SearchParameter p : parameters.keySet()) {
       query.add(p.toQuery(), parameters.get(p));
     }
-    return query;
+    return query.build();
   }
 
   // factory methods
@@ -282,7 +282,7 @@ public class BasicQuery<T extends SearchParameter> implements SearchQuery {
    */
   public static <X extends SearchParameter> BasicQuery<X> newBasicQuery(X base) {
     List<SearchParameter> none = Collections.emptyList();
-    return new BasicQuery<X>(base, none);
+    return new BasicQuery<>(base, none);
   }
 
   /**

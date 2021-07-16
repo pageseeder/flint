@@ -19,6 +19,7 @@ import java.util.Collections;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.LeafReaderContext;
+import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.SimpleCollector;
 
 
@@ -51,8 +52,8 @@ public final class FieldDocumentChecker extends SimpleCollector {
    * @return always <code>false</code>.
    */
   @Override
-  public boolean needsScores() {
-    return false;
+  public ScoreMode scoreMode() {
+    return ScoreMode.COMPLETE_NO_SCORES;
   }
 
   @Override

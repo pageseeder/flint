@@ -74,7 +74,7 @@ public final class LuceneIndexQueries {
    */
   public static SearchResults query(Index index, SearchQuery query, SearchPaging paging) throws IndexException {
     LuceneIndexIO io = getIndexIO(index);
-    IndexSearcher searcher = io.bookSearcher();
+    IndexSearcher searcher = io == null ? null : io.bookSearcher();
     if (searcher != null) {
       try {
         Query lquery = query.toQuery();
@@ -89,12 +89,22 @@ public final class LuceneIndexQueries {
           sort = Sort.INDEXORDER;
         }
         // load the scores
-        TopFieldCollector tfc = TopFieldCollector.create(sort, paging.getHitsPerPage() * paging.getPage(), true, true, false);
+        TopFieldCollector tfc = TopFieldCollector.create(sort, paging.getHitsPerPage() * paging.getPage(), Integer.MAX_VALUE);
         searcher.search(lquery, tfc);
         return new SearchResults(query, tfc.topDocs().scoreDocs, tfc.getTotalHits(), paging, io, searcher);
-      } catch (IOException e) {
+      } catch (IOException ex) {
         io.releaseSearcher(searcher);
-        throw new IndexException("Failed performing a query on the Index because of an I/O problem", e);
+        throw new IndexException("Failed performing a query on the Index because of an I/O problem", ex);
+      } catch (IllegalArgumentException ex) {
+        if (ex.getMessage() != null
+            && ex.getMessage().contains("was indexed with bytesPerDim")
+            && ex.getMessage().contains("but this query has bytesPerDim")) {
+          // no matches
+          return new SearchResults(query, new ScoreDoc[] {}, 0, paging, io, searcher);
+        } else {
+          io.releaseSearcher(searcher);
+          throw new IndexException("Failed performing invalid query", ex);
+        }
       }
     }
     return null;
@@ -111,7 +121,7 @@ public final class LuceneIndexQueries {
    */
   public static void query(Index index, Query query, Collector results) throws IndexException {
     LuceneIndexIO io = getIndexIO(index);
-    IndexSearcher searcher = io.bookSearcher();
+    IndexSearcher searcher = io == null ? null : io.bookSearcher();
     if (searcher != null) {
       try {
         LOGGER.debug("Performing search [{}] on index {}", query, index);
@@ -130,9 +140,9 @@ public final class LuceneIndexQueries {
    *
    * @param indexes the Indexes to run the search on
    * @param query   the query to run
-   * 
+   *
    * @return the search results
-   * 
+   *
    * @throws IndexException if any error occurred while performing the search
    */
   public static SearchResults query(List<Index> indexes, SearchQuery query) throws IndexException {

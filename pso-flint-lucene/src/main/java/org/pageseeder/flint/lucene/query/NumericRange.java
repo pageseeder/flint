@@ -15,21 +15,23 @@
  */
 package org.pageseeder.flint.lucene.query;
 
-import java.io.IOException;
-
-import org.apache.lucene.search.NumericRangeQuery;
+import org.apache.lucene.document.DoublePoint;
+import org.apache.lucene.document.FloatPoint;
+import org.apache.lucene.document.IntPoint;
+import org.apache.lucene.document.LongPoint;
 import org.apache.lucene.search.Query;
-import org.apache.lucene.util.NumericUtils;
 import org.pageseeder.flint.catalog.Catalog;
 import org.pageseeder.flint.catalog.Catalogs;
 import org.pageseeder.flint.indexing.FlintField.NumericType;
 import org.pageseeder.flint.lucene.util.Beta;
 import org.pageseeder.xmlwriter.XMLWriter;
 
+import java.io.IOException;
+
 /**
  * Create a range parameter using numeric values.
  *
- * <p>This class simply wraps a {@link NumericRangeQuery} instance and is therefore closely related to it.
+ * <p>This class simply reflects a numeric range query.
  * This is API is still experimental and subject to change in Lucene, any change in Lucene may also
  * be reflected in this API.
  *
@@ -51,22 +53,22 @@ public final class NumericRange<T extends Number> implements SearchParameter {
   /**
    * The minimum value, if <code>null</code>, then no lower limit.
    */
-  private T _min;
+  private final T _min;
 
   /**
    * The maximum value, if <code>null</code>, then no upper limit.
    */
-  private T _max;
+  private final T _max;
 
   /**
    * Whether the minimum value should be included; ignored if the minimum value is <code>null</code>
    */
-  private boolean _minInclusive;
+  private final boolean _minInclusive;
 
   /**
    * Whether the maximum value should be included; ignored if the maximum value is <code>null</code>
    */
-  private boolean _maxInclusive;
+  private final boolean _maxInclusive;
 
   /**
    * The actual Lucene query (lazy initialised)
@@ -203,20 +205,31 @@ public final class NumericRange<T extends Number> implements SearchParameter {
    *
    * @return the corresponding <code>NumericRangeQuery</code>
    */
-  private static NumericRangeQuery<? extends Number>
-      toNumericRangeQuery(String field, Number min, Number max, boolean minInclusive, boolean maxInclusive) {
+  private static Query toNumericRangeQuery(String field, Number min, Number max, boolean minInclusive, boolean maxInclusive) {
     // Long
-    if (min instanceof Long || (min == null && max instanceof Long))
-      return NumericRangeQuery.newLongRange(field, NumericUtils.PRECISION_STEP_DEFAULT, (Long) min, (Long) max, minInclusive, maxInclusive);
+    if (min instanceof Long || (min == null && max instanceof Long)) {
+      long minLong = min == null ? Long.MIN_VALUE : minInclusive ? (Long) min :  Math.addExact((Long) min, 1);
+      long maxLong = max == null ? Long.MAX_VALUE : maxInclusive ? (Long) max :  Math.addExact((Long) max, -1);
+      return LongPoint.newRangeQuery(field, minLong, maxLong);
+    }
     // Integer
-    if (min instanceof Integer || (min == null && max instanceof Integer))
-      return NumericRangeQuery.newIntRange(field, NumericUtils.PRECISION_STEP_DEFAULT_32, (Integer) min, (Integer) max, minInclusive, maxInclusive);
+    if (min instanceof Integer || (min == null && max instanceof Integer)) {
+      int minLong = min == null ? Integer.MIN_VALUE : minInclusive ? (Integer) min :  Math.addExact((Integer) min, 1);
+      int maxLong = max == null ? Integer.MAX_VALUE : maxInclusive ? (Integer) max :  Math.addExact((Integer) max, -1);
+      return IntPoint.newRangeQuery(field, minLong, maxLong);
+    }
     // Double
-    if (min instanceof Double || (min == null && max instanceof Double))
-      return NumericRangeQuery.newDoubleRange(field, NumericUtils.PRECISION_STEP_DEFAULT, (Double) min, (Double) max, minInclusive, maxInclusive);
+    if (min instanceof Double || (min == null && max instanceof Double)) {
+      double minLong = min == null ? Double.MIN_VALUE : minInclusive ? (Double) min :  DoublePoint.nextUp((Double) min);
+      double maxLong = max == null ? Double.MAX_VALUE : maxInclusive ? (Double) max :  DoublePoint.nextDown((Double) max);
+      return DoublePoint.newRangeQuery(field, minLong, maxLong);
+    }
     // Float
-    if (min instanceof Float || (min == null && max instanceof Float))
-      return NumericRangeQuery.newFloatRange(field, NumericUtils.PRECISION_STEP_DEFAULT_32, (Float) min, (Float) max, minInclusive, maxInclusive);
+    if (min instanceof Float || (min == null && max instanceof Float)) {
+      float minLong = min == null ? Float.MIN_VALUE : minInclusive ? (Float) min :  FloatPoint.nextUp((Float) min);
+      float maxLong = max == null ? Float.MAX_VALUE : maxInclusive ? (Float) max :  FloatPoint.nextDown((Float) max);
+      return FloatPoint.newRangeQuery(field, minLong, maxLong);
+    }
     // Should never happen
     return null;
   }
@@ -239,7 +252,7 @@ public final class NumericRange<T extends Number> implements SearchParameter {
    */
   public static NumericRange<Double> newDoubleRange(String field, Double min, Double max,
       boolean minInclusive, boolean maxInclusive) {
-    return new NumericRange<Double>(field, min, max, minInclusive, maxInclusive);
+    return new NumericRange<>(field, min, max, minInclusive, maxInclusive);
   }
 
   /**
@@ -258,7 +271,7 @@ public final class NumericRange<T extends Number> implements SearchParameter {
    */
   public static NumericRange<Float> newFloatRange(String field, Float min, Float max,
       boolean minInclusive, boolean maxInclusive) {
-    return new NumericRange<Float>(field, min, max, minInclusive, maxInclusive);
+    return new NumericRange<>(field, min, max, minInclusive, maxInclusive);
   }
 
   /**
@@ -277,7 +290,7 @@ public final class NumericRange<T extends Number> implements SearchParameter {
    */
   public static NumericRange<Integer> newIntRange(String field, Integer min, Integer max,
       boolean minInclusive, boolean maxInclusive) {
-    return new NumericRange<Integer>(field, min, max, minInclusive, maxInclusive);
+    return new NumericRange<>(field, min, max, minInclusive, maxInclusive);
   }
 
   /**
@@ -296,7 +309,7 @@ public final class NumericRange<T extends Number> implements SearchParameter {
    */
   public static NumericRange<Long> newLongRange(String field, Long min, Long max,
       boolean minInclusive, boolean maxInclusive) {
-    return new NumericRange<Long>(field, min, max, minInclusive, maxInclusive);
+    return new NumericRange<>(field, min, max, minInclusive, maxInclusive);
   }
 
   /**

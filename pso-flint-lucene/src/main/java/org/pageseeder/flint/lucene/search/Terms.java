@@ -15,19 +15,11 @@
  */
 package org.pageseeder.flint.lucene.search;
 
-import org.apache.lucene.document.Document;
-import org.apache.lucene.index.Fields;
 import org.apache.lucene.index.*;
 import org.apache.lucene.search.*;
-import org.apache.lucene.util.AttributeSource;
+import org.apache.lucene.search.highlight.QueryTermExtractor;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.automaton.CompiledAutomaton;
-import org.pageseeder.flint.Index;
-import org.pageseeder.flint.IndexException;
-import org.pageseeder.flint.IndexIO;
-import org.pageseeder.flint.lucene.LuceneIndexIO;
-import org.pageseeder.flint.lucene.LuceneIndexQueries;
-import org.pageseeder.flint.lucene.query.SearchResults;
 import org.pageseeder.flint.lucene.util.Beta;
 import org.pageseeder.flint.lucene.util.Bucket;
 import org.pageseeder.flint.lucene.util.Bucket.Entry;
@@ -75,6 +67,18 @@ public final class Terms {
     return TEXT_COMPARATOR;
   }
 
+  /**
+   * Extract the terms from the query
+   * @param query  the query
+   * @param reader the reader, used to rewrite the query
+   * @return the set of terms
+   * @throws IOException if rewriting the query failed
+   */
+  public static Set<Term> extractTerms(Query query, IndexReader reader) throws IOException {
+    Set<Term> allTerms = new HashSet<>();
+    query.rewrite(reader).visit(QueryVisitor.termCollector(allTerms));
+    return allTerms;
+  }
   /**
    * Returns the list of terms based on the given list of fields and texts.
    *
@@ -150,11 +154,9 @@ public final class Terms {
    * @throws IOException If an error is thrown by the fuzzy term enumeration.
    */
   public static void fuzzy(IndexReader reader, List<String> values, Term term, int minSimilarity) throws IOException {
-    AttributeSource atts = new AttributeSource();
-    Fields fields = MultiFields.getFields(reader);
-    org.apache.lucene.index.Terms terms = fields == null ? null : fields.terms(term.field());
+    org.apache.lucene.index.Terms terms = MultiTerms.getTerms(reader, term.field());
     if (terms == null) return;
-    FuzzyTermsEnum fuzzy = new FuzzyTermsEnum(terms, atts, term, minSimilarity, 0, false);
+    FuzzyTermsEnum fuzzy = new FuzzyTermsEnum(terms, term, minSimilarity, 0, false);
     BytesRef val;
     BytesRef searched = term.bytes();
     while ((val = fuzzy.next()) != null) {
@@ -188,11 +190,9 @@ public final class Terms {
    */
   @Beta
   public static void fuzzy(IndexReader reader, Bucket<Term> bucket, Term term, int minSimilarity) throws IOException {
-    AttributeSource atts = new AttributeSource();
-    Fields fields = MultiFields.getFields(reader);
-    org.apache.lucene.index.Terms terms = fields == null ? null : fields.terms(term.field());
+    org.apache.lucene.index.Terms terms = MultiTerms.getTerms(reader, term.field());
     if (terms == null) return;
-    FuzzyTermsEnum fuzzy = new FuzzyTermsEnum(terms, atts, term, minSimilarity, 0, true);
+    FuzzyTermsEnum fuzzy = new FuzzyTermsEnum(terms, term, minSimilarity, 0, true);
     BytesRef val;
     BytesRef searched = term.bytes();
     while ((val = fuzzy.next()) != null) {
@@ -213,8 +213,7 @@ public final class Terms {
    * @throws IOException If an error is thrown by the prefix term enumeration.
    */
   public static void prefix(IndexReader reader, List<String> values, Term term) throws IOException {
-    Fields fields = MultiFields.getFields(reader);
-    org.apache.lucene.index.Terms terms = fields == null ? null : fields.terms(term.field());
+    org.apache.lucene.index.Terms terms = MultiTerms.getTerms(reader, term.field());
     if (terms == null) return;
     TermsEnum prefixes = terms.intersect(new CompiledAutomaton(PrefixQuery.toAutomaton(term.bytes())), null);
     BytesRef val;
@@ -233,8 +232,7 @@ public final class Terms {
    * @throws IOException If an error is thrown by the prefix term enumeration.
    */
   public static void prefix(IndexReader reader, Bucket<Term> bucket, Term term) throws IOException {
-    Fields fields = MultiFields.getFields(reader);
-    org.apache.lucene.index.Terms terms = fields == null ? null : fields.terms(term.field());
+    org.apache.lucene.index.Terms terms = MultiTerms.getTerms(reader, term.field());
     if (terms == null) return;
     TermsEnum prefixes = terms.intersect(new CompiledAutomaton(PrefixQuery.toAutomaton(term.bytes())), term.bytes());
     BytesRef val;
@@ -251,17 +249,11 @@ public final class Terms {
    *
    * @return the list of field names
    *
-   * @throws IOException should any IO error be reported by the {@link MultiFields#getFields(IndexReader)} method.
+   * @throws IOException should any IO error be reported by the {@link FieldInfos#getIndexedFields(IndexReader)} method.
    */
   @Beta public static List<String> fields(IndexReader reader) throws IOException {
     LOGGER.debug("Loading fields");
-    List<String> fieldnames = new ArrayList<>();
-    Fields fields = MultiFields.getFields(reader);
-    if (fields == null) return fieldnames;
-    for (String field : fields) {
-      fieldnames.add(field);
-    }
-    return fieldnames;
+    return new ArrayList<>(FieldInfos.getIndexedFields(reader));
   }
 
 
@@ -277,7 +269,7 @@ public final class Terms {
    */
   @Beta public static List<Term> terms(IndexReader reader, String field) throws IOException {
     LOGGER.debug("Loading terms for field {}", field);
-    org.apache.lucene.index.Terms terms = MultiFields.getTerms(reader, field);
+    org.apache.lucene.index.Terms terms = MultiTerms.getTerms(reader, field);
     if (terms == null) return Collections.emptyList();
     TermsEnum termsEnum = terms.iterator();
     if (termsEnum == TermsEnum.EMPTY) return Collections.emptyList();
@@ -325,7 +317,7 @@ public final class Terms {
   @Beta public static List<String> values(IndexReader reader, String field) throws IOException {
     LOGGER.debug("Loading term values for field {}", field);
     List<String> values = new ArrayList<>();
-    org.apache.lucene.index.Terms terms = MultiFields.getTerms(reader, field);
+    org.apache.lucene.index.Terms terms = MultiTerms.getTerms(reader, field);
     if (terms == null) return values;
     TermsEnum termsEnum = terms.iterator();
     if (termsEnum == TermsEnum.EMPTY) return values;

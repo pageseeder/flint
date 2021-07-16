@@ -6,7 +6,6 @@ import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.core.KeywordTokenizer;
 import org.apache.lucene.analysis.core.LowerCaseFilter;
 import org.apache.lucene.analysis.core.WhitespaceAnalyzer;
-import org.apache.lucene.analysis.standard.StandardFilter;
 import org.apache.lucene.analysis.standard.StandardTokenizer;
 import org.apache.lucene.search.Query;
 import org.junit.Assert;
@@ -60,7 +59,7 @@ public class QueriesTest {
 
     // mix
     q = Queries.parseToQuery("field", "\"value1 AND value2\"", analyzer);
-    Assert.assertEquals("field:\"value1 AND value2\"", q.toString()); 
+    Assert.assertEquals("field:\"value1 AND value2\"", q.toString());
   }
 
   @Test
@@ -119,10 +118,8 @@ public class QueriesTest {
       Tokenizer source = fieldName.endsWith("-tokenized") ? new StandardTokenizer() : new KeywordTokenizer();
       // lower case
       TokenStream results = new LowerCaseFilter(source);
-      // standard
-      results = new StandardFilter(results);
       return new TokenStreamComponents(source, results);
     }
-    
+
   }
 }

@@ -60,20 +60,20 @@ public class NumericTermFilter extends TermFilter<Number> implements Filter {
   public Query filterQuery(Query base) {
     // if should, create filter query
     if (this._terms.values().contains(Occur.SHOULD)) {
-      BooleanQuery filterQuery = new BooleanQuery();
+      BooleanQuery.Builder filterQuery = new BooleanQuery.Builder();
       for (Number value : this._terms.keySet()) {
         filterQuery.add(numberToQuery(value), this._terms.get(value));
       }
       // and join to base if there
-      return base == null ? filterQuery : Queries.and(base, filterQuery);
+      return base == null ? filterQuery.build() : Queries.and(base, filterQuery.build());
     }
     // create filter query then
-    BooleanQuery filterQuery = new BooleanQuery();
+    BooleanQuery.Builder filterQuery = new BooleanQuery.Builder();
     if (base != null) filterQuery.add(base, Occur.MUST);
     for (Number value : this._terms.keySet()) {
       filterQuery.add(numberToQuery(value), this._terms.get(value));
     }
-    return filterQuery;
+    return filterQuery.build();
   }
 
   @Override
@@ -106,9 +106,9 @@ public class NumericTermFilter extends TermFilter<Number> implements Filter {
 
   /**
    * Create a query for the term given, using the numeric type if there is one.
-   * 
+   *
    * @param value the term
-   * 
+   *
    * @return the query
    */
   private Query numberToQuery(Number value) {

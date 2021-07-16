@@ -114,7 +114,7 @@ public final class IndexParser {
   public List<FlintDocument> getDocuments() {
     return this._handler == null ? null : this._handler.getDocuments();
   }
-  
+
   /**
    * Make a collection Lucene documents to be indexed from the XML file given.
    *
@@ -147,8 +147,6 @@ public final class IndexParser {
    * Returns a list of Lucene documents to be indexed from the XML file given.
    *
    * <p>The XML file must conform to the DTD defined in this class.
-   *
-   * @see #make(java.io.Reader)
    *
    * @param f       The file to be read.
    * @param catalog The catalog to add the fields to.

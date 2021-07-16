@@ -199,26 +199,24 @@ public final class Question implements SearchParameter, XMLWritable {
    * <p>This method ignores any Lucene specific syntax by removing it from the input string.
    */
   private void compute() {
-    BooleanQuery query = new BooleanQuery();
+    BooleanQuery.Builder query = new BooleanQuery.Builder();
     if (this._supportOperators) {
       for (Entry<String, Float> e : this._fields.entrySet()) {
         Query q = Queries.parseToQuery(e.getKey(), this._question, null, false, this._supportWildcards);
-        q.setBoost(e.getValue());
-        query.add(q, Occur.SHOULD);
+        query.add(new BoostQuery(q, e.getValue()), Occur.SHOULD);
       }
     } else {
       List<String> values = Fields.toValues(this._question);
       for (Entry<String, Float> e : this._fields.entrySet()) {
-        BooleanQuery sub = new BooleanQuery();
+        BooleanQuery.Builder sub = new BooleanQuery.Builder();
         for (String value : values) {
           Query q = Queries.toTermOrPhraseQuery(e.getKey(), value, this._supportWildcards);
-          q.setBoost(e.getValue());
-          sub.add(q, Occur.SHOULD);
+          sub.add(new BoostQuery(q, e.getValue()), Occur.SHOULD);
         }
-        query.add(sub, Occur.SHOULD);
+        query.add(sub.build(), Occur.SHOULD);
       }
     }
-    this._query = query;
+    this._query = query.build();
   }
 
   /**

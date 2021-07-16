@@ -15,11 +15,11 @@
  */
 package org.pageseeder.flint.lucene.query;
 
+import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexableField;
-import org.apache.lucene.index.Term;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.SortField;
@@ -31,7 +31,7 @@ import org.pageseeder.flint.indexing.FlintField.NumericType;
 import org.pageseeder.flint.lucene.LuceneIndexIO;
 import org.pageseeder.flint.lucene.search.Fields;
 import org.pageseeder.flint.lucene.util.Dates;
-import org.pageseeder.flint.lucene.util.Documents;
+import org.pageseeder.flint.lucene.util.Highlighter;
 import org.pageseeder.xmlwriter.XML.NamespaceAware;
 import org.pageseeder.xmlwriter.XMLStringWriter;
 import org.pageseeder.xmlwriter.XMLWritable;
@@ -107,6 +107,11 @@ public final class SearchResults implements XMLWritable {
   private final SearchQuery _query;
 
   /**
+   * The analyzer used.
+   */
+  private final Analyzer _analyzer;
+
+  /**
    * The index searcher used.
    */
   private final IndexSearcher _searcher;
@@ -155,7 +160,7 @@ public final class SearchResults implements XMLWritable {
    */
   public SearchResults(SearchQuery query, TopFieldDocs docs, SearchPaging paging, Map<LuceneIndexIO, IndexReader> readers, IndexSearcher searcher)
       throws IndexException {
-    this(query, docs.scoreDocs, docs.fields, docs.totalHits, paging, readers, searcher);
+    this(query, null, docs.scoreDocs, docs.fields, new Long(docs.totalHits.value).intValue(), paging, new SearchReaders(readers), searcher);
   }
 
   /**
@@ -171,7 +176,7 @@ public final class SearchResults implements XMLWritable {
    */
   public SearchResults(SearchQuery query, TopFieldDocs docs, SearchPaging paging, LuceneIndexIO io, IndexSearcher searcher)
       throws IndexException {
-    this(query, docs.scoreDocs, docs.fields, docs.totalHits, paging, io, searcher);
+    this(query, null, docs.scoreDocs, docs.fields, new Long(docs.totalHits.value).intValue(), paging, new SearchReaders(io), searcher);
   }
 
   /**
@@ -187,57 +192,29 @@ public final class SearchResults implements XMLWritable {
    */
   public SearchResults(SearchQuery query, ScoreDoc[] docs, int totalHits, SearchPaging paging, LuceneIndexIO io, IndexSearcher searcher)
       throws IndexException {
-    this(query, docs, null, totalHits, paging, io, searcher);
+    this(query, null, docs, null, totalHits, paging, new SearchReaders(io), searcher);
   }
 
   /**
    * Creates a new SearchResults.
    *
+   * @param query The original query
    * @param hits The actual search results from Lucene in ScoreDoc.
    * @param sortf The Field used to sort the results
    * @param paging The paging configuration.
-   * @param io The IndexIO object, used to release the searcher when terminated
+   * @param readers The IndexIO object, used to release the searcher when terminated
    * @param searcher The Lucene searcher.
-   *
-   * @throws IndexException if the documents could not be retrieved from the Index
    */
-  private SearchResults(SearchQuery query, ScoreDoc[] hits, SortField[] sortf, int totalResults,
-      SearchPaging paging, LuceneIndexIO io, IndexSearcher searcher) throws IndexException {
+  private SearchResults(SearchQuery query, Analyzer analyzer, ScoreDoc[] hits,
+                        SortField[] sortf, int totalResults,
+                        SearchPaging paging, SearchReaders readers, IndexSearcher searcher) {
     this._query = query;
+    this._analyzer = analyzer;
     this._scoredocs = hits;
     this._sortfields = sortf;
     this._paging = paging != null? paging : new SearchPaging();
     this._searcher = searcher;
-    this.readers = new SearchReaders(io);
-    this.totalNbOfResults = totalResults;
-    // default timezone is the server's
-    TimeZone tz = TimeZone.getDefault();
-    this.timezoneOffset = tz.getRawOffset();
-    // take daylight savings into account
-    if (tz.inDaylightTime(new Date())) {
-      this.timezoneOffset += ONE_HOUR_IN_MS;
-    }
-  }
-
-  /**
-   * Creates a new SearchResults.
-   *
-   * @param hits The actual search results from Lucene in ScoreDoc.
-   * @param sortf The Field used to sort the results
-   * @param paging The paging configuration.
-   * @param io The IndexIO object, used to release the searcher when terminated
-   * @param searcher The Lucene searcher.
-   *
-   * @throws IndexException if the documents could not be retrieved from the Index
-   */
-  private SearchResults(SearchQuery query, ScoreDoc[] hits, SortField[] sortf, int totalResults,
-      SearchPaging paging, Map<LuceneIndexIO, IndexReader> readers, IndexSearcher searcher) throws IndexException {
-    this._query = query;
-    this._scoredocs = hits;
-    this._sortfields = sortf;
-    this._paging = paging != null? paging : new SearchPaging();
-    this._searcher = searcher;
-    this.readers = new SearchReaders(readers);
+    this.readers = readers;
     this.totalNbOfResults = totalResults;
     // default timezone is the server's
     TimeZone tz = TimeZone.getDefault();
@@ -254,7 +231,7 @@ public final class SearchResults implements XMLWritable {
   /**
    * Add field names to get extracts from.
    * The order matters here as the first extract found is the one included in the results.
-   * 
+   *
    * @param fields list of field names
    */
   public void addExtractFields(List<String> fields) {
@@ -264,7 +241,7 @@ public final class SearchResults implements XMLWritable {
   /**
    * Add a field name to get extracts from.
    * The order matters here as the first extract found is the one included in the results.
-   * 
+   *
    * @param field new field name
    */
   public void addExtractField(String field) {
@@ -301,7 +278,7 @@ public final class SearchResults implements XMLWritable {
 
   /**
    * @return the index searcher, can be used to compute facets
-   * 
+   *
    * @throws IndexException if the results have been terminated and the searcher closed
    */
   public IndexSearcher searcher() throws IndexException {
@@ -345,35 +322,24 @@ public final class SearchResults implements XMLWritable {
     xml.openElement("documents", true);
 
     // Iterate over the hits to find the extracts
-    boolean withExtracts = true;
     for (int i = firsthit - 1; i < lasthit; i++) {
       String score = Float.toString(this._scoredocs[i].score);
       Document doc = this._searcher.doc(this._scoredocs[i].doc);
       String extractXML = null;
-      if (withExtracts) {
-        Set<Term> terms = new HashSet<Term>();
-        try {
-          this._searcher.createWeight(this._query.toQuery().rewrite(this._searcher.getIndexReader()), true).extractTerms(terms);
-        } catch (Exception ex) {
-          // log it
-          LOGGER.warn("Computing extract failed, no extracts will be provided", ex);
-          // The query provided does not support weight, can't have extracts then
-          withExtracts = false;
-        }
-        bigloop: for (Term t : terms) {
-          for (IndexableField f : doc.getFields()) {
-            if (t.field().equals(f.name()) &&
-               (this.extractFields.isEmpty() || this.extractFields.contains(f.name()))) {
-              String extract = Documents.extract(Fields.toString(f), t.text(), 200);
-              if (extract != null) {
-                XMLStringWriter xsw = new XMLStringWriter(NamespaceAware.No);
-                xsw.openElement("extract");
-                xsw.attribute("from", t.field());
-                xsw.writeXML(extract);
-                xsw.closeElement();
-                extractXML = xsw.toString();
-                break bigloop;
-              }
+
+      if (this._query != null && this._analyzer != null) {
+        Highlighter highlighter = new Highlighter(this._query.toQuery(), this._searcher.getIndexReader(), this._analyzer);
+        for (IndexableField f : doc.getFields()) {
+          if (this.extractFields.isEmpty() || this.extractFields.contains(f.name())) {
+            String extract = highlighter.highlight(f.name(), f.stringValue(), 200); // Documents.extract(Fields.toString(f), t.text(), 200);
+            if (extract != null) {
+              XMLStringWriter xsw = new XMLStringWriter(NamespaceAware.No);
+              xsw.openElement("extract");
+              xsw.attribute("from", f.name());
+              xsw.writeXML(extract);
+              xsw.closeElement();
+              extractXML = xsw.toString();
+              break;
             }
           }
         }

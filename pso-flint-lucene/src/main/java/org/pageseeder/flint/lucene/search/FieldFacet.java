@@ -36,7 +36,7 @@ import java.util.List;
  * A facet implementation using a simple index field.
  *
  * @deprecated use {@link FlexibleFieldFacet}
- * 
+ *
  * @author Christophe Lauret
  * @version 16 February 2012
  */
@@ -117,10 +117,10 @@ public final class FieldFacet implements XMLWritable, Facet {
       Bucket<Term> bucket = new Bucket<Term>(size);
       DocumentCounter counter = new DocumentCounter();
       for (TermQuery q : this._queries) {
-        BooleanQuery query = new BooleanQuery();
+        BooleanQuery.Builder query = new BooleanQuery.Builder();
         query.add(base, Occur.MUST);
         query.add(q, Occur.MUST);
-        searcher.search(query, counter);
+        searcher.search(query.build(), counter);
         bucket.add(q.getTerm(), counter.getCount());
         counter.reset();
       }

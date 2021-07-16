@@ -15,21 +15,22 @@
  */
 package org.pageseeder.flint.lucene.query;
 
-import java.io.IOException;
-import java.time.Instant;
-import java.time.OffsetDateTime;
-import java.time.ZoneOffset;
-import java.util.Date;
-
 import org.apache.lucene.document.DateTools.Resolution;
+import org.apache.lucene.document.IntPoint;
+import org.apache.lucene.document.LongPoint;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.search.NumericRangeQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TermRangeQuery;
 import org.apache.lucene.util.BytesRef;
 import org.pageseeder.flint.lucene.util.Dates;
 import org.pageseeder.xmlwriter.XMLWriter;
+
+import java.io.IOException;
+import java.time.Instant;
+import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
+import java.util.Date;
 
 /**
  * Create a date range parameter.
@@ -49,32 +50,32 @@ public final class DateParameter implements SearchParameter {
   /**
    * The FROM date, if <code>null</code>, then no lower limit.
    */
-  private OffsetDateTime _from;
+  private final OffsetDateTime _from;
 
   /**
    * The TO date, if <code>null</code>, then no upper limit.
    */
-  private OffsetDateTime _to;
+  private final OffsetDateTime _to;
 
   /**
    * The resolution for this date field.
    */
-  private Resolution _resolution = Resolution.DAY;
+  private final Resolution _resolution;
 
   /**
    * Whether the minimum value should be included; ignored if the minimum value is <code>null</code>
    */
-  private boolean _minInclusive;
+  private final boolean _minInclusive;
 
   /**
    * Whether the maximum value should be included; ignored if the maximum value is <code>null</code>
    */
-  private boolean _maxInclusive;
+  private final boolean _maxInclusive;
 
   /**
    * Indicates whether the date field is a numeric field.
    */
-  private boolean _numeric = false;
+  private final boolean _numeric;
 
   /**
    * The actual Lucene query (lazy initialised)
@@ -91,7 +92,7 @@ public final class DateParameter implements SearchParameter {
    * @param numeric    whether it is a numeric field
    */
   public DateParameter(String field, Resolution resolution, boolean numeric) {
-    this(field, (OffsetDateTime) null, (OffsetDateTime) null, true, true, resolution, numeric);
+    this(field, null, (OffsetDateTime) null, true, true, resolution, numeric);
   }
 
   /**
@@ -332,13 +333,21 @@ public final class DateParameter implements SearchParameter {
    *
    * @return the corresponding <code>NumericRangeQuery</code>
    */
-  private static NumericRangeQuery<? extends Number> toNumericRangeQuery(String field, OffsetDateTime from, OffsetDateTime to, boolean withMin, boolean withMax, Resolution resolution) {
-    Number min = from != null? Dates.toNumber(from, resolution) : null;
-    Number max = to != null? Dates.toNumber(to, resolution) : null;
+  private static Query toNumericRangeQuery(String field, OffsetDateTime from, OffsetDateTime to, boolean withMin, boolean withMax, Resolution resolution) {
+    Number min = from != null ? Dates.toNumber(from, resolution) : null;
+    Number max = to != null ? Dates.toNumber(to, resolution) : null;
     // Using long values (resolution = MILLISECOND | SECOND | MINUTE | HOUR)
-    if (min instanceof Long || (min == null && max instanceof Long)) return NumericRangeQuery.newLongRange(field, (Long)min, (Long)max, withMin, withMax);
+    if (min instanceof Long || (min == null && max instanceof Long)) {
+      long minLong = min == null ? Long.MIN_VALUE : withMin ? (Long) min :  Math.addExact((Long) min, -1);
+      long maxLong = max == null ? Long.MAX_VALUE : withMax ? (Long) max :  Math.addExact((Long) max, 1);
+      return LongPoint.newRangeQuery(field, minLong, maxLong);
+    }
     // Using integer values (resolution = DAY | MONTH | YEAR)
-    if (min instanceof Integer || (min == null && max instanceof Integer)) return NumericRangeQuery.newIntRange(field, (Integer)min, (Integer)max, withMin, withMax);
+    if (min instanceof Integer || (min == null && max instanceof Integer)) {
+      int minLong = min == null ? Integer.MIN_VALUE : withMin ? (Integer) min :  Math.addExact((Integer) min, 1);
+      int maxLong = max == null ? Integer.MAX_VALUE : withMax ? (Integer) max :  Math.addExact((Integer) max, -1);
+      return IntPoint.newRangeQuery(field, minLong, maxLong);
+    }
     // Should never happen
     return null;
   }

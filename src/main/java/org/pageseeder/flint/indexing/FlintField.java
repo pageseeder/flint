@@ -15,11 +15,11 @@
  */
 package org.pageseeder.flint.indexing;
 
-import java.text.SimpleDateFormat;
-import java.util.TimeZone;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.text.SimpleDateFormat;
+import java.util.TimeZone;
 
 /**
  * A builder for fields.
@@ -48,18 +48,13 @@ public final class FlintField {
     NONE, FORCED_NONE, SORTED, SORTED_NUMERIC, SORTED_SET;
   }
 
-  public static enum IndexOptions { 
+  public static enum IndexOptions {
     NONE, DOCS, DOCS_AND_FREQS, DOCS_AND_FREQS_AND_POSITIONS, DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS,
   }
 
   public static enum Resolution {
     YEAR, MONTH, DAY, HOUR, MINUTE, SECOND, MILLISECOND;
   }
-
-  /**
-   * The default boost value for the term.
-   */
-  public static final float DEFAULT_BOOST_VALUE = 1.0f;
 
   /**
    * The logger for this class.
@@ -151,11 +146,6 @@ public final class FlintField {
    */
   private boolean _compressed = false;
 
-  /**
-   * The value of the field currently processed.
-   */
-  private float _boost = DEFAULT_BOOST_VALUE;
-
   // Constuctor
   // ----------------------------------------------------------------------------------------------
 
@@ -171,7 +161,6 @@ public final class FlintField {
     compressed.name(this._name);
     if (this._value != null)
       compressed.value(this._value.toString());
-    compressed.boost(this._boost);
     compressed.compressed(true);
     return compressed;
   }
@@ -180,7 +169,6 @@ public final class FlintField {
     FlintField cloned = new FlintField(this._catalog);
     cloned._name = this._name;
     cloned._value = this._value;
-    cloned._boost = this._boost;
     cloned._compressed = this._compressed;
     cloned._dateformat = this._dateformat;
     cloned._index = this._index;
@@ -291,9 +279,9 @@ public final class FlintField {
 
   /**
    * Set the omit norms flag.
-   * 
+   *
    * @param omit the new value
-   * 
+   *
    * @return this builder.
    */
   public FlintField omitNorms(boolean omit) {
@@ -324,10 +312,10 @@ public final class FlintField {
   /**
    * Supported values are "none", "sorted" and "sorted-set".
    * If the parameter is null, the same behaviour as "none" is applied.
-   * 
+   *
    * @param docValues the doc values type.
    * @param numeric   if this field is numeric
-   * 
+   *
    * @return this builder.
    */
   public FlintField docValues(String docValues, boolean numeric) {
@@ -424,18 +412,17 @@ public final class FlintField {
   }
 
   /**
-   * Returns the boost value for this field.
+   * @deprecated no more boost at index time
    *
    * @param boost The boost value for this field as a string.
    * @return this builder.
    */
   public FlintField boost(float boost) {
-    this._boost = boost;
     return this;
   }
 
   /**
-   * Returns the boost value for this field.
+   * @deprecated no more boost at index time
    *
    * @see #toBoost(String)
    *
@@ -443,7 +430,6 @@ public final class FlintField {
    * @return this builder.
    */
   public FlintField boost(String boost) {
-    if (boost != null) this._boost = toBoost(boost);
     return this;
   }
 
@@ -568,7 +554,7 @@ public final class FlintField {
   public String catalog() {
     return this._catalog;
   }
-  
+
   /**
    * Returns the value of the field to build.
    *
@@ -607,16 +593,17 @@ public final class FlintField {
 
   /**
    * Returns the boost value for this field.
+   * @deprecated no more boost at index time
    *
    * @return The boost value for this field.
    */
   public float boost() {
-    return this._boost;
+    return 1f;
   }
 
   /**
    * Returns the numeric type for this field.
-   * 
+   *
    * @return the numeric type for this field.
    */
   public NumericType numericType() {
@@ -633,7 +620,7 @@ public final class FlintField {
 
   /**
    * Returns the doc values type for this field.
-   * 
+   *
    * @return the doc values type for this field.
    */
   public DocValuesType docValues() {
@@ -761,21 +748,13 @@ public final class FlintField {
   }
 
   /**
-   * Returns the boost value for a field as a float.
-   *
-   * <p>If the float parsing fails, this method returns the default boost value.
+   * @deprecated no more boost at index time
    *
    * @param boost The boost value.
    * @return The corresponding boost value as a float.
    */
   public static float toBoost(String boost) {
-    if (boost == null) return DEFAULT_BOOST_VALUE;
-    try {
-      return Float.parseFloat(boost);
-    } catch (NumberFormatException ex) {
-      LOGGER.warn("Could not parse boost value '{}' as float, using {}", boost, DEFAULT_BOOST_VALUE);
-      return DEFAULT_BOOST_VALUE;
-    }
+    return 1f;
   }
 
   /**

@@ -15,26 +15,19 @@
  */
 package org.pageseeder.flint.lucene.facet;
 
-import java.io.IOException;
-import java.text.ParseException;
-import java.util.List;
-
-import org.apache.lucene.document.DateTools;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BooleanClause.Occur;
-import org.apache.lucene.search.BooleanQuery;
-import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.search.Query;
-import org.apache.lucene.search.TopDocs;
-import org.apache.lucene.search.WildcardQuery;
+import org.apache.lucene.search.*;
 import org.pageseeder.flint.lucene.search.DocumentCounter;
 import org.pageseeder.flint.lucene.search.Filter;
 import org.pageseeder.flint.lucene.search.Terms;
 import org.pageseeder.flint.lucene.util.Beta;
 import org.pageseeder.flint.lucene.util.Bucket;
 import org.pageseeder.flint.lucene.util.Bucket.Entry;
-import org.pageseeder.flint.lucene.util.Dates;
 import org.pageseeder.xmlwriter.XMLWriter;
+
+import java.io.IOException;
+import java.util.List;
 
 /**
  * A facet implementation using a simple index field.
@@ -114,11 +107,11 @@ public abstract class FlexibleFieldFacet extends FlexibleFacet<String> {
       }
       // try wildcard query as it's faster, but if it fails go through all terms
       if (size == 0) try {
-        BooleanQuery query = new BooleanQuery();
+        BooleanQuery.Builder query = new BooleanQuery.Builder();
         query.add(filtered, Occur.MUST);
         query.add(new WildcardQuery(new Term(this._name, "*")), Occur.MUST);
-        TopDocs td = searcher.search(query, 1);
-        this.hasResults = td.totalHits > 0;
+        TopDocs td = searcher.search(query.build(), 1);
+        this.hasResults = td.totalHits.value > 0;
         return;
       } catch (Exception ex) {
         // oh well go through terms then
@@ -130,20 +123,20 @@ public abstract class FlexibleFieldFacet extends FlexibleFacet<String> {
       DocumentCounter counter = new DocumentCounter();
       Bucket<String> bucket = new Bucket<>(size);
       for (Term t : terms) {
-        BooleanQuery query = new BooleanQuery();
+        BooleanQuery.Builder query = new BooleanQuery.Builder();
         query.add(filtered, Occur.MUST);
         query.add(termToQuery(t), Occur.MUST);
         if (size == 0) {
           // we just want to know if there are results,
           // so load only one and stop when we get one
-          TopDocs td = searcher.search(query, 1);
-          if (td.totalHits > 0) {
+          TopDocs td = searcher.search(query.build(), 1);
+          if (td.totalHits.value > 0) {
             this.hasResults = true;
             return;
           }
         } else {
           // count results
-          searcher.search(query, counter);
+          searcher.search(query.build(), counter);
           int count = counter.getCount();
           bucket.add(t.text(), count);
           counter.reset();
@@ -252,9 +245,9 @@ public abstract class FlexibleFieldFacet extends FlexibleFacet<String> {
 
   /**
    * Create a query for the term given, using the numeric type if there is one.
-   * 
+   *
    * @param t the term
-   * 
+   *
    * @return the query
    */
   protected abstract Query termToQuery(Term t);

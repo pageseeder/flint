@@ -64,20 +64,20 @@ public class DateTermFilter extends TermFilter<OffsetDateTime> implements Filter
   public Query filterQuery(Query base) {
     // if should, create filter query
     if (this._terms.values().contains(Occur.SHOULD)) {
-      BooleanQuery filterQuery = new BooleanQuery();
+      BooleanQuery.Builder filterQuery = new BooleanQuery.Builder();
       for (OffsetDateTime date : this._terms.keySet()) {
         filterQuery.add(new DateParameter(this._name, date, this._resolution, false).toQuery(), this._terms.get(date));
       }
       // and join to base if there
-      return base == null ? filterQuery : Queries.and(base, filterQuery);
+      return base == null ? filterQuery.build() : Queries.and(base, filterQuery.build());
     }
     // create filter query then
-    BooleanQuery filterQuery = new BooleanQuery();
+    BooleanQuery.Builder filterQuery = new BooleanQuery.Builder();
     if (base != null) filterQuery.add(base, Occur.MUST);
     for (OffsetDateTime date : this._terms.keySet()) {
       filterQuery.add(new DateParameter(this._name, date, this._resolution, false).toQuery(), this._terms.get(date));
     }
-    return filterQuery;
+    return filterQuery.build();
   }
 
   public String name() {

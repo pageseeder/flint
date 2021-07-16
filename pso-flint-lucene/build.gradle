@@ -5,18 +5,13 @@ dependencies {
     'org.slf4j:slf4j-api:1.7.21',
     'org.pageseeder.xmlwriter:pso-xmlwriter:1.0.2',
 
-    'org.apache.lucene:lucene-core:5.5.5',
-    'org.apache.lucene:lucene-misc:5.5.5',
-    'org.apache.lucene:lucene-analyzers-common:5.5.5',
-    'org.apache.lucene:lucene-highlighter:5.5.5',
-    'org.apache.lucene:lucene-queryparser:5.5.5',
-    'org.apache.lucene:lucene-suggest:5.5.5'
+    'org.apache.lucene:lucene-core:8.9.0',
+    'org.apache.lucene:lucene-misc:8.9.0',
+    'org.apache.lucene:lucene-analyzers-common:8.9.0',
+    'org.apache.lucene:lucene-highlighter:8.9.0',
+    'org.apache.lucene:lucene-queryparser:8.9.0',
+    'org.apache.lucene:lucene-suggest:8.9.0'
 
-//    'org.apache.lucene:lucene-core:6.3.0',
-//    'org.apache.lucene:lucene-misc:6.3.0',
-//    'org.apache.lucene:lucene-analyzers-common:6.3.0',
-//    'org.apache.lucene:lucene-queryparser:6.3.0',
-//    'org.apache.lucene:lucene-suggest:6.3.0'
   )
 
   testImplementation (

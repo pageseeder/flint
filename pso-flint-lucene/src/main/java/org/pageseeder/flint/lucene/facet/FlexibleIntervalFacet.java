@@ -174,7 +174,7 @@ public abstract class FlexibleIntervalFacet extends FlexibleFacet<FlexibleInterv
       this.totalIntervals = 0;
       // find all terms
       List<Term> terms = Terms.terms(searcher.getIndexReader(), this._name);
-      // Otherwise, re-compute the query without the corresponding filter 
+      // Otherwise, re-compute the query without the corresponding filter
       Query filtered = base;
       if (filters != null) {
         this.flexible = true;
@@ -190,10 +190,10 @@ public abstract class FlexibleIntervalFacet extends FlexibleFacet<FlexibleInterv
         Interval r = findInterval(t);
         if (r == null) continue;
         // find count
-        BooleanQuery query = new BooleanQuery();
+        BooleanQuery.Builder query = new BooleanQuery.Builder();
         query.add(filtered, Occur.MUST);
         query.add(termToQuery(t), Occur.MUST);
-        searcher.search(query, counter);
+        searcher.search(query.build(), counter);
         int count = counter.getCount();
         if (count > 0) {
           // add to map
@@ -312,9 +312,9 @@ public abstract class FlexibleIntervalFacet extends FlexibleFacet<FlexibleInterv
 
   /**
    * Create a query for the term given, using the numeric type if there is one.
-   * 
+   *
    * @param t the term
-   * 
+   *
    * @return the query
    */
   protected abstract Query termToQuery(Term t);

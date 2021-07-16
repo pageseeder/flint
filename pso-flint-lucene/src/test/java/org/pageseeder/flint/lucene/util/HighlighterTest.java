@@ -60,7 +60,7 @@ public class HighlighterTest {
     query.add(new TermQuery(new Term("content",  "ipsum")),     BooleanClause.Occur.SHOULD);
     Highlighter highlighter = new Highlighter(query.build(), new StandardAnalyzer());
     Assert.assertEquals("Lorem <term>ipsum</term> dolor", highlighter.highlight("content", lipsum, 20));
-    Assert.assertEquals("in <term>voluptate</term> velit esse", highlighter.highlight("filename", lipsum, 20));
+    Assert.assertEquals("<term>voluptate</term> velit esse", highlighter.highlight("filename", lipsum, 20));
     Assert.assertEquals("ullamco <term>laboris</term> nisi ut aliquip ex", highlighter.highlight("title", lipsum, 35));
     Assert.assertNull(highlighter.highlight("id", lipsum, 20));
 

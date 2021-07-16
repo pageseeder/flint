@@ -18,7 +18,7 @@ public class TestListener implements IndexListener {
 
   @Override
   public void startJob(IndexJob job) {
-    System.out.println("Starting job for "+job.getContentID());
+    //System.out.println("Starting job for "+job.getContentID());
   }
 
   @Override
@@ -34,7 +34,7 @@ public class TestListener implements IndexListener {
 
   @Override
   public void endJob(IndexJob job) {
-    System.out.println("Ending job for "+job.getContentID());
+    //System.out.println("Ending job for "+job.getContentID());
   }
 
 }

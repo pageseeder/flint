@@ -1,20 +1,21 @@
 package org.pageseeder.flint.lucene.query;
 
-import java.io.IOException;
-
-import org.apache.lucene.search.NumericRangeQuery;
+import org.apache.lucene.document.DoublePoint;
+import org.apache.lucene.document.FloatPoint;
+import org.apache.lucene.document.IntPoint;
+import org.apache.lucene.document.LongPoint;
 import org.apache.lucene.search.Query;
-import org.apache.lucene.util.NumericUtils;
 import org.pageseeder.flint.catalog.Catalog;
 import org.pageseeder.flint.catalog.Catalogs;
 import org.pageseeder.flint.indexing.FlintField.NumericType;
 import org.pageseeder.flint.lucene.util.Beta;
 import org.pageseeder.xmlwriter.XMLWriter;
 
+import java.io.IOException;
+
 /**
  * Create a number parameter using a numeric value.
  *
- * <p>This class simply wraps a {@link NumericRangeQuery} instance and is therefore closely related to it.
  * This is API is still experimental and subject to change in Lucene, any change in Lucene may also
  * be reflected in this API.
  *
@@ -36,7 +37,7 @@ public class NumberParameter<T extends Number> implements SearchParameter {
   /**
    * The value to search for.
    */
-  private T _value;
+  private final T _value;
 
   /**
    * The actual Lucene query (lazy initialised)
@@ -77,17 +78,13 @@ public class NumberParameter<T extends Number> implements SearchParameter {
     if (this._query == null)  {
       // use class of value field
       if (this._value instanceof Float)
-        this._query = NumericRangeQuery.newFloatRange(this._field, NumericUtils.PRECISION_STEP_DEFAULT_32,
-                                                     (Float) this._value, (Float) this._value, true, true);
+        this._query = FloatPoint.newExactQuery(this._field, (Float) this._value);
       else if (this._value instanceof Double)
-        this._query = NumericRangeQuery.newDoubleRange(this._field, NumericUtils.PRECISION_STEP_DEFAULT,
-                                                      (Double) this._value, (Double) this._value, true, true);
+        this._query = DoublePoint.newExactQuery(this._field, (Double) this._value);
       else if (this._value instanceof Integer)
-        this._query = NumericRangeQuery.newIntRange(this._field, NumericUtils.PRECISION_STEP_DEFAULT_32,
-                                                   (Integer) this._value, (Integer) this._value, true, true);
+        this._query = IntPoint.newExactQuery(this._field, (Integer) this._value);
       else if (this._value instanceof Long)
-        this._query = NumericRangeQuery.newLongRange(this._field, NumericUtils.PRECISION_STEP_DEFAULT,
-                                                    (Long) this._value, (Long) this._value, true, true);
+        this._query = LongPoint.newExactQuery(this._field, (Long) this._value);
     }
     return this._query;
   }
@@ -105,7 +102,7 @@ public class NumberParameter<T extends Number> implements SearchParameter {
    * @return a new search parameter.
    */
   public static NumberParameter<Double> newDoubleParameter(String field, Double value) {
-    return new NumberParameter<Double>(field, value);
+    return new NumberParameter<>(field, value);
   }
 
   /**
@@ -117,7 +114,7 @@ public class NumberParameter<T extends Number> implements SearchParameter {
    * @return a new search parameter.
    */
   public static NumberParameter<Float> newFloatParameter(String field, Float value) {
-    return new NumberParameter<Float>(field, value);
+    return new NumberParameter<>(field, value);
   }
 
   /**
@@ -129,7 +126,7 @@ public class NumberParameter<T extends Number> implements SearchParameter {
    * @return a new search parameter.
    */
   public static NumberParameter<Integer> newIntParameter(String field, Integer value) {
-    return new NumberParameter<Integer>(field, value);
+    return new NumberParameter<>(field, value);
   }
 
   /**
@@ -141,7 +138,7 @@ public class NumberParameter<T extends Number> implements SearchParameter {
    * @return a new search parameter.
    */
   public static NumberParameter<Long> newLongParameter(String field, Long value) {
-    return new NumberParameter<Long>(field, value);
+    return new NumberParameter<>(field, value);
   }
 
   /**

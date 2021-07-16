@@ -71,7 +71,7 @@ public abstract class NumericRangeFacet extends FlexibleRangeFacet {
       compute(searcher, size);
     } else {
       if (size < 0) throw new IllegalArgumentException("size < 0");
-      // Otherwise, re-compute the query without the corresponding filter 
+      // Otherwise, re-compute the query without the corresponding filter
       Query filtered = base;
       if (filters != null) {
         this.flexible = true;
@@ -85,10 +85,10 @@ public abstract class NumericRangeFacet extends FlexibleRangeFacet {
       DocumentCounter counter = new DocumentCounter();
       for (Range r : this._ranges) {
         // build query
-        BooleanQuery query = new BooleanQuery();
+        BooleanQuery.Builder query = new BooleanQuery.Builder();
         query.add(filtered, Occur.MUST);
         query.add(rangeToQuery(r), Occur.MUST);
-        searcher.search(query, counter);
+        searcher.search(query.build(), counter);
         int count = counter.getCount();
         // add to bucket
         bucket.add(r, count);

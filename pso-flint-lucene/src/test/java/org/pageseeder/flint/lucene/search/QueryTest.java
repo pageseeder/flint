@@ -32,7 +32,7 @@ public class QueryTest {
   private static LuceneLocalIndex index;
   private static LocalIndexManager manager;
   private static Analyzer analyser = new StandardAnalyzer();
-  
+
   @BeforeClass
   public static void init() {
     // clean up previous test's data
@@ -104,15 +104,9 @@ public class QueryTest {
   @Test
   public void testQuery6() throws IndexException {
     Query query = Queries.toTermOrPhraseQuery("field1", "value4");
-    TopFieldCollector results;
-    try {
-      results = TopFieldCollector.create(Sort.RELEVANCE, 10, true, true, false);
-      LuceneIndexQueries.query(index, query, results);
-      Assert.assertEquals(1, results.getTotalHits());
-    } catch (IOException e) {
-      // TODO Auto-generated catch block
-      e.printStackTrace();
-    }
+    TopFieldCollector results = TopFieldCollector.create(Sort.RELEVANCE, 10, 200);
+    LuceneIndexQueries.query(index, query, results);
+    Assert.assertEquals(1, results.getTotalHits());
   }
 
   @Test
@@ -144,7 +138,7 @@ public class QueryTest {
     TopFieldCollector results;
     IndexReader reader = null;
     try {
-      results = TopFieldCollector.create(Sort.INDEXORDER, 10, true, false, false);
+      results = TopFieldCollector.create(Sort.INDEXORDER, 10, 200);
       LuceneIndexQueries.query(index, query, results);
       Assert.assertEquals(2, results.getTotalHits());
       reader = LuceneIndexQueries.grabReader(index);

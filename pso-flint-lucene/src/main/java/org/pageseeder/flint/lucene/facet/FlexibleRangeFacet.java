@@ -98,7 +98,7 @@ public abstract class FlexibleRangeFacet extends FlexibleFacet<FlexibleRangeFace
       this.totalRanges = 0;
       // find all terms
       List<Term> terms = Terms.terms(searcher.getIndexReader(), this._name);
-      // Otherwise, re-compute the query without the corresponding filter 
+      // Otherwise, re-compute the query without the corresponding filter
       Query filtered = base;
       if (filters != null) {
         this.flexible = true;
@@ -114,10 +114,10 @@ public abstract class FlexibleRangeFacet extends FlexibleFacet<FlexibleRangeFace
         Range r = findRange(t);
         if (r == null) r = OTHER;
         // find count
-        BooleanQuery query = new BooleanQuery();
+        BooleanQuery.Builder query = new BooleanQuery.Builder();
         query.add(filtered, Occur.MUST);
         query.add(termToQuery(t), Occur.MUST);
-        searcher.search(query, counter);
+        searcher.search(query.build(), counter);
         int count = counter.getCount();
         if (count > 0) {
           // add to map
@@ -230,9 +230,9 @@ public abstract class FlexibleRangeFacet extends FlexibleFacet<FlexibleRangeFace
 
   /**
    * Create a query for the term given.
-   * 
+   *
    * @param t the term
-   * 
+   *
    * @return the query
    */
   protected Query termToQuery(Term t) {

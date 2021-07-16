@@ -17,7 +17,6 @@ package org.pageseeder.flint.lucene.query;
 
 import java.io.IOException;
 
-import org.apache.lucene.search.NumericRangeQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermRangeQuery;
 import org.pageseeder.flint.lucene.util.Beta;
@@ -26,7 +25,6 @@ import org.pageseeder.xmlwriter.XMLWriter;
 /**
  * Create a range parameter using numeric values.
  *
- * <p>This class simply wraps a {@link NumericRangeQuery} instance and is therefore closely related to it.
  * This is API is still experimental and subject to change in Lucene, any change in Lucene may also
  * be reflected in this API.
  *

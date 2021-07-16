@@ -18,11 +18,9 @@ package org.pageseeder.flint.lucene.search;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
-import org.apache.lucene.document.CompressionTools;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.util.BytesRef;
 import org.pageseeder.flint.lucene.util.Beta;
-import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.io.StringReader;
@@ -32,7 +30,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.util.zip.DataFormatException;
 
 /**
  * A set of utility methods for dealing with search fields.
@@ -138,12 +135,8 @@ public final class Fields {
     // is it a compressed field?
     if (value == null) {
       BytesRef binary = f.binaryValue();
-      if (binary != null) try {
-        value = CompressionTools.decompressString(binary);
-      } catch (DataFormatException ex) {
-        // strange but true, unable to decompress
-        LoggerFactory.getLogger(Fields.class).error("Failed to decompress field value", ex);
-        return null;
+      if (binary != null) {
+        value = binary.utf8ToString();
       }
     }
     return value;

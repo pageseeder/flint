@@ -6,6 +6,7 @@ import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.pageseeder.flint.IndexException;
 import org.pageseeder.flint.IndexManager;
 import org.pageseeder.flint.Requester;
 import org.pageseeder.flint.content.Content;
@@ -26,7 +27,7 @@ public class NumberParameterTest {
 
   private static LuceneIndex index;
   private static IndexManager manager;
-  
+
   @BeforeClass
   public static void init() {
     try {
@@ -74,12 +75,12 @@ public class NumberParameterTest {
   @Test
   public void testInteger() {
     try {
-      NumberParameter<Integer> param = new NumberParameter<Integer>("int-field", 11);
+      NumberParameter<Integer> param = new NumberParameter<>("int-field", 11);
       SearchResults results = LuceneIndexQueries.query(index, BasicQuery.newBasicQuery(param));
       Assert.assertEquals(1, results.getTotalNbOfResults());
       Assert.assertEquals("doc1", results.documents().iterator().next().get(TestUtils.ID_FIELD));
       // test wrong type
-      NumberParameter<Long> param2 = new NumberParameter<Long>("int-field", 11L);
+      NumberParameter<Long> param2 = new NumberParameter<>("int-field", 11L);
       results = LuceneIndexQueries.query(index, BasicQuery.newBasicQuery(param2));
       Assert.assertEquals(0, results.getTotalNbOfResults());
     } catch (Exception ex) {

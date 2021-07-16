@@ -20,6 +20,7 @@ import java.util.BitSet;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.LeafReaderContext;
+import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.SimpleCollector;
 
 /**
@@ -64,14 +65,6 @@ public final class BitCollector extends SimpleCollector {
   }
 
   /**
-   * Accept documents out of order - the order is irrelevant when populating {@link BitSet}s.
-   * @return always <code>false</code>.
-   */
-  @Override
-  public boolean needsScores() {
-    return false;
-  }
-  /**
    * Updates the {@link BitSet} to include the collected document.
    *
    * @param doc the position of the Lucene {@link Document} in the index
@@ -111,4 +104,8 @@ public final class BitCollector extends SimpleCollector {
     return this._bits.cardinality();
   }
 
+  @Override
+  public ScoreMode scoreMode() {
+    return ScoreMode.COMPLETE_NO_SCORES;
+  }
 }

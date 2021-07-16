@@ -68,7 +68,7 @@ public final class LuceneIndexIO implements IndexIO {
   /**
    * Describes the state of an index.
    */
-  private static enum State {
+  private enum State {
 
     /** The index is in a clean state, ready to use. */
     CLEAN,
@@ -189,11 +189,11 @@ public final class LuceneIndexIO implements IndexIO {
    * @throws IndexException Wrapping an {@link CorruptIndexException} or an {@link IOException}.
    */
   public synchronized void stop() throws IndexException {
-    if (this._writer == null || isState(State.CLOSED) || isState(State.CLOSING)) return;
+    if (this._writer == null || isClosed() || isState(State.CLOSING)) return;
     LOGGER.debug("Stopping IO");
     // try to commit if needed
     maybeCommit();
-    if (this._writer == null || isState(State.CLOSED) || isState(State.CLOSING)) return;
+    if (this._writer == null || isClosed() || isState(State.CLOSING)) return;
     startClosing();
     try {
       this._writer.close();
@@ -205,8 +205,6 @@ public final class LuceneIndexIO implements IndexIO {
       throw new IndexException("Failed to close Index because it is corrupted", ex);
     } catch (final IOException ex) {
       throw new IndexException("Failed to close Index because of an I/O error", ex);
-    } finally {
-      endCommitting();
     }
   }
 
@@ -229,7 +227,7 @@ public final class LuceneIndexIO implements IndexIO {
    * Commit any changes if the state of the index requires it.
    */
   public synchronized void maybeCommit() {
-    if (this._writer == null|| isState(State.CLOSING) || isState(State.CLOSED) ||
+    if (this._writer == null|| isState(State.CLOSING) || isClosed() ||
         this.committing > 0 || (!this._writer.hasDeletions() &&
         !this._writer.hasUncommittedChanges() &&
         !this._writer.hasPendingMerges()))
@@ -238,14 +236,14 @@ public final class LuceneIndexIO implements IndexIO {
     state(State.DIRTY);
     maybeRefresh();
     // closed?
-    if (this._writer == null || !this._writer.isOpen()|| this.committing > 0 || isState(State.CLOSING) || isState(State.CLOSED)) return;
+    if (this._writer == null || !this._writer.isOpen()|| this.committing > 0 || isState(State.CLOSING) || isClosed()) return;
     startCommitting();
     try {
       LOGGER.debug("Committing index changes");
       long now = System.currentTimeMillis();
       Map<String, String> commitUserData = new HashMap<String, String>();
       commitUserData.put(LAST_COMMIT_DATE, String.valueOf(now));
-      this._writer.setCommitData(commitUserData);
+      this._writer.setLiveCommitData(commitUserData.entrySet());
       this._writer.commit();
       this.lastTimeUsed.set(now);
     } catch (final CorruptIndexException ex) {
@@ -267,7 +265,7 @@ public final class LuceneIndexIO implements IndexIO {
   public synchronized boolean clearIndex() throws IndexException {
     if (this._writer == null|| isState(State.CLOSING)) return false;
     try {
-      if (isState(State.CLOSED)) open();
+      if (isClosed()) open();
       startWriting();
       this._writer.deleteAll();
       this.lastTimeUsed.set(System.currentTimeMillis());
@@ -305,7 +303,7 @@ public final class LuceneIndexIO implements IndexIO {
     if (!(rule instanceof LuceneDeleteRule)) return false;
     LuceneDeleteRule drule = (LuceneDeleteRule) rule;
     try {
-      if (isState(State.CLOSED)) open();
+      if (isClosed()) open();
       startWriting();
       if (drule.useTerm()) {
         this._writer.deleteDocuments(drule.toTerm());
@@ -345,7 +343,7 @@ public final class LuceneIndexIO implements IndexIO {
       drule = (LuceneDeleteRule) rule;
     }
     try {
-      if (isState(State.CLOSED)) open();
+      if (isClosed()) open();
       startWriting();
       List<Document> docs = LuceneUtils.toDocuments(documents);
       // delete?
@@ -376,19 +374,19 @@ public final class LuceneIndexIO implements IndexIO {
    * Updates documents' DocValues fields to the given values.
    * Each field update is applied to the set of documents that are associated with the Term to the same value.
    * All updates are atomically applied and flushed together.
-   * 
+   *
    * @param term       the term defining the document(s) to update
    * @param newFields  the new fields
-   * 
+   *
    * @return <code>true</code> if the update was done successfully
-   * 
+   *
    * @throws IndexException if updating the doc values failed
    */
   public synchronized boolean updateDocValues(Term term, Field... newFields) throws IndexException {
     // check state
     if (this._writer == null || isState(State.CLOSING)) return false;
     try {
-      if (isState(State.CLOSED)) open();
+      if (isClosed()) open();
       startWriting();
       this._writer.updateDocValues(term, newFields);
       // set state
@@ -403,9 +401,15 @@ public final class LuceneIndexIO implements IndexIO {
   }
 
   public IndexSearcher bookSearcher() {
-    if (isState(State.CLOSING)) return null;
+    while (this.isState(State.CLOSING)) {
+      try {
+        Thread.sleep(100);
+      } catch (InterruptedException ex) {
+        LOGGER.error("Interrupted while waiting for closing to finish", ex);
+      }
+    }
     try {
-      if (isState(State.CLOSED)) open();
+      if (isClosed()) open();
       return this._searcher.acquire();
     } catch (IOException ex) {
       LOGGER.error("Failed to book searcher", ex);
@@ -414,7 +418,7 @@ public final class LuceneIndexIO implements IndexIO {
   }
 
   public void releaseSearcher(IndexSearcher searcher) {
-    if (isState(State.CLOSED)|| isState(State.CLOSING)) return;
+    if (isClosed()|| isState(State.CLOSING)) return;
     try {
       this._searcher.release(searcher);
     } catch (IOException ex) {
@@ -423,9 +427,15 @@ public final class LuceneIndexIO implements IndexIO {
   }
 
   public IndexReader bookReader() {
-    if (isState(State.CLOSING)) return null;
+    while (this.isState(State.CLOSING)) {
+      try {
+        Thread.sleep(100);
+      } catch (InterruptedException ex) {
+        LOGGER.error("Interrupted while waiting for closing to finish", ex);
+      }
+    }
     try {
-      if (isState(State.CLOSED)) open();
+      if (isClosed()) open();
       return this._reader.acquire();
     } catch (IOException ex) {
       LOGGER.error("Failed to book reader", ex);
@@ -434,7 +444,7 @@ public final class LuceneIndexIO implements IndexIO {
   }
 
   public void releaseReader(IndexReader reader) {
-    if (isState(State.CLOSED) || isState(State.CLOSING)) return;
+    if (isClosed() || isState(State.CLOSING)) return;
     if (!(reader instanceof DirectoryReader))
       throw new IllegalArgumentException("Reader must be a DirectoryReader");
     try {
@@ -513,10 +523,11 @@ public final class LuceneIndexIO implements IndexIO {
       this._writer = new IndexWriter(this._directory, config);
       if (createIt) this._writer.commit();
       boolean applyAllDeletes = true;
+      boolean writeAllDeletes = false;
       // create searcher
-      this._searcher = new SearcherManager(this._writer, applyAllDeletes, FACTORY);
+      this._searcher = new SearcherManager(this._writer, applyAllDeletes, writeAllDeletes, FACTORY);
       // create reader
-      this._reader = new ReaderManager(this._writer, applyAllDeletes);
+      this._reader = new ReaderManager(this._writer, applyAllDeletes, writeAllDeletes);
     }
     // add it to list of opened indexes
     OpenIndexManager.add(this);

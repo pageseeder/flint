@@ -15,11 +15,11 @@
  */
 package org.pageseeder.flint.lucene.query;
 
-import java.io.IOException;
-
-import org.apache.lucene.search.FieldValueQuery;
+import org.apache.lucene.search.DocValuesFieldExistsQuery;
 import org.apache.lucene.search.Query;
 import org.pageseeder.xmlwriter.XMLWriter;
+
+import java.io.IOException;
 
 /**
  * A basic search parameter used to find documents that have a value for a specific field defined as doc-values.
@@ -44,7 +44,7 @@ public final class HasFieldValueParameter implements SearchParameter {
    */
   public HasFieldValueParameter(String name) {
     this._field = name;
-    this._query = isEmpty() ? null : new FieldValueQuery(this._field);
+    this._query = isEmpty() ? null : new DocValuesFieldExistsQuery(this._field);
   }
 
   /**

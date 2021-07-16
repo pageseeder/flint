@@ -61,10 +61,11 @@ public final class PhraseParameter implements SearchParameter {
     if (isEmpty()) {
       this._query = null;
     } else {
-      this._query = new PhraseQuery();
+      PhraseQuery.Builder pq = new PhraseQuery.Builder();
       for (String word : text.split("\\s")) {
-        this._query.add(new Term(field, word));
+        pq.add(new Term(field, word));
       }
+      this._query = pq.build();
     }
   }
 

@@ -203,9 +203,11 @@ final class IndexDocumentHandler_5_0 extends DefaultHandler implements IndexDocu
                 .termVectorPositions(atts.getValue("term-vector-positions"))
                 .termVectorOffsets(atts.getValue("term-vector-offsets"))
                 .termVectorPayloads(atts.getValue("term-vector-payloads"))
-                .boost(atts.getValue("boost"))
                 .tokenize(atts.getValue("tokenize"))
                 .docValues(atts.getValue("doc-values"), numType != null);
+    if (atts.getValue("boost") != null) {
+      LOGGER.warn("boost attribute is deprecated, boost should be used at query time, not");
+    }
     // Date handling
     this.field.dateFormat(atts.getValue("date-format"))
               .resolution(atts.getValue("date-resolution"));
