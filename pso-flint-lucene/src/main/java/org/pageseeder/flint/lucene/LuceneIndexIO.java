@@ -122,6 +122,8 @@ public final class LuceneIndexIO implements IndexIO {
   private Integer writing = 0;
   private Integer committing = 0;
 
+  private final Object lock = new Object();
+
   // simple searcherfactory for now
   private final static SearcherFactory FACTORY = new SearcherFactory();
 
@@ -136,28 +138,7 @@ public final class LuceneIndexIO implements IndexIO {
   public LuceneIndexIO(Directory dir, Analyzer analyzer) throws IndexException {
     this._analyzer = analyzer;
     this._directory = dir;
-    try {
-      open();
-    } catch (IndexFormatTooOldException ex) {
-      // try to delete all files and retry
-      if (this._directory != null) try {
-        for (String n : this._directory.listAll()) {
-          this._directory.deleteFile(n);
-        }
-      } catch (IOException ex2) {
-        throw new IndexException("Failed to delete index files from old index", ex);
-      }
-      // retry
-      try {
-        open();
-      } catch (IOException ex2) {
-        throw new IndexException("Failed to create writer on index", ex2);
-      }
-    } catch (LockObtainFailedException ex) {
-      throw new IndexOpenException("Failed to create index: there's already a writer on this index!", ex);
-    } catch (IOException ex) {
-      throw new IndexException("Failed to create writer on index", ex);
-    }
+    open();
     // get last commit data as last time used
     try {
       List<IndexCommit> commits = DirectoryReader.listCommits(dir);
@@ -411,7 +392,7 @@ public final class LuceneIndexIO implements IndexIO {
     try {
       if (isClosed()) open();
       return this._searcher.acquire();
-    } catch (IOException ex) {
+    } catch (IndexException | IOException ex) {
       LOGGER.error("Failed to book searcher", ex);
       return null;
     }
@@ -437,7 +418,7 @@ public final class LuceneIndexIO implements IndexIO {
     try {
       if (isClosed()) open();
       return this._reader.acquire();
-    } catch (IOException ex) {
+    } catch (IndexException | IOException ex) {
       LOGGER.error("Failed to book reader", ex);
       return null;
     }
@@ -482,11 +463,11 @@ public final class LuceneIndexIO implements IndexIO {
         LOGGER.error("Interrupted while waiting for writing to finish", ex);
       }
     }
-    synchronized(this.committing) { this.committing++; }
+    synchronized(this.lock) { this.committing++; }
   }
 
   private void endCommitting() {
-    synchronized(this.committing) { this.committing--; }
+    synchronized(this.lock) { this.committing--; }
   }
 
   private void startWriting() {
@@ -497,14 +478,18 @@ public final class LuceneIndexIO implements IndexIO {
         LOGGER.error("Interrupted while waiting for commit to finish", ex);
       }
     }
-    synchronized(this.writing) { this.writing++; }
+    synchronized(this.lock) { this.writing++; }
   }
 
   private void endWriting() {
-    synchronized(this.writing) { this.writing--; }
+    synchronized(this.lock) { this.writing--; }
   }
 
-  private void open() throws IOException {
+  private void open() throws IndexException {
+    open(true);
+  }
+  private void open(boolean firsttime) throws IndexException {
+    try {
     // create it?
     boolean createIt = !DirectoryReader.indexExists(this._directory);
     // read only?
@@ -533,6 +518,27 @@ public final class LuceneIndexIO implements IndexIO {
     OpenIndexManager.add(this);
     // set state to clean
     state(State.CLEAN);
+
+    } catch (IndexFormatTooOldException ex) {
+      if (firsttime) {
+        // try to delete all files and retry
+        if (this._directory != null) try {
+          for (String n : this._directory.listAll()) {
+            this._directory.deleteFile(n);
+          }
+        } catch (IOException ex2) {
+          throw new IndexException("Failed to delete index files from old index", ex);
+        }
+        // retry
+        open(false);
+      } else {
+        throw new IndexOpenException("Failed to create index: format is too old!", ex);
+      }
+    } catch (LockObtainFailedException ex) {
+      throw new IndexOpenException("Failed to create index: there's already a writer on this index", ex);
+    } catch (IOException ex) {
+      throw new IndexException("Failed to create writer on index", ex);
+    }
   }
 
   // static helpers

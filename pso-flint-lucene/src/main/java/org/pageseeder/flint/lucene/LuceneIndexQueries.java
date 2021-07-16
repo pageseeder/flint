@@ -222,8 +222,13 @@ public final class LuceneIndexQueries {
    * @throws IndexException If an IO error occurred when getting the reader.
    */
   public static IndexReader grabReader(Index index) throws IndexException {
+    if (index == null) throw new NullPointerException("Cannot grab reader from null index");
     LuceneIndexIO io = getIndexIO(index);
-    return io == null ? null : io.bookReader();
+    if (io == null) {
+      LOGGER.error("Failed to  grab reader as the IndexIO is not available");
+      return null;
+    }
+    return io.bookReader();
   }
 
   /**
@@ -237,7 +242,7 @@ public final class LuceneIndexQueries {
    * @throws IndexException Wrapping any IO exception
    */
   public static void release(Index index, IndexReader reader) throws IndexException {
-    if (reader == null) return;
+    if (index == null || reader == null) return;
     LuceneIndexIO io = getIndexIO(index);
     if (io != null) io.releaseReader(reader);
   }
@@ -252,9 +257,9 @@ public final class LuceneIndexQueries {
    * @param reader The actual Lucene index reader.
    */
   public static void releaseQuietly(Index index, IndexReader reader) {
-    if (reader == null)
-      return;
-    getIndexIO(index).releaseReader(reader);
+    if (index == null || reader == null) return;
+    LuceneIndexIO io = getIndexIO(index);
+    if (io != null) io.releaseReader(reader);
   }
 
   /**
@@ -277,7 +282,12 @@ public final class LuceneIndexQueries {
    * @throws IndexException If an IO error occurred when getting the reader.
    */
   public static IndexSearcher grabSearcher(Index index) throws IndexException {
+    if (index == null) throw new NullPointerException("Cannot grab searcher from null index");
     LuceneIndexIO io = getIndexIO(index);
+    if (io == null) {
+      LOGGER.error("Failed to  grab searcher as the IndexIO is not available");
+      return null;
+    }
     return io.bookSearcher();
   }
 
