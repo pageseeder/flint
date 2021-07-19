@@ -381,7 +381,7 @@ public final class LuceneIndexIO implements IndexIO {
     return true;
   }
 
-  public IndexSearcher bookSearcher() {
+  public synchronized IndexSearcher bookSearcher() {
     while (this.isState(State.CLOSING)) {
       try {
         Thread.sleep(100);
@@ -407,7 +407,7 @@ public final class LuceneIndexIO implements IndexIO {
     }
   }
 
-  public IndexReader bookReader() {
+  public synchronized IndexReader bookReader() {
     while (this.isState(State.CLOSING)) {
       try {
         Thread.sleep(100);
@@ -439,10 +439,10 @@ public final class LuceneIndexIO implements IndexIO {
   // ----------------------------------------------------------------------------------------------
 
   private void state(State s) {
-    synchronized (this.state) { this.state = s; }
+    synchronized (this.lock) { this.state = s; }
   }
   private boolean isState(State s) {
-    synchronized (this.state) { return this.state == s; }
+    synchronized (this.lock) { return this.state == s; }
   }
   private void startClosing() {
     state(State.CLOSING);

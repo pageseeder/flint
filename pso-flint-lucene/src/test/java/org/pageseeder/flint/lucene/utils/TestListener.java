@@ -8,17 +8,17 @@ public class TestListener implements IndexListener {
 
   @Override
   public void startBatch(IndexBatch batch) {
-    System.out.println("Starting batch job");
+    /*System.out.println("Starting batch job");*/
   }
 
   @Override
   public void endBatch(IndexBatch batch) {
-    System.out.println("Ending batch job");
+    /*System.out.println("Ending batch job");*/
   }
 
   @Override
   public void startJob(IndexJob job) {
-    System.out.println("Starting job for "+job.getContentID());
+    /*System.out.println("Starting job for "+job.getContentID());*/
   }
 
   @Override
@@ -34,7 +34,7 @@ public class TestListener implements IndexListener {
 
   @Override
   public void endJob(IndexJob job) {
-    System.out.println("Ending job for "+job.getContentID());
+    /*System.out.println("Ending job for "+job.getContentID());*/
   }
 
 }

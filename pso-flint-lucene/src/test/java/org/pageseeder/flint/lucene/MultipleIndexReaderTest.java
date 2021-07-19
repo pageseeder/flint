@@ -4,15 +4,24 @@ import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.search.IndexSearcher;
 import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.pageseeder.flint.Index;
 import org.pageseeder.flint.IndexException;
+import org.pageseeder.flint.IndexManager;
+import org.pageseeder.flint.Requester;
+import org.pageseeder.flint.content.SourceForwarder;
+import org.pageseeder.flint.indexing.IndexJob;
 import org.pageseeder.flint.local.LocalIndexManager;
 import org.pageseeder.flint.local.LocalIndexManagerFactory;
+import org.pageseeder.flint.lucene.facet.FlexibleFacet;
+import org.pageseeder.flint.lucene.facet.FlexibleFieldFacet;
+import org.pageseeder.flint.lucene.facet.StringFieldFacet;
 import org.pageseeder.flint.lucene.query.*;
+import org.pageseeder.flint.lucene.search.Facets;
 import org.pageseeder.flint.lucene.search.Terms;
 import org.pageseeder.flint.lucene.utils.TestListener;
 import org.pageseeder.flint.lucene.utils.TestUtils;
@@ -22,35 +31,56 @@ import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class MultipleIndexReaderTest {
 
-  private static File template     = new File("src/test/resources/template.xsl");
-  private static File templatePSML = new File("src/test/resources/psml-template.xsl");
-  private static File indexing     = new File("src/test/resources/indexing");
-  private static File indexRoot   = new File("tmp/indexes");
+  private static final File template  = new File("src/test/resources/template.xsl");
+  private static final File indexRoot = new File("tmp/indexes");
 
-  private static int NB_INDEXES = 1000;
-  private static Map<String, LuceneLocalIndex> indexes = new HashMap();
-  private static LuceneLocalIndex index2;
-  private static LocalIndexManager manager;
+  private static final int NB_INDEXES = 50;
+  private static final int NB_DOCUMENTS = 50;
+  private static final int NB_FIELDS = 20;
+  private static final int NB_VALUES = 4;
+  private static final String QUERY = "+field1:value1 +field5:value2";
+  private static final Map<String, Index> indexes = new HashMap<>();
+  private static IndexManager manager;
 
   private final static ExecutorService threads = Executors.newCachedThreadPool();
 
   @Before
   public void init() {
     indexRoot.mkdir();
+
+    manager = new IndexManager(job -> {
+      StringBuilder xml = new StringBuilder("<documents version='5.0'><document>");
+      xml.append("<field tokenize='false' name='").append(TestUtils.ID_FIELD).append("'>").append(job.getContentID()).append("</field>");
+      for (String field : fields()) {
+        for (int k = 1; k <= NB_VALUES; k++) {
+          xml.append("<field tokenize='false' name='").append(field).append("'>").append("value").append(k).append("</field>");
+        }
+      }
+      xml.append("</document></documents>");
+      return new TestUtils.TestContent(job.getContentID(), xml.toString());
+    }, new TestListener());
+    manager.setDefaultTranslator(new SourceForwarder("xml", "UTF-8"));
+    System.out.println("Initialising indexes");
+
+
     for (int i = 1; i <= NB_INDEXES; i++) init(i);
-    manager = LocalIndexManagerFactory.createMultiThreads(5, new TestListener());
-    System.out.println("Starting manager!");
-    for (LuceneLocalIndex index : indexes.values())
-      manager.indexNewContent(index, indexing);
+    System.out.println("Starting indexing");
+    Requester req = new Requester("MultipleIndexReaderTest");
+    for (Index index : indexes.values()) {
+      for (int i = 1; i <= NB_DOCUMENTS; i++) {
+        manager.index(index.getIndexID()+"-doc"+i, TestUtils.TYPE, index, req, IndexJob.Priority.HIGH, null);
+      }
+    }
     // wait a bit
-    while (manager.isIndexing()) {
+    while (!manager.getStatus().isEmpty()) {
       TestUtils.wait(1);
     }
     TestUtils.wait(2);
-    System.out.println("Indexing done!");
+    System.out.println("Indexing done");
   }
 
   public void init(int nb) {
@@ -60,9 +90,8 @@ public class MultipleIndexReaderTest {
     for (File f : myRoot.listFiles()) f.delete();
     myRoot.delete();
     try {
-      LuceneLocalIndex index = new LuceneLocalIndex(myRoot, new StandardAnalyzer(), indexing);
-      index.setTemplate("xml", template.toURI());
-      index.setTemplate("psml", templatePSML.toURI());
+      Index index = new LuceneIndex("index"+nb, myRoot, new StandardAnalyzer());
+      index.setTemplates(TestUtils.TYPE, TestUtils.MEDIA_TYPE, template.toURI());
       indexes.put("index"+nb, index);
     } catch (Exception ex) {
       ex.printStackTrace();
@@ -73,7 +102,7 @@ public class MultipleIndexReaderTest {
   public static void after() {
     // stop index
     System.out.println("Stopping manager!");
-    manager.shutdown();
+    manager.stop();
     System.out.println("-----------------------------------");
   }
 
@@ -82,87 +111,140 @@ public class MultipleIndexReaderTest {
   public void test1() throws IndexException, IOException {
     MultipleIndexReader multi1 = LuceneIndexQueries.getMultipleIndexReader(new ArrayList<>(indexes.values()));
     IndexReader reader1 = multi1.grab();
-    Assert.assertEquals(30 * NB_INDEXES, reader1.numDocs());
-    List<Term> terms = Terms.terms(reader1, "field1");
-    Assert.assertEquals(13, terms.size());
+    Assert.assertEquals(NB_DOCUMENTS * NB_INDEXES, reader1.numDocs());
+    for (String field : fields()) {
+      List<Term> terms = Terms.terms(reader1, field);
+      Assert.assertEquals(NB_VALUES, terms.size());
+    }
     System.out.println("Searched multi indexes 1");
 
-    int[] searchers1 = randoms();
-    for (int i : searchers1) {
-      if (!indexes.containsKey("index"+i))
-        System.err.println("Invalid index 2 index"+i);
-      else
-        threads.execute(new ParallelSearcher(indexes.get("index"+i)));
+    // some searchers
+    for (int i = 0; i < 10; i++) {
+      List<Index> searchers = randoms();
+      for (Index index : searchers) {
+        threads.execute(new ParallelSearcher(index));
+      }
+      threads.execute(new MultiParallelSearcher(searchers));
     }
     // close a few indexes
-    int[] toclose = randoms();
-    for (int i : toclose) {
-      if (!indexes.containsKey("index"+i))
-        System.err.println("Invalid index 2 index"+i);
-      else
-        indexes.get("index"+i).close();
-    }
-    SearchResults results = LuceneIndexQueries.query(new ArrayList<>(indexes.values()), new PredicateSearchQuery("+field1:doc5 +field1:value2"));
-    Assert.assertEquals(NB_INDEXES, results.getTotalNbOfResults());
+    List<Index> toclose = randoms();
+    for (Index i : toclose) { i.close(); }
+    System.out.println("Closed some indexes");
+    SearchResults results = LuceneIndexQueries.query(new ArrayList<>(indexes.values()), new PredicateSearchQuery(QUERY));
+    Assert.assertEquals(NB_INDEXES * NB_DOCUMENTS, results.getTotalNbOfResults());
     results.terminate();
-    MultipleIndexReader multi2 = LuceneIndexQueries.getMultipleIndexReader(new ArrayList<>(indexes.values()));
-    IndexReader reader2 = multi2.grab();
-    Assert.assertEquals(30 * NB_INDEXES, reader2.numDocs());
-    List<Term> terms2 = Terms.terms(reader2, "field1");
-    Assert.assertEquals(13, terms2.size());
-    System.out.println("Searched multi indexes 2");
-    int[] searchers2 = randoms();
-    for (int i : searchers2) {
-      if (!indexes.containsKey("index"+i))
-        System.err.println("Invalid index 3 index"+i);
-      else
-        threads.execute(new ParallelSearcher(indexes.get("index"+i)));
+    // more searchers
+    for (int i = 0; i < 10; i++) {
+      List<Index> searchers = randoms();
+      for (Index index : searchers) {
+        threads.execute(new ParallelSearcher(index));
+      }
+      threads.execute(new MultiParallelSearcher(searchers));
     }
 
-    while (ParallelSearcher.searching > 0) {
+    for (String field : fields()) {
+      List<Term> terms = Terms.terms(reader1, field);
+      Assert.assertEquals(NB_VALUES, terms.size());
+    }
+    System.out.println("Searched multi indexes 1 again");
+    while (ParallelSearcher.searching.get() > 0 || MultiParallelSearcher.searching.get() > 0) {
       TestUtils.wait(1);
     }
-    // release multi readers
+    // release multi reader
     multi1.releaseSilently();
-    multi2.releaseSilently();
   }
 
-  private int[] randoms() {
+  private List<Index> randoms() {
     int nb = Math.round(NB_INDEXES / 3);
     Random r = new Random(System.nanoTime());
-    int[] rands = new int[nb];
-    for (int i = 0; i < nb; i++) {
-      rands[i] = r.nextInt(NB_INDEXES) + 1; // avoid 0
+    List<Index> rands = new ArrayList<>(nb);
+    while (rands.size() < nb) {
+      int rand = r.nextInt(NB_INDEXES) + 1; // avoid 0
+      if (indexes.containsKey("index"+rand))
+        rands.add(indexes.get("index"+rand));
     }
     return rands;
   }
 
+  private static List<String> fields() {
+    List<String> fields = new ArrayList<>();
+    for (int i = 1; i <= NB_FIELDS; i++) {
+      fields.add("field"+i);
+    }
+    return fields;
+  }
+  private static class MultiParallelSearcher implements Runnable {
+    private final static AtomicInteger searching = new AtomicInteger(0);
+    private final List<Index> indexes;
+    MultiParallelSearcher(List<Index> idxs) {
+      this.indexes = idxs;
+    }
+    @Override
+    public void run() {
+      synchronized (searching) {
+        searching.incrementAndGet();
+      }
+      try {
+        MultipleIndexReader multi = LuceneIndexQueries.getMultipleIndexReader(indexes);
+        IndexReader reader = multi.grab();
+//        Assert.assertEquals(NB_DOCUMENTS * indexes.size(), reader.numDocs());
+        for (String field : fields()) {
+          List<Term> terms = Terms.terms(reader, field);
+          Assert.assertEquals(NB_VALUES, terms.size());
+        }
+        IndexSearcher searcher = new IndexSearcher(reader);
+        for (String field : fields()) {
+          StringFieldFacet facet = StringFieldFacet.newFacet(field);
+          facet.compute(searcher, null, 20);
+          Assert.assertEquals(NB_VALUES, facet.getTotalTerms());
+        }
+        SearchResults results = LuceneIndexQueries.query(indexes, new PredicateSearchQuery(QUERY));
+        Assert.assertEquals(NB_DOCUMENTS * indexes.size(), results.getTotalNbOfResults());
+        results.terminate();
+        multi.releaseSilently();
+        System.out.println("Searched multi index");
+      } catch (IndexException | IOException ex) {
+        System.out.println(ex);
+      }
+      synchronized (searching) {
+        searching.decrementAndGet();
+      }
+    }
+  }
+
   private static class ParallelSearcher implements Runnable {
-    private static int searching = 0;
+    private final static AtomicInteger searching = new AtomicInteger(0);
     private final Index index;
     ParallelSearcher(Index idx) {
       this.index = idx;
     }
     @Override
     public void run() {
-      searching++;
+      synchronized (searching) {
+        searching.incrementAndGet();
+      }
       // read a single index at the same time
       if (index == null) System.out.println("null index");
       else try {
         IndexReader reader = LuceneIndexQueries.grabReader(index);
         if (reader == null) System.out.println("null reader for "+index.getIndexID());
-        Assert.assertEquals(30, reader.numDocs());
-        List<Term> terms = Terms.terms(reader, "field1");
-        Assert.assertEquals(13, terms.size());
-        SearchResults results = LuceneIndexQueries.query(index, new PredicateSearchQuery("+field1:doc8 +field1:value1"));
-        Assert.assertEquals(1, results.getTotalNbOfResults());
-        results.terminate();
-        LuceneIndexQueries.releaseQuietly(index, reader);
-        System.out.println("Searched index "+index.getIndexID());
+        else {
+          Assert.assertEquals(NB_DOCUMENTS, reader.numDocs());
+          for (String field : fields()) {
+            List<Term> terms = Terms.terms(reader, field);
+            Assert.assertEquals(NB_VALUES, terms.size());
+          }
+          SearchResults results = LuceneIndexQueries.query(index, new PredicateSearchQuery(QUERY));
+          Assert.assertEquals(NB_DOCUMENTS, results.getTotalNbOfResults());
+          results.terminate();
+          LuceneIndexQueries.releaseQuietly(index, reader);
+        }
       } catch (IndexException | IOException ex) {
         System.out.println(ex);
       }
-      searching--;
+      synchronized (searching) {
+        searching.decrementAndGet();
+      }
     }
   }
 }
