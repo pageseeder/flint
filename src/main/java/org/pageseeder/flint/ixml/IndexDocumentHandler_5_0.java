@@ -15,17 +15,15 @@
  */
 package org.pageseeder.flint.ixml;
 
-import java.util.ArrayList;
-import java.util.List;
-
 import org.pageseeder.flint.indexing.FlintDocument;
 import org.pageseeder.flint.indexing.FlintField;
-import org.pageseeder.flint.indexing.FlintField.IndexOptions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.xml.sax.Attributes;
-import org.xml.sax.SAXException;
 import org.xml.sax.helpers.DefaultHandler;
+
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * The handler for the Flint Index Documents format version 5.
@@ -69,11 +67,6 @@ final class IndexDocumentHandler_5_0 extends DefaultHandler implements IndexDocu
   private boolean _isField;
 
   /**
-   * Flag to indicate that the current field should be compressed (may result in two fields).
-   */
-  private boolean _isCompressed;
-
-  /**
    * The field builder.
    */
   private FlintField field = null;
@@ -81,7 +74,7 @@ final class IndexDocumentHandler_5_0 extends DefaultHandler implements IndexDocu
   /**
    * The characters found within a field.
    */
-  private StringBuilder _value = new StringBuilder();
+  private final StringBuilder _value = new StringBuilder();
 
   // constructors
   // ----------------------------------------------------------------------------------------------
@@ -106,7 +99,7 @@ final class IndexDocumentHandler_5_0 extends DefaultHandler implements IndexDocu
    */
   @Override
   public void startDocument() {
-    this.documents = new ArrayList<FlintDocument>();
+    this.documents = new ArrayList<>();
     this.field = new FlintField(this._catalog);
   }
 
@@ -118,7 +111,7 @@ final class IndexDocumentHandler_5_0 extends DefaultHandler implements IndexDocu
     if ("field".equals(qName)) {
       startFieldElement(attributes);
     } else if ("document".equals(qName)) {
-      startDocumentElement(attributes);
+      startDocumentElement();
     }
   }
 
@@ -142,11 +135,9 @@ final class IndexDocumentHandler_5_0 extends DefaultHandler implements IndexDocu
    * @param ch     The characters
    * @param start  The start position in the character array.
    * @param length The number of characters to use from the character array.
-   *
-   * @throws SAXException Any SAX exception, possibly wrapping another exception.
    */
   @Override
-  public void characters(char[] ch, int start, int length) throws SAXException {
+  public void characters(char[] ch, int start, int length) {
     if (this._isField) {
       this._value.append(ch, start, length);
     }
@@ -157,10 +148,8 @@ final class IndexDocumentHandler_5_0 extends DefaultHandler implements IndexDocu
 
   /**
    * Handles the start of a 'document' element.
-   *
-   * @param atts The attributes to handle.
    */
-  private void startDocumentElement(Attributes atts) {
+  private void startDocumentElement() {
     this._document = new FlintDocument();
   }
 
@@ -182,17 +171,11 @@ final class IndexDocumentHandler_5_0 extends DefaultHandler implements IndexDocu
    * @param atts The attributes to handles.
    */
   private void startFieldElement(Attributes atts) {
-    // required attributes
+    // required attributes backwards compatible -> compress = true
+    String store = atts.getValue("store");
     this.field.name(atts.getValue("name"))
-                .index(atts.getValue("index"));
-    // handle compression
-    if ("compress".equals(atts.getValue("store"))) {
-      this._isCompressed = true;
-      this.field.store(false);
-    } else {
-      this._isCompressed = false;
-      this.field.store(atts.getValue("store"));
-    }
+               .index(atts.getValue("index"))
+               .store("compress".equals(store) ? "true" : store);
     // Numeric type
     String numType = atts.getValue("numeric-type");
     if (numType != null) {
@@ -222,35 +205,20 @@ final class IndexDocumentHandler_5_0 extends DefaultHandler implements IndexDocu
       // set the value
       this.field.value(this._value.toString());
 
-      // compressed field
-      if (this._isCompressed) {
-        // Only include field if it is indexable
-        if (this.field.index() != IndexOptions.NONE) {
-          this._document.add(this.field);
-        }
-        // add compressed field
-        this._document.add(this.field.cloneCompressed());
-
-      // uncompressed field
-      } else  {
-        // doc values
-        if (this.field.isDocValues()) {
-          // add normal field as well
-          this._document.add(this.field.cloneNoDocValues());
-        }
-        this._document.add(this.field);
+      // doc values
+      if (this.field.isDocValues()) {
+        // add normal field as well
+        this._document.add(this.field.cloneNoDocValues());
       }
+      this._document.add(this.field);
 
-    } catch (IllegalStateException ex) {
-      LOGGER.warn("Unable to create field: "+this.field.name(), ex);
-    } catch (IllegalArgumentException ex) {
+    } catch (IllegalStateException | IllegalArgumentException ex) {
       LOGGER.warn("Unable to create field: "+this.field.name(), ex);
     }
 
     // Reset the class attributes involved in this field
     this.field = new FlintField(this._catalog);
     this._isField = false;
-    this._isCompressed = false;
     this._value.setLength(0);
   }
 

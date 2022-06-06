@@ -35,7 +35,7 @@ public class LocalIndexerTest {
     for (File f : indexRoot1.listFiles()) f.delete();
     indexRoot1.delete();
     try {
-      index1 = new LuceneLocalIndex(indexRoot1, new StandardAnalyzer(), indexing);
+      index1 = new LuceneLocalIndex(indexRoot1, "local", new StandardAnalyzer(), indexing);
       index1.setTemplate("xml", template.toURI());
       index1.setTemplate("psml", templatePSML.toURI());
     } catch (Exception ex) {
@@ -50,7 +50,7 @@ public class LocalIndexerTest {
     for (File f : indexRoot2.listFiles()) f.delete();
     indexRoot2.delete();
     try {
-      index2 = new LuceneLocalIndex(indexRoot2, new StandardAnalyzer(), indexing);
+      index2 = new LuceneLocalIndex(indexRoot2, "local", new StandardAnalyzer(), indexing);
       index2.setTemplate("xml", template.toURI());
       index2.setTemplate("psml", templatePSML.toURI());
     } catch (Exception ex) {
@@ -77,7 +77,7 @@ public class LocalIndexerTest {
   }
 
   /**
-   * @throws IndexException 
+   * @throws IndexException
    */
   @Test
   public void testIndexing1() throws IndexException {
@@ -97,7 +97,7 @@ public class LocalIndexerTest {
   }
 
   /**
-   * @throws IndexException 
+   * @throws IndexException
    */
   @Test
   public void testIndexing2() throws IndexException {

@@ -3,7 +3,7 @@ package org.pageseeder.flint.lucene.query;
 import org.apache.lucene.analysis.core.KeywordAnalyzer;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.store.RAMDirectory;
+import org.apache.lucene.store.ByteBuffersDirectory;
 import org.hamcrest.CoreMatchers;
 import org.junit.AfterClass;
 import org.junit.Assert;
@@ -38,7 +38,7 @@ public class QuestionTest {
   @BeforeClass
   public static void init() {
     try {
-      index = new LuceneIndex("QuestionTest", new RAMDirectory(), new StandardAnalyzer());
+      index = new LuceneIndex("QuestionTest", new ByteBuffersDirectory(), new StandardAnalyzer());
       index.setTemplates(TestUtils.TYPE, TestUtils.MEDIA_TYPE, template.toURI());
     } catch (Exception ex) {
       ex.printStackTrace();

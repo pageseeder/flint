@@ -61,6 +61,32 @@ public class Catalogs {
   }
 
   /**
+   * Check a field against the catalog entry for the same name, if the entry in the
+   * catalog is different, the field provided is updated to match the one in the catalog.
+   *
+   * @param field the field
+   *
+   * @return true if the field has been updated
+   */
+  public static boolean updateField(FlintField field) {
+    if (field == null || field.catalog() == null) return false;
+    // ignore non-indexed fields (not in the catalog)
+    if (field.index() == FlintField.IndexOptions.NONE) return false;
+    // find existing one
+    Catalog cat = getCatalog(field.catalog());
+    // does it exist?
+    Catalog.CatalogEntry existing = cat == null ? null : cat.get(field.name());
+    if (existing != null) {
+      Catalog.CatalogEntry newOne = new Catalog.CatalogEntry(field, false);
+      if (!newOne.equalsButDocValues(existing)) {
+        existing.update(field);
+        return true;
+      }
+    }
+    return false;
+  }
+
+  /**
    * Store a new catalog.
    *
    * @param catalog the new catalog

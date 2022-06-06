@@ -1,8 +1,8 @@
 package org.pageseeder.flint.berlioz.model;
 
 import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.CharArraySet;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
-import org.apache.lucene.analysis.util.CharArraySet;
 
 public class DefaultAnalyzerFactory implements AnalyzerFactory {
   @Override

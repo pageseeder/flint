@@ -39,13 +39,6 @@ public class Catalog implements XMLWritable {
     }
   }
 
-  /**
-   * @deprecated use addFieldType
-   */
-  public void addFieldType(boolean stored, String name, boolean tokenized, DocValuesType dt, NumericType num, float boost) {
-    addFieldType(stored, name, tokenized, dt, num, null, null, boost);
-  }
-
   public void addFieldType(boolean stored, String name, boolean tokenized, DocValuesType dt, NumericType num,
       SimpleDateFormat df, Resolution r, float boost) {
     synchronized (this._fields) {
@@ -54,6 +47,10 @@ public class Catalog implements XMLWritable {
       if (existing == null || !existing.equals(newone))
         this._fields.put(name, new CatalogEntry(stored, dt, tokenized, boost, num,  df, r, existing != null));
     }
+  }
+
+  CatalogEntry get(String fieldname) {
+    return this._fields.get(fieldname);
   }
 
   public NumericType getNumericType(String fieldname) {
@@ -117,9 +114,8 @@ public class Catalog implements XMLWritable {
       if (entry.boost != 1.0)
         xml.attribute("boost", String.valueOf(entry.boost));
       if (entry.error) xml.attribute("error", "true");
-      if (entry.dateFormat != null &&
-          entry.dateFormat instanceof SimpleDateFormat)
-        xml.attribute("date-format", ((SimpleDateFormat) entry.dateFormat).toPattern());
+      if (entry.dateFormat != null)
+        xml.attribute("date-format", entry.dateFormat.toPattern());
       if (entry.resolution != null)
         xml.attribute("date-resolution", entry.resolution.toString().toLowerCase());
       xml.closeElement();
@@ -129,7 +125,7 @@ public class Catalog implements XMLWritable {
 
   public static class CatalogEntry {
     private final boolean tokenized;
-    private final boolean error;
+    private boolean error;
     private final boolean stored;
     private final DocValuesType docValues;
     private final NumericType num;
@@ -156,6 +152,15 @@ public class Catalog implements XMLWritable {
       this.error = err;
       this.docValues = builder.docValues();
     }
+    public void update(FlintField field) {
+      field.store(this.stored);
+      field.dateFormat(this.dateFormat);
+      field.tokenize(this.tokenized);
+      field.numeric(this.num);
+      field.resolution(this.resolution);
+      field.docValues(this.docValues);
+      this.error = true;
+    }
     @Override
     public boolean equals(Object obj) {
       if (obj instanceof CatalogEntry) {
@@ -166,6 +171,21 @@ public class Catalog implements XMLWritable {
                this.num        == entry.num &&
                this.docValues  == entry.docValues &&
                ((this.dateFormat == null && entry.dateFormat == null) ||
+                (this.dateFormat != null && this.dateFormat.equals(entry.dateFormat)));
+      }
+      return false;
+    }
+    public boolean equalsButDocValues(Object obj) {
+      if (obj instanceof CatalogEntry) {
+        CatalogEntry entry = (CatalogEntry) obj;
+        return this.tokenized  == entry.tokenized &&
+            this.stored     == entry.stored &&
+            this.boost      == entry.boost &&
+            this.num        == entry.num &&
+            (this.docValues  == entry.docValues ||
+                (this.docValues != null && entry.docValues == DocValuesType.FORCED_NONE) ||
+                (entry.docValues != null && this.docValues == DocValuesType.FORCED_NONE)) &&
+            ((this.dateFormat == null && entry.dateFormat == null) ||
                 (this.dateFormat != null && this.dateFormat.equals(entry.dateFormat)));
       }
       return false;

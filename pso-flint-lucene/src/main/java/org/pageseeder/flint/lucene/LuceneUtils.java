@@ -1,16 +1,7 @@
 package org.pageseeder.flint.lucene;
 
-import java.nio.charset.StandardCharsets;
-import java.text.DateFormat;
-import java.text.ParseException;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
-import org.apache.lucene.document.*;
 import org.apache.lucene.document.DateTools.Resolution;
+import org.apache.lucene.document.*;
 import org.apache.lucene.index.IndexOptions;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.NumericUtils;
@@ -21,6 +12,10 @@ import org.pageseeder.flint.lucene.util.Dates;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.text.DateFormat;
+import java.text.ParseException;
+import java.util.*;
+
 public class LuceneUtils {
 
   /**
@@ -28,17 +23,23 @@ public class LuceneUtils {
    */
   private static final Logger LOGGER = LoggerFactory.getLogger(LuceneUtils.class);
 
-  public static List<Document> toDocuments(List<FlintDocument> fdocs) {
-    Map<String, FlintField> forCatalog = new HashMap<String, FlintField>();
-    List<Document> docs = new ArrayList<Document>();
+  public static List<Document> toDocuments(List<FlintDocument> fdocs, Map<String, String> warnings) {
+    Map<String, FlintField> forCatalog = new HashMap<>();
+    List<Document> docs = new ArrayList<>();
     for (FlintDocument fdoc : fdocs) {
       Document doc = new Document();
       for (FlintField field : fdoc.fields()) {
+        // check catalog first
+        if (Catalogs.updateField(field)) {
+          warnings.put(field.name(), "field is ignored because of a different definition in the catalog");
+          continue;
+        }
         Field thefield = toField(field, forCatalog);
+
         if (thefield != null) {
           doc.add(thefield);
         } else {
-          LOGGER.warn("Ignoring invalid field {}", field.name());
+          warnings.put(field.name(), "field is ignored because it is invalid");
         }
       }
       // add fields to catalog
@@ -59,13 +60,8 @@ public class LuceneUtils {
       throw new IllegalStateException("Unable to build field, field value not set");
 
     Field field;
-    // check if compressed first
-    if (ffield.compressed()) {
-      field = toCompressedField(ffield);
-      forCatalog.put(ffield.name(), ffield); // priority over normal fields
-    }
-    // check if docvalues next
-    else if (ffield.isDocValues()) {
+    // check if docvalues
+    if (ffield.isDocValues()) {
       field = toDocValuesField(ffield);
       if (field != null) forCatalog.put(ffield.name(), ffield); // priority over normal fields
     }
@@ -210,14 +206,6 @@ public class LuceneUtils {
     return field;
   }
 
-  private static Field toCompressedField(FlintField ffield) {
-    // Generate a compressed field
-    byte[] value = ffield.value().toString().getBytes(StandardCharsets.UTF_8);
-    FieldType type = new FieldType();
-    type.setStored(true);
-    return new Field(ffield.name(), value, type);
-  }
-
   private static IndexOptions toIndexOptions(org.pageseeder.flint.indexing.FlintField.IndexOptions options) {
     if (options == null) return null;
     switch (options) {
@@ -240,7 +228,7 @@ public class LuceneUtils {
    */
   private static Date toDate(String value, DateFormat format) {
     try {
-      return format.parse(value.toString());
+      return format.parse(value);
     } catch (ParseException ex) {
       LOGGER.error("Ignoring unparsable date '{}' with format={}", value, format);
       return null;

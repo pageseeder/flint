@@ -36,11 +36,11 @@ public class TermsTest {
   @Before
   public void init() {
     // clean up last test's data
-    for (File f : indexRoot.listFiles()) f.delete();
+    if (indexRoot.exists()) for (File f : indexRoot.listFiles()) f.delete();
     indexRoot.delete();
     // create new
     try {
-      index = new LuceneLocalIndex(indexRoot, new StandardAnalyzer(), documents);
+      index = new LuceneLocalIndex(indexRoot, "termstest", new StandardAnalyzer(), documents);
       index.setTemplate("xml", template.toURI());
     } catch (Exception ex) {
       ex.printStackTrace();

@@ -3,7 +3,7 @@ package org.pageseeder.flint.lucene.query;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.document.DateTools.Resolution;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.store.RAMDirectory;
+import org.apache.lucene.store.ByteBuffersDirectory;
 import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.BeforeClass;
@@ -29,11 +29,11 @@ public class DateParameterTest {
 
   private static LuceneIndex index;
   private static IndexManager manager;
-  
+
   @BeforeClass
   public static void init() {
     try {
-      index = new LuceneIndex("DateParameterTest", new RAMDirectory(), new StandardAnalyzer());
+      index = new LuceneIndex("DateParameterTest", new ByteBuffersDirectory(), new StandardAnalyzer());
       index.setTemplates(TestUtils.TYPE, TestUtils.MEDIA_TYPE, template.toURI());
     } catch (Exception ex) {
       ex.printStackTrace();

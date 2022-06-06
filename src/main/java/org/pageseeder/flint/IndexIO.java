@@ -17,6 +17,8 @@ package org.pageseeder.flint;
 
 import org.pageseeder.flint.content.DeleteRule;
 import org.pageseeder.flint.indexing.FlintDocument;
+import org.pageseeder.flint.indexing.IndexJob;
+import org.pageseeder.flint.indexing.IndexListener;
 
 import java.util.List;
 
@@ -88,6 +90,6 @@ public interface IndexIO {
    *         <code>false</code>
    * @throws IndexException should any error be thrown by Lucene
    */
-  boolean updateDocuments(DeleteRule rule, List<FlintDocument> documents) throws IndexException;
+  boolean updateDocuments(DeleteRule rule, List<FlintDocument> documents, IndexListener listener, IndexJob job) throws IndexException;
 
 }

@@ -33,14 +33,14 @@ public class SuggestionQueryTest {
 
   private static LuceneLocalIndex index;
   private static IndexManager manager;
-  
+
   @BeforeClass
   public static void init() {
     // clean up previous test's data
     for (File f : indexRoot.listFiles()) f.delete();
     indexRoot.delete();
     try {
-      index = new LuceneLocalIndex(indexRoot, new StandardAnalyzer(), documents);
+      index = new LuceneLocalIndex(indexRoot, "suggestion", new StandardAnalyzer(), documents);
       index.setTemplate("xml", template.toURI());
     } catch (Exception ex) {
       ex.printStackTrace();

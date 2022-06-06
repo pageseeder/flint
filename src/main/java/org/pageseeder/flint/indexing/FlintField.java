@@ -15,6 +15,7 @@
  */
 package org.pageseeder.flint.indexing;
 
+import org.pageseeder.flint.catalog.Catalog;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -156,6 +157,9 @@ public final class FlintField {
     this._catalog = catalog;
   }
 
+  /**
+   * @deprecated
+   */
   public FlintField cloneCompressed() {
     FlintField compressed = new FlintField(this._catalog);
     compressed.name(this._name);
@@ -213,6 +217,7 @@ public final class FlintField {
 
   /**
    * Set whether this field's value is compressed.
+   * @deprecated
    *
    * @param compressed If this field's value is compressed.
    * @return this builder.
@@ -485,7 +490,7 @@ public final class FlintField {
    * @param type The number type for the numeric field to build.
    * @return this builder.
    */
-  protected FlintField numeric(NumericType type) {
+  public FlintField numeric(NumericType type) {
     this._numeric = type;
     return this;
   }
@@ -627,6 +632,9 @@ public final class FlintField {
     return this._docValues;
   }
 
+  /**
+   * @deprecated
+   */
   public boolean compressed() {
     return this._compressed;
   }

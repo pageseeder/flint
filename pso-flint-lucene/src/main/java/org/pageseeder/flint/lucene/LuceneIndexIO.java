@@ -32,6 +32,8 @@ import org.pageseeder.flint.IndexOpenException;
 import org.pageseeder.flint.OpenIndexManager;
 import org.pageseeder.flint.content.DeleteRule;
 import org.pageseeder.flint.indexing.FlintDocument;
+import org.pageseeder.flint.indexing.IndexJob;
+import org.pageseeder.flint.indexing.IndexListener;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -315,7 +317,8 @@ public final class LuceneIndexIO implements IndexIO {
    *         <code>false</code>
    * @throws IndexException should any error be thrown by Lucene
    */
-  public synchronized boolean updateDocuments(DeleteRule rule, List<FlintDocument> documents) throws IndexException {
+  public synchronized boolean updateDocuments(DeleteRule rule, List<FlintDocument> documents,
+                                              IndexListener listener, IndexJob job) throws IndexException {
     if (this._writer == null || isState(State.CLOSING)) return false;
     LuceneDeleteRule drule;
     if (rule == null) drule = null;
@@ -326,7 +329,13 @@ public final class LuceneIndexIO implements IndexIO {
     try {
       if (isClosed()) open();
       startWriting();
-      List<Document> docs = LuceneUtils.toDocuments(documents);
+      Map<String, String> warnings = new HashMap<>();
+      List<Document> docs = LuceneUtils.toDocuments(documents, warnings);
+      if (!warnings.isEmpty()) {
+        for (String fieldname : warnings.keySet()) {
+          listener.warn(job, "Failed to add field '"+fieldname+"': "+warnings.get(fieldname));
+        }
+      }
       // delete?
       if (rule != null) {
         if (drule.useTerm()) {

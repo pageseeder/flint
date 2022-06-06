@@ -24,6 +24,8 @@ import org.pageseeder.flint.IndexException;
 import org.pageseeder.flint.IndexIO;
 import org.pageseeder.flint.content.DeleteRule;
 import org.pageseeder.flint.indexing.FlintDocument;
+import org.pageseeder.flint.indexing.IndexJob;
+import org.pageseeder.flint.indexing.IndexListener;
 import org.pageseeder.flint.solr.SolrCollectionManager;
 import org.pageseeder.flint.solr.SolrFlintConfig;
 import org.pageseeder.flint.solr.SolrFlintException;
@@ -67,7 +69,7 @@ public class SolrIndexIO implements IndexIO {
 	  long lastModifiedTime = -1;
 	  LukeRequest request = new LukeRequest();
 	  request.setShowSchema(true);
-	  
+
 	  try {
 		  LukeResponse response = request.process(this._client, this._collection);
 		  if (response != null) {
@@ -76,7 +78,7 @@ public class SolrIndexIO implements IndexIO {
 			  if(lastModified != null){
 				  lastModifiedTime =lastModified.getTime();
 			  }else{
-				  return lastModifiedTime; 
+				  return lastModifiedTime;
 			  }
 		  }
 
@@ -144,7 +146,7 @@ public class SolrIndexIO implements IndexIO {
   }
 
   @Override
-  public boolean updateDocuments(DeleteRule rule, List<FlintDocument> documents) throws IndexException {
+  public boolean updateDocuments(DeleteRule rule, List<FlintDocument> documents, IndexListener listener, IndexJob job) throws IndexException {
     // delete first
     if (rule != null) deleteDocuments(rule);
     // add then

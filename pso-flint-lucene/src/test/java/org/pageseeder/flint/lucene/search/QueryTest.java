@@ -36,10 +36,10 @@ public class QueryTest {
   @BeforeClass
   public static void init() {
     // clean up previous test's data
-    for (File f : indexRoot.listFiles()) f.delete();
+    if (indexRoot.exists()) for (File f : indexRoot.listFiles()) f.delete();
     indexRoot.delete();
     try {
-      index = new LuceneLocalIndex(indexRoot, new StandardAnalyzer(), documents);
+      index = new LuceneLocalIndex(indexRoot, "query", new StandardAnalyzer(), documents);
       index.setTemplate("xml", template.toURI());
     } catch (Exception ex) {
       ex.printStackTrace();

@@ -44,7 +44,7 @@ public class StringRangeFacetTest {
     for (File f : indexRoot.listFiles()) f.delete();
     indexRoot.delete();
     try {
-      index = new LuceneLocalIndex(indexRoot, new StandardAnalyzer(), documents);
+      index = new LuceneLocalIndex(indexRoot, "stringrange", new StandardAnalyzer(), documents);
       index.setTemplate("xml", template.toURI());
     } catch (Exception ex) {
       ex.printStackTrace();

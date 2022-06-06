@@ -33,7 +33,7 @@ public class ParallelIndexerTest {
     if (!indexRoot.exists()) indexRoot.mkdir();
     if (index == null) {
         try {
-          index = new LuceneLocalIndex(indexRoot, new StandardAnalyzer(), indexing);
+          index = new LuceneLocalIndex(indexRoot, "parallel", new StandardAnalyzer(), indexing);
           index.setTemplate("xml", template.toURI());
           index.setTemplate("psml", templatePSML.toURI());
         } catch (Exception ex) {

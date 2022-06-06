@@ -7,6 +7,7 @@ import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.SortedNumericSortField;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
+import org.junit.Test;
 import org.pageseeder.flint.IndexException;
 import org.pageseeder.flint.IndexManager;
 import org.pageseeder.flint.Requester;
@@ -51,13 +52,13 @@ public class DatesTest {
 //    for (File f : indexNumericRoot.listFiles()) f.delete();
 //    for (File f : indexStringRoot.listFiles()) f.delete();
     try {
-      indexNumeric = new LuceneLocalIndex(indexNumericRoot, new StandardAnalyzer(), documents);
+      indexNumeric = new LuceneLocalIndex(indexNumericRoot, "datesnum", new StandardAnalyzer(), documents);
       indexNumeric.setTemplates(TestUtils.TYPE, TestUtils.MEDIA_TYPE, template.toURI());
     } catch (Exception ex) {
       ex.printStackTrace();
     }
     try {
-      indexString = new LuceneLocalIndex(indexStringRoot, new StandardAnalyzer(), documents);
+      indexString = new LuceneLocalIndex(indexStringRoot, "datesstr", new StandardAnalyzer(), documents);
       indexString.setTemplates(TestUtils.TYPE, TestUtils.MEDIA_TYPE, template.toURI());
     } catch (Exception ex) {
       ex.printStackTrace();
@@ -76,7 +77,7 @@ public class DatesTest {
     System.out.println("-----------------------------------");
   }
 
-//  @Test
+  @Test
   public void testSorting1() throws IndexException, IOException {
     long before = System.currentTimeMillis();
     // run searches
@@ -95,7 +96,7 @@ public class DatesTest {
     System.out.println("Time sorting string: "+(System.currentTimeMillis()-before));
   }
 
-//  @Test
+  @Test
   public void testSearch() throws IndexException, IOException {
     long before = System.currentTimeMillis();
     Date d = new Date(before);
@@ -116,7 +117,7 @@ public class DatesTest {
     System.out.println("Time search string: "+(System.currentTimeMillis()-before));
   }
 
-//  @Test
+  @Test
   public void testRanges() throws IndexException, IOException {
     long before = System.currentTimeMillis();
     Date min = new Date(before - 4 * 3600 * 1000);

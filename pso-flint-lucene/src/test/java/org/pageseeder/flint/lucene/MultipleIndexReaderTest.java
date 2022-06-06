@@ -126,7 +126,7 @@ public class MultipleIndexReaderTest {
     // close a few indexes
     List<Index> toclose = randoms();
     for (Index i : toclose) { i.close(); }
-    System.out.println("Closed some indexes");
+    System.out.println("Closed "+toclose.size()+" indexes");
     SearchResults results = LuceneIndexQueries.query(new ArrayList<>(indexes.values()), new PredicateSearchQuery(QUERY));
     Assert.assertEquals(NB_INDEXES * NB_DOCUMENTS, results.getTotalNbOfResults());
     results.terminate();

@@ -7,8 +7,8 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.index.*;
 import org.apache.lucene.search.suggest.Lookup.LookupResult;
 import org.apache.lucene.search.suggest.analyzing.AnalyzingInfixSuggester;
+import org.apache.lucene.store.ByteBuffersDirectory;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.pageseeder.flint.Index;
@@ -396,7 +396,7 @@ public class AutoSuggest {
       if (this._terms == null) throw new IllegalStateException("missing terms");
       if (this._name  == null) throw new IllegalStateException("missing name");
       if (this._index == null) throw new IllegalStateException("missing index");
-      Directory dir = this._dir == null ? new RAMDirectory() : this._dir;
+      Directory dir = this._dir == null ? new ByteBuffersDirectory() : this._dir;
       Analyzer indexAnalyzer  = this._indexAnalyzer  == null ? new StandardAnalyzer(CharArraySet.EMPTY_SET) : this._indexAnalyzer;
       Analyzer searchAnalyzer = this._searchAnalyzer == null ? new StandardAnalyzer(CharArraySet.EMPTY_SET) : this._searchAnalyzer;
       AutoSuggest as = new AutoSuggest(this._name, this._index, dir, indexAnalyzer, searchAnalyzer, this._terms, this._minChars);

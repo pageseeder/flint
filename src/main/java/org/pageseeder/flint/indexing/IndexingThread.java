@@ -233,7 +233,7 @@ public final class IndexingThread implements Runnable {
       return false;
     else try {
       // add docs to index
-      if (!io.updateDocuments(content.getDeleteRule(), documents))
+      if (!io.updateDocuments(content.getDeleteRule(), documents, this._listener, job))
         this._listener.warn(job, "Failed to add Lucene Documents to Index");
     } catch (Exception ex) {
       this._listener.error(job, "Failed to add Lucene Documents to Index", ex);
