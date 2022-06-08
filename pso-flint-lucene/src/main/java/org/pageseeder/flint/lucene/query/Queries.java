@@ -229,14 +229,15 @@ public final class Queries {
       addTermsToPhrase(field, text.substring(1, text.length() - 1), analyzer, phrase);
       return Collections.singletonList(phrase.build());
     } else if (supportWildcards && hasWildcards(text)) {
+      boolean lowercase = isLowercase(field, analyzer);
       if (isTokenized(field, analyzer)) {
         List<Query> q = new ArrayList<>();
         for (String t : text.split("\\s+")) {
-          q.add(termQuery(field, t, true));
+          q.add(termQuery(field, lowercase ? t.toLowerCase() : t, true));
         }
         return q;
       } else {
-        return Collections.singletonList(termQuery(field, text, true));
+        return Collections.singletonList(termQuery(field, lowercase ? text.toLowerCase() : text, true));
       }
     } else {
       List<Query> q = new ArrayList<>();
@@ -423,6 +424,31 @@ public final class Queries {
       stream.reset();
       if (stream.incrementToken()) {
         return stream.incrementToken();
+      }
+    } catch (IOException ex) {
+      // Should not occur since we use a StringReader
+      ex.printStackTrace();
+    } finally {
+      if (stream != null) try {
+        stream.end();
+        stream.close();
+      } catch (IOException ex) {
+        // Should not occur since we use a StringReader
+        ex.printStackTrace();
+      }
+    }
+    return false;
+  }
+
+  private static boolean isLowercase(String field, Analyzer analyzer) {
+    // try to load terms for a phrase and return true if it is set to lower case
+    TokenStream stream = null;
+    try {
+      stream = analyzer.tokenStream(field, "WORD");
+      CharTermAttribute attribute = stream.addAttribute(CharTermAttribute.class);
+      stream.reset();
+      if (stream.incrementToken()) {
+        return "word".equals(attribute.toString());
       }
     } catch (IOException ex) {
       // Should not occur since we use a StringReader

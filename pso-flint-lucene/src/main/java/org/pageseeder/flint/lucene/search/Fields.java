@@ -154,14 +154,13 @@ public final class Fields {
    * @throws IOException
    */
   public static List<String> toTerms(String field, String text, Analyzer analyzer) {
-    List<String> terms = new ArrayList<String>();
+    List<String> terms = new ArrayList<>();
     try {
       TokenStream stream = analyzer.tokenStream(field, new StringReader(text));
       CharTermAttribute attribute = stream.addAttribute(CharTermAttribute.class);
       stream.reset();
       while (stream.incrementToken()) {
-        String term = attribute.toString();
-        terms.add(term);
+        terms.add(attribute.toString());
       }
       stream.end();
       stream.close();
