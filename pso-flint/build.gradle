@@ -1,10 +1,12 @@
 dependencies {
 
   implementation (
-    project(':pso-flint'),
     'org.slf4j:slf4j-api:1.7.21',
     'org.pageseeder.xmlwriter:pso-xmlwriter:1.0.2',
-    'org.apache.solr:solr-solrj:6.5.1'
+
+    'org.apache.lucene:lucene-core:9.2.0',
+    'org.apache.lucene:lucene-misc:9.2.0',
+
   )
 
   testImplementation (

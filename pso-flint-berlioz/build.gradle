@@ -2,7 +2,7 @@
 dependencies {
 
   implementation (
-    rootProject,
+    project(':pso-flint'),
     project (':pso-flint-lucene'),
     project (':pso-flint-solr'),
     'org.slf4j:slf4j-api:1.7.21',
