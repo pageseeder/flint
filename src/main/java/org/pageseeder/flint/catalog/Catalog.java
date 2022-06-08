@@ -40,12 +40,12 @@ public class Catalog implements XMLWritable {
   }
 
   public void addFieldType(boolean stored, String name, boolean tokenized, DocValuesType dt, NumericType num,
-      SimpleDateFormat df, Resolution r, float boost) {
+      SimpleDateFormat df, Resolution r) {
     synchronized (this._fields) {
-      CatalogEntry newone = new CatalogEntry(stored, dt, tokenized, boost, num, df, r, false);
+      CatalogEntry newone = new CatalogEntry(stored, dt, tokenized, num, df, r, false);
       CatalogEntry existing = this._fields.get(name);
       if (existing == null || !existing.equals(newone))
-        this._fields.put(name, new CatalogEntry(stored, dt, tokenized, boost, num,  df, r, existing != null));
+        this._fields.put(name, new CatalogEntry(stored, dt, tokenized, num,  df, r, existing != null));
     }
   }
 
@@ -111,8 +111,6 @@ public class Catalog implements XMLWritable {
         xml.attribute("doc-values", entry.docValues == DocValuesType.SORTED_SET ? "sorted-set" :
                                     entry.docValues == DocValuesType.SORTED ||
                                     entry.docValues == DocValuesType.SORTED_NUMERIC ? "sorted" : "none");
-      if (entry.boost != 1.0)
-        xml.attribute("boost", String.valueOf(entry.boost));
       if (entry.error) xml.attribute("error", "true");
       if (entry.dateFormat != null)
         xml.attribute("date-format", entry.dateFormat.toPattern());
@@ -131,12 +129,10 @@ public class Catalog implements XMLWritable {
     private final NumericType num;
     private final SimpleDateFormat dateFormat;
     private final Resolution resolution;
-    private final float boost;
-    public CatalogEntry(boolean s, DocValuesType dv, boolean t, float b, NumericType n, SimpleDateFormat df, Resolution r, boolean e) {
+    public CatalogEntry(boolean s, DocValuesType dv, boolean t, NumericType n, SimpleDateFormat df, Resolution r, boolean e) {
       this.stored = s;
       this.docValues = dv;
       this.tokenized = t;
-      this.boost = b;
       this.num = n;
       this.resolution = r;
       this.dateFormat = df;
@@ -145,7 +141,6 @@ public class Catalog implements XMLWritable {
     public CatalogEntry(FlintField builder, boolean err) {
       this.stored = builder.store();
       this.tokenized = builder.tokenize();
-      this.boost = builder.boost();
       this.num = builder.numericType();
       this.dateFormat = builder.dateformat();
       this.resolution = builder.resolution();
@@ -167,7 +162,6 @@ public class Catalog implements XMLWritable {
         CatalogEntry entry = (CatalogEntry) obj;
         return this.tokenized  == entry.tokenized &&
                this.stored     == entry.stored &&
-               this.boost      == entry.boost &&
                this.num        == entry.num &&
                this.docValues  == entry.docValues &&
                ((this.dateFormat == null && entry.dateFormat == null) ||
@@ -180,7 +174,6 @@ public class Catalog implements XMLWritable {
         CatalogEntry entry = (CatalogEntry) obj;
         return this.tokenized  == entry.tokenized &&
             this.stored     == entry.stored &&
-            this.boost      == entry.boost &&
             this.num        == entry.num &&
             (this.docValues  == entry.docValues ||
                 (this.docValues != null && entry.docValues == DocValuesType.FORCED_NONE) ||
@@ -192,8 +185,7 @@ public class Catalog implements XMLWritable {
     }
     @Override
     public int hashCode() {
-      return (int) (this.boost * 10000) * 37 +
-             (this.num == null ? 13 : this.num.hashCode() * 17) +
+      return (this.num == null ? 13 : this.num.hashCode() * 17) +
              (this.stored    ? 19 : 2) +
              (this.docValues == null ? 23 : this.docValues.hashCode() * 7) +
              (this.tokenized ? 5 : 11) +

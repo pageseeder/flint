@@ -333,7 +333,7 @@ public final class LuceneIndexIO implements IndexIO {
       List<Document> docs = LuceneUtils.toDocuments(documents, warnings);
       if (!warnings.isEmpty()) {
         for (String fieldname : warnings.keySet()) {
-          listener.warn(job, "Failed to add field '"+fieldname+"': "+warnings.get(fieldname));
+          listener.warn(job, "Warning for field '"+fieldname+"': "+warnings.get(fieldname));
         }
       }
       // delete?

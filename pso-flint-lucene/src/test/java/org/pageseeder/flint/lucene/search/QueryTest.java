@@ -108,6 +108,18 @@ public class QueryTest {
     LuceneIndexQueries.query(index, query, results);
     Assert.assertEquals(1, results.getTotalHits());
   }
+  @Test
+  public void testNumericField() throws IndexException {
+    SearchQuery query = new PredicateSearchQuery("field3:2");
+    SearchResults results = LuceneIndexQueries.query(index, query);
+    Assert.assertEquals(1, results.getTotalNbOfResults());
+    Document result = results.documents().iterator().next();
+    Assert.assertNotNull(result.getField("field3"));
+    Assert.assertEquals("doc2", result.get("id"));
+    Assert.assertEquals("2", result.get("field3"));
+    Assert.assertEquals(2, result.getField("field3").numericValue().intValue());
+    results.terminate();
+  }
 
   @Test
   public void testWildcard1() throws IndexException {

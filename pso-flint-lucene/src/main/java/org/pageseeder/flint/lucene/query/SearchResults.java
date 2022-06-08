@@ -440,7 +440,7 @@ public final class SearchResults implements XMLWritable {
     // display the value of each field
     for (FlintField f : doc.fields()) {
       // Retrieve the value
-      String value = f.toString();
+      String value = f.value() == null ? null : f.value().toString();
       ValueType type = ValueType.STRING;
       // check for numeric value
       NumericType nt = f.numeric();

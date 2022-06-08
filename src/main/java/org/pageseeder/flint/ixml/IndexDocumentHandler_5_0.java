@@ -204,14 +204,7 @@ final class IndexDocumentHandler_5_0 extends DefaultHandler implements IndexDocu
     try {
       // set the value
       this.field.value(this._value.toString());
-
-      // doc values
-      if (this.field.isDocValues()) {
-        // add normal field as well
-        this._document.add(this.field.cloneNoDocValues());
-      }
       this._document.add(this.field);
-
     } catch (IllegalStateException | IllegalArgumentException ex) {
       LOGGER.warn("Unable to create field: "+this.field.name(), ex);
     }

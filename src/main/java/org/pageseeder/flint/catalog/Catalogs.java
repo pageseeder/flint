@@ -231,13 +231,11 @@ public class Catalogs {
         if (name != null) {
           boolean stored    = "true".equals(attributes.getValue("stored"));
           boolean tokenized = "true".equals(attributes.getValue("tokenized"));
-          String b = attributes.getValue("boost");
-          float boost = b == null ? 1.0F : Float.parseFloat(b);
           NumericType num     = FlintField.toNumeric(attributes.getValue("numeric-type"));
           DocValuesType dv    = FlintField.toDocValues(attributes.getValue("doc-values"), num != null);
           SimpleDateFormat df = FlintField.toDateFormat(attributes.getValue("date-format"));
           Resolution res      = FlintField.toResolution(attributes.getValue("date-resolution"));
-          this.catalog.addFieldType(stored, name, tokenized, dv, num, df, res, boost);
+          this.catalog.addFieldType(stored, name, tokenized, dv, num, df, res);
         }
       }
     }
