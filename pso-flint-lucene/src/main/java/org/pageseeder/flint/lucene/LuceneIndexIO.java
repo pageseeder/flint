@@ -329,11 +329,11 @@ public final class LuceneIndexIO implements IndexIO {
     try {
       if (isClosed()) open();
       startWriting();
-      Map<String, String> warnings = new HashMap<>();
-      List<Document> docs = LuceneUtils.toDocuments(documents, warnings);
-      if (!warnings.isEmpty()) {
-        for (String fieldname : warnings.keySet()) {
-          listener.warn(job, "Warning for field '"+fieldname+"': "+warnings.get(fieldname));
+      FlintDocumentConverter converter = new FlintDocumentConverter();
+      List<Document> docs = converter.convert(documents);
+      if (converter.hasWarnings()) {
+        for (String fieldname : converter.fieldsWithWarnings()) {
+          listener.warn(job, "Warning for field '"+fieldname+"': "+converter.getWarning(fieldname));
         }
       }
       // delete?
