@@ -177,48 +177,49 @@ public class LuceneUtils {
             return null;
           }
         } else if (ffield.numeric() != null) {
-          fields.addAll(toNumericFields(ffield, true));
+          fields.addAll(toSortedNumericFields(ffield));
         }
         fields.add(new StoredField(name, value));
         break;
-      case SORTED_SET:
-        fields.add(new Field(name, value, toType(ffield)));
-        fields.add(new SortedSetDocValuesField(name, new BytesRef(ffield.value())));
-        break;
       case SORTED:
-        fields.add(new Field(name, value, toType(ffield)));
-        fields.add(new SortedDocValuesField(name, new BytesRef(ffield.value())));
+      case SORTED_SET:
+        boolean isSortedSet = ffield.docValues() == FlintField.DocValuesType.SORTED_SET;
+        if (ffield.dateformat() != null) {
+          String date = Dates.toString(toDate(value, ffield.dateformat()), toResolution(ffield.resolution()));
+          if (date == null) date = "";
+          fields.add(new Field(name, date, toType(ffield)));
+          fields.add(isSortedSet ? new SortedSetDocValuesField(name, new BytesRef(date)) : new SortedDocValuesField(name, new BytesRef(date)));
+        } else {
+          fields.add(new Field(name, value, toType(ffield)));
+          fields.add(isSortedSet ? new SortedSetDocValuesField(name, new BytesRef(ffield.value())) : new SortedDocValuesField(name, new BytesRef(ffield.value())));
+        }
         break;
     }
     return fields;
   }
 
-  private static List<Field> toNumericFields(FlintField ffield, boolean sorted) {
+  private static List<Field> toSortedNumericFields(FlintField ffield) {
     String name = ffield.name();
     List<Field> fields = new ArrayList<>();
     switch (ffield.numeric()) {
       case DOUBLE:
         double d = Double.parseDouble(ffield.value().toString());
-        if (sorted) fields.add(new SortedNumericDocValuesField(name, NumericUtils.doubleToSortableLong(d)));
-        else fields.add(new NumericDocValuesField(name, NumericUtils.doubleToSortableLong(d)));
+        fields.add(new SortedNumericDocValuesField(name, NumericUtils.doubleToSortableLong(d)));
         fields.add(new DoublePoint(name, d));
         break;
       case FLOAT:
         float f = Float.parseFloat(ffield.value().toString());
-        if (sorted) fields.add(new SortedNumericDocValuesField(name, NumericUtils.floatToSortableInt(f)));
-        else fields.add(new NumericDocValuesField(name, NumericUtils.floatToSortableInt(f)));
+        fields.add(new SortedNumericDocValuesField(name, NumericUtils.floatToSortableInt(f)));
         fields.add(new FloatPoint(name, f));
         break;
       case LONG:
         long l = Long.parseLong(ffield.value().toString());
-        if (sorted) fields.add(new SortedNumericDocValuesField(name, l));
-        else fields.add(new NumericDocValuesField(name, l));
+        fields.add(new SortedNumericDocValuesField(name, l));
         fields.add(new LongPoint(name, l));
         break;
       case INT:
         int i = Integer.parseInt(ffield.value().toString());
-        if (sorted) fields.add(new SortedNumericDocValuesField(name, i));
-        else fields.add(new NumericDocValuesField(name, i));
+        fields.add(new SortedNumericDocValuesField(name, i));
         fields.add(new IntPoint(name, i));
         break;
     }
