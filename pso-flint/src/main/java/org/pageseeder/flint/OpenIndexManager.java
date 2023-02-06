@@ -66,10 +66,10 @@ public final class OpenIndexManager {
   private static long DELAY_BETWEEN_CHECKS = 30 * 60 * 1000;
 
   /**
-   * Last time we checked 
+   * Last time we checked
    */
   private static long LAST_CHECK = 0;
-      
+
   /**
    * Utility class.
    */
@@ -119,5 +119,17 @@ public final class OpenIndexManager {
     if (OPEN_INDEXES.remove(index.hashCode()) != null) {
       LOGGER.debug("Removing index {}", index.hashCode());
     }
+  }
+
+  /**
+   * @param index the index to check
+   * @return true if the index is currently in the list of open indexes
+   */
+  public static boolean isOpen(IndexIO index) {
+    return OPEN_INDEXES.keySet().contains(index.hashCode());
+  }
+
+  public static int size() {
+    return OPEN_INDEXES.size();
   }
 }
