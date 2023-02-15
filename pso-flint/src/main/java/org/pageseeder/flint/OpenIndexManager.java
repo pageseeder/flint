@@ -40,20 +40,12 @@ public final class OpenIndexManager {
   /**
    * How to compare opened readers: the "highest" is the one that was used the least recently
    */
-  private static final Comparator<IndexIO> OPEN_INDEX_COMPARATOR = new Comparator<IndexIO>() {
-
-    @Override
-    public int compare(IndexIO o1, IndexIO o2) {
-      return o1.getLastTimeUsed() < o2.getLastTimeUsed() ? 1 : o1.getLastTimeUsed() == o2.getLastTimeUsed() ? 0 : -1;
-    }
-
-  };
+  private static final Comparator<IndexIO> OPEN_INDEX_COMPARATOR = (o1, o2) -> Long.compare(o2.getLastTimeUsed(), o1.getLastTimeUsed());
 
   /**
    * The list of all opened readers
    */
-  private static final ConcurrentHashMap<Integer, IndexIO> OPEN_INDEXES =
-    new ConcurrentHashMap<Integer, IndexIO>();
+  private static final ConcurrentHashMap<Integer, IndexIO> OPEN_INDEXES = new ConcurrentHashMap<>();
 
   /**
    * The max number of opened reader allowed at all times
@@ -95,8 +87,9 @@ public final class OpenIndexManager {
         IndexIO or = Collections.max(OPEN_INDEXES.values(), OPEN_INDEX_COMPARATOR);
         // ok try to close it
         try {
-          LOGGER.debug("Closing IO for index {}", or.hashCode());
+          LOGGER.debug("Closing index {}", or.hashCode());
           or.stop();
+          LOGGER.debug("Closed index {} - {} opened indexes now", or.hashCode(), OPEN_INDEXES.size());
         } catch (IndexException ex) {
           LOGGER.error("Failed closing an opened index {}", or.hashCode());
         }
@@ -108,8 +101,8 @@ public final class OpenIndexManager {
    * @param index a new opened index to store
    */
   public static void add(IndexIO index) {
-    LOGGER.debug("Adding new index {}", index.hashCode());
     OPEN_INDEXES.put(index.hashCode(), index);
+    LOGGER.debug("Added new open index {} - {} opened indexes now", index.hashCode(), OPEN_INDEXES.size());
   }
 
   /**
@@ -117,7 +110,7 @@ public final class OpenIndexManager {
    */
   public static void remove(IndexIO index) {
     if (OPEN_INDEXES.remove(index.hashCode()) != null) {
-      LOGGER.debug("Removing index {}", index.hashCode());
+      LOGGER.debug("Removed index {} - {} opened indexes now", index.hashCode(), OPEN_INDEXES.size());
     }
   }
 
