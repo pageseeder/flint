@@ -116,11 +116,14 @@ public class Catalogs {
         LOGGER.debug("Looking for non existent catalog file for {}", name);
         return null;
       }
-      try {
-        cat = loadCatalog(name, new FileInputStream(file));
+      try (FileInputStream in = new FileInputStream(file)) {
+        cat = loadCatalog(name, in);
       } catch (FileNotFoundException ex) {
         // should not happen as we checked before but still
         LOGGER.warn("Looking for invalid catalog file for {}", name, ex);
+        return null;
+      } catch (IOException ex) {
+        LOGGER.warn("Failed to read catalog file for {}", name, ex);
         return null;
       }
       if (cat != null) CACHE.put(name, cat);
