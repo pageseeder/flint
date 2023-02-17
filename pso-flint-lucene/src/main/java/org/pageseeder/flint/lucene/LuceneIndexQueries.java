@@ -186,7 +186,7 @@ public final class LuceneIndexQueries {
       if (sort == null)
         sort = Sort.INDEXORDER;
       // load the scores
-      TopFieldDocs results = searcher.search(lquery, paging.getHitsPerPage() * paging.getPage(), sort);
+      TopFieldDocs results = searcher.search(lquery, paging.getHitsPerPage() * paging.getPage(), sort, true);
       return new SearchResults(query, results, paging, readersMap, searcher);
     } catch (IOException e) {
       for (LuceneIndexIO io : readersMap.keySet())
