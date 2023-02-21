@@ -91,7 +91,9 @@ public final class LuceneIndexQueries {
         // load the scores
         TopFieldCollector tfc = TopFieldCollector.create(sort, paging.getHitsPerPage() * paging.getPage(), Integer.MAX_VALUE);
         searcher.search(lquery, tfc);
-        return new SearchResults(query, tfc.topDocs().scoreDocs, tfc.getTotalHits(), paging, io, searcher);
+        ScoreDoc[] docs = tfc.topDocs().scoreDocs;
+        TopFieldCollector.populateScores(docs, searcher, lquery);
+        return new SearchResults(query, docs, tfc.getTotalHits(), paging, io, searcher);
       } catch (IOException ex) {
         io.releaseSearcher(searcher);
         throw new IndexException("Failed performing a query on the Index because of an I/O problem", ex);
