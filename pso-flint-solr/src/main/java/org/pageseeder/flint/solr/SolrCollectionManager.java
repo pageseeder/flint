@@ -3,19 +3,10 @@
  */
 package org.pageseeder.flint.solr;
 
-import java.io.IOException;
-import java.net.ConnectException;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
-
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
-import org.apache.solr.client.solrj.impl.HttpSolrClient.RemoteSolrException;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.response.CollectionAdminResponse;
 import org.apache.solr.common.util.NamedList;
@@ -24,6 +15,10 @@ import org.pageseeder.xmlwriter.XMLStringWriter;
 import org.pageseeder.xmlwriter.XMLWriter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.io.IOException;
+import java.net.ConnectException;
+import java.util.*;
 
 /**
  * A server level manager to deal with the collections.
@@ -63,7 +58,7 @@ public class SolrCollectionManager {
     if (zkhosts != null && !zkhosts.isEmpty()) {
       this.defaultShards = zkhosts.size();
       this.defaultReplicas = 1;
-      this._solr = new CloudSolrClient.Builder().withZkHost(zkhosts).build();
+      this._solr = new CloudSolrClient.Builder(new ArrayList<>(zkhosts)).build();
     } else {
       this.defaultShards = 1;
       this.defaultReplicas = 1;
@@ -74,7 +69,7 @@ public class SolrCollectionManager {
   public SolrCollectionManager(Collection<String> zkhosts) {
     this.defaultShards = zkhosts.size();
     this.defaultReplicas = 1;
-    this._solr = new CloudSolrClient.Builder().withZkHost(zkhosts).build();
+    this._solr = new CloudSolrClient.Builder(new ArrayList<>(zkhosts)).build();
   }
 
   public SolrCollectionManager(String url) {
@@ -89,7 +84,7 @@ public class SolrCollectionManager {
     try {
       CollectionAdminRequest.List req = new CollectionAdminRequest.List();
       response = req.process(this._solr);
-    } catch (RemoteSolrException | SolrServerException | IOException ex) {
+    } catch (SolrServerException | IOException ex) {
       if (ex.getCause() != null && ex.getCause() instanceof ConnectException) throw new SolrFlintException(true);
       throw new SolrFlintException("Failed to list Solr collections", ex);
     }
@@ -103,7 +98,7 @@ public class SolrCollectionManager {
     try {
       CollectionAdminRequest.ClusterStatus req = CollectionAdminRequest.getClusterStatus();
       response = req.process(this._solr);
-    } catch (RemoteSolrException | SolrServerException | IOException ex) {
+    } catch (SolrServerException | IOException ex) {
       if (ex.getCause() != null && ex.getCause() instanceof ConnectException) throw new SolrFlintException(true);
       throw new SolrFlintException("Failed to list Solr collections", ex);
     }
@@ -161,20 +156,20 @@ public class SolrCollectionManager {
         if (atts.containsKey(ROUTER_NAME))  create.setRouterName(atts.remove(ROUTER_NAME));
         if (atts.containsKey(ROUTER_FIELD)) create.setRouterField(atts.remove(ROUTER_FIELD));
         if (atts.containsKey(SHARDS))       create.setShards(atts.remove(SHARDS));
-        if (atts.containsKey(MAX_SHARDS_PER_NODE)) {
+        /*if (atts.containsKey(MAX_SHARDS_PER_NODE)) {
           String m = atts.remove(MAX_SHARDS_PER_NODE);
           try {
             create.setMaxShardsPerNode(Integer.parseInt(m));
           } catch (NumberFormatException ex) {
             LOGGER.error("Ignoring invalid max shards per node {} for collection {}", m, name);
           }
-        }
+        }*/
         if (!atts.isEmpty()) {
           LOGGER.warn("Ignoring non supported attributes {} when creating collection {}", atts.keySet().toArray().toString(), name);
         }
         // ok create it
         response = create.process(this._solr);
-      } catch (RemoteSolrException | SolrServerException | IOException ex) {
+      } catch (SolrServerException | IOException ex) {
         LOGGER.error("Cannot create collection {}", name, ex);
         if (ex.getCause() != null && ex.getCause() instanceof ConnectException) throw new SolrFlintException(true);
         throw new SolrFlintException("Failed to create collection "+name+": "+ex.getMessage(), ex);
@@ -183,7 +178,7 @@ public class SolrCollectionManager {
       LOGGER.info("Solr collection {} already exists - reloading it", name);
       try {
         response = CollectionAdminRequest.reloadCollection(name).process(this._solr);
-      } catch (RemoteSolrException | SolrServerException | IOException ex) {
+      } catch (SolrServerException | IOException ex) {
         if (ex.getCause() != null && ex.getCause() instanceof ConnectException) throw new SolrFlintException(true);
         throw new SolrFlintException("Failed to reload collection " + name+": "+ex.getMessage(), ex);
       }
@@ -194,13 +189,13 @@ public class SolrCollectionManager {
   /**
    * @param name the name of core
    * @return the status whether it exists
-   * @throws SolrFlintException 
+   * @throws SolrFlintException
    */
   public boolean deleteCollection(String name) throws SolrFlintException {
     CollectionAdminResponse response = null;
     try {
       response = CollectionAdminRequest.deleteCollection(name).process(this._solr);
-    } catch (RemoteSolrException | SolrServerException | IOException ex) {
+    } catch (SolrServerException | IOException ex) {
       if (ex.getCause() != null && ex.getCause() instanceof ConnectException) throw new SolrFlintException(true);
       throw new SolrFlintException("Failed to delete collection " + name, ex);
     }
@@ -210,7 +205,7 @@ public class SolrCollectionManager {
   /**
    * @param name the name of core
    * @return the status whether it exists
-   * @throws SolrFlintException 
+   * @throws SolrFlintException
    */
   public boolean exists(String name) throws SolrFlintException {
     Collection<String> existing = listCollections();

@@ -1,6 +1,5 @@
 package org.pageseeder.flint.berlioz.tika;
 
-import org.apache.commons.io.IOUtils;
 import org.apache.tika.config.TikaConfig;
 import org.apache.tika.exception.TikaException;
 import org.apache.tika.io.TikaInputStream;
@@ -80,7 +79,7 @@ public class TikaTranslator implements ContentTranslator {
           // should be HTML??
           xmlContent = "<error>"+(te.getMessage() == null ? "Unknown error while reading content in TIKA" : te.getMessage())+"</error>";
         } finally {
-          IOUtils.closeQuietly(stream);
+          stream.close();
         }
       }
       StringWriter sw = new StringWriter();

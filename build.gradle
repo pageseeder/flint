@@ -37,18 +37,18 @@ allprojects {
 dependencies {
 
   implementation (
-    'org.slf4j:slf4j-api:1.7.21',
+    'org.slf4j:slf4j-api:1.7.36',
     'org.pageseeder.xmlwriter:pso-xmlwriter:1.0.2'
   )
 
   // runtime
   runtimeOnly (
-    'net.sf.saxon:Saxon-HE:9.6.0-6'
+    'net.sf.saxon:Saxon-HE:10.8'
   )
 
   testImplementation (
-    'junit:junit:4.12',
-    'org.slf4j:slf4j-simple:1.7.21'
+    'junit:junit:4.13.2',
+    'org.slf4j:slf4j-simple:1.7.36'
   )
 
 }

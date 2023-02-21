@@ -1,10 +1,7 @@
 package org.pageseeder.flint.solr.index;
 
 import java.io.IOException;
-import java.util.Collection;
-import java.util.List;
-import java.util.Map;
-import java.util.Date;
+import java.util.*;
 
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
@@ -48,7 +45,7 @@ public class SolrIndexIO implements IndexIO {
     // use cloud?
     Collection<String> zkhosts = config.getZKHosts();
     if (zkhosts != null && !zkhosts.isEmpty()) {
-      this._client = new CloudSolrClient.Builder().withZkHost(zkhosts).build();
+      this._client = new CloudSolrClient.Builder(new ArrayList<>(zkhosts)).build();
     } else {
       this._client = new HttpSolrClient.Builder(config.getServerURL()).allowCompression(true).build();
     }
