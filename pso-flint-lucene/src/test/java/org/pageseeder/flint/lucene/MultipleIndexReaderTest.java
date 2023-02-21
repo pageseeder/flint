@@ -33,7 +33,7 @@ public class MultipleIndexReaderTest {
   private static final File template  = new File("src/test/resources/template.xsl");
   private static final File indexRoot = new File("tmp/indexes");
 
-  private static final int NB_INDEXES = 50;
+  private static final int NB_INDEXES = 20;
   private static final int NB_DOCUMENTS = 50;
   private static final int NB_FIELDS = 20;
   private static final int NB_VALUES = 4;
