@@ -37,7 +37,16 @@
     <field name="_src"  tokenize="false"><xsl:value-of select="$_src"/></field>
     <field name="_path" tokenize="false"><xsl:value-of select="$_path"/></field>
     <field name="type"  tokenize="false"><xsl:value-of select="@type"/></field>
-    <field name="title" tokenize="false"><xsl:value-of select="if (.//heading) then (.//heading)[1] else $_filename"/></field>
+    <field name="title" tokenize="false">
+      <xsl:choose>
+        <xsl:when test=".//heading">
+          <xsl:value-of select="(.//heading)[1]"/>
+        </xsl:when>
+        <xsl:otherwise>
+          <xsl:value-of select="$_filename" />
+        </xsl:otherwise>
+      </xsl:choose>
+    </field>
 
     <!-- Single value properties -->
     <xsl:for-each select="descendant::property[@value]">
@@ -48,9 +57,9 @@
     <xsl:for-each select="descendant::property[value]">
       <field name="{@name}" tokenize="false"><xsl:value-of select="value" separator=","/></field>
     </xsl:for-each>
-    
+
     <!-- full text -->
-    <field name="fulltext" tokenize="true"><xsl:value-of select="string-join(.//* | .//property/@value, ',')"/></field>
+    <field name="fulltext" tokenize="true"><xsl:value-of select="concat(.//property/@value, ',', .//*)"/></field>
 
     <!-- PageSeeder documents - ->
     <xsl:apply-templates select="descendant::fragment/*" mode="index"/>
