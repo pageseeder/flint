@@ -32,6 +32,7 @@ import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * A facet implementation using a simple index field.
@@ -46,7 +47,7 @@ public class DateRangeFacet extends FlexibleRangeFacet {
 
   private final Resolution _resolution;
 
-  private final List<Range> _ranges = new ArrayList<>();
+  private final List<OptimisedRange> _ranges = new ArrayList<>();
 
   /**
    * Creates a new facet with the specified name;
@@ -56,7 +57,7 @@ public class DateRangeFacet extends FlexibleRangeFacet {
   private DateRangeFacet(String name, Resolution resolution, List<Range> ranges) {
     super(name);
     this._resolution = resolution;
-    this._ranges.addAll(ranges);
+    this._ranges.addAll(ranges.stream().map(OptimisedRange::new).filter(r -> !r.invalid).collect(Collectors.toList()));
   }
 
   /**
@@ -68,9 +69,9 @@ public class DateRangeFacet extends FlexibleRangeFacet {
 
   /**
    * Create a query for the term given, using the numeric type if there is one.
-   * 
+   *
    * @param t the term
-   * 
+   *
    * @return the query
    */
   @Override
@@ -101,28 +102,10 @@ public class DateRangeFacet extends FlexibleRangeFacet {
       LOGGER.warn("Ignoring invalid facet date {} for field {}", t.text(), this.name(), ex);
       return null;
     }
-    for (Range r : this._ranges) {
-      boolean passMin = r.getMin() == null;
-      if (!passMin) {
-        Date m;
-        try {
-          m = DateTools.stringToDate(r.getMin());
-          passMin = m.before(d) || (r.includeMin() && m.equals(d));
-        } catch (ParseException ex) {
-          LOGGER.warn("Ignoring invalid facet range date {} for field {}", r.getMin(), this.name(), ex);
-        }
-      }
-      boolean passMax = r.getMax() == null;
-      if (!passMax) {
-        Date m;
-        try {
-          m = DateTools.stringToDate(r.getMax());
-          passMax = d.before(m) || (r.includeMax() && m.equals(d));
-        } catch (ParseException ex) {
-          LOGGER.warn("Ignoring invalid facet range date {} for field {}", r.getMax(), this.name(), ex);
-        }
-      }
-      if (passMin && passMax) return r;
+    for (OptimisedRange r : this._ranges) {
+      boolean passMin = r.min == null || r.min.before(d) || (r.original.includeMin() && r.min.equals(d));
+      boolean passMax = r.max == null || d.before(r.max) || (r.original.includeMax() && r.max.equals(d));
+      if (passMin && passMax) return r.original;
     }
     return null;
   }
@@ -197,5 +180,26 @@ public class DateRangeFacet extends FlexibleRangeFacet {
     private Date max;
     private boolean withMin;
     private boolean withMax;
+  }
+  private class OptimisedRange {
+    private Date min = null;
+    private Date max = null;
+    private final Range original;
+    private boolean invalid = false;
+    private OptimisedRange(Range range) {
+      this.original = range;
+      try {
+        this.min = range.getMin() == null ? null : DateTools.stringToDate(range.getMin());
+      } catch (ParseException ex) {
+        LOGGER.warn("Ignoring invalid facet range date {} for field {}", range.getMin(), DateRangeFacet.this._name, ex);
+        invalid = true;
+      }
+      try {
+        this.max = range.getMax() == null ? null : DateTools.stringToDate(range.getMax());
+      } catch (ParseException ex) {
+        LOGGER.warn("Ignoring invalid facet range date {} for field {}", range.getMax(), DateRangeFacet.this._name, ex);
+        invalid = true;
+      }
+    }
   }
 }
