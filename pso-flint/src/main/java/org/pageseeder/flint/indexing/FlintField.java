@@ -157,18 +157,6 @@ public final class FlintField {
     this._catalog = catalog;
   }
 
-  /**
-   * @deprecated
-   */
-  public FlintField cloneCompressed() {
-    FlintField compressed = new FlintField(this._catalog);
-    compressed.name(this._name);
-    if (this._value != null)
-      compressed.value(this._value.toString());
-    compressed.compressed(true);
-    return compressed;
-  }
-
   public FlintField cloneNoDocValues() {
     FlintField cloned = new FlintField(this._catalog);
     cloned._name = this._name;
@@ -212,18 +200,6 @@ public final class FlintField {
    */
   public FlintField value(String value) {
     this._value = value;
-    return this;
-  }
-
-  /**
-   * Set whether this field's value is compressed.
-   * @deprecated
-   *
-   * @param compressed If this field's value is compressed.
-   * @return this builder.
-   */
-  public FlintField compressed(boolean compressed) {
-    this._compressed = compressed;
     return this;
   }
 
@@ -417,28 +393,6 @@ public final class FlintField {
   }
 
   /**
-   * @deprecated no more boost at index time
-   *
-   * @param boost The boost value for this field as a string.
-   * @return this builder.
-   */
-  public FlintField boost(float boost) {
-    return this;
-  }
-
-  /**
-   * @deprecated no more boost at index time
-   *
-   * @see #toBoost(String)
-   *
-   * @param boost The boost value for this field as a string.
-   * @return this builder.
-   */
-  public FlintField boost(String boost) {
-    return this;
-  }
-
-  /**
    * Returns the date format for this field.
    *
    * @param dateformat A date format to parse dates.
@@ -597,16 +551,6 @@ public final class FlintField {
   }
 
   /**
-   * Returns the boost value for this field.
-   * @deprecated no more boost at index time
-   *
-   * @return The boost value for this field.
-   */
-  public float boost() {
-    return 1f;
-  }
-
-  /**
    * Returns the numeric type for this field.
    *
    * @return the numeric type for this field.
@@ -630,13 +574,6 @@ public final class FlintField {
    */
   public DocValuesType docValues() {
     return this._docValues;
-  }
-
-  /**
-   * @deprecated
-   */
-  public boolean compressed() {
-    return this._compressed;
   }
 
   public NumericType numeric() {
@@ -753,16 +690,6 @@ public final class FlintField {
     if ("none".equals(type))       return DocValuesType.NONE;
     LOGGER.warn("Invalid doc values type : {}, defaulting to none", type);
     return DocValuesType.NONE;
-  }
-
-  /**
-   * @deprecated no more boost at index time
-   *
-   * @param boost The boost value.
-   * @return The corresponding boost value as a float.
-   */
-  public static float toBoost(String boost) {
-    return 1f;
   }
 
   /**

@@ -1,6 +1,6 @@
 /*
  * Decompiled with CFR 0_110.
- * 
+ *
  * Could not load the following classes:
  *  org.apache.lucene.index.DirectoryReader
  *  org.apache.lucene.index.IndexReader
@@ -94,7 +94,7 @@ public final class GenerateIXML extends LuceneIndexGenerator {
       index.generateIXML(f, out);
       ixml = out.toString();
       xml.writeXML(ixml.replaceAll("<(!DOCTYPE|\\?xml)([^>]+)>", "")); // remove xml and doctype declarations
-      
+
     } catch (IndexException ex) {
       xml.element("error", "Failed to generate iXML: "+ex.getMessage());
       LOGGER.error("Failed to generate iXML for {}", f, ex);
@@ -140,7 +140,6 @@ public final class GenerateIXML extends LuceneIndexGenerator {
             } else if (datetime) {
               xml.attribute("datetime", value);
             }
-            xml.attribute("boost", Float.toString(field.boost()));
             xml.attribute("omit-norms", Boolean.toString(field.omitNorms()));
             xml.attribute("stored", Boolean.toString(field.store()));
             xml.attribute("tokenized", Boolean.toString(field.tokenize()));

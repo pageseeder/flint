@@ -4,8 +4,8 @@ dependencies {
     'org.slf4j:slf4j-api:1.7.36',
     'org.pageseeder.xmlwriter:pso-xmlwriter:1.0.2',
 
-    'org.apache.lucene:lucene-core:9.2.0',
-    'org.apache.lucene:lucene-misc:9.2.0',
+    'org.apache.lucene:lucene-core:9.6.0',
+    'org.apache.lucene:lucene-misc:9.6.0',
 
   )
 

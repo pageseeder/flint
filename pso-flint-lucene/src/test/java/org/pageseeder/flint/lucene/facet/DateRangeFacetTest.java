@@ -48,7 +48,7 @@ public class DateRangeFacetTest {
   @BeforeClass
   public static void init() {
     // clean up previous test's data
-    for (File f : indexRoot.listFiles()) f.delete();
+    if (indexRoot.listFiles() != null) for (File f : indexRoot.listFiles()) f.delete();
     indexRoot.delete();
     try {
       index = new LuceneLocalIndex(indexRoot, "daterange", new StandardAnalyzer(), documents);

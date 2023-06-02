@@ -29,15 +29,13 @@ import org.pageseeder.flint.catalog.Catalogs;
 import org.pageseeder.flint.content.ContentTranslatorFactory;
 import org.pageseeder.flint.indexing.IndexBatch;
 import org.pageseeder.flint.local.LocalFileContentFetcher;
-import org.pageseeder.flint.solr.SolrCollectionManager;
-import org.pageseeder.flint.solr.SolrFlintConfig;
-import org.pageseeder.flint.solr.SolrFlintException;
 import org.pageseeder.flint.templates.TemplatesCache;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.xml.transform.TransformerException;
 import java.io.File;
+import java.lang.reflect.InvocationTargetException;
 import java.util.*;
 
 /**
@@ -66,13 +64,11 @@ public class FlintConfig {
   private static volatile AnalyzerFactory analyzerFactory = new DefaultAnalyzerFactory();
   private final File _directory;
   private final File _ixml;
-  private final boolean _useSolr;
   private static FlintConfig SINGLETON = null;
   private final QuietListener listener;
   private final IndexManager manager;
   private final Map<String, IndexDefinition> indexConfigs = new HashMap<>();
   private final Map<String, IndexMaster> indexes = new HashMap<>();
-  private final Map<String, SolrIndexMaster> solrIndexes = new HashMap<>();
   private final FolderWatcher watcher;
   private final Collection<String> _extensions = new ArrayList<>();
 
@@ -88,10 +84,6 @@ public class FlintConfig {
 
   public IndexManager getManager() {
     return this.manager;
-  }
-
-  public boolean useSolr() {
-    return this._useSolr;
   }
 
   /**
@@ -177,53 +169,6 @@ public class FlintConfig {
   }
 
   /**
-   * @return the index master with the default name
-   */
-  public SolrIndexMaster getSolrMaster() {
-    return getSolrMaster(DEFAULT_INDEX_NAME);
-  }
-
-  /**
-   * @param name the master name
-   *
-   * @return the index master with the name provided
-   */
-  public SolrIndexMaster getSolrMaster(String name) {
-    try {
-      return getSolrMaster(name, false);
-    } catch (SolrFlintException ex) {
-      // should not happen if we don't create it
-      LOGGER.error("Impossible!", ex);
-      return null;
-    }
-  }
-
-  /**
-   * @param name              the master name
-   * @param createIfNotFound  whether or not to create the index if not existing
-   *
-   * @return the index master with the name provided
-   */
-  public SolrIndexMaster getSolrMaster(String name, boolean createIfNotFound) throws SolrFlintException {
-    // make sure only one gets created
-    synchronized (this.solrIndexes) {
-      if (!this.solrIndexes.containsKey(name) && createIfNotFound) {
-        IndexDefinition def = getIndexDefinitionFromIndexName(name);
-        if (def == null) {
-          // any indexes that have been defined on the server but not in the configuration
-          // will not have an IndexDefinition.
-          LOGGER.info("No index configuration found for the Solr collection {}", name);
-        } else {
-          SolrIndexMaster master = createSolrMaster(name, def);
-          if (master != null)
-            this.solrIndexes.put(name, master);
-        }
-      }
-      return this.solrIndexes.get(name);
-    }
-  }
-
-  /**
    * Close and removes index from list. Also deletes index files from index root
    * folder.
    *
@@ -246,20 +191,6 @@ public class FlintConfig {
         return root.delete();
       }
       return true; // ???
-    } else if (this.solrIndexes.containsKey(key)) {
-      // close index
-      SolrIndexMaster master = this.solrIndexes.get(key);
-      master.getIndex().close();
-      // delete collection from solr
-      try {
-        new SolrCollectionManager().deleteCollection(key);
-      } catch (SolrFlintException ex) {
-        LOGGER.error("Failed to delete collection {} from Solr server", key, ex);
-        return false;
-      }
-      // remove from local list
-      this.solrIndexes.remove(key);
-      return true;
     }
     return false;
   }
@@ -282,20 +213,6 @@ public class FlintConfig {
   private FlintConfig(File directory, File ixml) {
     this._directory = directory;
     this._ixml = ixml;
-    // solr?
-    String url = GlobalSettings.get("flint.solr.url", GlobalSettings.get("flint.solr")); // legacy
-    String zkh = GlobalSettings.get("flint.solr.zookeeper");
-    this._useSolr = url != null;
-    if (this._useSolr) {
-      Collection<String> zkhosts = new ArrayList<>();
-      if (zkh != null) {
-        for (String z : zkh.split(",")) {
-          if (z != null && !z.trim().isEmpty())
-            zkhosts.add(z.trim());
-        }
-      }
-      SolrFlintConfig.setup(ixml, url, zkhosts);
-    }
     // manager
     this._extensions.addAll(Arrays.asList(GlobalSettings.get("flint.index.extensions", "psml").split(",")));
     if (!this._extensions.contains("psml")) LOGGER.warn("PSML should be in the list of supported extensions");
@@ -350,24 +267,9 @@ public class FlintConfig {
       String regexExclude = GlobalSettings.get("flint.index." + type + ".files.excludes");
       // set filters
       def.setIndexingFilesRegex(regexInclude, regexExclude);
-      // solr attributes
-      def.setSolrAttribute("num-shards",   GlobalSettings.get("flint.index." + type + ".solr.num-shards"));
-      def.setSolrAttribute("num-replicas", GlobalSettings.get("flint.index." + type + ".solr.num-replicas"));
-      def.setSolrAttribute("shards",       GlobalSettings.get("flint.index." + type + ".solr.shards"));
-      def.setSolrAttribute("max-shards",   GlobalSettings.get("flint.index." + type + ".solr.max-shards"));
-      def.setSolrAttribute("router",       GlobalSettings.get("flint.index." + type + ".solr.router"));
-      def.setSolrAttribute("router-field", GlobalSettings.get("flint.index." + type + ".solr.router-field"));
       // autosuggests
       loadAutoSuggests(def);
       this.indexConfigs.put(type, def);
-    }
-    // load solr indexes at startup
-    if (this._useSolr) {
-      try {
-        listSolrIndexes();
-      } catch (SolrFlintException ex) {
-        LOGGER.warn("Failed to load solr indexes at startup!", ex);
-      }
     }
   }
 
@@ -380,12 +282,13 @@ public class FlintConfig {
     String tikaRequired = this._extensions.stream().filter(s -> !s.equals("psml") && !s.equals("xml")).findFirst().orElse(null);
     if (tikaRequired != null) {
       try {
-        Class tikaFactory = FlintConfig.class.getClassLoader().loadClass("org.pageseeder.flint.berlioz.tika.TikaTranslatorFactory");
-        if (tikaFactory != null)
-          this.manager.registerTranslatorFactory((ContentTranslatorFactory) tikaFactory.newInstance());
+        Class<?> tikaFactory = FlintConfig.class.getClassLoader().loadClass("org.pageseeder.flint.berlioz.tika.TikaTranslatorFactory");
+        if (tikaFactory != null) {
+          this.manager.registerTranslatorFactory((ContentTranslatorFactory) tikaFactory.getDeclaredConstructor(ContentTranslatorFactory.class).newInstance(new Object[] {}));
+        }
       } catch (ClassNotFoundException ex) {
         LOGGER.warn("Flint TIKA Translator Factory class not available, make sure library pso-flint-berlioz-tika is on the classpath to support extension {}", tikaRequired);
-      } catch (IllegalAccessException | InstantiationException ex) {
+      } catch (IllegalAccessException | InstantiationException | NoSuchMethodException | InvocationTargetException ex) {
         LOGGER.error("Failed to create TIKA Translator Factory", ex);
       }
     }
@@ -416,16 +319,12 @@ public class FlintConfig {
     return this._ixml;
   }
 
-  @Deprecated
   public Collection<IndexMaster> listIndexes() {
-    return listLuceneIndexes();
-  }
 
-  public Collection<IndexMaster> listLuceneIndexes() {
-    if (this._useSolr) return Collections.emptyList();
     if (this.indexes.isEmpty()) {
-      // load indexes
-      for (File folder : this._directory.listFiles()) {
+      File[] files = this._directory.listFiles();
+      // loop through index folders
+      if (files != null) for (File folder : files) {
         if (folder.isDirectory()) {
           if (!folder.getName().endsWith("_autosuggest"))
             getMaster(folder.getName());
@@ -438,42 +337,12 @@ public class FlintConfig {
     return this.indexes.values();
   }
 
-  public Collection<SolrIndexMaster> listSolrIndexes() throws SolrFlintException {
-    return listSolrIndexes(this.solrIndexes.isEmpty());
-  }
-
-  public Collection<SolrIndexMaster> listSolrIndexes(boolean refreshFromServer) throws SolrFlintException {
-    if (!this._useSolr) return Collections.emptyList();
-    if (refreshFromServer) {
-      // clear existing
-      this.solrIndexes.clear();
-      SolrCollectionManager cores = new SolrCollectionManager();
-      Collection<String> all = cores.listCollections();
-      // load indexes
-      for (String name : all) {
-        try {
-          getSolrMaster(name, true);
-        } catch (SolrFlintException ex) {
-          LOGGER.error("Failed to create index "+name, ex);
-        }
-      }
-    }
-    return this.solrIndexes.values();
-  }
-
   public Collection<IndexDefinition> listDefinitions() {
     return new ArrayList<>(this.indexConfigs.values());
   }
 
   public static synchronized void setAnalyzerFactory(AnalyzerFactory factory) {
     analyzerFactory = factory;
-  }
-
-  /**
-   * @deprecated
-   */
-  public static synchronized Analyzer newAnalyzer() {
-    return newAnalyzer(null);
   }
 
   public static synchronized Analyzer newAnalyzer(IndexDefinition definition) {
@@ -504,8 +373,9 @@ public class FlintConfig {
     // remove template from this definition
     IndexDefinition def = getIndexDefinition(defname);
     if (def != null) {
+      File[] files = this._directory.listFiles();
       // loop through index folders
-      for (File folder : this._directory.listFiles()) {
+      if (files != null) for (File folder : files) {
         if (folder.isDirectory() && def.indexNameMatches(folder.getName())) {
           IndexMaster master = getMaster(folder.getName());
           try {
@@ -538,19 +408,6 @@ public class FlintConfig {
     }
   }
 
-  private SolrIndexMaster createSolrMaster(String name, IndexDefinition def) throws SolrFlintException {
-    // build content path
-    File content = def.buildContentRoot(GlobalSettings.getAppData(), name);
-    try {
-      SolrIndexMaster master = SolrIndexMaster.create(getManager(), name, content, this._extensions, def);
-      def.setTemplateError(null); // reset error
-      return master;
-    } catch (TransformerException ex) {
-      def.setTemplateError(ex.getMessageAndLocation());
-      return null;
-    }
-  }
-
   private void loadAutoSuggests(IndexDefinition def) {
     String propPrefix = "flint.index." + def.getName() + '.';
     // autosuggests
@@ -562,13 +419,7 @@ public class FlintConfig {
         String rfields = GlobalSettings.get(propPrefix + autosuggest + ".result-fields");
         String criteriafields = GlobalSettings.get(propPrefix + autosuggest + ".criteria-fields");
         String weight = GlobalSettings.get(propPrefix + autosuggest + ".weight", "");
-        String suggesters = GlobalSettings.get(propPrefix + autosuggest + ".suggesters");
         if (fields != null) {
-          if (this._useSolr) {
-            LOGGER.warn("Autosuggest definition for {} will be ignored in solr mode. "
-                + "In order to use it, make sure it is defined in the solr config.", autosuggest);
-            continue;
-          }
           Map<String, Float> weights = new HashMap<>();
           for (String w : weight.split(",")) {
             String[] parts = w.split(":");
@@ -576,14 +427,12 @@ public class FlintConfig {
               try {
                 weights.put(parts[0], Float.valueOf(parts[1]));
               } catch (NumberFormatException ex) {
-                LOGGER.error("Autosuggeset {}: ignoring invalid weight for field {}: not a number! ()", autosuggest,
-                    parts[0], parts[1]);
+                LOGGER.error("Autosuggeset {}: ignoring invalid weight for field {}: not a number! {}",
+                        autosuggest, parts[0], parts[1]);
               }
             }
           }
           def.addAutoSuggest(autosuggest, fields, terms, rfields, criteriafields, weights);
-        } else if (this._useSolr && suggesters != null) {
-          def.addAutoSuggest(autosuggest, Arrays.asList(suggesters.split(",")));
         } else {
           LOGGER.warn("Ignoring invalid autosuggest definition for {}: fields {}, terms {}, result fields {}",
               autosuggest, null, terms, rfields);

@@ -1,5 +1,21 @@
 package org.pageseeder.flint.berlioz.helper;
 
+import org.apache.lucene.document.Document;
+import org.apache.lucene.index.IndexReader;
+import org.pageseeder.berlioz.util.ISO8601;
+import org.pageseeder.flint.IndexException;
+import org.pageseeder.flint.IndexManager;
+import org.pageseeder.flint.berlioz.model.FlintConfig;
+import org.pageseeder.flint.berlioz.model.IndexMaster;
+import org.pageseeder.flint.berlioz.util.Files;
+import org.pageseeder.flint.local.LocalIndexer;
+import org.pageseeder.flint.local.LocalIndexer.Action;
+import org.pageseeder.flint.lucene.LuceneIndexQueries;
+import org.pageseeder.xmlwriter.XMLWritable;
+import org.pageseeder.xmlwriter.XMLWriter;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.io.File;
 import java.io.FileFilter;
 import java.io.IOException;
@@ -9,27 +25,6 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.function.Consumer;
-
-import org.apache.lucene.document.Document;
-import org.apache.lucene.index.IndexReader;
-import org.apache.solr.client.solrj.SolrQuery;
-import org.apache.solr.common.SolrDocument;
-import org.pageseeder.berlioz.util.ISO8601;
-import org.pageseeder.flint.IndexException;
-import org.pageseeder.flint.IndexManager;
-import org.pageseeder.flint.berlioz.model.FlintConfig;
-import org.pageseeder.flint.berlioz.model.IndexMaster;
-import org.pageseeder.flint.berlioz.model.SolrIndexMaster;
-import org.pageseeder.flint.berlioz.util.Files;
-import org.pageseeder.flint.local.LocalIndexer;
-import org.pageseeder.flint.local.LocalIndexer.Action;
-import org.pageseeder.flint.lucene.LuceneIndexQueries;
-import org.pageseeder.flint.solr.query.SolrQueryManager;
-import org.pageseeder.xmlwriter.XMLWritable;
-import org.pageseeder.xmlwriter.XMLWriter;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class AsynchronousIndexer implements Runnable, XMLWritable, FileFilter {
 
@@ -39,8 +34,6 @@ public class AsynchronousIndexer implements Runnable, XMLWritable, FileFilter {
   private static final Logger LOGGER = LoggerFactory.getLogger(AsynchronousIndexer.class);
 
   private final IndexMaster _luceneIndex;
-
-  private final SolrIndexMaster _solrIndex;
 
   private String folder = null;
 
@@ -62,25 +55,15 @@ public class AsynchronousIndexer implements Runnable, XMLWritable, FileFilter {
 
   /**
    * Create a new indexer for the index provided.
-   * @param index
+   * @param index the index master
    */
   public AsynchronousIndexer(IndexMaster index) {
     this._luceneIndex = index;
-    this._solrIndex = null;
-  }
-
-  /**
-   * Create a new indexer for the index provided.
-   * @param index
-   */
-  public AsynchronousIndexer(SolrIndexMaster index) {
-    this._luceneIndex = null;
-    this._solrIndex = index;
   }
 
   /**
    * Set a date that is the lower limit for the last modified date of the files to index.
-   * 
+   *
    * @param modifiedAfter the date
    */
   public void setModifiedAfter(Date modifiedAfter) {
@@ -90,7 +73,7 @@ public class AsynchronousIndexer implements Runnable, XMLWritable, FileFilter {
   /**
    * Set a Regex that the path of the files to index must match.
    * It is relative to the folder specified.
-   * 
+   *
    * @param regex the regular expression
    */
   public void setPathRegex(String regex) {
@@ -105,10 +88,10 @@ public class AsynchronousIndexer implements Runnable, XMLWritable, FileFilter {
   public void setUseIndexDate(boolean useIndxDate) {
     this.useIndexDate = useIndxDate;
   }
-  
+
   /**
    * the root folder of the files to index.
-   * 
+   *
    * @param afolder the folder, relative to the index's content root
    */
   public void setFolder(String afolder) {
@@ -116,7 +99,7 @@ public class AsynchronousIndexer implements Runnable, XMLWritable, FileFilter {
   }
 
   public boolean start() {
-    String name = getName();
+    String name = this._luceneIndex.getName();
     // only one active thread per index
     AsynchronousIndexer indexer = getIndexer(name);
     if (indexer != null) {
@@ -137,15 +120,15 @@ public class AsynchronousIndexer implements Runnable, XMLWritable, FileFilter {
 
      // load existing documents
     IndexManager manager = FlintConfig.get().getManager();
-    Map<String, Long> existing = this._luceneIndex != null ? getLuceneExistingContent(afolder) : getSolrExistingContent(afolder);
+    Map<String, Long> existing = getLuceneExistingContent(afolder);
     if (existing == null) return;
 
     // find root folder
-    File location = getContentLocation();
+    File location = this._luceneIndex.getIndex().getContentLocation();
     File root = new File(location, afolder);
 
     // use local indexer
-    this.indexer = new LocalIndexer(manager, this._luceneIndex == null ? this._solrIndex.getIndex() : this._luceneIndex.getIndex());
+    this.indexer = new LocalIndexer(manager, this._luceneIndex.getIndex());
     this.indexer.setFileFilter(this);
     this.indexer.setUseIndexDate(this.useIndexDate);
     this.indexer.indexFolder(root, existing);
@@ -163,15 +146,19 @@ public class AsynchronousIndexer implements Runnable, XMLWritable, FileFilter {
       LOGGER.error("Failed to retrieve reader for index {}", this._luceneIndex.getName(), ex);
       return null;
     }
+    if (reader == null) {
+      LOGGER.error("Failed to retrieve a reader for index {}", this._luceneIndex.getName());
+      return null;
+    }
     try {
       for (int i = 0; i < reader.numDocs(); i++) {
-        Document doc = reader.document(i);
+        Document doc = reader.storedFields().document(i);
         String src = doc.get("_src");
         String path = doc.get("_path");
         String lm   = doc.get("_lastmodified");
         // folder and regex
         if (lm != null && src != null && path != null &&
-            path.startsWith(afolder) && 
+            path.startsWith(afolder) &&
             (this.pathRegex == null || path.substring(afolder.length()).matches(this.pathRegex))) {
           try {
             existing.put(src, Long.valueOf(lm));
@@ -188,41 +175,17 @@ public class AsynchronousIndexer implements Runnable, XMLWritable, FileFilter {
     return existing;
   }
 
-  private Map<String, Long> getSolrExistingContent(String afolder) {
-    // load all docs
-    Map<String, Long> existing = new HashMap<String, Long>();
-    new SolrQueryManager(this._solrIndex.getIndex()).select(new SolrQuery("*:*"), new Consumer<SolrDocument>() {
-      @Override
-      public void accept(SolrDocument doc) {
-        String src  = (String) doc.get("_src");
-        String path = (String) doc.get("_path");
-        Long lm     = (Long) doc.get("_lastmodified");
-        // folder and regex
-        if (lm != null && src != null && path != null &&
-            path.startsWith(afolder) && 
-            (AsynchronousIndexer.this.pathRegex == null || path.substring(afolder.length()).matches(AsynchronousIndexer.this.pathRegex))) {
-          try {
-            existing.put(src, lm);
-          } catch (NumberFormatException ex) {
-            // ignore, should never happen anyway
-          }
-        }
-      }
-    });
-    return existing;
-  }
-
   /**
    * File filter method
    */
   @Override
   public boolean accept(File file) {
     // check with index's file filter
-    if (!getIndexingFileFilter().accept(file))
+    if (!this._luceneIndex.getIndexingFileFilter().accept(file))
       return false;
     // now check with regex
     if (this.pathRegex != null) {
-      File root = new File(getContentLocation(), this.folder == null ? "/" : this.folder);
+      File root = new File(this._luceneIndex.getIndex().getContentLocation(), this.folder == null ? "/" : this.folder);
       String path = Files.path(root, file);
       if (path != null && !path.matches(this.pathRegex))
         return false;
@@ -235,7 +198,7 @@ public class AsynchronousIndexer implements Runnable, XMLWritable, FileFilter {
   public void toXML(XMLWriter xml) throws IOException {
     xml.openElement("indexer");
     if (this.started > 0) xml.attribute("started", ISO8601.DATETIME.format(this.started));
-    xml.attribute("index", getName());
+    xml.attribute("index", this._luceneIndex.getName());
     xml.attribute("completed", String.valueOf(this.done));
     if (this.folder != null) xml.attribute("folder", this.folder);
     if (this.indexer != null) {
@@ -245,7 +208,7 @@ public class AsynchronousIndexer implements Runnable, XMLWritable, FileFilter {
       Map<String, Action> files = this.indexer.getIndexedFiles();
       xml.openElement("files");
       xml.attribute("count", files.size());
-      String root = getContentLocation().getAbsolutePath();
+      String root = this._luceneIndex.getIndex().getContentLocation().getAbsolutePath();
       int max = 100;
       int current = 0;
       for (String path : files.keySet()) {
@@ -269,15 +232,4 @@ public class AsynchronousIndexer implements Runnable, XMLWritable, FileFilter {
     return indexers.get(name);
   }
 
-  private String getName() {
-    return this._luceneIndex == null ? this._solrIndex.getName() : this._luceneIndex.getName();
-  }
-
-  private File getContentLocation() {
-    return this._luceneIndex != null ? this._luceneIndex.getIndex().getContentLocation() : this._solrIndex.getIndex().getContentLocation();
-  }
-
-  private FileFilter getIndexingFileFilter() {
-    return this._luceneIndex != null ? this._luceneIndex.getIndexingFileFilter() : this._solrIndex.getIndexingFileFilter();
-  }
 }

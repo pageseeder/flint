@@ -4,13 +4,11 @@ dependencies {
   implementation (
     project(':pso-flint'),
     project (':pso-flint-lucene'),
-    project (':pso-flint-solr'),
     'org.slf4j:slf4j-api:1.7.36',
     'org.pageseeder.berlioz:pso-berlioz:0.12.2',
-    'org.apache.lucene:lucene-core:9.2.0',
-    'org.apache.lucene:lucene-queryparser:9.2.0',
-    'org.apache.lucene:lucene-analyzers-common:8.11.1',
-    'org.apache.solr:solr-solrj:8.11.2'
+    'org.apache.lucene:lucene-core:9.6.0',
+    'org.apache.lucene:lucene-queryparser:9.6.0',
+    'org.apache.lucene:lucene-analyzers-common:8.11.2'
   )
 
   compileOnly (

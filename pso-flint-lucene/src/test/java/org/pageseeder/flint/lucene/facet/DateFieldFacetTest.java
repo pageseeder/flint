@@ -49,7 +49,7 @@ public class DateFieldFacetTest {
   @BeforeClass
   public static void init() {
     // clean up previous test's data
-    for (File f : indexRoot.listFiles()) f.delete();
+    if (indexRoot.listFiles() != null) for (File f : indexRoot.listFiles()) f.delete();
     indexRoot.delete();
     try {
       index = new LuceneLocalIndex(indexRoot, "datefield", new StandardAnalyzer(), documents);

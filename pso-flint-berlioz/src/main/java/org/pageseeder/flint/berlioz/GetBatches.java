@@ -1,6 +1,6 @@
 /*
  * Decompiled with CFR 0_110.
- * 
+ *
  * Could not load the following classes:
  *  org.pageseeder.berlioz.BerliozException
  *  org.pageseeder.berlioz.content.ContentGenerator
@@ -28,7 +28,6 @@ public class GetBatches implements ContentGenerator {
   public void process(ContentRequest req, XMLWriter xml) throws BerliozException, IOException {
     Collection<IndexBatch> batches = FlintConfig.get().getPastBatches();
     xml.openElement("batches");
-    xml.attribute("solr", FlintConfig.get().useSolr() ? "true" : "false");
     for (IndexBatch batch : batches) {
       BatchXMLWriter.batchToXML(batch, xml);
     }

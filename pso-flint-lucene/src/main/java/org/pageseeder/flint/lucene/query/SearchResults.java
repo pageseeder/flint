@@ -483,7 +483,6 @@ public final class SearchResults implements XMLWritable {
         } else if (type == ValueType.INT) {
           xml.attribute("numeric-type", "int");
         }
-        if (f.compressed()) xml.attribute("compressed", "true");
         xml.writeText(value);
         xml.closeElement();
       }

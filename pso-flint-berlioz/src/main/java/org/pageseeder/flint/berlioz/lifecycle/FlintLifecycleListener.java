@@ -4,8 +4,6 @@ import java.io.File;
 
 import org.pageseeder.berlioz.LifecycleListener;
 import org.pageseeder.flint.berlioz.model.FlintConfig;
-import org.pageseeder.flint.berlioz.model.SolrIndexMaster;
-import org.pageseeder.flint.solr.SolrFlintException;
 
 public class FlintLifecycleListener implements LifecycleListener {
 
@@ -14,33 +12,19 @@ public class FlintLifecycleListener implements LifecycleListener {
     System.out.println("[BERLIOZ_INIT] Lifecycle: Loading Flint Indexes");
     FlintConfig config = FlintConfig.get();
     int nb = 0;
-    if (config.useSolr()) {
-      try {
-        for (SolrIndexMaster index : config.listSolrIndexes()) {
-          System.out.println("[BERLIOZ_INIT] Lifecycle: index" + index.getName() + " successfuly loaded.");
-          nb ++;
+    File root = config.getRootDirectory();
+    File[] files = root == null ? null : root.listFiles();
+    if (files != null) for (File folder : files) {
+      if (folder.isDirectory()) {
+        // autosuggest index?
+        if (folder.getName().endsWith("_autosuggest") &&
+            new File(root, folder.getName().split("_")[0]).exists()) {
+          continue;
         }
-      } catch (SolrFlintException ex) {
-        if (ex.cannotConnect()) {
-          System.out.println("[BERLIOZ_INIT] Lifecycle: Failed to connect to Solr server, please check configuration!");
+        if (config.getMaster(folder.getName(), true) == null) {
+          System.out.println("[BERLIOZ_INIT] Lifecycle: Failed to load index "+folder.getName());
         } else {
-          System.out.println("[BERLIOZ_INIT] Lifecycle: Failed to list Solr indexes: "+ex.getMessage()+".");
-        }
-      }
-    } else {
-      File root = config.getRootDirectory();
-      for (File folder : root.listFiles()) {
-        if (folder.isDirectory()) {
-          // autosuggest index?
-          if (folder.getName().endsWith("_autosuggest") &&
-              new File(root, folder.getName().split("_")[0]).exists()) {
-            continue;
-          }
-          if (config.getMaster(folder.getName(), true) == null) {
-            System.out.println("[BERLIOZ_INIT] Lifecycle: Failed to load index "+folder.getName());
-          } else {
-            nb++;
-          }
+          nb++;
         }
       }
     }

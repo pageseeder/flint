@@ -2,7 +2,6 @@ package org.pageseeder.flint.berlioz.helper;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.Term;
-import org.apache.solr.client.solrj.SolrQuery;
 import org.pageseeder.berlioz.GlobalSettings;
 import org.pageseeder.berlioz.util.Pair;
 import org.pageseeder.flint.IndexException;
@@ -10,7 +9,6 @@ import org.pageseeder.flint.Requester;
 import org.pageseeder.flint.berlioz.model.FlintConfig;
 import org.pageseeder.flint.berlioz.model.IndexDefinition;
 import org.pageseeder.flint.berlioz.model.IndexMaster;
-import org.pageseeder.flint.berlioz.model.SolrIndexMaster;
 import org.pageseeder.flint.indexing.IndexBatch;
 import org.pageseeder.flint.indexing.IndexJob.Priority;
 import org.pageseeder.flint.local.LocalFileContentType;
@@ -18,9 +16,6 @@ import org.pageseeder.flint.lucene.LuceneLocalIndex;
 import org.pageseeder.flint.lucene.query.BasicQuery;
 import org.pageseeder.flint.lucene.query.PrefixParameter;
 import org.pageseeder.flint.lucene.query.SearchResults;
-import org.pageseeder.flint.solr.SolrFlintException;
-import org.pageseeder.flint.solr.index.SolrLocalIndex;
-import org.pageseeder.flint.solr.query.SolrQueryManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -121,7 +116,7 @@ public class FolderWatcher {
 
   /**
    * When a file was changed on the file system.
-   * 
+   *
    * @param file the modified file
    */
   private void fileChanged(File file) {
@@ -139,20 +134,6 @@ public class FolderWatcher {
       } else {
         LOGGER.debug("Delay re-indexing of file {}", file);
         for (IndexMaster destination : destinations)
-          this._delayedIndexer.index(destination.getIndex(), file.getAbsolutePath());
-      }
-    }
-    Collection<SolrIndexMaster> solrDestinations = getSolrDestinations(file, config);
-    if (!solrDestinations.isEmpty()) {
-      // delayed indexing?
-      if (this._delayedIndexer == null) {
-        LOGGER.debug("Re-indexing file {}", file);
-        for (SolrIndexMaster destination : solrDestinations)
-          config.getManager().index(file.getAbsolutePath(), LocalFileContentType.SINGLETON, destination.getIndex(),
-                                    new Requester("Berlioz File Watcher"), Priority.HIGH, null);
-      } else {
-        LOGGER.debug("Delay re-indexing of file {}", file);
-        for (SolrIndexMaster destination : solrDestinations)
           this._delayedIndexer.index(destination.getIndex(), file.getAbsolutePath());
       }
     }
@@ -188,37 +169,6 @@ public class FolderWatcher {
             folderAdded(afile);
           } else {
             for (IndexMaster destination : destinations) {
-              this._delayedIndexer.index(destination.getIndex(), afile.getAbsolutePath());
-            }
-          }
-        }
-      }
-    }
-    // solr
-    Collection<SolrIndexMaster> solrDestinations = getSolrDestinations(file, config);
-    // index it if there's a destination
-    if (!solrDestinations.isEmpty()) {
-      // delayed indexing?
-      if (this._delayedIndexer == null) {
-        LOGGER.debug("Re-indexing file {}", file);
-        Requester req = new Requester("Berlioz File Watcher");
-        for (File afile : files) {
-          if (Files.isDirectory(afile.toPath(), LinkOption.NOFOLLOW_LINKS)) {
-            folderAdded(afile);
-          } else {
-            for (SolrIndexMaster destination : solrDestinations) {
-              config.getManager().index(afile.getAbsolutePath(), LocalFileContentType.SINGLETON,
-                                        destination.getIndex(), req, Priority.HIGH, null);
-            }
-          }
-        }
-      } else {
-        LOGGER.debug("Delay re-indexing of file {}", file);
-        for (File afile : files) {
-          if (Files.isDirectory(afile.toPath(), LinkOption.NOFOLLOW_LINKS)) {
-            folderAdded(afile);
-          } else {
-            for (SolrIndexMaster destination : solrDestinations) {
               this._delayedIndexer.index(destination.getIndex(), afile.getAbsolutePath());
             }
           }
@@ -269,45 +219,12 @@ public class FolderWatcher {
         }
       }
     }
-    // solr
-    Collection<SolrIndexMaster> solrDestinations = getSolrDestinations(file, config);
-    // index it if there's a destination
-    for (SolrIndexMaster destination : solrDestinations) {
-      Collection<File> toReIndex = new ArrayList<>();
-      // find all files located in there
-      String path = destination.getIndex().fileToPath(file);
-      new SolrQueryManager(destination.getIndex()).select(new SolrQuery("_path:"+path+'*'), doc -> {
-        String p = (String) doc.get("_path");
-        if (p != null) toReIndex.add(destination.getIndex().pathToFile(p));
-      });
-      // delayed indexing?
-      if (this._delayedIndexer == null) {
-        LOGGER.debug("Re-indexing file {}", file);
-        Requester req = new Requester("Berlioz File Watcher");
-        for (File afile : toReIndex) {
-          if (Files.isDirectory(afile.toPath(), LinkOption.NOFOLLOW_LINKS)) {
-            folderDeleted(afile);
-          } else {
-            config.getManager().index(afile.getAbsolutePath(), LocalFileContentType.SINGLETON, destination.getIndex(), req, Priority.HIGH, null);
-          }
-        }
-      } else {
-        LOGGER.debug("Delay re-indexing of file {}", file);
-        for (File afile : toReIndex) {
-          if (Files.isDirectory(afile.toPath(), LinkOption.NOFOLLOW_LINKS)) {
-            folderDeleted(afile);
-          } else {
-            this._delayedIndexer.index(destination.getIndex(), afile.getAbsolutePath());
-          }
-        }
-      }
-    }
   }
 
   private Collection<IndexMaster> getLuceneDestinations(File file, FlintConfig config) {
     List<IndexMaster> indexes = new ArrayList<>();
     // find which index that file is in
-    for (IndexMaster master : config.listLuceneIndexes()) {
+    for (IndexMaster master : config.listIndexes()) {
       if (master.isInIndex(file)) {
         indexes.add(master);
       }
@@ -325,21 +242,6 @@ public class FolderWatcher {
     }
     return indexes;
   }
-
-  private Collection<SolrIndexMaster> getSolrDestinations(File file, FlintConfig config) {
-    List<SolrIndexMaster> indexes = new ArrayList<>();
-    // find which index that file is in
-    try {
-      for (SolrIndexMaster master : config.listSolrIndexes()) {
-        if (master.isInIndex(file)) {
-          indexes.add(master);
-        }
-      }
-    } catch (SolrFlintException ex) {
-      LOGGER.error("Failed to list Solr indexes", ex);
-    }
-    return indexes;
-  }
   /**
    * Delayed indexing thread.
    * A loop checks every second for all the files in the list.
@@ -347,13 +249,12 @@ public class FolderWatcher {
    */
   private static class DelayedIndexer implements Runnable {
 
-    /** if the thread has been stopped */ 
+    /** if the thread has been stopped */
     private boolean keepGoing = true;
     /** the indexing delay (in seconds) */
     private final int _delay;
     /** the list of delayed files */
     private final Map<Pair<String, LuceneLocalIndex>, AtomicInteger> _delayedLuceneIndexing = new ConcurrentHashMap<>(100, 0.8f);
-    private final Map<Pair<String, SolrLocalIndex>, AtomicInteger> _delayedSolrIndexing = new ConcurrentHashMap<>(100, 0.8f);
 
     /**
      * @param delay the indexing delay in seconds
@@ -381,23 +282,6 @@ public class FolderWatcher {
         // add it if not there
         if (delay == null)
           this._delayedLuceneIndexing.put(key, new AtomicInteger(this._delay));
-        // reset otherwise
-        else delay.set(this._delay);
-      }
-    }
-
-    /**
-     * Add a new file to be indexed
-     * @param index the index
-     * @param path  the file
-     */
-    public void index(SolrLocalIndex index, String path) {
-      Pair<String, SolrLocalIndex> key = new Pair<>(path, index);
-      synchronized (this._delayedSolrIndexing) {
-        AtomicInteger delay = this._delayedSolrIndexing.get(key);
-        // add it if not there
-        if (delay == null)
-          this._delayedSolrIndexing.put(key, new AtomicInteger(this._delay));
         // reset otherwise
         else delay.set(this._delay);
       }
@@ -456,45 +340,8 @@ public class FolderWatcher {
             }
           }
         }
-        // solr then
-        synchronized (this._delayedSolrIndexing) {
-          Map<String, IndexBatch> batches = null;
-          if (this._delayedLuceneIndexing.size() > 1) {
-            batches = new HashMap<>();
-          }
-          try {
-            for (Pair<String, SolrLocalIndex> toIndex : new ArrayList<>(this._delayedSolrIndexing.keySet())) {
-              AtomicInteger timer = this._delayedSolrIndexing.get(toIndex);
-              if (timer.decrementAndGet() == 0) {
-                LOGGER.debug("Re-indexing file {} after delay", toIndex.first());
-                // index now
-                if (batches == null) {
-                  config.getManager().index(toIndex.first(), LocalFileContentType.SINGLETON, toIndex.second(), req, Priority.HIGH, null);
-                } else {
-                  IndexBatch batch = batches.get(toIndex.second().getIndexID());
-                  if (batch == null) {
-                    batch = new IndexBatch(toIndex.second().getIndexID());
-                    batches.put(batch.getIndex(), batch);
-                  }
-                  batch.increaseTotal();
-                  config.getManager().indexBatch(batch, toIndex.first(), LocalFileContentType.SINGLETON, toIndex.second(), req, Priority.HIGH, null);
-                }
-                // delete it
-                this._delayedSolrIndexing.remove(toIndex);
-              }
-              if (!this.keepGoing) break bigloop;
-            }
-          } finally {
-            // complete batches
-            if (batches != null) {
-              for (IndexBatch batch : batches.values()) {
-                batch.setComputed();
-              }
-            }
-          }
-        }
       }
     }
   }
-  
+
 }

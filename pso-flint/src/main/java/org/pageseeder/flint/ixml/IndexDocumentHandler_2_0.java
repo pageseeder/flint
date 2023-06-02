@@ -211,7 +211,6 @@ final class IndexDocumentHandler_2_0 extends DefaultHandler implements IndexDocu
     storeAttribute(atts.getValue("store"));
     // Optional attributes
     termVectorAttribute(atts.getValue("term-vector"));
-    this.field.boost(atts.getValue("boost"));
     // Date handling
     this.field.dateFormat(toDateFormat(atts.getValue("date-format")));
     this.field.resolution(atts.getValue("date-resolution"));

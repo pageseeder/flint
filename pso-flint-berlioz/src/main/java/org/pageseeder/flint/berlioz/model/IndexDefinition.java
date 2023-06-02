@@ -75,14 +75,9 @@ public class IndexDefinition implements XMLWritable {
   private String templateError = null;
 
   /**
-   * solr attributes
-   */
-  private Map<String, String> _solrAttributes = new HashMap<>();
-
-  /**
    * autosuggests
    */
-  private Map<String, AutoSuggestDefinition> _autosuggests = new HashMap<>();
+  private final Map<String, AutoSuggestDefinition> _autosuggests = new HashMap<>();
 
   /**
    * @param name      the index name
@@ -124,19 +119,19 @@ public class IndexDefinition implements XMLWritable {
     return this._name;
   }
 
-  public void addAutoSuggest(String name, List<String> suggesters) {
-    assert name   != null;
-    assert suggesters != null;
-    AutoSuggestDefinition def = new AutoSuggestDefinition(name, (String) null, false, null, null, suggesters);
-    this._autosuggests.put(name, def);
+  public void addAutoSuggest(String name) {
+    addAutoSuggest(name, null);
   }
 
   /**
-   * @deprecated you should use the method which has criteriaFields in the paramter list.
+   * @deprecated suggesters not used anymore
    */
-  public void addAutoSuggest(String name, String fields, String terms, String returnFields, Map<String, Float> weights) {
-    addAutoSuggest(name, fields, terms, returnFields, null, weights);
+  public void addAutoSuggest(String name, List<String> suggesters) {
+    assert name   != null;
+    AutoSuggestDefinition def = new AutoSuggestDefinition(name, (String) null, false, null, null);
+    this._autosuggests.put(name, def);
   }
+
   public void addAutoSuggest(String name, String fields, String terms, String returnFields, String criteriaFields, Map<String, Float> weights) {
     assert name   != null;
     assert fields != null;
@@ -147,22 +142,23 @@ public class IndexDefinition implements XMLWritable {
                    Boolean.valueOf(terms),
                    returnFields == null ? null : Arrays.asList(returnFields.split(",")),
                    criteriaFields == null ? null : Arrays.asList(criteriaFields.split(",")),
-                   weights,
-                   null);
+                   weights);
   }
 
+
   /**
-   * @deprecated  you should use the method which has criteriaFields in the paramter list.
+   * @deprecated suggesters are not used anymore
    */
-  public AutoSuggestDefinition addAutoSuggest(String name, List<String> fields, boolean terms, List<String> returnFields, Map<String, Float> weights) {
-    return addAutoSuggest(name, fields, terms, returnFields, null, weights, null);
+  public AutoSuggestDefinition addAutoSuggest(String name, List<String> fields, boolean terms, List<String> returnFields,
+                                              List<String> criteriaFields, Map<String, Float> weights, List<String> suggesters) {
+    return addAutoSuggest(name, fields, terms, returnFields, criteriaFields, weights, null);
   }
 
   public AutoSuggestDefinition addAutoSuggest(String name, List<String> fields, boolean terms, List<String> returnFields,
-                                              List<String> criteriaFields, Map<String, Float> weights, List<String> suggesters) {
+                                              List<String> criteriaFields, Map<String, Float> weights) {
     assert name   != null;
     assert fields != null;
-    AutoSuggestDefinition asd = new AutoSuggestDefinition(name, fields, terms, returnFields, weights, suggesters, criteriaFields);
+    AutoSuggestDefinition asd = new AutoSuggestDefinition(name, fields, terms, returnFields, weights, criteriaFields);
     this._autosuggests.put(name, asd);
     return asd;
   }
@@ -183,14 +179,6 @@ public class IndexDefinition implements XMLWritable {
 
   public boolean withStopWords() {
     return this._withStopWords;
-  }
-
-  public void setSolrAttribute(String name, String value) {
-    this._solrAttributes.put(name, value);
-  }
-
-  public String getSolrAttribute(String name) {
-    return this._solrAttributes.get(name);
   }
 
   public FileFilter buildFileFilter(final File root) {
@@ -477,7 +465,6 @@ public class IndexDefinition implements XMLWritable {
    */
   public static class AutoSuggestDefinition implements XMLWritable {
     private final String _name;
-    private final List<String> _solrSuggesters;
     private final List<String> _fields;
     private final List<String> _resultFields;
     /** It is the criteria fields name that willbe used as filter in the autosuggest. **/
@@ -489,33 +476,22 @@ public class IndexDefinition implements XMLWritable {
 
 
     public AutoSuggestDefinition(String name, List<String> fields, boolean terms, List<String> resultFields,
-                                 Map<String, Float> weights, List<String> suggesters, List<String> criteriaFields) {
+                                 Map<String, Float> weights, List<String> criteriaFields) {
       this._name = name;
       this._fields = fields;
       this._terms = terms;
       this._resultFields = resultFields;
       this._weights = weights;
-      this._solrSuggesters = suggesters;
       this._criteriaFields = criteriaFields;
     }
 
-    /**
-     * @deprecated  you should use the method which has criteriaFields in the paramter list.
-     */
-    public AutoSuggestDefinition(String name, List<String> fields, boolean terms, List<String> resultFields, Map<String, Float> weights, List<String> suggesters) {
-      this(name, fields, terms, resultFields, weights, suggesters, new ArrayList<>());
-    }
-
-    public AutoSuggestDefinition(String name, String fields, boolean terms, String resultFields, Map<String, Float> weights, List<String> suggesters) {
+    public AutoSuggestDefinition(String name, String fields, boolean terms, String resultFields, Map<String, Float> weights) {
       this(name,
           fields == null ? null : Arrays.asList(fields.split(",")), terms,
           resultFields == null ? null : Arrays.asList(resultFields.split(",")),
-          weights, suggesters, new ArrayList<>());
+          weights, new ArrayList<>());
     }
 
-    public Collection<String> getSolrSuggesters() {
-      return this._solrSuggesters;
-    }
     public Collection<String> getSearchFields() {
       return this._fields;
     }
@@ -546,43 +522,35 @@ public class IndexDefinition implements XMLWritable {
     public void toXML(XMLWriter xml) throws IOException {
       xml.openElement("autosuggest");
       xml.attribute("name", this._name);
-      if (this._solrSuggesters != null) {
-        StringBuilder suggesters = new StringBuilder();
-        for (int i = 0; i < this._solrSuggesters.size(); i++) {
-          suggesters.append(i == 0 ? "" : ",").append(this._solrSuggesters.get(i));
+      xml.attribute("min-chars", this.min);
+      xml.attribute("terms", Boolean.toString(this._terms));
+      if (this._weights != null) {
+        StringBuilder weights = new StringBuilder();
+        for (Entry<String, Float> weight: this._weights.entrySet()) {
+          weights.append(weights.length() == 0 ? "" : ",").append(weight.getKey()).append(':').append(weight.getValue());
         }
-        xml.attribute("suggesters", suggesters.toString());
-      } else {
-        xml.attribute("min-chars", this.min);
-        xml.attribute("terms", Boolean.toString(this._terms));
-        if (this._weights != null) {
-          StringBuilder weights = new StringBuilder();
-          for (Entry<String, Float> weight: this._weights.entrySet()) {
-            weights.append(weights.length() == 0 ? "" : ",").append(weight.getKey()).append(':').append(weight.getValue());
-          }
-          xml.attribute("weight", weights.toString());
+        xml.attribute("weight", weights.toString());
+      }
+      if (this._fields != null) {
+        StringBuilder fields = new StringBuilder();
+        for (int i = 0; i < this._fields.size(); i++) {
+          fields.append(i == 0 ? "" : ",").append(this._fields.get(i));
         }
-        if (this._fields != null) {
-          StringBuilder fields = new StringBuilder();
-          for (int i = 0; i < this._fields.size(); i++) {
-            fields.append(i == 0 ? "" : ",").append(this._fields.get(i));
-          }
-          xml.attribute("fields", fields.toString());
+        xml.attribute("fields", fields.toString());
+      }
+      if (this._resultFields != null && !this._resultFields.isEmpty()) {
+        StringBuilder fields = new StringBuilder();
+        for (int i = 0; i < this._resultFields.size(); i++) {
+          fields.append(i == 0 ? "" : ",").append(this._resultFields.get(i));
         }
-        if (this._resultFields != null && !this._resultFields.isEmpty()) {
-          StringBuilder fields = new StringBuilder();
-          for (int i = 0; i < this._resultFields.size(); i++) {
-            fields.append(i == 0 ? "" : ",").append(this._resultFields.get(i));
-          }
-          xml.attribute("result-fields", fields.toString());
+        xml.attribute("result-fields", fields.toString());
+      }
+      if (this._criteriaFields != null && !this._criteriaFields.isEmpty()) {
+        StringBuilder fields = new StringBuilder();
+        for (int i = 0; i < this._criteriaFields.size(); i++) {
+          fields.append(i == 0 ? "" : ",").append(this._criteriaFields.get(i));
         }
-        if (this._criteriaFields != null && !this._criteriaFields.isEmpty()) {
-          StringBuilder fields = new StringBuilder();
-          for (int i = 0; i < this._criteriaFields.size(); i++) {
-            fields.append(i == 0 ? "" : ",").append(this._criteriaFields.get(i));
-          }
-          xml.attribute("criteria-fields", fields.toString());
-        }
+        xml.attribute("criteria-fields", fields.toString());
       }
       xml.closeElement();
     }
