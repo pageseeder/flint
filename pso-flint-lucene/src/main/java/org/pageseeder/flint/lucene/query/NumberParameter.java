@@ -15,7 +15,7 @@ import java.io.IOException;
 
 /**
  * Create a number parameter using a numeric value.
- *
+ * <p>
  * This is API is still experimental and subject to change in Lucene, any change in Lucene may also
  * be reflected in this API.
  *

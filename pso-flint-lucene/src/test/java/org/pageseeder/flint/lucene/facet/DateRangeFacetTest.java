@@ -22,6 +22,7 @@ import org.pageseeder.flint.lucene.search.Filter;
 import org.pageseeder.flint.lucene.util.Bucket;
 import org.pageseeder.flint.lucene.utils.TestListener;
 import org.pageseeder.flint.lucene.utils.TestUtils;
+import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.FileFilter;
@@ -34,10 +35,10 @@ import java.util.TimeZone;
 
 public class DateRangeFacetTest {
 
-  private static File template  = new File("src/test/resources/template.xsl");
-  private static File documents = new File("src/test/resources/facets");
-  private static FileFilter filter = new FileFilter() { public boolean accept(File file) { return "daterangefacet.xml".equals(file.getName()); } };
-  private static File indexRoot = new File("tmp/index");
+  private static final File template  = new File("src/test/resources/template.xsl");
+  private static final File documents = new File("src/test/resources/facets");
+  private static final FileFilter filter = file -> "daterangefacet.xml".equals(file.getName());
+  private static final File indexRoot = new File("tmp/index");
 
   private static LuceneLocalIndex index;
   private static LocalIndexManager manager;
@@ -54,7 +55,7 @@ public class DateRangeFacetTest {
       index = new LuceneLocalIndex(indexRoot, "daterange", new StandardAnalyzer(), documents);
       index.setTemplate("xml", template.toURI());
     } catch (Exception ex) {
-      ex.printStackTrace();
+      LoggerFactory.getLogger(TestUtils.class).error("Something went wrong", ex);
     }
     manager = LocalIndexManagerFactory.createMultiThreads(new TestListener());
     System.out.println("Starting manager!");
@@ -63,11 +64,7 @@ public class DateRangeFacetTest {
     // wait a bit
     TestUtils.wait(1);
     // prepare base query
-    try {
-      searcher = LuceneIndexQueries.grabSearcher(index);
-    } catch (IndexException ex) {
-      ex.printStackTrace();
-    }
+    searcher = LuceneIndexQueries.grabSearcher(index);
     // set GMT as indexed dates
     format.setTimeZone(TimeZone.getTimeZone("GMT"));
   }
@@ -75,11 +72,7 @@ public class DateRangeFacetTest {
   @AfterClass
   public static void after() {
     // close searcher
-    try {
-      LuceneIndexQueries.release(index, searcher);
-    } catch (IndexException ex) {
-      ex.printStackTrace();
-    }
+    LuceneIndexQueries.release(index, searcher);
     // stop index
     System.out.println("Stopping manager!");
     manager.shutdown();
@@ -92,7 +85,7 @@ public class DateRangeFacetTest {
         .addRange(format.parse("2017-01-01_12:00:00"), format.parse("2017-01-03_12:00:00"))
         .addRange(format.parse("2017-01-04_12:00:00"), format.parse("2017-01-06_12:00:00"))
         .addRange(format.parse("2017-01-07_12:00:00"), format.parse("2017-01-10_12:00:00")).build();
-    facet.compute(searcher, null);
+    facet.compute(searcher);
     Assert.assertEquals(3, facet.getTotalRanges());
     Bucket<Range> ranges = facet.getValues();
     Assert.assertEquals(3, ranges.items().size());
@@ -104,7 +97,7 @@ public class DateRangeFacetTest {
         .addRange(format.parse("2017-02-01_12:00:00"), format.parse("2017-02-03_12:00:00"))
         .addRange(format.parse("2017-02-04_12:00:00"), format.parse("2017-02-05_12:00:00"))
         .addRange(format.parse("2017-02-06_12:00:00"), format.parse("2017-02-10_12:00:00")).build();
-    facet.compute(searcher, null);
+    facet.compute(searcher);
     Assert.assertEquals(4, facet.getTotalRanges());
     ranges = facet.getValues();
     Assert.assertEquals(4, ranges.items().size());
@@ -116,7 +109,7 @@ public class DateRangeFacetTest {
     facet = new DateRangeFacet.Builder().name("facet3").resolution(second_resolution)
         .addRange(format.parse("2017-03-01_12:00:00"), format.parse("2017-03-03_12:00:00"))
         .addRange(format.parse("2017-03-06_12:00:00"), format.parse("2017-03-10_12:00:00")).build();
-    facet.compute(searcher, null);
+    facet.compute(searcher);
     Assert.assertEquals(2, facet.getTotalRanges());
     ranges = facet.getValues();
     Assert.assertEquals(2, ranges.items().size());

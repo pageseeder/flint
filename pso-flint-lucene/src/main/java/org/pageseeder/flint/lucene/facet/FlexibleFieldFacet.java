@@ -114,7 +114,7 @@ public abstract class FlexibleFieldFacet extends FlexibleFacet<String> {
         this.hasResults = td.totalHits.value > 0;
         return;
       } catch (Exception ex) {
-        // oh well go through terms then
+        // go through terms then
       }
       // find all terms
       List<Term> terms = Terms.terms(searcher.getIndexReader(), name());
@@ -209,12 +209,27 @@ public abstract class FlexibleFieldFacet extends FlexibleFacet<String> {
   /**
    * Computes each facet option without a base query.
    *
+   * <p>Same as <code>computeFlexible(searcher, 10);</code>.
+   *
+   * <p>Defaults to 10.
+   *
+   * @param searcher the index search to use.
+   *
+   * @throws IOException if thrown by the searcher.
+   */
+  public void compute(IndexSearcher searcher) throws IOException {
+    compute(searcher, DEFAULT_MAX_NUMBER_OF_VALUES);
+  }
+
+  /**
+   * Computes each facet option without a base query.
+   *
    * @param searcher the index search to use.
    * @param size     the number of facet values to calculate.
    *
    * @throws IOException if thrown by the searcher.
    */
-  private void compute(IndexSearcher searcher, int size) throws IOException {
+  public void compute(IndexSearcher searcher, int size) throws IOException {
     if (size == 0) {
       // reset
       this.totalTerms = -1;

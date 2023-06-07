@@ -62,7 +62,7 @@ public abstract class FlexibleFacet<T> implements XMLWritable {
    */
   public abstract Bucket<T> getValues();
 
-  final static String toDateString(String date, DateTools.Resolution resolution) {
+  static String toDateString(String date, DateTools.Resolution resolution) {
     try {
       return Dates.format(DateTools.stringToDate(date), resolution);
     } catch (ParseException ex) {

@@ -79,7 +79,7 @@ public class LocalFileContent implements Content {
   }
 
   @Override
-  public String getMediaType() throws IndexException {
+  public String getMediaType() {
     String name = this._f.getName();
     int lastDot = name.lastIndexOf('.');
     return lastDot == -1 ? "" : name.substring(lastDot+1);
@@ -91,7 +91,7 @@ public class LocalFileContent implements Content {
   }
 
   @Override
-  public File getFile() throws IndexException {
+  public File getFile() {
     return this._f;
   }
 
@@ -106,7 +106,7 @@ public class LocalFileContent implements Content {
     try {
       return new BufferedInputStream(new FileInputStream(this._f));
     } catch (IOException ex) {
-      LOGGER.warn("Unable to get input source for ", this._f, ex);
+      LOGGER.warn("Unable to get input source for {}", this._f, ex);
       return null;
     }
   }

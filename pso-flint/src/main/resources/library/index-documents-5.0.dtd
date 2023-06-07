@@ -69,7 +69,7 @@
 -->
 <!ENTITY  % NUMERIC_TYPE     "(double|float|int|long)"                                            >
 
-<!--                                                
+<!--
   A container for Lucene documents.
 
   @element document          The list of documents.
@@ -77,12 +77,12 @@
   @attribute timezone        A specific timezone used by the document.
 -->
 <!ELEMENT documents                         (document*)                                           >
-<!ATTLIST documents          version         CDATA                                   #FIXED "5.0" 
+<!ATTLIST documents          version         CDATA                                   #FIXED "5.0"
                              timezone        CDATA                                       #IMPLIED >
 
-<!--                                                
+<!--
   A Lucene document.
-  
+
   @element field The fields attached to the document
   @attribute boost           A boost value for the document.
 -->
@@ -97,7 +97,7 @@
   @attribute index           A Lucene Field Index value.
   @attribute tokenize        If the field value is tokenized.
   @attribute doc-values      If the field is a doc values field, used for sorting or facets.
-  @attribute term-vector     Specifies whether and how a 
+  @attribute term-vector     Specifies whether term vectors are stored
   @attribute boost           A boost value for the field.
   @attribute date-format     A date format to parse a date field.
   @attribute date-resolution The resolution for a Lucene date field.
@@ -105,17 +105,17 @@
   @attribute precision-step  Indicates precision step for a numeric field.
 -->
 <!ELEMENT field                                      (#PCDATA)                                    >
-<!ATTLIST field              name                    CDATA                              #REQUIRED 
-                             store                   %FIELD_STORE;                      #IMPLIED 
+<!ATTLIST field              name                    CDATA                              #REQUIRED
+                             store                   %FIELD_STORE;                      #IMPLIED
                              index                   %FIELD_INDEX;                      #IMPLIED
-                             tokenize                %BOOLEAN;                          #IMPLIED 
-                             doc-values              %FIELD_DOC_VALUES;                 #IMPLIED 
+                             tokenize                %BOOLEAN;                          #IMPLIED
+                             doc-values              %FIELD_DOC_VALUES;                 #IMPLIED
                              term-vector             %BOOLEAN;                          #IMPLIED
                              term-vector-positions   %BOOLEAN;                          #IMPLIED
                              term-vector-offsets     %BOOLEAN;                          #IMPLIED
                              term-vector-payloads    %BOOLEAN;                          #IMPLIED
                              boost                   CDATA                              #IMPLIED
                              date-format             CDATA                              #IMPLIED
-                             date-resolution         %RESOLUTION;                       #IMPLIED  
+                             date-resolution         %RESOLUTION;                       #IMPLIED
                              numeric-type            %NUMERIC_TYPE;                     #IMPLIED
                              precision-step          CDATA                              #IMPLIED  >

@@ -299,15 +299,14 @@ final class IndexDocumentHandler_2_0 extends DefaultHandler implements IndexDocu
    */
   private static boolean includesTime(String format) {
     if (format.indexOf('H') >= 0) return true; // Hour in day (0-23)
-    else if (format.indexOf('k') >= 0) return true; // Hour in day (1-24)
-    else if (format.indexOf('K') >= 0) return true; // Hour in am/pm (0-11)
-    else if (format.indexOf('h') >= 0) return true; // Hour in am/pm (1-12)
-    else if (format.indexOf('m') >= 0) return true; // Minute in hour
-    else if (format.indexOf('s') >= 0) return true; // Second in minute
-    else if (format.indexOf('S') >= 0) return true; // Millisecond
-    else if (format.indexOf('Z') >= 0) return true; // Time zone
-    else if (format.indexOf('z') >= 0) return true; // Time zone
-    return false;
+    if (format.indexOf('k') >= 0) return true; // Hour in day (1-24)
+    if (format.indexOf('K') >= 0) return true; // Hour in am/pm (0-11)
+    if (format.indexOf('h') >= 0) return true; // Hour in am/pm (1-12)
+    if (format.indexOf('m') >= 0) return true; // Minute in hour
+    if (format.indexOf('s') >= 0) return true; // Second in minute
+    if (format.indexOf('S') >= 0) return true; // Millisecond
+    if (format.indexOf('Z') >= 0) return true; // Time zone
+    return format.indexOf('z') >= 0; // Time zone
   }
 
   /**

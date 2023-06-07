@@ -12,17 +12,13 @@ import org.junit.Test;
 import org.pageseeder.flint.IndexException;
 import org.pageseeder.flint.IndexManager;
 import org.pageseeder.flint.Requester;
-import org.pageseeder.flint.catalog.Catalog;
-import org.pageseeder.flint.catalog.Catalogs;
-import org.pageseeder.flint.content.Content;
-import org.pageseeder.flint.content.ContentFetcher;
 import org.pageseeder.flint.content.SourceForwarder;
-import org.pageseeder.flint.indexing.IndexJob;
 import org.pageseeder.flint.indexing.IndexJob.Priority;
 import org.pageseeder.flint.lucene.LuceneIndex;
 import org.pageseeder.flint.lucene.LuceneIndexQueries;
 import org.pageseeder.flint.lucene.utils.TestListener;
 import org.pageseeder.flint.lucene.utils.TestUtils;
+import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.IOException;
@@ -30,7 +26,7 @@ import java.util.List;
 
 public class QuestionTest {
 
-  private static File template  = new File("src/test/resources/template.xsl");
+  private static final File template  = new File("src/test/resources/template.xsl");
 
   private static LuceneIndex index;
   private static IndexManager manager;
@@ -41,28 +37,25 @@ public class QuestionTest {
       index = new LuceneIndex("QuestionTest", new ByteBuffersDirectory(), new StandardAnalyzer());
       index.setTemplates(TestUtils.TYPE, TestUtils.MEDIA_TYPE, template.toURI());
     } catch (Exception ex) {
-      ex.printStackTrace();
+      LoggerFactory.getLogger(TestUtils.class).error("Something went wrong", ex);
     }
-    manager = new IndexManager(new ContentFetcher() {
-      @Override
-      public Content getContent(IndexJob job) {
-        // add all documents in one go
-        String xml = "<documents version='5.0'>\n"+
-                       "<document>\n"+
-                         "<field name='"+TestUtils.ID_FIELD+"' tokenize='false'>doc1</field>\n"+
-                         "<field name='term1'>value1</field>\n"+
-                       "</document>\n"+
-                       "<document>\n"+
-                         "<field name='"+TestUtils.ID_FIELD+"' tokenize='false'>doc2</field>\n"+
-                         "<field name='term1'>value2</field>\n"+
-                       "</document>\n"+
-                       "<document>\n"+
-                         "<field name='"+TestUtils.ID_FIELD+"' tokenize='false'>doc3</field>\n"+
-                         "<field name='term1'>value3</field>\n"+
-                       "</document>\n"+
-                     "</documents>";
-        return new TestUtils.TestContent(job.getContentID(), xml);
-      }
+    manager = new IndexManager(job -> {
+      // add all documents in one go
+      String xml = "<documents version='5.0'>\n"+
+                     "<document>\n"+
+                       "<field name='"+TestUtils.ID_FIELD+"' tokenize='false'>doc1</field>\n"+
+                       "<field name='term1'>value1</field>\n"+
+                     "</document>\n"+
+                     "<document>\n"+
+                       "<field name='"+TestUtils.ID_FIELD+"' tokenize='false'>doc2</field>\n"+
+                       "<field name='term1'>value2</field>\n"+
+                     "</document>\n"+
+                     "<document>\n"+
+                       "<field name='"+TestUtils.ID_FIELD+"' tokenize='false'>doc3</field>\n"+
+                       "<field name='term1'>value3</field>\n"+
+                     "</document>\n"+
+                   "</documents>";
+      return new TestUtils.TestContent(job.getContentID(), xml);
     }, new TestListener());
     manager.setDefaultTranslator(new SourceForwarder("xml", "UTF-8"));
     System.out.println("Starting manager!");

@@ -83,7 +83,7 @@ public final class FieldFacet implements XMLWritable, Facet {
   }
 
   /**
-   * Returns the query for given value if it the specified value matches the text for the term.
+   * Returns the query for given value if the specified value matches the text for the term.
    *
    * @param value the text of the term to match.
    * @return the requested query if it exists or <code>null</code>.
@@ -114,7 +114,7 @@ public final class FieldFacet implements XMLWritable, Facet {
     } else {
       if (size < 0) throw new IllegalArgumentException("size < 0");
       // Otherwise, make a boolean query of the base AND each facet query
-      Bucket<Term> bucket = new Bucket<Term>(size);
+      Bucket<Term> bucket = new Bucket<>(size);
       DocumentCounter counter = new DocumentCounter();
       for (TermQuery q : this._queries) {
         BooleanQuery.Builder query = new BooleanQuery.Builder();
@@ -158,8 +158,8 @@ public final class FieldFacet implements XMLWritable, Facet {
    *
    * @throws IOException if thrown by the searcher.
    */
-  private void compute(IndexSearcher searcher, int size) throws IOException {
-    Bucket<Term> bucket = new Bucket<Term>(size);
+  public void compute(IndexSearcher searcher, int size) throws IOException {
+    Bucket<Term> bucket = new Bucket<>(size);
     DocumentCounter counter = new DocumentCounter();
     for (TermQuery q : this._queries) {
       searcher.search(q, counter);
@@ -206,7 +206,7 @@ public final class FieldFacet implements XMLWritable, Facet {
    */
   public static FieldFacet newFacet(String field, IndexReader reader) throws IOException {
     List<Term> terms = Terms.terms(reader, field);
-    List<TermQuery> subs = new ArrayList<TermQuery>(terms.size());
+    List<TermQuery> subs = new ArrayList<>(terms.size());
     for (Term t : terms) {
       subs.add(new TermQuery(t));
     }
@@ -226,7 +226,7 @@ public final class FieldFacet implements XMLWritable, Facet {
   public static FieldFacet newFacet(String field, IndexReader reader, int maxValues) throws IOException {
     List<Term> terms = Terms.terms(reader, field);
     if (terms.size() > maxValues) return null;
-    List<TermQuery> subs = new ArrayList<TermQuery>(terms.size());
+    List<TermQuery> subs = new ArrayList<>(terms.size());
     for (Term t : terms) {
       subs.add(new TermQuery(t));
     }

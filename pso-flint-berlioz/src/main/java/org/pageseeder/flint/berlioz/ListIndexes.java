@@ -21,7 +21,6 @@ package org.pageseeder.flint.berlioz;
 
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.store.Directory;
 import org.pageseeder.berlioz.BerliozException;
 import org.pageseeder.berlioz.content.Cacheable;
 import org.pageseeder.berlioz.content.ContentGenerator;
@@ -47,10 +46,10 @@ public final class ListIndexes implements ContentGenerator, Cacheable {
     for (IndexMaster master : config.listIndexes()) {
       etag.append(master.lastModified()).append('%');
     }
-    return MD5.hash((String) etag.toString());
+    return MD5.hash(etag.toString());
   }
 
-  public void process(ContentRequest req, XMLWriter xml) throws BerliozException, IOException {
+  public void process(ContentRequest req, XMLWriter xml) throws IOException {
     FlintConfig config = FlintConfig.get();
     xml.openElement("indexes");
     try {
@@ -67,8 +66,9 @@ public final class ListIndexes implements ContentGenerator, Cacheable {
    * Output index.
    *
    * @param index the index
-   * @param xml
-   * @throws IOException
+   * @param xml   the output destination
+   *
+   * @throws IOException If writing the output failed
    */
   private void indexToXML(IndexMaster index, XMLWriter xml) throws IOException {
     xml.openElement("index");
@@ -80,9 +80,7 @@ public final class ListIndexes implements ContentGenerator, Cacheable {
       xml.attribute("error", "Failed to load reader: " + ex.getMessage());
     }
     if (reader != null) {
-      DirectoryReader dreader = null;
-      try {
-        dreader = DirectoryReader.open((Directory) index.getIndex().getIndexDirectory());
+      try (DirectoryReader dreader = DirectoryReader.open(index.getIndex().getIndexDirectory())) {
         // index details
         long lm = index.getIndex().getIndexIO().getLastTimeUsed();
         if (lm > 0) xml.attribute("last-modified", ISO8601.DATETIME.format(lm));
@@ -94,11 +92,10 @@ public final class ListIndexes implements ContentGenerator, Cacheable {
         xml.attribute("max", reader.maxDoc());
         xml.closeElement();
       } catch (IOException ex) {
-        LOGGER.error("Error while extracting index statistics", (Throwable) ex);
+        LOGGER.error("Error while extracting index statistics", ex);
       } finally {
         // release objects
         index.releaseSilently(reader);
-        if (dreader != null) dreader.close();
       }
     }
     xml.closeElement();

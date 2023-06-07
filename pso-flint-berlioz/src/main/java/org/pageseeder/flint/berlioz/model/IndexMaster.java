@@ -20,6 +20,7 @@ import org.pageseeder.flint.lucene.LuceneLocalIndex;
 import org.pageseeder.flint.lucene.query.SearchPaging;
 import org.pageseeder.flint.lucene.query.SearchQuery;
 import org.pageseeder.flint.lucene.query.SearchResults;
+import org.pageseeder.flint.lucene.search.AutoSuggest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -152,7 +153,7 @@ public final class IndexMaster {
     synchronized (this._autosuggests) {
       org.pageseeder.flint.lucene.search.AutoSuggest existing = this._autosuggests.get(name);
       // create?
-      if (existing == null || !existing.isCurrent(this._manager)) {
+      if (existing == null || !existing.isCurrent()) {
         try {
           if (existing != null) clearAutoSuggest(name, existing);
           return createAutoSuggest(name, terms, fields, min, resultFields, criteriaFields, weights);
@@ -170,7 +171,7 @@ public final class IndexMaster {
     synchronized (this._autosuggests) {
       org.pageseeder.flint.lucene.search.AutoSuggest existing = this._autosuggests.get(name);
       // create?
-      if (existing == null || !existing.isCurrent(this._manager)) {
+      if (existing == null || !existing.isCurrent()) {
         IndexDefinition.AutoSuggestDefinition asd = this._def.getAutoSuggest(name);
         if (asd != null) {
           try {
@@ -229,8 +230,8 @@ public final class IndexMaster {
   public void close() {
     this._index.close();
     // close autosuggests
-    for (String name : this._autosuggests.keySet()) {
-      clearAutoSuggest(name, this._autosuggests.get(name));
+    for (Map.Entry<String, AutoSuggest> autosuggest : this._autosuggests.entrySet()) {
+      clearAutoSuggest(autosuggest.getKey(), autosuggest.getValue());
     }
   }
   public void generateContent(File f, Writer out) throws IndexException, IOException {
@@ -239,12 +240,13 @@ public final class IndexMaster {
     // load translator
     ContentTranslator translator = this._manager.getTranslator(content.getMediaType());
     // ok translate now
-    Reader source = translator.translate(content);
-    // write it to output
-    char[] buffer = new char[1024];
-    int read;
-    while ((read = source.read(buffer)) != -1) {
-      out.write(buffer, 0, read);
+    try (Reader source = translator.translate(content)) {
+      // write it to output
+      char[] buffer = new char[1024];
+      int read;
+      while ((read = source.read(buffer)) != -1) {
+        out.write(buffer, 0, read);
+      }
     }
   }
 
@@ -323,9 +325,8 @@ public final class IndexMaster {
     // get folder
     File folder = new File(FlintConfig.get().getRootDirectory(), folderName);
     // delete all files
-    for (File f : folder.listFiles()) {
-      f.delete();
-    }
+    File[] files = folder.listFiles();
+    if (files != null) for (File f : files) f.delete();
     // delete folder
     folder.delete();
   }

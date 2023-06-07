@@ -80,7 +80,7 @@ public final class Fields {
    */
   @Beta
   public static List<String> filterNames(List<String> fields) {
-    List<String> names = new ArrayList<String>();
+    List<String> names = new ArrayList<>();
     for (String f : fields) {
       if (isValidName(f)) {
         names.add(f);
@@ -105,14 +105,14 @@ public final class Fields {
    * |The "Big bang|   => [The, "Big, bang]
    * </pre>
    *
-   * <p>Note: this class does not excludes terms which could be considered stop words by the index.
+   * <p>Note: this class does not exclude terms which could be considered stop words by the index.
    *
    * @param text The text for which values are needed.
    * @return the corresponding list of values.
    */
   @Beta
   public static List<String> toValues(String text) {
-    List<String> values = new ArrayList<String>();
+    List<String> values = new ArrayList<>();
     Pattern p = Pattern.compile("(\\\"[^\\\"]+\\\")|(\\S+)");
     Matcher m = p.matcher(text);
     while (m.find()) {
@@ -150,8 +150,6 @@ public final class Fields {
    * @param analyzer The analyzer
    *
    * @return the corresponding list of terms produced by the analyzer.
-   *
-   * @throws IOException
    */
   public static List<String> toTerms(String field, String text, Analyzer analyzer) {
     List<String> terms = new ArrayList<>();
@@ -166,7 +164,6 @@ public final class Fields {
       stream.close();
     } catch (IOException ex) {
       // Should not occur since we use a StringReader
-      ex.printStackTrace();
     }
     return terms;
   }

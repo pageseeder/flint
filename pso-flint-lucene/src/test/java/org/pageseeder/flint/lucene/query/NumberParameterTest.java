@@ -6,24 +6,21 @@ import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.pageseeder.flint.IndexException;
 import org.pageseeder.flint.IndexManager;
 import org.pageseeder.flint.Requester;
-import org.pageseeder.flint.content.Content;
-import org.pageseeder.flint.content.ContentFetcher;
 import org.pageseeder.flint.content.SourceForwarder;
-import org.pageseeder.flint.indexing.IndexJob;
 import org.pageseeder.flint.indexing.IndexJob.Priority;
 import org.pageseeder.flint.lucene.LuceneIndex;
 import org.pageseeder.flint.lucene.LuceneIndexQueries;
 import org.pageseeder.flint.lucene.utils.TestListener;
 import org.pageseeder.flint.lucene.utils.TestUtils;
+import org.slf4j.LoggerFactory;
 
 import java.io.File;
 
 public class NumberParameterTest {
 
-  private static File template  = new File("src/test/resources/template.xsl");
+  private static final File template  = new File("src/test/resources/template.xsl");
 
   private static LuceneIndex index;
   private static IndexManager manager;
@@ -34,27 +31,24 @@ public class NumberParameterTest {
       index = new LuceneIndex(NumberParameterTest.class.getName(), new ByteBuffersDirectory(), new StandardAnalyzer());
       index.setTemplates(TestUtils.TYPE, TestUtils.MEDIA_TYPE, template.toURI());
     } catch (Exception ex) {
-      ex.printStackTrace();
+      LoggerFactory.getLogger(TestUtils.class).error("Something went wrong", ex);
     }
-    manager = new IndexManager(new ContentFetcher() {
-      @Override
-      public Content getContent(IndexJob job) {
-        // delete?
-        if (job.getContentID().startsWith("delete-")) {
-          return new TestUtils.TestContent(job.getContentID().substring(7), null);
-        }
-        // add all documents in one go
-        String xml = "<documents version='5.0'>\n"+
-                       "<document>\n"+
-                         "<field name='"+TestUtils.ID_FIELD+"' tokenize='false'>doc1</field>\n"+
-                         "<field name='int-field'    numeric-type='int'>11</field>\n"+
-                         "<field name='long-field'   numeric-type='long'>22</field>\n"+
-                         "<field name='float-field'  numeric-type='float'>33.33</field>\n"+
-                         "<field name='double-field' numeric-type='double'>44.44</field>\n"+
-                       "</document>\n"+
-                     "</documents>";
-        return new TestUtils.TestContent(job.getContentID(), xml);
+    manager = new IndexManager(job -> {
+      // delete?
+      if (job.getContentID().startsWith("delete-")) {
+        return new TestUtils.TestContent(job.getContentID().substring(7), null);
       }
+      // add all documents in one go
+      String xml = "<documents version='5.0'>\n"+
+                     "<document>\n"+
+                       "<field name='"+TestUtils.ID_FIELD+"' tokenize='false'>doc1</field>\n"+
+                       "<field name='int-field'    numeric-type='int'>11</field>\n"+
+                       "<field name='long-field'   numeric-type='long'>22</field>\n"+
+                       "<field name='float-field'  numeric-type='float'>33.33</field>\n"+
+                       "<field name='double-field' numeric-type='double'>44.44</field>\n"+
+                     "</document>\n"+
+                   "</documents>";
+      return new TestUtils.TestContent(job.getContentID(), xml);
     }, new TestListener());
     manager.setDefaultTranslator(new SourceForwarder("xml", "UTF-8"));
     System.out.println("Starting manager!");
@@ -84,7 +78,7 @@ public class NumberParameterTest {
       results = LuceneIndexQueries.query(index, BasicQuery.newBasicQuery(param2));
       Assert.assertEquals(0, results.getTotalNbOfResults());
     } catch (Exception ex) {
-      ex.printStackTrace();
+      LoggerFactory.getLogger(TestUtils.class).error("Something went wrong", ex);
       Assert.fail(ex.getMessage());
     }
   }
@@ -101,7 +95,7 @@ public class NumberParameterTest {
       results = LuceneIndexQueries.query(index, BasicQuery.newBasicQuery(param2));
       Assert.assertEquals(0, results.getTotalNbOfResults());
     } catch (Exception ex) {
-      ex.printStackTrace();
+      LoggerFactory.getLogger(TestUtils.class).error("Something went wrong", ex);
       Assert.fail(ex.getMessage());
     }
   }
@@ -118,7 +112,7 @@ public class NumberParameterTest {
       results = LuceneIndexQueries.query(index, BasicQuery.newBasicQuery(param2));
       Assert.assertEquals(0, results.getTotalNbOfResults());
     } catch (Exception ex) {
-      ex.printStackTrace();
+      LoggerFactory.getLogger(TestUtils.class).error("Something went wrong", ex);
       Assert.fail(ex.getMessage());
     }
   }
@@ -135,7 +129,7 @@ public class NumberParameterTest {
       results = LuceneIndexQueries.query(index, BasicQuery.newBasicQuery(param2));
       Assert.assertEquals(0, results.getTotalNbOfResults());
     } catch (Exception ex) {
-      ex.printStackTrace();
+      LoggerFactory.getLogger(TestUtils.class).error("Something went wrong", ex);
       Assert.fail(ex.getMessage());
     }
   }

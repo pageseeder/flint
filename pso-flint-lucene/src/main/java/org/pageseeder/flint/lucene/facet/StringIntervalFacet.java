@@ -39,7 +39,7 @@ public class StringIntervalFacet extends FlexibleIntervalFacet {
   private final int _intervalLength;
 
   /**
-   * If the string comparison is case sensitive.
+   * If the string comparison is case-sensitive.
    */
   private final boolean _caseSensitive;
 
@@ -60,9 +60,9 @@ public class StringIntervalFacet extends FlexibleIntervalFacet {
 
   /**
    * Create a query for the term given, using the numeric type if there is one.
-   * 
+   *
    * @param t the term
-   * 
+   *
    * @return the query
    */
   @Override

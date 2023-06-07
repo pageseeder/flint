@@ -22,16 +22,16 @@ public final class MultipleIndexReader {
   /**
    * List of open readers.
    */
-  private final Map<Index, IndexReader> _indexes = new HashMap<Index, IndexReader>();
+  private final Map<Index, IndexReader> _indexes = new HashMap<>();
 
-  protected MultipleIndexReader(List<Index> indexes) {
+  MultipleIndexReader(List<Index> indexes) {
     for (Index index: indexes)
       this._indexes.put(index, null);
   }
   /**
    * Grab a new index reader.
    *
-   * @throws IndexException
+   * @throws IndexException if getting the reader failed
    */
   public IndexReader grab() throws IndexException {
     IndexReader[] readers = new IndexReader[this._indexes.size()];

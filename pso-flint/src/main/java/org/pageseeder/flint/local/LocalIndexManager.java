@@ -12,7 +12,7 @@ import org.pageseeder.flint.indexing.IndexListener;
 
 public class LocalIndexManager {
 
-  private IndexManager manager;
+  private final IndexManager manager;
 
   protected LocalIndexManager(List<String> extensions) {
     this.manager = new IndexManager(new LocalFileContentFetcher());

@@ -11,7 +11,7 @@ import java.io.IOException;
 
 /**
  * Class used to create highlighted extract for a search.
- * By default the match is wrapped in a {@code <term>} element.
+ * By default, the match is wrapped in a {@code <term>} element.
  */
 public class Highlighter {
 

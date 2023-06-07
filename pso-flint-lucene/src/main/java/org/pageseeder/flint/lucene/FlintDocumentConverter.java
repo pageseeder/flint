@@ -101,9 +101,9 @@ public class FlintDocumentConverter {
       if (ffield.dateformat() != null) {
         Number date = Dates.toNumber(toDate(name, value, ffield.dateformat()), LuceneUtils.toResolution(ffield.resolution()));
         // only int or long possible for dates
-        if (date != null && date instanceof Long) {
+        if (date instanceof Long) {
           fields.add(new LongPoint(ffield.name(), date.longValue()));
-        } else if (date != null && date instanceof Integer) {
+        } else if (date instanceof Integer) {
           fields.add(new IntPoint(ffield.name(), date.intValue()));
         } else {
           this.warnings.put(ffield.name(),"ignoring field as it has a date format but no date");
@@ -156,11 +156,11 @@ public class FlintDocumentConverter {
         if (ffield.numeric() != null && ffield.dateformat() != null) {
           Number date = Dates.toNumber(toDate(name, value, ffield.dateformat()), LuceneUtils.toResolution(ffield.resolution()));
           // only int or long possible for dates
-          if (date != null && date instanceof Long) {
+          if (date instanceof Long) {
             long l = Long.parseLong(value);
             fields.add(new LongPoint(name, l));
             fields.add(new SortedNumericDocValuesField(name, l));
-          } else if (date != null && date instanceof Integer) {
+          } else if (date instanceof Integer) {
             int i = Integer.parseInt(value);
             fields.add(new IntPoint(name, i));
             fields.add(new SortedNumericDocValuesField(name, i));

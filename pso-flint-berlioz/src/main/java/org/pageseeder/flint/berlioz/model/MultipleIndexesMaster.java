@@ -7,9 +7,9 @@ import java.util.List;
 import org.apache.lucene.index.IndexReader;
 import org.pageseeder.flint.Index;
 import org.pageseeder.flint.IndexException;
-import org.pageseeder.flint.IndexManager;
 import org.pageseeder.flint.lucene.LuceneIndexQueries;
 import org.pageseeder.flint.lucene.MultipleIndexReader;
+import org.pageseeder.flint.lucene.facet.FlexibleFieldFacet;
 import org.pageseeder.flint.lucene.query.SearchPaging;
 import org.pageseeder.flint.lucene.query.SearchQuery;
 import org.pageseeder.flint.lucene.query.SearchResults;
@@ -21,11 +21,6 @@ public class MultipleIndexesMaster {
   private final List<Index> _indexes;
 
   private MultipleIndexReader currentReader;
-
-  @Deprecated
-  public MultipleIndexesMaster(List<IndexMaster> indexes, IndexManager manager) {
-    this._indexes = buildIndexes(indexes);
-  }
 
   public MultipleIndexesMaster(List<IndexMaster> indexes) {
     this._indexes = buildIndexes(indexes);
@@ -46,9 +41,17 @@ public class MultipleIndexesMaster {
     return LuceneIndexQueries.query(this._indexes, query, paging);
   }
 
+  /**
+   * @deprecated use FlexibleFacet
+   */
   public List<FieldFacet> getFacets(List<String> fields, int max, SearchQuery query)
       throws IOException, IndexException {
     return Facets.getFacets(fields, max, query.toQuery(), this._indexes);
+  }
+
+  public List<FlexibleFieldFacet> getFlexibleFacets(List<String> fields, int max, SearchQuery query)
+      throws IOException, IndexException {
+    return Facets.getFlexibleFacets(fields, max, query.toQuery(), this._indexes);
   }
 
   // private helpers

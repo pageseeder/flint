@@ -9,8 +9,8 @@ public class IndexBatch {
   private boolean      started      = false;
   private int          currentCount = 0;
   private int          cancelCount  = -1;
-  private long         batchID;
-  private long         createTime;
+  private final long         batchID;
+  private final long         createTime;
   private long         startTime;
   private long         computeTime;
   private long         indexTime;

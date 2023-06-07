@@ -49,16 +49,9 @@ public final class SearchPaging {
   private int _hitsPerPage = DEFAULT_HITS_PER_PAGE;
 
   /**
-   * The number of hits per page, default is Integer.MAX_VALUE.
-   */
-  private int _maxPossibleHits = Integer.MAX_VALUE;
-
-  /**
    * Creates a new paging configuration using the default values.
    */
   public SearchPaging() {
-    this._page = DEFAULT_PAGE;
-    this._hitsPerPage = DEFAULT_HITS_PER_PAGE;
   }
 
   /**
@@ -70,19 +63,6 @@ public final class SearchPaging {
   public SearchPaging(int page, int hitsPerPage) {
     this._page = page;
     this._hitsPerPage = hitsPerPage;
-  }
-
-  /**
-   * Creates a new paging configuration using the specified values.
-   *
-   * @param page        The page requested.
-   * @param hitsPerPage The maximum number of results per page.
-   * @param maxPossibleHits The max number of expected hits, will speed up the query
-   */
-  public SearchPaging(int page, int hitsPerPage, int maxPossibleHits) {
-    this._page = page;
-    this._hitsPerPage = hitsPerPage;
-    this._maxPossibleHits = maxPossibleHits;
   }
 
   /**

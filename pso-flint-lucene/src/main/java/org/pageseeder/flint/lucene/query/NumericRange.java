@@ -81,8 +81,8 @@ public final class NumericRange<T extends Number> implements SearchParameter {
    * Creates a new numeric range parameter.
    *
    * @param field        the numeric field to search
-   * @param min          the minimum value in the range (may be <code>null</code>)
-   * @param max          the maximum value in the range (may be <code>null</code>)
+   * @param min          the minimum value in the range (can be <code>null</code>)
+   * @param max          the maximum value in the range (can be <code>null</code>)
    * @param minInclusive <code>true</code> to include values matching the lower limit in the range;
    *                     <code>false</code> to exclude it.
    * @param maxInclusive <code>true</code> to include values matching the upper limit in the range;
@@ -155,7 +155,7 @@ public final class NumericRange<T extends Number> implements SearchParameter {
 
   /**
    * Generates the <code>Query</code> object corresponding to a numeric range search query.
-   *
+   * <p>
    * Returns a <code>NumericRangeQuery</code> based on the values in this object.
    *
    * @return a <code>NumericRangeQuery</code> or <code>null</code> if empty.
@@ -198,8 +198,8 @@ public final class NumericRange<T extends Number> implements SearchParameter {
    * Returns the numeric range query that corresponds to the specified parameters.
    *
    * @param field        the numeric field
-   * @param min          the lower limit (may be null)
-   * @param max          the upper limit (may be null)
+   * @param min          the lower limit (can be null)
+   * @param max          the upper limit (can be null)
    * @param minInclusive <code>true</code> to include the minimum value in the range; <code>false</code> to excluded it.
    * @param maxInclusive <code>true</code> to include the maximum value in the range; <code>false</code> to excluded it.
    *
@@ -241,8 +241,8 @@ public final class NumericRange<T extends Number> implements SearchParameter {
    * the default precisionStep.
    *
    * @param field        the numeric field to search
-   * @param min          the minimum value in the range (may be <code>null</code>)
-   * @param max          the maximum value in the range (may be <code>null</code>)
+   * @param min          the minimum value in the range (can be <code>null</code>)
+   * @param max          the maximum value in the range (can be <code>null</code>)
    * @param minInclusive <code>true</code> to include values matching the lower limit in the range;
    *                     <code>false</code> to exclude it.
    * @param maxInclusive <code>true</code> to include values matching the upper limit in the range;
@@ -260,8 +260,8 @@ public final class NumericRange<T extends Number> implements SearchParameter {
    * default precisionStep.
    *
    * @param field        the numeric field to search
-   * @param min          the minimum value in the range (may be <code>null</code>)
-   * @param max          the maximum value in the range (may be <code>null</code>)
+   * @param min          the minimum value in the range (can be <code>null</code>)
+   * @param max          the maximum value in the range (can be <code>null</code>)
    * @param minInclusive <code>true</code> to include values matching the lower limit in the range;
    *                     <code>false</code> to exclude it.
    * @param maxInclusive <code>true</code> to include values matching the upper limit in the range;
@@ -275,12 +275,12 @@ public final class NumericRange<T extends Number> implements SearchParameter {
   }
 
   /**
-   * Factory that creates a <code>NumericRangeParameter</code>, that queries a int range using the
+   * Factory that creates a <code>NumericRangeParameter</code>, that queries an int range using the
    * default precisionStep.
    *
    * @param field        the numeric field to search
-   * @param min          the minimum value in the range (may be <code>null</code>)
-   * @param max          the maximum value in the range (may be <code>null</code>)
+   * @param min          the minimum value in the range (can be <code>null</code>)
+   * @param max          the maximum value in the range (can be <code>null</code>)
    * @param minInclusive <code>true</code> to include values matching the lower limit in the range;
    *                     <code>false</code> to exclude it.
    * @param maxInclusive <code>true</code> to include values matching the upper limit in the range;
@@ -298,8 +298,8 @@ public final class NumericRange<T extends Number> implements SearchParameter {
    * default precisionStep.
    *
    * @param field        the numeric field to search
-   * @param min          the minimum value in the range (may be <code>null</code>)
-   * @param max          the maximum value in the range (may be <code>null</code>)
+   * @param min          the minimum value in the range (can be <code>null</code>)
+   * @param max          the maximum value in the range (can be <code>null</code>)
    * @param minInclusive <code>true</code> to include values matching the lower limit in the range;
    *                     <code>false</code> to exclude it.
    * @param maxInclusive <code>true</code> to include values matching the upper limit in the range;
@@ -317,8 +317,8 @@ public final class NumericRange<T extends Number> implements SearchParameter {
    * default precisionStep.
    *
    * @param field        the numeric field to search
-   * @param min          the minimum value in the range (may be <code>null</code>)
-   * @param max          the maximum value in the range (may be <code>null</code>)
+   * @param min          the minimum value in the range (can be <code>null</code>)
+   * @param max          the maximum value in the range (can be <code>null</code>)
    * @param minInclusive <code>true</code> to include values matching the lower limit in the range;
    *                     <code>false</code> to exclude it.
    * @param maxInclusive <code>true</code> to include values matching the upper limit in the range;

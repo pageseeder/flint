@@ -85,7 +85,7 @@ public final class Dates {
     int x = findNonDigitCharacter(value);
     if (x != -1) throw new ParseException("Value is not a valid Lucene date", x);
     Date date = DateTools.stringToDate(value);
-    // Only adjust for day light savings...
+    // Only adjust for daylight savings...
     TimeZone tz = TimeZone.getDefault();
     int rawOffset = tz.inDaylightTime(date)? offset - ONE_HOUR_IN_MS : offset;
     tz.setRawOffset(rawOffset);
@@ -318,44 +318,43 @@ public final class Dates {
   public static String format(long timems, Resolution resolution) {
     Calendar calendar = GregorianCalendar.getInstance();
     calendar.setTimeInMillis(timems);
-    StringBuilder iso = new StringBuilder();
     // Year [YYYY]
-    iso.append(leftZeroPad4(calendar.get(GregorianCalendar.YEAR)));
-    if (resolution == Resolution.YEAR) return iso.toString();
+    String iso = leftZeroPad4(calendar.get(GregorianCalendar.YEAR));
+    if (resolution == Resolution.YEAR) return iso;
     // Month [YYYY]-[MM]
-    iso.append('-').append(leftZeroPad2(calendar.get(GregorianCalendar.MONTH) + 1));
-    if (resolution == Resolution.MONTH) return iso.toString();
+    iso += '-' + leftZeroPad2(calendar.get(GregorianCalendar.MONTH) + 1);
+    if (resolution == Resolution.MONTH) return iso;
     // Day [YYYY]-[MM]-[DD]
-    iso.append('-').append(leftZeroPad2(calendar.get(GregorianCalendar.DAY_OF_MONTH)));
-    if (resolution == Resolution.DAY) return iso.toString();
+    iso += '-' + leftZeroPad2(calendar.get(GregorianCalendar.DAY_OF_MONTH));
+    if (resolution == Resolution.DAY) return iso;
     // TODO: Times require the time zone
     String z = toTimeZone(calendar.getTimeZone().getOffset(timems));
     // Hour [YYYY]-[MM]-[DD]T[hh]
-    iso.append('T').append(leftZeroPad2(calendar.get(GregorianCalendar.HOUR_OF_DAY)));
-    if (resolution == Resolution.HOUR) return iso.append(z).toString();
+    iso += 'T' + leftZeroPad2(calendar.get(GregorianCalendar.HOUR_OF_DAY));
+    if (resolution == Resolution.HOUR) return iso + z;
     // Minute [YYYY]-[MM]-[DD]T[hh]:[mm]
-    iso.append(':').append(leftZeroPad2(calendar.get(GregorianCalendar.MINUTE)));
-    if (resolution == Resolution.MINUTE) return iso.append(z).toString();
+    iso += ':' + leftZeroPad2(calendar.get(GregorianCalendar.MINUTE));
+    if (resolution == Resolution.MINUTE) return iso + z;
     // Second [YYYY]-[MM]-[DD]T[hh]:[mm]:[ss]
-    iso.append(':').append(leftZeroPad2(calendar.get(GregorianCalendar.SECOND)));
-    if (resolution == Resolution.SECOND) return iso.append(z).toString();
+    iso += ':' + leftZeroPad2(calendar.get(GregorianCalendar.SECOND));
+    if (resolution == Resolution.SECOND) return iso + z;
     // MilliSecond [YYYY]-[MM]-[DD]T[hh]:[mm]:[ss].[sss]
-    iso.append('.').append(leftZeroPad3(calendar.get(GregorianCalendar.MILLISECOND)));
-    return iso.append(z).toString();
+    iso += '.' + leftZeroPad3(calendar.get(GregorianCalendar.MILLISECOND));
+    return iso + z;
   }
 
   private static Number toNumber(long timems, Resolution resolution) {
     // Resolution higher than Day -> Long
-    if (resolution == Resolution.MILLISECOND) return Long.valueOf(timems);
-    else if (resolution == Resolution.SECOND) return Long.valueOf(timems / ONE_SECOND_IN_MS);
-    else if (resolution == Resolution.MINUTE) return Long.valueOf(timems / ONE_MINUTE_IN_MS);
-    else if (resolution == Resolution.HOUR)   return Long.valueOf(timems / ONE_HOUR_IN_MS);
+    if (resolution == Resolution.MILLISECOND) return timems;
+    else if (resolution == Resolution.SECOND) return timems / ONE_SECOND_IN_MS;
+    else if (resolution == Resolution.MINUTE) return timems / ONE_MINUTE_IN_MS;
+    else if (resolution == Resolution.HOUR)   return timems / ONE_HOUR_IN_MS;
     // Resolution lower than Day -> Integer
     Calendar c = GregorianCalendar.getInstance();
     c.setTimeInMillis(timems);
-    if (resolution == Resolution.DAY) return Integer.valueOf(c.get(GregorianCalendar.YEAR) * 10000 + (c.get(GregorianCalendar.MONTH) + 1) * 100 + c.get(GregorianCalendar.DAY_OF_MONTH));
-    if (resolution == Resolution.MONTH) return Integer.valueOf(c.get(GregorianCalendar.YEAR) * 100 + c.get(GregorianCalendar.MONTH) + 1);
-    if (resolution == Resolution.YEAR) return Integer.valueOf(c.get(GregorianCalendar.YEAR));
+    if (resolution == Resolution.DAY) return c.get(GregorianCalendar.YEAR) * 10000 + (c.get(GregorianCalendar.MONTH) + 1) * 100 + c.get(GregorianCalendar.DAY_OF_MONTH);
+    if (resolution == Resolution.MONTH) return c.get(GregorianCalendar.YEAR) * 100 + c.get(GregorianCalendar.MONTH) + 1;
+    if (resolution == Resolution.YEAR) return c.get(GregorianCalendar.YEAR);
     return null;
   }
 
@@ -366,7 +365,7 @@ public final class Dates {
    * @return The padded value (eg. "02")
    */
   private static String leftZeroPad2(int value) {
-    return (value < 10)? "0" + Integer.toString(value) : Integer.toString(value);
+    return (value < 10)? "0" + value : Integer.toString(value);
   }
 
   /**
@@ -377,8 +376,8 @@ public final class Dates {
    */
   private static String leftZeroPad3(int value) {
     if (value >= 100) return Integer.toString(value);
-    if (value >= 10)  return "0" + Integer.toString(value);
-    return "00" + Integer.toString(value);
+    if (value >= 10)  return "0" + value;
+    return "00" + value;
   }
 
   /**
@@ -389,9 +388,9 @@ public final class Dates {
    */
   private static String leftZeroPad4(int value) {
     if (value >= 1000) return Integer.toString(value);
-    if (value >= 100)  return "0" + Integer.toString(value);
-    if (value >= 10)   return "00" + Integer.toString(value);
-    else return "000" + Integer.toString(value);
+    if (value >= 100)  return "0" + value;
+    if (value >= 10)   return "00" + value;
+    else return "000" + value;
   }
 
   /**
@@ -403,14 +402,8 @@ public final class Dates {
    */
   private static String toTimeZone(int offset) {
     if (offset == 0) return "Z";
-    int _offset = offset;
-    StringBuilder z = new StringBuilder(6);
-    z.append(_offset >= 0? '+' : '-');
-    if (_offset < 0) {
-      _offset = _offset*-1;
-    }
-    z.append(leftZeroPad2(_offset / (1000*60*60))).append(':').append(leftZeroPad2((_offset / (1000*60)) % 60));
-    return z.toString();
+    int _offset = offset < 0 ? offset*-1 : offset;
+    return (offset >= 0 ? "+" : "-") + leftZeroPad2(_offset / (1000*60*60)) + ':' + leftZeroPad2((_offset / (1000*60)) % 60);
   }
 
   /**

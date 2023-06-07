@@ -1,6 +1,6 @@
 /*
  * Decompiled with CFR 0_110.
- * 
+ *
  * Could not load the following classes:
  *  org.pageseeder.berlioz.BerliozException
  *  org.pageseeder.berlioz.Beta
@@ -33,13 +33,13 @@ public final class AutoSuggest extends LuceneIndexGenerator {
 //  private static final Logger LOGGER = LoggerFactory.getLogger(AutoSuggest.class);
 
   @Override
-  public void processSingle(IndexMaster index, ContentRequest req, XMLWriter xml) throws BerliozException, IOException {
+  public void processSingle(IndexMaster index, ContentRequest req, XMLWriter xml) throws IOException {
     String name    = req.getParameter("name");
     String fields  = req.getParameter("fields", req.getParameter("field", "fulltext"));
     String term    = req.getParameter("term");
     String results = req.getParameter("results", "10");
     boolean terms  = "true".equals(req.getParameter("terms", "false"));
-    String rfields = req.getParameter("return-fields", req.getParameter("return-field"));
+    String rfields = req.getParameter("return-fields", req.getParameter("return-field", ""));
     String criteriaFields = req.getParameter("criteria-fields", "");
     String criteriaValues = req.getParameter("criteria-values", "");
     String weight  = req.getParameter("weight", "");
@@ -71,8 +71,8 @@ public final class AutoSuggest extends LuceneIndexGenerator {
         }
       }
       suggestor = index.getAutoSuggest(Arrays.asList(fields.split(",")), terms, 2,
-          rfields == null ? null : Arrays.asList(rfields.split(",")),
-          criteriaFields == null ? null : Arrays.asList(criteriaFields.split(",")),
+          rfields.isEmpty() ? null : Arrays.asList(rfields.split(",")),
+          criteriaFields.isEmpty() ? null : Arrays.asList(criteriaFields.split(",")),
           weights);
       if (suggestor == null) {
         GeneratorErrors.error(req, xml, "server", "Failed to create autosuggest", ContentStatus.INTERNAL_SERVER_ERROR);
@@ -87,7 +87,7 @@ public final class AutoSuggest extends LuceneIndexGenerator {
     }
 
 
-    List<String> criteria =  (criteriaValues == null || criteriaValues.trim().length() == 0)? null : Arrays.asList(criteriaValues.split(","));
+    List<String> criteria =  criteriaValues.trim().length() == 0 ? null : Arrays.asList(criteriaValues.split(","));
 
     List<Suggestion> suggestions = suggestor.suggest(term, criteria, nbresults);
 
@@ -113,7 +113,7 @@ public final class AutoSuggest extends LuceneIndexGenerator {
   }
 
   @Override
-  public void processMultiple(Collection<IndexMaster> indexes, ContentRequest req, XMLWriter xml) throws BerliozException, IOException {
+  public void processMultiple(Collection<IndexMaster> indexes, ContentRequest req, XMLWriter xml) throws IOException {
     GeneratorErrors.error(req, xml, "forbidden", "Cannnot autosuggest on multiple indexes yet", ContentStatus.BAD_REQUEST);
   }
 }

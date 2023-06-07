@@ -54,7 +54,7 @@ public abstract class Index {
   /**
    * The XSLT script.
    */
-  private final Map<ContentDefinition, URI> _templates = new ConcurrentHashMap<ContentDefinition, URI>();
+  private final Map<ContentDefinition, URI> _templates = new ConcurrentHashMap<>();
 
   public Index(String id) {
     this(id, null);
@@ -83,7 +83,8 @@ public abstract class Index {
     IndexIO io = getIndexIO();
     if (io != null) {
       try {
-        io.stop();      } catch (Exception ex) {
+        io.stop();
+      } catch (Exception ex) {
         LOGGER.error("Failed to stop IndexIO for {}", this._id, ex);
       }
     }
@@ -95,11 +96,11 @@ public abstract class Index {
   // Fields management =========================================================================
 
   /**
-   * Used to define lucene fields specific to a content (should be overwritten by sub-classes).
+   * Used to define lucene fields specific to a content (should be overwritten by subclasses).
    * Can be used to ensure that certain fields are always in the index.
-   * 
+   *
    * @param content the actual content
-   * 
+   *
    * @return the list of fields, <code>null</code> if none
    */
   public Collection<FlintField> getFields(Content content) {
@@ -109,11 +110,11 @@ public abstract class Index {
   // Parameters management =========================================================================
 
   /**
-   * Used to define parameters specific to a content (should be overwritten by sub-classes).
-   * 
+   * Used to define parameters specific to a content (should be overwritten by subclasses).
+   *
    * @param content the actual content
-   * 
-   * @return the list of parameters, <code>null</code> if none
+   *
+   * @return the map of parameters, <code>null</code> if none
    */
   public Map<String, String> getParameters(Content content) {
     return null;
@@ -148,7 +149,7 @@ public abstract class Index {
    * @param media    the media type of the content (eg. "application/xml").
    * @param template the full path to the XSLT template file.
    *
-   * @throws InvalidTemplatesException If the templates are invalid.
+   * @throws TransformerException If the templates are invalid.
    */
   public void setTemplates(ContentType type, String media, URI template) throws TransformerException {
     // load it in the cache to validate it
@@ -161,7 +162,7 @@ public abstract class Index {
 
   /**
    * Remove the template linked to the content type/media specified
-   * 
+   *
    * @param type  the content type
    * @param media the content media type
    */
@@ -202,7 +203,6 @@ public abstract class Index {
      *
      * @param type     The content type
      * @param media    The media type
-     * @param configId The configuration ID (may be <code>null</code>)
      */
     public ContentDefinition(ContentType type, String media) {
       this._type = type;
@@ -216,7 +216,7 @@ public abstract class Index {
     @Override
     public boolean equals(Object o) {
       if (!(o instanceof ContentDefinition)) return false;
-      return this.equals((ContentDefinition)o);
+      return this.equalsDefinition((ContentDefinition)o);
     }
 
     /**
@@ -226,11 +226,11 @@ public abstract class Index {
      * @return <code>true</code> if the type, media and config ID are equal;
      *         <code>false</code> otherwise.
      */
-    public boolean equals(ContentDefinition def) {
+    public boolean equalsDefinition(ContentDefinition def) {
       if (def == null) return false;
       if (this == def) return true;
       if (!this._type.equals(def._type)) return false;
-      return this._media == null && def._media == null || this._media.equals(def._media);
+      return (this._media == null && def._media == null) || (this._media != null && this._media.equals(def._media));
     }
 
     /**
@@ -254,7 +254,6 @@ public abstract class Index {
      *
      * @param type  The content type
      * @param media The media type
-     * @param id    The configuration (may be <code>null</code>)
      *
      * @return the hashcode for this object.
      */

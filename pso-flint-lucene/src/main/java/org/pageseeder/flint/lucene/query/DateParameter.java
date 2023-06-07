@@ -111,8 +111,8 @@ public final class DateParameter implements SearchParameter {
    * Creates a new date parameter (inclusive of from and to dates).
    *
    * @param field      the date field to search
-   * @param from       the start date in the range (may be <code>null</code>)
-   * @param to         the end date in the range (may be <code>null</code>)
+   * @param from       the start date in the range (can be <code>null</code>)
+   * @param to         the end date in the range (can be <code>null</code>)
    * @param resolution the date resolution
    * @param numeric    whether it is a numeric field
    */
@@ -124,10 +124,10 @@ public final class DateParameter implements SearchParameter {
    * Creates a new date parameter.
    *
    * @param field      the date field to search
-   * @param from       the start date in the range (may be <code>null</code>)
-   * @param to         the end date in the range (may be <code>null</code>)
-   * @param withMin    if the from date is included in the range
-   * @param withMax    if the to date is included in the range
+   * @param from       the start date in the range (can be <code>null</code>)
+   * @param to         the end date in the range (can be <code>null</code>)
+   * @param withMin    if the 'from' date is included in the range
+   * @param withMax    if the 'to' date is included in the range
    * @param resolution the date resolution
    * @param numeric    whether it is a numeric field
    */
@@ -152,8 +152,8 @@ public final class DateParameter implements SearchParameter {
    * Creates a new date parameter (inclusive of from and to dates).
    *
    * @param field      the date field to search
-   * @param from       the start date in the range (may be <code>null</code>)
-   * @param to         the end date in the range (may be <code>null</code>)
+   * @param from       the start date in the range (can be <code>null</code>)
+   * @param to         the end date in the range (can be <code>null</code>)
    * @param resolution the date resolution
    * @param numeric    whether it is a numeric field
    */
@@ -165,10 +165,10 @@ public final class DateParameter implements SearchParameter {
    * Creates a new date parameter.
    *
    * @param field      the date field to search
-   * @param from       the start date in the range (may be <code>null</code>)
-   * @param to         the end date in the range (may be <code>null</code>)
-   * @param withMin    if the from date is included in the range
-   * @param withMax    if the to date is included in the range
+   * @param from       the start date in the range (can be <code>null</code>)
+   * @param to         the end date in the range (can be <code>null</code>)
+   * @param withMin    if the 'from' date is included in the range
+   * @param withMax    if the 'to' date is included in the range
    * @param resolution the date resolution
    * @param numeric    whether it is a numeric field
    */
@@ -250,7 +250,7 @@ public final class DateParameter implements SearchParameter {
 
   /**
    * Generates the <code>Query</code> object corresponding to a date range search query.
-   *
+   * <p>
    * Returns a <code>TermRangeQuery</code> or a <code>NumericRangeQuery</code> based on the values in this object.
    *
    * @return a <code>TermRangeQuery</code>, a <code>NumericRangeQuery</code> or <code>null</code> if empty.
@@ -311,8 +311,8 @@ public final class DateParameter implements SearchParameter {
    * Returns the term range query that corresponds to the specified parameters.
    *
    * @param field      the date field
-   * @param from       the lower limit (may be null)
-   * @param to         the upper limit (may be null)
+   * @param from       the lower limit (can be null)
+   * @param to         the upper limit (can be null)
    * @param resolution the date resolution in use
    *
    * @return the corresponding <code>TermRangeQuery</code>
@@ -327,8 +327,8 @@ public final class DateParameter implements SearchParameter {
    * Returns the term range query that corresponds to the specified parameters.
    *
    * @param field      the date field
-   * @param from       the lower limit (may be null)
-   * @param to         the upper limit (may be null)
+   * @param from       the lower limit (can be null)
+   * @param to         the upper limit (can be null)
    * @param resolution the date resolution in use
    *
    * @return the corresponding <code>NumericRangeQuery</code>

@@ -16,6 +16,7 @@ import org.pageseeder.flint.lucene.LuceneIndex;
 import org.pageseeder.flint.lucene.LuceneIndexQueries;
 import org.pageseeder.flint.lucene.utils.TestListener;
 import org.pageseeder.flint.lucene.utils.TestUtils;
+import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.time.OffsetDateTime;
@@ -25,7 +26,7 @@ import java.util.Iterator;
 
 public class DateParameterTest {
 
-  private static File template  = new File("src/test/resources/template.xsl");
+  private static final File template  = new File("src/test/resources/template.xsl");
 
   private static LuceneIndex index;
   private static IndexManager manager;
@@ -36,7 +37,7 @@ public class DateParameterTest {
       index = new LuceneIndex("DateParameterTest", new ByteBuffersDirectory(), new StandardAnalyzer());
       index.setTemplates(TestUtils.TYPE, TestUtils.MEDIA_TYPE, template.toURI());
     } catch (Exception ex) {
-      ex.printStackTrace();
+      LoggerFactory.getLogger(TestUtils.class).error("Something went wrong", ex);
     }
 
     manager = new IndexManager(job -> {
@@ -108,7 +109,7 @@ public class DateParameterTest {
       Assert.assertEquals("doc1", docs.next().get(TestUtils.ID_FIELD));
       Assert.assertEquals("doc3", docs.next().get(TestUtils.ID_FIELD));
     } catch (Exception ex) {
-      ex.printStackTrace();
+      LoggerFactory.getLogger(TestUtils.class).error("Something went wrong", ex);
       Assert.fail(ex.getMessage());
     }
   }
@@ -130,7 +131,7 @@ public class DateParameterTest {
       Assert.assertEquals("doc1", docs.next().get(TestUtils.ID_FIELD));
       Assert.assertEquals("doc3", docs.next().get(TestUtils.ID_FIELD));
     } catch (Exception ex) {
-      ex.printStackTrace();
+      LoggerFactory.getLogger(TestUtils.class).error("Something went wrong", ex);
       Assert.fail(ex.getMessage());
     }
   }
@@ -156,7 +157,7 @@ public class DateParameterTest {
       Assert.assertEquals("doc1", docs.next().get(TestUtils.ID_FIELD));
       Assert.assertEquals("doc3", docs.next().get(TestUtils.ID_FIELD));
     } catch (Exception ex) {
-      ex.printStackTrace();
+      LoggerFactory.getLogger(TestUtils.class).error("Something went wrong", ex);
       Assert.fail(ex.getMessage());
     }
   }
@@ -182,7 +183,7 @@ public class DateParameterTest {
       Assert.assertEquals("doc1", docs.next().get(TestUtils.ID_FIELD));
       Assert.assertEquals("doc3", docs.next().get(TestUtils.ID_FIELD));
     } catch (Exception ex) {
-      ex.printStackTrace();
+      LoggerFactory.getLogger(TestUtils.class).error("Something went wrong", ex);
       Assert.fail(ex.getMessage());
     }
   }
@@ -224,7 +225,7 @@ public class DateParameterTest {
       docs = results.documents().iterator();
       Assert.assertEquals("doc1", docs.next().get(TestUtils.ID_FIELD));
     } catch (Exception ex) {
-      ex.printStackTrace();
+      LoggerFactory.getLogger(TestUtils.class).error("Something went wrong", ex);
       Assert.fail(ex.getMessage());
     }
   }
@@ -271,7 +272,7 @@ public class DateParameterTest {
       Assert.assertEquals("doc1", docs.next().get(TestUtils.ID_FIELD));
       Assert.assertEquals("doc3", docs.next().get(TestUtils.ID_FIELD));
     } catch (Exception ex) {
-      ex.printStackTrace();
+      LoggerFactory.getLogger(TestUtils.class).error("Something went wrong", ex);
       Assert.fail(ex.getMessage());
     }
   }
@@ -292,7 +293,7 @@ public class DateParameterTest {
       docs = results.documents().iterator();
       Assert.assertEquals("doc4", docs.next().get(TestUtils.ID_FIELD));
     } catch (Exception ex) {
-      ex.printStackTrace();
+      LoggerFactory.getLogger(TestUtils.class).error("Something went wrong", ex);
       Assert.fail(ex.getMessage());
     }
   }

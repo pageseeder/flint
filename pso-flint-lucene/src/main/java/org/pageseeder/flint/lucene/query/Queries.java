@@ -46,7 +46,7 @@ public final class Queries {
   /**
    * Text that matches this pattern is considered a phrase.
    */
-  private static final Pattern IS_A_PHRASE = Pattern.compile("\\\"[^\\\"]+\\\"");
+  private static final Pattern IS_A_PHRASE = Pattern.compile("\"[^\"]+\"");
 
   /**
    * Prevents creation of instances.
@@ -56,7 +56,7 @@ public final class Queries {
 
   /**
    * Returns a boolean query combining all the specified queries in {@link Occur#MUST} clauses
-   * as it is were an AND operator.
+   * as if it were an AND operator.
    *
    * @param queries the queries to combine with an AND.
    * @return The combined queries, may be empty if no arguments/empty argument provided.
@@ -72,7 +72,7 @@ public final class Queries {
 
   /**
    * Returns a boolean query combining all the specified queries in {@link Occur#MUST} clauses
-   * as it is were an OR operator.
+   * as if it were an OR operator.
    *
    * @param queries the queries to combine with an OR.
    * @return The combined queries, may be empty if no arguments/empty argument provided.
@@ -87,9 +87,9 @@ public final class Queries {
   }
 
   /**
-   * Returns a boolean query combining all the specified queries using OR or AND operator.
+   * Returns a boolean query combining all the specified queries using 'OR' or 'AND' operator.
    *
-   * @param withOR  whether to use OR or AND between queries
+   * @param withOR  whether to use 'OR' or 'AND' between queries
    * @param queries the queries to combine with an OR.
    * @return The combined queries, may be empty if no arguments/empty argument provided.
    */
@@ -109,7 +109,7 @@ public final class Queries {
    */
   @Beta
   public static List<Query> similar(Query query, Collection<Term> terms, IndexReader reader) throws IOException {
-    List<Query> similar = new ArrayList<Query>();
+    List<Query> similar = new ArrayList<>();
     // Extract the list of similar terms
     for (Term t : terms) {
       List<String> fuzzy = Terms.fuzzy(reader, t);
@@ -298,7 +298,7 @@ public final class Queries {
    * @param field     the field to construct the terms.
    * @param text      the text to construct the query from.
    * @param analyzer  used to analyze the text
-   * @param defaultOperatorOR if the operator between terms is OR or AND
+   * @param defaultOperatorOR if the operator between terms is 'OR' or 'AND'
    *
    * @return the corresponding query.
    */
@@ -328,7 +328,7 @@ public final class Queries {
    * @param field     the field to construct the terms.
    * @param text      the text to construct the query from.
    * @param analyzer  used to analyze the text
-   * @param defaultOperatorOR if the operator between terms is OR or AND
+   * @param defaultOperatorOR if the operator between terms is 'OR' or 'AND'
    *
    * @return the corresponding query.
    */
@@ -393,8 +393,6 @@ public final class Queries {
    * @param field    The field
    * @param text     The text to analyze
    * @param analyzer The analyzer
-   *
-   * @return the corresponding list of terms produced by the analyzer.
    */
   private static void addTermsToPhrase(String field, String text, Analyzer analyzer, PhraseQuery.Builder phrase) {
     try {
@@ -412,7 +410,6 @@ public final class Queries {
       stream.close();
     } catch (IOException ex) {
       // Should not occur since we use a StringReader
-      ex.printStackTrace();
     }
   }
 
@@ -427,14 +424,12 @@ public final class Queries {
       }
     } catch (IOException ex) {
       // Should not occur since we use a StringReader
-      ex.printStackTrace();
     } finally {
       if (stream != null) try {
         stream.end();
         stream.close();
       } catch (IOException ex) {
         // Should not occur since we use a StringReader
-        ex.printStackTrace();
       }
     }
     return false;
@@ -452,14 +447,12 @@ public final class Queries {
       }
     } catch (IOException ex) {
       // Should not occur since we use a StringReader
-      ex.printStackTrace();
     } finally {
       if (stream != null) try {
         stream.end();
         stream.close();
       } catch (IOException ex) {
         // Should not occur since we use a StringReader
-        ex.printStackTrace();
       }
     }
     return false;
@@ -579,6 +572,7 @@ public final class Queries {
     for (Term t : query.getTerms()) {
       if (t.equals(original)) {
         doSubstitute = true;
+        break;
       }
     }
     // Substitute if required

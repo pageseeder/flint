@@ -96,6 +96,7 @@ public final class IndexingThread implements Runnable {
       } catch (InterruptedException ex) {
         this._listener.error(null, "Interrupted indexing: " + ex.getMessage(), ex);
         // the thread was shutdown, let's die then
+        Thread.currentThread().interrupt();
         return;
       }
       // We've got a job to handle?
@@ -128,7 +129,7 @@ public final class IndexingThread implements Runnable {
         }
         // set job status
         job.setSuccess(success);
-      } catch (Throwable ex) {
+      } catch (Exception ex) {
         this._listener.error(job, "Unknown error: " + ex.getMessage(), ex);
       } finally {
         // mark job
@@ -157,9 +158,7 @@ public final class IndexingThread implements Runnable {
       }
       // check the number of opened readers then
       OpenIndexManager.closeOldReaders();
-      // clear the job
-      job = null;
-    } catch (Throwable ex) {
+    } catch (Exception ex) {
       this._listener.error(job, "Unexpected general error: " + ex.getMessage(), ex);
     }
   }
@@ -167,7 +166,7 @@ public final class IndexingThread implements Runnable {
   // private methods
   // ----------------------------------------------------------------------------------------------
 
-  private boolean indexContent(IndexJob job, IndexIO io) throws IndexException {
+  private boolean indexContent(IndexJob job, IndexIO io) {
 
     // retrieve content
     Content content = this._manager.getContent(job);

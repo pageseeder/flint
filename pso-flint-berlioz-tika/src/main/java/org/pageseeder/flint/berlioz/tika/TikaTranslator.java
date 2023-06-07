@@ -73,7 +73,7 @@ public class TikaTranslator implements ContentTranslator {
         try {
           ByteArrayOutputStream out = new ByteArrayOutputStream();
           new AutoDetectParser(TIKA_CONFIG).parse(stream, getHandler(out), metadata, context);
-          xmlContent = new String(out.toByteArray(), StandardCharsets.UTF_8);
+          xmlContent = out.toString(StandardCharsets.UTF_8);
         } catch (TikaException te) {
           LOGGER.error("Failed to parse content with TIKA", te);
           // should be HTML??

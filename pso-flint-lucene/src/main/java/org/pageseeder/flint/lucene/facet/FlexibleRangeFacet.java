@@ -16,13 +16,11 @@
 package org.pageseeder.flint.lucene.facet;
 
 import java.io.IOException;
-import java.text.ParseException;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.apache.lucene.document.DateTools;
 import org.apache.lucene.document.DateTools.Resolution;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BooleanClause.Occur;
@@ -122,15 +120,15 @@ public abstract class FlexibleRangeFacet extends FlexibleFacet<FlexibleRangeFace
         if (count > 0) {
           // add to map
           Integer ec = ranges.get(r);
-          ranges.put(r, Integer.valueOf(count + (ec == null ? 0 : ec.intValue())));
+          ranges.put(r, count + (ec == null ? 0 : ec));
         }
         counter.reset();
       }
       this.totalRanges = ranges.size();
       // add to bucket
       Bucket<Range> b = new Bucket<>(size);
-      for (Range r : ranges.keySet()) {
-        b.add(r, ranges.get(r));
+      for (Map.Entry<Range, Integer> range : ranges.entrySet()) {
+        b.add(range.getKey(), range.getValue());
       }
       this.bucket = b;
     }
@@ -152,6 +150,23 @@ public abstract class FlexibleRangeFacet extends FlexibleFacet<FlexibleRangeFace
    */
   public void compute(IndexSearcher searcher, Query base, int size) throws IOException {
     compute(searcher, base, null, size);
+  }
+
+  /**
+   * Computes each facet option.
+   *
+   * <p>Same as <code>compute(searcher, base, 10);</code>.
+   *
+   * <p>Defaults to 10.
+   *
+   * @see #compute(IndexSearcher, Query, int)
+   *
+   * @param searcher the index search to use.
+   *
+   * @throws IOException if thrown by the searcher.
+   */
+  public void compute(IndexSearcher searcher) throws IOException {
+    compute(searcher, null, null, DEFAULT_MAX_NUMBER_OF_VALUES);
   }
 
   /**
@@ -214,7 +229,7 @@ public abstract class FlexibleRangeFacet extends FlexibleFacet<FlexibleRangeFace
       if (count > 0) {
         // add to map
         Integer ec = ranges.get(r);
-        ranges.put(r, Integer.valueOf(count + (ec == null ? 0 : ec.intValue())));
+        ranges.put(r, count + (ec == null ? 0 : ec));
       }
       counter.reset();
     }
@@ -222,8 +237,8 @@ public abstract class FlexibleRangeFacet extends FlexibleFacet<FlexibleRangeFace
     this.totalRanges = ranges.size();
     // add to bucket
     Bucket<Range> b = new Bucket<>(size);
-    for (Range r : ranges.keySet()) {
-      b.add(r, ranges.get(r));
+    for (Map.Entry<Range, Integer> range : ranges.entrySet()) {
+      b.add(range.getKey(), range.getValue());
     }
     this.bucket = b;
   }
@@ -279,9 +294,9 @@ public abstract class FlexibleRangeFacet extends FlexibleFacet<FlexibleRangeFace
   public static class Range implements Comparable<Range> {
     private final String _min;
     private final String _max;
-    private boolean _includeMin;
-    private boolean _includeMax;
-    private Resolution _resolution;
+    private final boolean _includeMin;
+    private final boolean _includeMax;
+    private final Resolution _resolution;
     private Range(String min, boolean withMin, String max, boolean withMax) {
       this(min, withMin, max, withMax, null);
     }
@@ -290,6 +305,7 @@ public abstract class FlexibleRangeFacet extends FlexibleFacet<FlexibleRangeFace
       this._min = min;
       this._includeMin = withMin;
       this._includeMax = withMax;
+      this._resolution = resolution;
     }
     public String getMin() {
       return this._min;
@@ -368,6 +384,6 @@ public abstract class FlexibleRangeFacet extends FlexibleFacet<FlexibleRangeFace
     return range == OTHER;
   }
 
-  public static final Range OTHER = new Range((String) null, false, (String) null, false);
+  public static final Range OTHER = new Range(null, false, null, false);
 
 }

@@ -45,7 +45,7 @@ public class AutoXMLTranslatorFactory implements ContentTranslatorFactory {
   /**
    * XML MIME types supported.
    */
-  private final List<String> types = new ArrayList<String>();
+  private final List<String> types = new ArrayList<>();
 
   /**
    * The translator for XML files: a source forwarder
@@ -77,7 +77,7 @@ public class AutoXMLTranslatorFactory implements ContentTranslatorFactory {
    *
    * <p>If the media type is identified as an XML media type (ending with "+xml"), it is
    * automatically added.
-   *
+   * <p>
    * {@inheritDoc}
    */
   @Override

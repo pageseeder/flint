@@ -1,6 +1,6 @@
 /*
  * Decompiled with CFR 0_110.
- * 
+ *
  * Could not load the following classes:
  *  org.apache.lucene.index.DirectoryReader
  *  org.apache.lucene.index.IndexReader
@@ -49,14 +49,14 @@ public final class GetIndexSummary extends LuceneIndexGenerator implements Cache
   }
 
   @Override
-  public void processSingle(IndexMaster index, ContentRequest req, XMLWriter xml) throws BerliozException, IOException {
+  public void processSingle(IndexMaster index, ContentRequest req, XMLWriter xml) throws IOException {
     xml.openElement("index-summary");
     this.indexToXML(index, "true".equals(req.getParameter("fields", "true")), xml);
     xml.closeElement();
   }
 
   @Override
-  public void processMultiple(Collection<IndexMaster> indexes, ContentRequest req, XMLWriter xml) throws BerliozException, IOException {
+  public void processMultiple(Collection<IndexMaster> indexes, ContentRequest req, XMLWriter xml) throws IOException {
     xml.openElement("index-summary");
     for (IndexMaster index : indexes) {
       this.indexToXML(index, "true".equals(req.getParameter("fields", "true")), xml);
@@ -75,9 +75,7 @@ public final class GetIndexSummary extends LuceneIndexGenerator implements Cache
       xml.attribute("error", "Failed to load reader: " + ex.getMessage());
     }
     if (reader != null) {
-      DirectoryReader dreader = null;
-      try {
-        dreader = DirectoryReader.open(index.getIndex().getIndexDirectory());
+      try (DirectoryReader dreader = DirectoryReader.open(index.getIndex().getIndexDirectory())) {
         long lu = index.getIndex().getIndexIO().getLastTimeUsed();
         if (lu > 0) xml.attribute("last-modified", ISO8601.DATETIME.format(lu));
         xml.attribute("current", Boolean.toString(dreader.isCurrent()));
@@ -105,12 +103,9 @@ public final class GetIndexSummary extends LuceneIndexGenerator implements Cache
           xml.closeElement();
         }
       } catch (IOException ex) {
-        LOGGER.error("Error while extracting index statistics", (Throwable) ex);
+        LOGGER.error("Error while extracting index statistics", ex);
       } finally {
         index.releaseSilently(reader);
-        if (dreader != null) {
-          dreader.close();
-        }
       }
     } else {
       xml.attribute("error", "Null reader");

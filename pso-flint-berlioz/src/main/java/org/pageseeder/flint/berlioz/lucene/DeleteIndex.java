@@ -1,6 +1,6 @@
 /*
  * Decompiled with CFR 0_110.
- * 
+ *
  * Could not load the following classes:
  *  org.pageseeder.berlioz.BerliozException
  *  org.pageseeder.berlioz.Beta
@@ -27,7 +27,7 @@ import org.pageseeder.xmlwriter.XMLWriter;
 public final class DeleteIndex extends LuceneIndexGenerator {
 
   @Override
-  public void processSingle(IndexMaster index, ContentRequest req, XMLWriter xml) throws BerliozException, IOException {
+  public void processSingle(IndexMaster index, ContentRequest req, XMLWriter xml) throws IOException {
     xml.openElement("index");
     xml.attribute("name", index.getName());
     xml.attribute("status", FlintConfig.get().deleteMaster(index.getName()) ? "deleted" : "delete-failed");
@@ -35,7 +35,7 @@ public final class DeleteIndex extends LuceneIndexGenerator {
   }
 
   @Override
-  public void processMultiple(Collection<IndexMaster> indexes, ContentRequest req, XMLWriter xml) throws BerliozException, IOException {
+  public void processMultiple(Collection<IndexMaster> indexes, ContentRequest req, XMLWriter xml) throws IOException {
     GeneratorErrors.error(req, xml, "forbidden", "Cannnot delete multiple indexes", ContentStatus.BAD_REQUEST);
   }
 }

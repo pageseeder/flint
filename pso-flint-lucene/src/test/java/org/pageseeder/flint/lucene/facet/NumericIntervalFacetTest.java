@@ -22,6 +22,7 @@ import org.pageseeder.flint.lucene.search.NumericTermFilter;
 import org.pageseeder.flint.lucene.util.Bucket;
 import org.pageseeder.flint.lucene.utils.TestListener;
 import org.pageseeder.flint.lucene.utils.TestUtils;
+import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.FileFilter;
@@ -50,7 +51,7 @@ public class NumericIntervalFacetTest {
       index = new LuceneLocalIndex(indexRoot, "numericinterval", new StandardAnalyzer(), documents);
       index.setTemplate("xml", template.toURI());
     } catch (Exception ex) {
-      ex.printStackTrace();
+      LoggerFactory.getLogger(TestUtils.class).error("Something went wrong", ex);
     }
     manager = LocalIndexManagerFactory.createMultiThreads(new TestListener());
     System.out.println("Starting manager!");
@@ -59,21 +60,13 @@ public class NumericIntervalFacetTest {
     // wait a bit
     TestUtils.wait(1);
     // prepare base query
-    try {
-      searcher = LuceneIndexQueries.grabSearcher(index);
-    } catch (IndexException ex) {
-      ex.printStackTrace();
-    }
+    searcher = LuceneIndexQueries.grabSearcher(index);
   }
 
   @AfterClass
   public static void after() {
     // close searcher
-    try {
-      LuceneIndexQueries.release(index, searcher);
-    } catch (IndexException ex) {
-      ex.printStackTrace();
-    }
+    LuceneIndexQueries.release(index, searcher);
     // stop index
     System.out.println("Stopping manager!");
     manager.shutdown();
@@ -83,7 +76,7 @@ public class NumericIntervalFacetTest {
   @Test
   public void testFacetsNoQuery() throws IndexException, IOException, ParseException {
     NumericIntervalFacet facet = new NumericIntervalFacet.Builder().name("facet1").numeric(NumericType.INT).start(10).end(20).intervalLength(1).build();
-    facet.compute(searcher, null);
+    facet.compute(searcher);
     Bucket<Interval> intervals = facet.getValues();
     System.out.println(intervals);
     Assert.assertEquals(6, facet.getTotalIntervals());
@@ -95,7 +88,7 @@ public class NumericIntervalFacetTest {
     Assert.assertEquals(1, intervals.count(Interval.numericInterval(14, 15)));
     Assert.assertEquals(1, intervals.count(Interval.numericInterval(15, 16)));
     facet = new NumericIntervalFacet.Builder().name("facet1").numeric(NumericType.INT).start(12).end(14).intervalLength(1).build();
-    facet.compute(searcher, null);
+    facet.compute(searcher);
     intervals = facet.getValues();
     System.out.println(intervals);
     Assert.assertEquals(2, facet.getTotalIntervals());
@@ -103,7 +96,7 @@ public class NumericIntervalFacetTest {
     Assert.assertEquals(1, intervals.count(Interval.numericInterval(12, 13)));
     Assert.assertEquals(2, intervals.count(Interval.numericInterval(13, true, 14, true)));
     facet = new NumericIntervalFacet.Builder().name("facet2").numeric(NumericType.INT).start(18).end(28).intervalLength(3).build();
-    facet.compute(searcher, null);
+    facet.compute(searcher);
     intervals = facet.getValues();
     System.out.println(intervals);
     Assert.assertEquals(3, facet.getTotalIntervals());
@@ -112,7 +105,7 @@ public class NumericIntervalFacetTest {
     Assert.assertEquals(3, intervals.count(Interval.numericInterval(21, 24)));
     Assert.assertEquals(3, intervals.count(Interval.numericInterval(24, 27)));
     facet = new NumericIntervalFacet.Builder().name("facet3").numeric(NumericType.INT).start(25).end(40).intervalLength(10).build();
-    facet.compute(searcher, null);
+    facet.compute(searcher);
     intervals = facet.getValues();
     System.out.println(intervals);
     Assert.assertEquals(1, facet.getTotalIntervals());

@@ -47,7 +47,7 @@ public final class LuceneLocalIndex extends LocalIndex {
    * A logger for this class and to provide for Flint.
    */
   private static final Logger LOGGER = LoggerFactory.getLogger(LuceneLocalIndex.class);
-  
+
   private final Directory _directory;
 
   private final Analyzer _analyzer;
@@ -72,7 +72,7 @@ public final class LuceneLocalIndex extends LocalIndex {
 
   /**
    * Create a new local index.
-   *
+   * <p>
    *
    * @param indexLocation   The location of the local index.
    * @param catalog         The name of the catalog
@@ -100,7 +100,7 @@ public final class LuceneLocalIndex extends LocalIndex {
    *
    * @return The Index Directory object
    */
-  public final Directory getIndexDirectory() {
+  public Directory getIndexDirectory() {
     return this._directory;
   }
 
@@ -156,7 +156,7 @@ public final class LuceneLocalIndex extends LocalIndex {
     }
     return f.getAbsolutePath();
   }
-  
+
   public File pathToFile(String path) {
     return new File(this._contentRoot, path);
   }
@@ -194,7 +194,7 @@ public final class LuceneLocalIndex extends LocalIndex {
    *
    * <p>This method will log any creation problem as a warning.
    *
-   * @param folder The folder to created.
+   * @param folder The folder to be created.
    */
   private static Directory ensureFolderExists(File folder) {
     if (!folder.exists()) {

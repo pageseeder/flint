@@ -70,7 +70,7 @@ public final class NamedContentType implements ContentType {
 
   /**
    * Returns a pre-computed hashcode value based on the name.
-   *
+   * <p>
    * {@inheritDoc}
    */
   @Override
@@ -85,7 +85,7 @@ public final class NamedContentType implements ContentType {
   public boolean equals(Object o) {
     // filter out objects of the wrong type
     if (!(o instanceof NamedContentType)) return false;
-    return this.equals((NamedContentType)o);
+    return this.equalsType((NamedContentType)o);
   }
 
   /**
@@ -95,10 +95,10 @@ public final class NamedContentType implements ContentType {
    * @return <code>true</code> if the two content types are equal;
    *         <code>false</code> otherwise.
    */
-  public boolean equals(NamedContentType type) {
+  public boolean equalsType(NamedContentType type) {
     if (type == this) return true;
-    if (this._name == type._name) return true;
-    return this._name.equals(type._name);
+    if (this._name == null && type._name == null) return true;
+    return this._name != null && this._name.equals(type._name);
   }
 
   /**
@@ -112,7 +112,7 @@ public final class NamedContentType implements ContentType {
 
   /**
    * Returns the name of this content type.
-   *
+   * <p>
    * {@inheritDoc}
    */
   @Override

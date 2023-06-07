@@ -86,7 +86,7 @@ public final class IndexParser {
    *
    * @param reader    The XML reader to use.
    */
-  protected IndexParser(XMLReader reader) {
+  IndexParser(XMLReader reader) {
     this._reader = reader;
     this._reader.setEntityResolver(FlintEntityResolver.getInstance());
     this._reader.setErrorHandler(new FlintErrorHandler());
@@ -99,7 +99,7 @@ public final class IndexParser {
    *
    * @param catalog  The..
    */
-  protected IndexParser(String catalog) {
+  IndexParser(String catalog) {
     this._reader = null;
     this._handler = new AutoHandler(catalog);
     this._result = new SAXResult(this._handler);
@@ -138,7 +138,6 @@ public final class IndexParser {
     } catch (SAXException ex) {
       throw new IndexException("An SAX error occurred while parsing source "+source.getSystemId()+": "+ex.getMessage(), ex);
     } catch (IOException ex) {
-      ex.printStackTrace();
       throw new IndexException("An I/O error occurred while parsing the file "+source.getSystemId()+": "+ex.getMessage(), ex);
     }
   }
@@ -194,7 +193,7 @@ public final class IndexParser {
 
     /**
      * Once element "documents" is matched, the reader is assigned the appropriate handler.
-     *
+     * <p>
      * {@inheritDoc}
      */
     @Override

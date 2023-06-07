@@ -201,7 +201,7 @@ public final class LuceneIndexIO implements IndexIO {
       this._reader.maybeRefresh();
       this._searcher.maybeRefresh();
       state(State.CLEAN);
-    } catch (Throwable ex) {
+    } catch (Exception ex) {
       LOGGER.error("Failed to reopen Index Searcher because of an I/O error", ex);
     }
   }
@@ -224,7 +224,7 @@ public final class LuceneIndexIO implements IndexIO {
     try {
       LOGGER.debug("Committing index changes");
       long now = System.currentTimeMillis();
-      Map<String, String> commitUserData = new HashMap<String, String>();
+      Map<String, String> commitUserData = new HashMap<>();
       commitUserData.put(LAST_COMMIT_DATE, String.valueOf(now));
       this._writer.setLiveCommitData(commitUserData.entrySet());
       this._writer.commit();
@@ -277,7 +277,7 @@ public final class LuceneIndexIO implements IndexIO {
    * (asynchronously).
    *
    * @param rule the rule to identify the items to delete
-   * @return <code>true</code> if the item could be be scheduled for deletion;
+   * @return <code>true</code> if the item could be scheduled for deletion;
    *         <code>false</code>
    * @throws IndexException should any error be thrown by Lucene.
    */
@@ -313,7 +313,7 @@ public final class LuceneIndexIO implements IndexIO {
    *
    * @param rule the rule to identify the items to delete before update.
    * @param documents the list of documents to replace with.
-   * @return <code>true</code> if the item could be be scheduled for update;
+   * @return <code>true</code> if the item could be scheduled for update;
    *         <code>false</code>
    * @throws IndexException should any error be thrown by Lucene
    */
@@ -396,6 +396,7 @@ public final class LuceneIndexIO implements IndexIO {
         Thread.sleep(100);
       } catch (InterruptedException ex) {
         LOGGER.error("Interrupted while waiting for closing to finish", ex);
+        Thread.currentThread().interrupt();
       }
     }
     try {
@@ -422,6 +423,7 @@ public final class LuceneIndexIO implements IndexIO {
         Thread.sleep(100);
       } catch (InterruptedException ex) {
         LOGGER.error("Interrupted while waiting for closing to finish", ex);
+        Thread.currentThread().interrupt();
       }
     }
     try {
@@ -460,6 +462,7 @@ public final class LuceneIndexIO implements IndexIO {
         Thread.sleep(100);
       } catch (InterruptedException ex) {
         LOGGER.error("Interrupted while waiting for writing to finish", ex);
+        Thread.currentThread().interrupt();
       }
     }
   }
@@ -470,6 +473,7 @@ public final class LuceneIndexIO implements IndexIO {
         Thread.sleep(100);
       } catch (InterruptedException ex) {
         LOGGER.error("Interrupted while waiting for writing to finish", ex);
+        Thread.currentThread().interrupt();
       }
     }
     synchronized(this.lock) { this.committing++; }
@@ -485,6 +489,7 @@ public final class LuceneIndexIO implements IndexIO {
         Thread.sleep(100);
       } catch (InterruptedException ex) {
         LOGGER.error("Interrupted while waiting for commit to finish", ex);
+        Thread.currentThread().interrupt();
       }
     }
     synchronized(this.lock) { this.writing++; }
@@ -531,7 +536,7 @@ public final class LuceneIndexIO implements IndexIO {
     } catch (IndexFormatTooOldException ex) {
       if (firsttime) {
         // try to delete all files and retry
-        if (this._directory != null) try {
+        try {
           for (String n : this._directory.listAll()) {
             this._directory.deleteFile(n);
           }

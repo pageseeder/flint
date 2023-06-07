@@ -1,6 +1,6 @@
 /*
  * Decompiled with CFR 0_110.
- * 
+ *
  * Could not load the following classes:
  *  org.apache.lucene.index.DirectoryReader
  *  org.apache.lucene.index.IndexReader
@@ -38,7 +38,7 @@ public final class ListIndexDefinitions implements ContentGenerator, Cacheable {
     return props == null ? null : String.valueOf(props.lastModified());
   }
 
-  public void process(ContentRequest req, XMLWriter xml) throws BerliozException, IOException {
+  public void process(ContentRequest req, XMLWriter xml) throws IOException {
     FlintConfig config = FlintConfig.get();
     xml.openElement("definitions");
     try {

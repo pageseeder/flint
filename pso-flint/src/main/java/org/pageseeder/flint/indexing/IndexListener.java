@@ -60,7 +60,7 @@ public interface IndexListener {
    *
    * @param job       the job concerned
    * @param message   the error message
-   * @param throwable the exception (may be <code>null</code>)
+   * @param throwable the exception (can be <code>null</code>)
    */
   void error(IndexJob job, String message, Throwable throwable);
 

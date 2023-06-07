@@ -2,10 +2,7 @@ package org.pageseeder.flint.catalog;
 
 import java.io.IOException;
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.List;
+import java.util.*;
 
 import org.pageseeder.flint.indexing.FlintField;
 import org.pageseeder.flint.indexing.FlintField.DocValuesType;
@@ -99,10 +96,10 @@ public class Catalog implements XMLWritable {
   public void toXML(XMLWriter xml) throws IOException {
     xml.openElement("catalog");
     xml.attribute("name", this._name);
-    for (String fname : this._fields.keySet()) {
+    for (Map.Entry<String, CatalogEntry> field : this._fields.entrySet()) {
       xml.openElement("field");
-      xml.attribute("name", fname);
-      CatalogEntry entry = this._fields.get(fname);
+      xml.attribute("name", field.getKey());
+      CatalogEntry entry = field.getValue();
       xml.attribute("stored",     String.valueOf(entry.stored));
       xml.attribute("tokenized",  String.valueOf(entry.tokenized));
       if (entry.num != null)

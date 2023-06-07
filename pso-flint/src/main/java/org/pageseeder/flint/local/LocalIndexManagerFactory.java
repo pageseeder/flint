@@ -14,7 +14,7 @@ public class LocalIndexManagerFactory {
   }
 
   /*
-   * Multi threaded
+   * Multithreaded
    */
   public static LocalIndexManager createMultiThreads() {
     return new LocalIndexManager(XML_ONLY);

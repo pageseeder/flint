@@ -36,7 +36,7 @@ import java.util.Map.Entry;
 /**
  * A simple parameter to capture a search entered by a user.
  *
- * <p>The <i>question</i> is what the user enters in the input box and its scope can be a number of fields.
+ * <p>The <i>question</i> is what the user types in the input box and its scope can be a number of fields.
  *
  * <p>It acts on one or multiple fields, each field can have a different boost level.
  *
@@ -54,7 +54,7 @@ public final class Question implements SearchParameter, XMLWritable {
   private final boolean _supportOperators;
 
   /**
-   * If the default operator between terms is OR or AND
+   * If the default operator between terms is 'OR' or 'AND'
    */
   private final boolean _defaultOperatorOR;
 
@@ -91,11 +91,11 @@ public final class Question implements SearchParameter, XMLWritable {
    * @param question          The text entered by the user.
    * @param supportWildcards  If wildcards ('?', '*') are supported in the question
    * @param supportOperators  If operators (AND, OR) are supported in the question
-   * @param defaultOperatorOR If the default operator between terms is OR or AND
+   * @param defaultOperatorOR If the default operator between terms is 'OR' or 'AND'
    *
    * @throws NullPointerException If either argument is <code>null</code>.
    */
-  protected Question(Map<String, Float> fields, String question, boolean supportWildcards,
+  Question(Map<String, Float> fields, String question, boolean supportWildcards,
                      boolean supportOperators, boolean defaultOperatorOR) throws NullPointerException {
     if (fields == null) throw new NullPointerException("fields");
     if (question == null) throw new NullPointerException("question");
@@ -136,7 +136,7 @@ public final class Question implements SearchParameter, XMLWritable {
    */
   public float getBoost(String field) {
     Float boost = this._fields.get(field);
-    return boost != null? boost.floatValue() : 1.0f;
+    return boost != null ? boost : 1.0f;
   }
 
   /**
@@ -246,7 +246,7 @@ public final class Question implements SearchParameter, XMLWritable {
    * @throws IOException If thrown by the reader while getting the fuzzy terms.
    */
   public List<Question> similar(IndexReader reader, int maxSize) throws IOException {
-    List<Question> similar = new ArrayList<Question>();
+    List<Question> similar = new ArrayList<>();
     // If the question contains a phrase, try removing the phrase
     if (this._question.indexOf('"') >= 0) {
       Question nophrase = new Builder().fields(this._fields).question(this._question.replace('"', ' ')).build();
@@ -257,7 +257,7 @@ public final class Question implements SearchParameter, XMLWritable {
     } else {
       List<String> values = Fields.toValues(this._question);
       big: for (String value : values) {
-        Set<String> fuzzy = new HashSet<String>();
+        Set<String> fuzzy = new HashSet<>();
         // collect fuzzy terms based on index
         for (String field : this._fields.keySet()) {
           List<String> fuzzies = Terms.fuzzy(reader, new Term(field, value));

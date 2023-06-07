@@ -15,6 +15,10 @@ import org.xml.sax.XMLReader;
 import org.xml.sax.helpers.DefaultHandler;
 import org.xml.sax.helpers.XMLReaderFactory;
 
+import javax.xml.XMLConstants;
+import javax.xml.parsers.ParserConfigurationException;
+import javax.xml.parsers.SAXParser;
+import javax.xml.parsers.SAXParserFactory;
 import java.io.*;
 import java.text.SimpleDateFormat;
 import java.util.HashMap;
@@ -163,7 +167,12 @@ public class Catalogs {
     // parse it
     CatalogHandler handler = new CatalogHandler(name);
     try {
-      XMLReader reader = XMLReaderFactory.createXMLReader();
+      SAXParserFactory factory = SAXParserFactory.newInstance();
+      factory.setFeature(XMLConstants.ACCESS_EXTERNAL_DTD, false);
+      factory.setFeature(XMLConstants.ACCESS_EXTERNAL_SCHEMA, false);
+      factory.setFeature(XMLConstants.ACCESS_EXTERNAL_STYLESHEET, false);
+      factory.setFeature(XMLConstants.FEATURE_SECURE_PROCESSING, true);
+      XMLReader reader = factory.newSAXParser().getXMLReader();
       reader.setContentHandler(handler);
       reader.parse(new InputSource(in));
     } catch (IOException ex) {
@@ -171,6 +180,9 @@ public class Catalogs {
       return null;
     } catch (SAXException ex) {
       LOGGER.error("Failed to parse catalog file for {}", name, ex);
+      return null;
+    } catch (ParserConfigurationException ex) {
+      LOGGER.error("Failed to create reader for catalog {}", name, ex);
       return null;
     }
     // handler built the catalog

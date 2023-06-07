@@ -70,7 +70,7 @@ public interface IndexIO {
    * (asynchronously).
    *
    * @param rule the rule to identify the items to delete
-   * @return <code>true</code> if the item could be be scheduled for deletion;
+   * @return <code>true</code> if the item could be scheduled for deletion;
    *         <code>false</code>
    * @throws IndexException should any error be thrown by Lucene.
    */
@@ -86,7 +86,7 @@ public interface IndexIO {
    *
    * @param rule the rule to identify the items to delete before update.
    * @param documents the list of documents to replace with.
-   * @return <code>true</code> if the item could be be scheduled for update;
+   * @return <code>true</code> if the item could be scheduled for update;
    *         <code>false</code>
    * @throws IndexException should any error be thrown by Lucene
    */

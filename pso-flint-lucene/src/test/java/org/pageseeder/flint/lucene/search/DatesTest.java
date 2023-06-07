@@ -23,6 +23,7 @@ import org.pageseeder.flint.lucene.utils.TestListener;
 import org.pageseeder.flint.lucene.utils.TestUtils;
 import org.pageseeder.xmlwriter.XML.NamespaceAware;
 import org.pageseeder.xmlwriter.XMLStringWriter;
+import org.slf4j.LoggerFactory;
 
 import java.io.ByteArrayInputStream;
 import java.io.File;
@@ -55,13 +56,13 @@ public class DatesTest {
       indexNumeric = new LuceneLocalIndex(indexNumericRoot, "datesnum", new StandardAnalyzer(), documents);
       indexNumeric.setTemplates(TestUtils.TYPE, TestUtils.MEDIA_TYPE, template.toURI());
     } catch (Exception ex) {
-      ex.printStackTrace();
+      LoggerFactory.getLogger(TestUtils.class).error("Something went wrong", ex);
     }
     try {
       indexString = new LuceneLocalIndex(indexStringRoot, "datesstr", new StandardAnalyzer(), documents);
       indexString.setTemplates(TestUtils.TYPE, TestUtils.MEDIA_TYPE, template.toURI());
     } catch (Exception ex) {
-      ex.printStackTrace();
+      LoggerFactory.getLogger(TestUtils.class).error("Something went wrong", ex);
     }
     manager = new IndexManager(new DatesContentFetcher(), new TestListener(), 10, false);
     manager.setDefaultTranslator(new SourceForwarder(Collections.singletonList(TestUtils.MEDIA_TYPE), "UTF-8"));

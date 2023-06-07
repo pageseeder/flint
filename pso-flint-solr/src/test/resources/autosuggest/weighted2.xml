@@ -1,8 +1,0 @@
-<?xml version="1.0"?>
-<documents version="5.0">
-  <document>
-    <field name="test_weight_1">10</field>
-    <field name="test_weight_2">1</field>
-    <field name="test_text_weighted-search">weight 10 1</field>
-  </document>
-</documents>

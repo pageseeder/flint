@@ -9,6 +9,7 @@ import org.pageseeder.flint.content.Content;
 import org.pageseeder.flint.content.ContentType;
 import org.pageseeder.flint.content.DeleteRule;
 import org.pageseeder.flint.lucene.LuceneDeleteRule;
+import org.slf4j.LoggerFactory;
 
 import java.io.*;
 import java.nio.charset.StandardCharsets;
@@ -22,7 +23,8 @@ public class TestUtils {
     try {
       Thread.sleep(time * 1000);
     } catch (InterruptedException ex) {
-      ex.printStackTrace();
+      LoggerFactory.getLogger(TestUtils.class).error("Something went wrong", ex);
+      Thread.currentThread().interrupt();
       Assert.fail();
     }
   }
@@ -85,7 +87,7 @@ public class TestUtils {
 
   public static class ParallelScheduler implements RunnerScheduler {
 
-    private ExecutorService threadPool = Executors.newFixedThreadPool(
+    private final ExecutorService threadPool = Executors.newFixedThreadPool(
         Runtime.getRuntime().availableProcessors());
 
     @Override

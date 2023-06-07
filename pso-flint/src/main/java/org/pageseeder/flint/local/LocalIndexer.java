@@ -58,15 +58,15 @@ public final class LocalIndexer implements FileVisitor<Path> {
   private final IndexManager _manager;
 
   private final Index _index;
-  
+
   private long _indexModifiedDate = -1;
 
   private Map<String, Long> indexedFiles = null;
 
   private FileFilter fileFilter = null;
-  
+
   private FileFilter directoryFilter = null;
-  
+
   private IndexBatch batch = null;
 
   private boolean useIndexDate = true;
@@ -107,7 +107,7 @@ public final class LocalIndexer implements FileVisitor<Path> {
 
   /**
    * If the index last modified date is used to select which files to index
-   * @param useIndxDate
+   * @param useIndxDate whether to use the index date or not
    */
   public void setUseIndexDate(boolean useIndxDate) {
     this.useIndexDate = useIndxDate;
@@ -155,7 +155,7 @@ public final class LocalIndexer implements FileVisitor<Path> {
   // File walking methods
 
   @Override
-  public FileVisitResult visitFile(Path path, BasicFileAttributes attrs) throws IOException {
+  public FileVisitResult visitFile(Path path, BasicFileAttributes attrs) {
     File file = path.toFile();
     String aspath = file.getAbsolutePath();
     Long indexModified = this.indexedFiles == null ? null : this.indexedFiles.remove(aspath);
@@ -178,12 +178,12 @@ public final class LocalIndexer implements FileVisitor<Path> {
   }
 
   @Override
-  public FileVisitResult postVisitDirectory(Path dir, IOException exc) throws IOException {
+  public FileVisitResult postVisitDirectory(Path dir, IOException exc) {
     return FileVisitResult.CONTINUE;
   }
 
   @Override
-  public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) throws IOException {
+  public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) {
     File file = dir.toFile();
     if (this.directoryFilter != null && !this.directoryFilter.accept(file))
       return FileVisitResult.SKIP_SUBTREE;
@@ -191,7 +191,7 @@ public final class LocalIndexer implements FileVisitor<Path> {
   }
 
   @Override
-  public FileVisitResult visitFileFailed(Path file, IOException exc) throws IOException {
+  public FileVisitResult visitFileFailed(Path file, IOException exc) {
     LOGGER.error("Failed to collect document {}", file, exc);
     return FileVisitResult.CONTINUE;
   }

@@ -12,6 +12,7 @@ import org.pageseeder.flint.lucene.LuceneIndexQueries;
 import org.pageseeder.flint.lucene.LuceneLocalIndex;
 import org.pageseeder.flint.lucene.utils.TestListener;
 import org.pageseeder.flint.lucene.utils.TestUtils;
+import org.slf4j.LoggerFactory;
 
 import java.io.File;
 
@@ -39,7 +40,7 @@ public class LocalIndexerTest {
       index1.setTemplate("xml", template.toURI());
       index1.setTemplate("psml", templatePSML.toURI());
     } catch (Exception ex) {
-      ex.printStackTrace();
+      LoggerFactory.getLogger(TestUtils.class).error("Something went wrong", ex);
     }
     manager = LocalIndexManagerFactory.createMultiThreads(5, new TestListener());
     System.out.println("Starting manager!");
@@ -54,7 +55,7 @@ public class LocalIndexerTest {
       index2.setTemplate("xml", template.toURI());
       index2.setTemplate("psml", templatePSML.toURI());
     } catch (Exception ex) {
-      ex.printStackTrace();
+      LoggerFactory.getLogger(TestUtils.class).error("Something went wrong", ex);
     }
   }
 
@@ -86,14 +87,9 @@ public class LocalIndexerTest {
     // wait a bit
     TestUtils.wait(DELAY);
     IndexReader reader;
-    try {
-      reader = LuceneIndexQueries.grabReader(index1);
-      Assert.assertEquals(30, reader.numDocs());
-      LuceneIndexQueries.release(index1, reader);
-    } catch (IndexException ex) {
-      ex.printStackTrace();
-      Assert.fail();
-    }
+    reader = LuceneIndexQueries.grabReader(index1);
+    Assert.assertEquals(30, reader.numDocs());
+    LuceneIndexQueries.release(index1, reader);
   }
 
   /**
@@ -108,13 +104,8 @@ public class LocalIndexerTest {
     // wait a bit
     TestUtils.wait(DELAY);
     IndexReader reader;
-    try {
-      reader = LuceneIndexQueries.grabReader(index2);
-      Assert.assertEquals(30, reader.numDocs());
-      LuceneIndexQueries.release(index2, reader);
-    } catch (IndexException ex) {
-      ex.printStackTrace();
-      Assert.fail();
-    }
+    reader = LuceneIndexQueries.grabReader(index2);
+    Assert.assertEquals(30, reader.numDocs());
+    LuceneIndexQueries.release(index2, reader);
   }
 }

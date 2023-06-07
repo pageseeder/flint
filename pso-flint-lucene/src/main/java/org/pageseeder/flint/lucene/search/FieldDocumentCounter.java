@@ -18,6 +18,7 @@ import java.io.IOException;
 import java.util.Collections;
 
 import org.apache.lucene.document.Document;
+import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.SimpleCollector;
@@ -69,7 +70,7 @@ public final class FieldDocumentCounter extends SimpleCollector {
   }
 
   @Override
-  protected void doSetNextReader(LeafReaderContext ctxt) throws IOException {
+  protected void doSetNextReader(LeafReaderContext ctxt) {
     this.context = ctxt;
   }
 
@@ -82,8 +83,8 @@ public final class FieldDocumentCounter extends SimpleCollector {
   public void collect(int doc) {
     if (this.context != null) {
       Document d;
-      try {
-        d = this.context.reader().document(doc, Collections.singleton(this.field));
+      try (LeafReader reader = this.context.reader()) {
+        d = reader.storedFields().document(doc, Collections.singleton(this.field));
       } catch (IOException ex) {
         return;
       }

@@ -56,7 +56,7 @@ public class FlintTranslatorFactory implements ContentTranslatorFactory {
 
   /**
    * Only creates a translator if the specified MIME type matches one of the supported XML mime types.
-   *
+   * <p>
    * {@inheritDoc}
    */
   @Override
@@ -67,7 +67,7 @@ public class FlintTranslatorFactory implements ContentTranslatorFactory {
 
   /**
    * Returns a list containing the supported XML mime types.
-   *
+   * <p>
    * {@inheritDoc}
    */
   @Override

@@ -15,7 +15,7 @@
  */
 /**
  * Classes used specifically for querying.
- *
+ * <p>
  * This package contains {@link org.pageseeder.flint.lucene.query.SearchParameter} implementations, which can be used to construct queries.
  */
 package org.pageseeder.flint.lucene.query;

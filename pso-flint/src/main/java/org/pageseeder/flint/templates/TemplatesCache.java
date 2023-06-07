@@ -12,7 +12,7 @@ import javax.xml.transform.stream.StreamSource;
 
 /**
  * A utility class to load/cache XSLT templates used when indexing.
- * 
+ *
  * @author Jean-Baptiste Reure
  */
 public class TemplatesCache {
@@ -25,15 +25,15 @@ public class TemplatesCache {
   /**
    * The cache.
    */
-  private static final Map<URI, Templates> CACHE = new HashMap<URI, Templates>();
+  private static final Map<URI, Templates> CACHE = new HashMap<>();
 
   /**
    * Retrieve a template, will compile it if not found in cache.
-   * 
+   *
    * @param path the path of the template
-   * 
+   *
    * @return the compiled template
-   * 
+   *
    * @throws TransformerException if the template is invalid
    */
   public static Templates get(URI path) throws TransformerException {

@@ -30,14 +30,14 @@ import org.pageseeder.xmlwriter.XMLWriter;
 public final class IndexFolder extends LuceneIndexGenerator {
 
   private final static SimpleDateFormat MODIFIED_DATE_FORMAT = new SimpleDateFormat("yyyy-MM-dd");
-  
+
   @Override
-  public void processMultiple(Collection<IndexMaster> indexes, ContentRequest req, XMLWriter xml) throws BerliozException, IOException {
+  public void processMultiple(Collection<IndexMaster> indexes, ContentRequest req, XMLWriter xml) throws IOException {
     GeneratorErrors.error(req, xml, "forbidden", "Cannot index folder in multiple indexes", ContentStatus.BAD_REQUEST);
   }
 
   @Override
-  public void processSingle(IndexMaster index, ContentRequest req, XMLWriter xml) throws BerliozException, IOException {
+  public void processSingle(IndexMaster index, ContentRequest req, XMLWriter xml) throws IOException {
     String folder = req.getParameter("folder");
     String regex  = req.getParameter("path-regex");
     String modAft = req.getParameter("modified-after");

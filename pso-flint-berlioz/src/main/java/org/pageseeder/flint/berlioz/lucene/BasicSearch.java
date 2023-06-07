@@ -1,6 +1,6 @@
 /*
  * Decompiled with CFR 0_110.
- * 
+ *
  * Could not load the following classes:
  *  org.apache.lucene.search.Query
  *  org.apache.lucene.search.Sort
@@ -24,12 +24,6 @@
  */
 package org.pageseeder.flint.berlioz.lucene;
 
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.List;
-
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.SortField.Type;
@@ -43,22 +37,21 @@ import org.pageseeder.flint.berlioz.model.IndexMaster;
 import org.pageseeder.flint.catalog.Catalog;
 import org.pageseeder.flint.catalog.Catalogs;
 import org.pageseeder.flint.lucene.LuceneIndexQueries;
-import org.pageseeder.flint.lucene.query.BasicQuery;
-import org.pageseeder.flint.lucene.query.PhraseParameter;
-import org.pageseeder.flint.lucene.query.SearchPaging;
-import org.pageseeder.flint.lucene.query.SearchParameter;
-import org.pageseeder.flint.lucene.query.SearchQuery;
-import org.pageseeder.flint.lucene.query.SearchResults;
-import org.pageseeder.flint.lucene.query.TermParameter;
+import org.pageseeder.flint.lucene.facet.FlexibleFieldFacet;
+import org.pageseeder.flint.lucene.query.*;
 import org.pageseeder.flint.lucene.search.Facets;
-import org.pageseeder.flint.lucene.search.FieldFacet;
 import org.pageseeder.xmlwriter.XMLWriter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.List;
+
 /**
  * Supported parameters are:
- * 
  *   facets      comma-separated list of fields to use as facets
  *   max-facets  the max number of values for a facet (default is 20)
  *   field       the field being searched (default fulltext)
@@ -68,13 +61,13 @@ import org.slf4j.LoggerFactory;
  *   sort-type   [int|double|float|long|document|string|score,set], default is score
  *   page        the page number
  *   results     the nb of results per page
- *   
+ *
  */
 public class BasicSearch extends LuceneIndexGenerator {
   private static final Logger LOGGER = LoggerFactory.getLogger(BasicSearch.class);
 
   @Override
-  public void processMultiple(Collection<IndexMaster> indexes, ContentRequest req, XMLWriter xml) throws BerliozException, IOException {
+  public void processMultiple(Collection<IndexMaster> indexes, ContentRequest req, XMLWriter xml) throws IOException {
     String facets = req.getParameter("facets", "");
     int maxNumber = req.getIntParameter("max-facets", 20);
     // get first catalog as they should all have the same one
@@ -84,22 +77,21 @@ public class BasicSearch extends LuceneIndexGenerator {
       return;
     }
     SearchPaging paging = buildPaging(req);
-    ArrayList<Index> theIndexes = new ArrayList<Index>();
+    ArrayList<Index> theIndexes = new ArrayList<>();
     for (IndexMaster index : indexes) {
       theIndexes.add(index.getIndex());
     }
     try {
       SearchResults results = LuceneIndexQueries.query(theIndexes, query, paging);
-      List<FieldFacet> facetsList = Facets.getFacets(Arrays.asList(facets.split(",")), maxNumber, query.toQuery(), theIndexes);
+      List<FlexibleFieldFacet> facetsList = Facets.getFlexibleFacets(Arrays.asList(facets.split(",")), maxNumber, query.toQuery(), theIndexes);
       outputResults(query, results, facetsList, xml);
     } catch (IndexException ex) {
-      LOGGER.warn("Fail to retrieve search result using query: {}",
-          (Object) query.toString(), (Object) ex);
+      LOGGER.warn("Fail to retrieve search result using query: {}", query, ex);
     }
   }
 
   @Override
-  public void processSingle(IndexMaster index, ContentRequest req, XMLWriter xml) throws BerliozException, IOException {
+  public void processSingle(IndexMaster index, ContentRequest req, XMLWriter xml) throws IOException {
     String facets = req.getParameter("facets", "");
     int maxNumber = req.getIntParameter("max-facets", 20);
     SearchQuery query = buildQuery(req, index.getCatalog());
@@ -110,11 +102,10 @@ public class BasicSearch extends LuceneIndexGenerator {
     SearchPaging paging = buildPaging(req);
     try {
       SearchResults results = index.query(query, paging);
-      List<FieldFacet> facetsList = Facets.getFacets(Arrays.asList(facets.split(",")), maxNumber, query.toQuery(), index.getIndex());
+      List<FlexibleFieldFacet> facetsList = Facets.getFlexibleFacets(Arrays.asList(facets.split(",")), maxNumber, query.toQuery(), index.getIndex());
       outputResults(query, results, facetsList, xml);
     } catch (IndexException ex) {
-      LOGGER.warn("Fail to retrieve search result using query: {}",
-          (Object) query.toString(), (Object) ex);
+      LOGGER.warn("Fail to retrieve search result using query: {}", query, ex);
     }
   }
 
@@ -123,7 +114,7 @@ public class BasicSearch extends LuceneIndexGenerator {
     String typed = req.getParameter("term");
     if (typed == null) return null;
     // compute parameters
-    List<SearchParameter> params = new ArrayList<SearchParameter>();
+    List<SearchParameter> params = new ArrayList<>();
     String with = req.getParameter("with");
     if (with != null) {
       for (String w : with.split(",")) {
@@ -160,7 +151,7 @@ public class BasicSearch extends LuceneIndexGenerator {
     boolean reverse = field.startsWith("-");
     if (reverse) field = field.substring(1);
     // sort type
-    SortField sfield = null;
+    SortField sfield;
     String type  = req.getParameter("sort-type", "score");
     if ("int".equalsIgnoreCase(type))           sfield = new SortedNumericSortField(field, Type.INT,    reverse);
     else if ("double".equalsIgnoreCase(type))   sfield = new SortedNumericSortField(field, Type.DOUBLE, reverse);
@@ -183,10 +174,10 @@ public class BasicSearch extends LuceneIndexGenerator {
     return paging;
   }
 
-  private void outputResults(SearchQuery query, SearchResults results, List<FieldFacet> facets, XMLWriter xml) throws IOException {
+  private void outputResults(SearchQuery query, SearchResults results, List<FlexibleFieldFacet> facets, XMLWriter xml) throws IOException {
     xml.openElement("index-search", true);
     xml.openElement("facets");
-    for (FieldFacet facet : facets) {
+    for (FlexibleFieldFacet facet : facets) {
       facet.toXML(xml);
     }
     xml.closeElement();

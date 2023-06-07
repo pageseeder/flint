@@ -8,7 +8,7 @@ import org.pageseeder.xmlwriter.XMLWriter;
 
 public class BatchXMLWriter {
 
-  public static final void batchToXML(IndexBatch batch, XMLWriter xml) throws IOException {
+  public static void batchToXML(IndexBatch batch, XMLWriter xml) throws IOException {
     xml.openElement("batch");
     if (batch != null) {
       if (batch.getIndex() != null) xml.attribute("index", batch.getIndex());

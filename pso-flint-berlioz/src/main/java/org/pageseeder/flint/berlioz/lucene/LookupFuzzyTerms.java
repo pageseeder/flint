@@ -15,14 +15,12 @@
  */
 package org.pageseeder.flint.berlioz.lucene;
 
-import java.io.IOException;
-import java.util.Collection;
-
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
 import org.pageseeder.berlioz.BerliozException;
 import org.pageseeder.berlioz.content.Cacheable;
 import org.pageseeder.berlioz.content.ContentRequest;
+import org.pageseeder.berlioz.content.ContentStatus;
 import org.pageseeder.berlioz.util.MD5;
 import org.pageseeder.flint.IndexException;
 import org.pageseeder.flint.berlioz.model.IndexMaster;
@@ -33,6 +31,9 @@ import org.pageseeder.flint.lucene.util.Bucket.Entry;
 import org.pageseeder.xmlwriter.XMLWriter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.io.IOException;
+import java.util.Collection;
 
 /**
  * Lookup the fuzzy terms for the specified term.
@@ -54,32 +55,34 @@ public final class LookupFuzzyTerms extends LuceneIndexGenerator implements Cach
 
   @Override
   public String getETag(ContentRequest req) {
-    StringBuilder etag = new StringBuilder();
     // Get relevant parameters
-    etag.append(req.getParameter("term", "keyword")).append('%');
-    etag.append(req.getParameter("field", "")).append('%');
-    etag.append(buildIndexEtag(req));
+    String etag = req.getParameter("field", "keyword") + '%' +
+        req.getParameter("term", "") + '%' +
+        buildIndexEtag(req);
     // MD5 of computed etag value
-    return MD5.hash(etag.toString());
+    return MD5.hash(etag);
   }
 
   @Override
-  public void processMultiple(Collection<IndexMaster> masters, ContentRequest req, XMLWriter xml) throws BerliozException, IOException {
+  public void processMultiple(Collection<IndexMaster> masters, ContentRequest req, XMLWriter xml) throws BerliozException {
     // Create a new query object
     String field = req.getParameter("field", "keyword");
-    Term term = new Term(field, req.getParameter("term"));
+    String value = req.getParameter("term", "");
+    if (value.isEmpty()) {
+      req.setStatus(ContentStatus.BAD_REQUEST);
+      return;
+    }
+    Term term = new Term(field, value);
 
     MultipleIndexReader multiReader = buildMultiReader(masters);
     try {
       IndexReader reader = multiReader.grab();
-      Bucket<Term> bucket = new Bucket<Term>(20);
+      Bucket<Term> bucket = new Bucket<>(20);
       Terms.fuzzy(reader, bucket, term);
       for (Entry<Term> e : bucket.entrySet()) {
         Terms.toXML(xml, e.item(), e.count());
       }
-    } catch (IOException ex) {
-      throw new BerliozException("Exception thrown while fetching fuzzy terms", ex);
-    } catch (IndexException ex) {
+    } catch (IOException | IndexException ex) {
       throw new BerliozException("Exception thrown while fetching fuzzy terms", ex);
     } finally {
       multiReader.releaseSilently();
@@ -93,21 +96,24 @@ public final class LookupFuzzyTerms extends LuceneIndexGenerator implements Cach
   public void processSingle(IndexMaster index, ContentRequest req, XMLWriter xml) throws BerliozException, IOException {
     // Create a new query object
     String field = req.getParameter("field", "keyword");
-    Term term = new Term(field, req.getParameter("term"));
+    String value = req.getParameter("term", "");
+    if (value.isEmpty()) {
+      req.setStatus(ContentStatus.BAD_REQUEST);
+      return;
+    }
+    Term term = new Term(field, value);
 
-    LOGGER.debug("Looking up fuzzy terms for "+term);
+    LOGGER.debug("Looking up fuzzy terms for {}", term);
     xml.openElement("fuzzy-terms");
     IndexReader reader = null;
     try {
-      Bucket<Term> bucket = new Bucket<Term>(20);
+      Bucket<Term> bucket = new Bucket<>(20);
       reader = index.grabReader();
       Terms.fuzzy(reader, bucket, term);
       for (Entry<Term> e : bucket.entrySet()) {
         Terms.toXML(xml, e.item(), e.count());
       }
-    } catch (IOException ex) {
-      throw new BerliozException("Exception thrown while fetching fuzzy terms", ex);
-    } catch (IndexException ex) {
+    } catch (IOException | IndexException ex) {
       throw new BerliozException("Exception thrown while fetching fuzzy terms", ex);
     } finally {
       index.releaseSilently(reader);

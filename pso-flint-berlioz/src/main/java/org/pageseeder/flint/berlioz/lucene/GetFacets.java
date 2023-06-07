@@ -18,12 +18,6 @@
  */
 package org.pageseeder.flint.berlioz.lucene;
 
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.List;
-
 import org.apache.lucene.search.Query;
 import org.pageseeder.berlioz.BerliozException;
 import org.pageseeder.berlioz.content.Cacheable;
@@ -34,12 +28,17 @@ import org.pageseeder.flint.Index;
 import org.pageseeder.flint.IndexException;
 import org.pageseeder.flint.berlioz.model.IndexDefinition;
 import org.pageseeder.flint.berlioz.model.IndexMaster;
-import org.pageseeder.flint.lucene.search.Facet;
+import org.pageseeder.flint.lucene.facet.FlexibleFieldFacet;
 import org.pageseeder.flint.lucene.search.Facets;
-import org.pageseeder.flint.lucene.search.FieldFacet;
 import org.pageseeder.xmlwriter.XMLWriter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.List;
 
 /*
  * This class specifies class file version 49.0 but uses Java 6 signatures.  Assumed Java 6.
@@ -50,45 +49,43 @@ public final class GetFacets extends LuceneIndexGenerator implements Cacheable {
 
   @Override
   public String getETag(ContentRequest req) {
-    StringBuilder etag = new StringBuilder();
-    etag.append(req.getParameter("base", "")).append('%');
-    etag.append(req.getParameter("facets", "")).append('%');
-    etag.append(req.getParameter("max-number", "20")).append('%');
-    etag.append(buildIndexEtag(req));
-    return MD5.hash(etag.toString());
+    String etag = req.getParameter("base", "") + '%' +
+        req.getParameter("facets", "") + '%' +
+        req.getParameter("max-number", "20") + '%' +
+        buildIndexEtag(req);
+    return MD5.hash(etag);
   }
 
   @Override
-  public void processMultiple(Collection<IndexMaster> indexes, ContentRequest req, XMLWriter xml) throws BerliozException, IOException {
+  public void processMultiple(Collection<IndexMaster> indexes, ContentRequest req, XMLWriter xml) throws IOException {
     String base = req.getParameter("base", "");
     String facets = req.getParameter("facets", "");
-    int maxNumber = req.getIntParameter("max-number", 20);
     if (facets.isEmpty() && base.isEmpty()) {
       xml.emptyElement("facets");
       return;
     }
+    int maxNumber = req.getIntParameter("max-number", 20);
     Query query = null;
     if (!base.isEmpty() && !indexes.isEmpty()) {
       query = buildQuery(base, indexes.iterator().next().getIndexDefinition(), req, xml);
       if (query == null) return;
     }
-    ArrayList<Index> theIndexes = new ArrayList<Index>();
+    ArrayList<Index> theIndexes = new ArrayList<>();
     for (IndexMaster index : indexes) {
       theIndexes.add(index.getIndex());
     }
     try {
-      List<FieldFacet> facetsList = query == null ?
-            Facets.getFacets(facets.isEmpty() ? null : Arrays.asList(facets.split(",")), maxNumber, theIndexes) :
-            Facets.getFacets(Arrays.asList(facets.split(",")), maxNumber, query, theIndexes);
+      List<FlexibleFieldFacet> facetsList = query == null ?
+            Facets.getFlexibleFacets(facets.isEmpty() ? null : Arrays.asList(facets.split(",")), maxNumber, theIndexes) :
+            Facets.getFlexibleFacets(Arrays.asList(facets.split(",")), maxNumber, query, theIndexes);
       this.outputResults(base, facetsList, xml);
     } catch (IndexException ex) {
-      LOGGER.warn("Fail to retrieve search result using query: {}",
-          (Object) query.toString(), (Object) ex);
+      LOGGER.warn("Fail to retrieve search result using query: {}", query, ex);
     }
   }
 
   @Override
-  public void processSingle(IndexMaster index, ContentRequest req, XMLWriter xml) throws BerliozException, IOException {
+  public void processSingle(IndexMaster index, ContentRequest req, XMLWriter xml) throws IOException {
     String base = req.getParameter("base", "");
     String facets = req.getParameter("facets", "");
     int maxNumber = req.getIntParameter("max-number", 20);
@@ -102,11 +99,10 @@ public final class GetFacets extends LuceneIndexGenerator implements Cacheable {
       if (query == null) return;
     }
     try {
-      List<FieldFacet> facetsList = Facets.getFacets(facets.isEmpty() ? null : Arrays.asList(facets.split(",")), maxNumber, query, index.getIndex());
+      List<FlexibleFieldFacet> facetsList = Facets.getFlexibleFacets(facets.isEmpty() ? null : Arrays.asList(facets.split(",")), maxNumber, query, index.getIndex());
       this.outputResults(base, facetsList, xml);
     } catch (IndexException ex) {
-      LOGGER.warn("Fail to retrieve search result using query: {}",
-          (Object) query.toString(), (Object) ex);
+      LOGGER.warn("Fail to retrieve search result using query: {}", query, ex);
     }
   }
 
@@ -123,14 +119,14 @@ public final class GetFacets extends LuceneIndexGenerator implements Cacheable {
       req.setStatus(ContentStatus.BAD_REQUEST);
       return null;
     }
-    LOGGER.debug("Computing facets for {}", (Object) base);
+    LOGGER.debug("Computing facets for {}", base);
     return query;
   }
 
-  public void outputResults(String base, Collection<FieldFacet> facets, XMLWriter xml) throws IOException {
+  public void outputResults(String base, Collection<FlexibleFieldFacet> facets, XMLWriter xml) throws IOException {
     xml.openElement("facets");
     xml.attribute("for", base);
-    for (Facet facet : facets) {
+    for (FlexibleFieldFacet facet : facets) {
       facet.toXML(xml);
     }
     xml.closeElement();

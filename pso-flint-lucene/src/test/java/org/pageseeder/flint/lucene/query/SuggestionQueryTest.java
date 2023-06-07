@@ -18,6 +18,7 @@ import org.pageseeder.flint.lucene.LuceneIndexQueries;
 import org.pageseeder.flint.lucene.LuceneLocalIndex;
 import org.pageseeder.flint.lucene.utils.TestListener;
 import org.pageseeder.flint.lucene.utils.TestUtils;
+import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.IOException;
@@ -27,9 +28,9 @@ import java.util.List;
 
 public class SuggestionQueryTest {
 
-  private static File template  = new File("src/test/resources/template.xsl");
-  private static File documents = new File("src/test/resources/suggestion");
-  private static File indexRoot = new File("tmp/index");
+  private static final File template  = new File("src/test/resources/template.xsl");
+  private static final File documents = new File("src/test/resources/suggestion");
+  private static final File indexRoot = new File("tmp/index");
 
   private static LuceneLocalIndex index;
   private static IndexManager manager;
@@ -43,7 +44,7 @@ public class SuggestionQueryTest {
       index = new LuceneLocalIndex(indexRoot, "suggestion", new StandardAnalyzer(), documents);
       index.setTemplate("xml", template.toURI());
     } catch (Exception ex) {
-      ex.printStackTrace();
+      LoggerFactory.getLogger(TestUtils.class).error("Something went wrong", ex);
     }
     manager = new IndexManager(new LocalFileContentFetcher(), new TestListener());
     manager.setDefaultTranslator(new SourceForwarder("xml", "UTF-8"));

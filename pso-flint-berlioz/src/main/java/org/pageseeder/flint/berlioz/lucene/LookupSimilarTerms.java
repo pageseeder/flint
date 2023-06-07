@@ -23,6 +23,7 @@ import org.apache.lucene.index.Term;
 import org.pageseeder.berlioz.BerliozException;
 import org.pageseeder.berlioz.content.Cacheable;
 import org.pageseeder.berlioz.content.ContentRequest;
+import org.pageseeder.berlioz.content.ContentStatus;
 import org.pageseeder.berlioz.util.MD5;
 import org.pageseeder.flint.IndexException;
 import org.pageseeder.flint.berlioz.model.IndexMaster;
@@ -52,13 +53,12 @@ public final class LookupSimilarTerms extends LuceneIndexGenerator implements Ca
 
   @Override
   public String getETag(ContentRequest req) {
-    StringBuilder etag = new StringBuilder();
     // Get relevant parameters
-    etag.append(req.getParameter("term", "keyword")).append('%');
-    etag.append(req.getParameter("field", "")).append('%');
-    etag.append(buildIndexEtag(req));
+    String etag = req.getParameter("term", "keyword") + '%' +
+        req.getParameter("field", "") + '%' +
+        buildIndexEtag(req);
     // MD5 of computed etag value
-    return MD5.hash(etag.toString());
+    return MD5.hash(etag);
   }
 
   /**
@@ -68,16 +68,20 @@ public final class LookupSimilarTerms extends LuceneIndexGenerator implements Ca
   public void processSingle(IndexMaster index, ContentRequest req, XMLWriter xml) throws BerliozException, IOException {
     // Create a new query object
     String[] fields = req.getParameter("field", "fulltext").split(",");
-    String text = req.getParameter("term");
+    String text = req.getParameter("term", "");
+    if (text.isEmpty()) {
+      req.setStatus(ContentStatus.BAD_REQUEST);
+      return;
+    }
 
     LOGGER.debug("Looking up similar terms for {} in {}", text, fields);
     xml.openElement("similar-terms");
     IndexReader reader = null;
     try {
-      Bucket<Term> bucket = new Bucket<Term>(20);
+      Bucket<Term> bucket = new Bucket<>(20);
       reader = index.grabReader();
       // run fuzzy and prefix searches
-      // search in all fields
+      // go through all fields
       for (String field : fields) {
         Term term = new Term(field, text);
         Terms.fuzzy(reader, bucket, term);
@@ -87,9 +91,7 @@ public final class LookupSimilarTerms extends LuceneIndexGenerator implements Ca
       for (Entry<Term> e : bucket.entrySet()) {
         Terms.toXML(xml, e.item(), e.count());
       }
-    } catch (IOException ex) {
-      throw new BerliozException("Exception thrown while fetching fuzzy terms", ex);
-    } catch (IndexException ex) {
+    } catch (IOException | IndexException ex) {
       throw new BerliozException("Exception thrown while fetching fuzzy terms", ex);
     } finally {
       index.releaseSilently(reader);
@@ -101,7 +103,11 @@ public final class LookupSimilarTerms extends LuceneIndexGenerator implements Ca
   public void processMultiple(Collection<IndexMaster> masters, ContentRequest req, XMLWriter xml) throws BerliozException, IOException {
     // Create a new query object
     String[] fields = req.getParameter("field", "fulltext").split(",");
-    String text = req.getParameter("term");
+    String text = req.getParameter("term", "");
+    if (text.isEmpty()) {
+      req.setStatus(ContentStatus.BAD_REQUEST);
+      return;
+    }
 
     LOGGER.debug("Looking up similar terms for {} in {}", text, fields);
     xml.openElement("similar-terms");
@@ -109,9 +115,9 @@ public final class LookupSimilarTerms extends LuceneIndexGenerator implements Ca
     MultipleIndexReader multiReader = buildMultiReader(masters);
     try {
       IndexReader reader = multiReader.grab();
-      Bucket<Term> bucket = new Bucket<Term>(20);
+      Bucket<Term> bucket = new Bucket<>(20);
       // run fuzzy and prefix searches
-      // search in all fields
+      // go through all fields
       for (String field : fields) {
         Term term = new Term(field, text);
         Terms.fuzzy(reader, bucket, term);
@@ -121,9 +127,7 @@ public final class LookupSimilarTerms extends LuceneIndexGenerator implements Ca
       for (Entry<Term> e : bucket.entrySet()) {
         Terms.toXML(xml, e.item(), e.count());
       }
-    } catch (IOException ex) {
-      throw new BerliozException("Exception thrown while fetching fuzzy terms", ex);
-    } catch (IndexException ex) {
+    } catch (IOException | IndexException ex) {
       throw new BerliozException("Exception thrown while fetching fuzzy terms", ex);
     } finally {
       multiReader.releaseSilently();

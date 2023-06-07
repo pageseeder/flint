@@ -124,7 +124,7 @@ public class FlintConfig {
 
   /**
    * @param name              the master name
-   * @param createIfNotFound  whether or not to create the index if not existing
+   * @param createIfNotFound  whether to create the index if not existing
    *
    * @return the index master with the name provided
    */
@@ -147,6 +147,7 @@ public class FlintConfig {
               Thread.sleep(2000); // wait 2 seconds
             } catch (InterruptedException ex2) {
               LOGGER.warn("Failed to wait 2s to check if index was created", ex);
+              Thread.currentThread().interrupt();
             }
             try {
               master = createLuceneMaster(key, def);

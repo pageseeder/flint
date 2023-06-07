@@ -1,6 +1,6 @@
 /*
  * Decompiled with CFR 0_110.
- * 
+ *
  * Could not load the following classes:
  *  org.pageseeder.berlioz.BerliozException
  *  org.pageseeder.berlioz.Beta
@@ -28,14 +28,15 @@ import org.pageseeder.xmlwriter.XMLWriter;
 @Beta
 public final class GetFlintConfig implements ContentGenerator {
 
-  public void process(ContentRequest req, XMLWriter xml) throws BerliozException, IOException {
+  public void process(ContentRequest req, XMLWriter xml) throws IOException {
     FlintConfig config = FlintConfig.get();
     File directory = config.getRootDirectory();
     xml.openElement("flint-config");
     xml.attribute("directory", directory.getName().equals("index") ? "index" : directory.getName());
     xml.attribute("class", config.getClass().getName());
     if (directory.exists() && directory.isDirectory()) {
-      for (File f : directory.listFiles(FileFilters.getFolders())) {
+      File[] files = directory.listFiles(FileFilters.getFolders());
+      if (files != null) for (File f : files) {
         this.toBasicIndexXML(xml, f);
       }
     }
@@ -50,7 +51,7 @@ public final class GetFlintConfig implements ContentGenerator {
     boolean exists = modified > 0;
     xml.attribute("exists", Boolean.toString(exists));
     if (exists) {
-      xml.attribute("modified", ISO8601.format((long)modified, (ISO8601)ISO8601.DATETIME));
+      xml.attribute("modified", ISO8601.format(modified, ISO8601.DATETIME));
     }
     xml.closeElement();
   }

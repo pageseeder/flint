@@ -107,7 +107,7 @@ public final class GenerateIXML extends LuceneIndexGenerator {
       xml.openElement("documents");
       try {
         // load documents
-        List<FlintDocument> docs = IndexParserFactory.getInstance().process(new InputSource(new StringReader(ixml)), null);
+        List<FlintDocument> docs = IndexParserFactory.getInstance().process(new InputSource(new StringReader(ixml)), index.getCatalog());
         for (FlintDocument doc : docs) {
           xml.openElement("document", true);
 

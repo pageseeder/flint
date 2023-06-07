@@ -28,11 +28,11 @@ public final class TermSearch extends LuceneIndexGenerator {
   private static final Logger LOGGER = LoggerFactory.getLogger(TermSearch.class);
 
   @Override
-  public void processMultiple(Collection<IndexMaster> indexes, ContentRequest req, XMLWriter xml) throws BerliozException, IOException {
+  public void processMultiple(Collection<IndexMaster> indexes, ContentRequest req, XMLWriter xml) throws IOException {
     SearchPaging paging = buildPaging(req);
     SearchQuery query   = buildQuery(req, xml);
     if (query == null) return;
-    ArrayList<Index> theIndexes = new ArrayList<Index>();
+    ArrayList<Index> theIndexes = new ArrayList<>();
     for (IndexMaster index : indexes) {
       theIndexes.add(index.getIndex());
     }
@@ -44,7 +44,7 @@ public final class TermSearch extends LuceneIndexGenerator {
   }
 
   @Override
-  public void processSingle(IndexMaster index, ContentRequest req, XMLWriter xml) throws BerliozException, IOException {
+  public void processSingle(IndexMaster index, ContentRequest req, XMLWriter xml) throws IOException {
     SearchPaging paging = buildPaging(req);
     SearchQuery query   = buildQuery(req, xml);
     if (query == null) return;

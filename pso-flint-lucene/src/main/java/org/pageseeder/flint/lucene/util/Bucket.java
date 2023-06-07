@@ -69,7 +69,7 @@ import java.util.TreeSet;
    */
   public Bucket(int capacity) throws IllegalArgumentException {
    this._capacity = capacity;
-   this._entries = new TreeSet<Entry<T>>();
+   this._entries = new TreeSet<>();
    this._acceptZero = false;
   }
 
@@ -84,7 +84,7 @@ import java.util.TreeSet;
    */
   public Bucket(int capacity, boolean acceptZero) throws IllegalArgumentException {
    this._capacity = capacity;
-   this._entries = new TreeSet<Entry<T>>();
+   this._entries = new TreeSet<>();
    if (acceptZero) { this.minCount = 0; }
    this._acceptZero = acceptZero;
   }
@@ -111,7 +111,7 @@ import java.util.TreeSet;
    * Checks if an object is already in the bucket (using equals method).
    *
    * @param item the item to check
-   * 
+   *
    * @return <code>true</code> if the item was found in the bucket
    */
   public boolean contains(T item) {
@@ -132,7 +132,7 @@ import java.util.TreeSet;
       this._considered++;
     }
     if (count >= this.minCount && this._capacity > 0) {
-      this._entries.add(new Entry<T>(item, count));
+      this._entries.add(new Entry<>(item, count));
       if (this._entries.size() > this._capacity) {
         this._entries.remove(this._entries.last());
         this.minCount = this._entries.isEmpty() ? 1 : this._entries.last().count();
@@ -164,9 +164,9 @@ import java.util.TreeSet;
   }
 
   /**
-   * Returns a unmodifiable set of entries in the bucket.
+   * Returns an unmodifiable set of entries in the bucket.
    *
-   * @return a unmodifiable set of entries in the bucket.
+   * @return an unmodifiable set of entries in the bucket.
    */
   public Set<Entry<T>> entrySet() {
     return Collections.unmodifiableSet(this._entries);
@@ -178,7 +178,7 @@ import java.util.TreeSet;
    * @return the list of items.
    */
   public List<T> items() {
-    List<T> items = new ArrayList<T>(this._entries.size());
+    List<T> items = new ArrayList<>(this._entries.size());
     for (Entry<T> e : this._entries) { items.add(e.item()); }
     return items;
   }
@@ -266,7 +266,7 @@ import java.util.TreeSet;
      * {@inheritDoc}
      */
     @Override public boolean equals(Object o) {
-      if (o instanceof Entry<?>) return this.equals((Entry<?>)o);
+      if (o instanceof Entry<?>) return this.equalsEntry((Entry<?>)o);
       return false;
     }
 
@@ -278,10 +278,10 @@ import java.util.TreeSet;
      * @param o the item count to compare with.
      * @return <code>true</code> if equal; <code>false</code> otherwise.
      */
-    public boolean equals(Entry<?> o) {
+    public boolean equalsEntry(Entry<?> o) {
       //
       if (this._count != o._count) return false;
-      return comparable(this._item, o._item) ? this._item.equals(o._item) : false;
+      return comparable(this._item, o._item) && this._item.equals(o._item);
     }
 
     /**

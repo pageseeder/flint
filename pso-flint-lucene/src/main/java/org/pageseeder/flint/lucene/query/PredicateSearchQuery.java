@@ -160,7 +160,7 @@ public final class PredicateSearchQuery implements SearchQuery {
   // --------------------------------------------------------------------------------------------
 
   /**
-   * Whether or not a wildcard ('*' or '?') is allowed as the first character of the predicate.
+   * Whether a wildcard ('*' or '?') is allowed as the first character of the predicate.
    *
    * @param allowWildCardStart true if wildcard should be allowed, false otherwise
    */

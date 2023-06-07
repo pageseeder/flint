@@ -25,7 +25,7 @@ import org.pageseeder.xmlwriter.XMLWriter;
 
 public class GetBatches implements ContentGenerator {
 
-  public void process(ContentRequest req, XMLWriter xml) throws BerliozException, IOException {
+  public void process(ContentRequest req, XMLWriter xml) throws IOException {
     Collection<IndexBatch> batches = FlintConfig.get().getPastBatches();
     xml.openElement("batches");
     for (IndexBatch batch : batches) {

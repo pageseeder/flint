@@ -20,6 +20,7 @@ import org.pageseeder.flint.lucene.LuceneLocalIndex;
 import org.pageseeder.flint.lucene.search.AutoSuggest.Suggestion;
 import org.pageseeder.flint.lucene.utils.TestListener;
 import org.pageseeder.flint.lucene.utils.TestUtils;
+import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.IOException;
@@ -28,9 +29,9 @@ import java.util.List;
 
 public class AutoSuggestTest {
 
-  private static File template  = new File("src/test/resources/template.xsl");
-  private static File documents = new File("src/test/resources/autosuggest");
-  private static File indexRoot = new File("tmp/index");
+  private static final File template  = new File("src/test/resources/template.xsl");
+  private static final File documents = new File("src/test/resources/autosuggest");
+  private static final File indexRoot = new File("tmp/index");
 
   private static LuceneLocalIndex index;
   private static IndexManager manager;
@@ -44,7 +45,7 @@ public class AutoSuggestTest {
       index = new LuceneLocalIndex(indexRoot, "autosuggest", new StandardAnalyzer(), documents);
       index.setTemplate("xml", template.toURI());
     } catch (Exception ex) {
-      ex.printStackTrace();
+      LoggerFactory.getLogger(TestUtils.class).error("Something went wrong", ex);
     }
     manager = new IndexManager(new LocalFileContentFetcher(), new TestListener());
     manager.setDefaultTranslator(new SourceForwarder("xml", "UTF-8"));
@@ -84,7 +85,7 @@ public class AutoSuggestTest {
       }
       LuceneIndexQueries.release(index, reader);
     } catch (IndexException ex) {
-      ex.printStackTrace();
+      LoggerFactory.getLogger(TestUtils.class).error("Something went wrong", ex);
       Assert.fail();
     }
   }
@@ -115,7 +116,7 @@ public class AutoSuggestTest {
         // wait a bit
         TestUtils.wait(1);
         // test current
-        Assert.assertFalse(as.isCurrent(manager));
+        Assert.assertFalse(as.isCurrent());
       } finally {
         as.close();
         // clean up
@@ -153,7 +154,7 @@ public class AutoSuggestTest {
       // wait a bit
       TestUtils.wait(1);
       // test current
-      Assert.assertFalse(as.isCurrent(manager));
+      Assert.assertFalse(as.isCurrent());
       // try again
       as = new AutoSuggest.Builder().index(index).name("testAutoSuggestReuseFields3").useTerms(false).directory(FSDirectory.open(tempRoot.toPath())).build();
       as.addSearchField("name");
@@ -177,7 +178,7 @@ public class AutoSuggestTest {
         tempRoot.delete();
       }
     } catch (IndexException | IOException ex) {
-      ex.printStackTrace();
+      LoggerFactory.getLogger(TestUtils.class).error("Something went wrong", ex);
       Assert.fail();
     }
   }
@@ -209,7 +210,7 @@ public class AutoSuggestTest {
       }
       as.close();
     } catch (IndexException ex) {
-      ex.printStackTrace();
+      LoggerFactory.getLogger(TestUtils.class).error("Something went wrong", ex);
       Assert.fail();
     }
   }
@@ -249,7 +250,7 @@ public class AutoSuggestTest {
       Assert.assertEquals(sug.highlight, "electric <b>gui</b>tar");
       as.close();
     } catch (IndexException ex) {
-      ex.printStackTrace();
+      LoggerFactory.getLogger(TestUtils.class).error("Something went wrong", ex);
       Assert.fail();
     }
   }
@@ -310,7 +311,7 @@ public class AutoSuggestTest {
       Assert.assertTrue("weight"  .equals(suggestions.get(2).text) || "weight 3".equals(suggestions.get(2).text));// 4
       Assert.assertEquals("weight 10 0.25",  suggestions.get(3).text);// 1
     } catch (IndexException ex) {
-      ex.printStackTrace();
+      LoggerFactory.getLogger(TestUtils.class).error("Something went wrong", ex);
       Assert.fail();
     } finally {
       LuceneIndexQueries.release(index, reader);
@@ -370,7 +371,7 @@ public class AutoSuggestTest {
       }
       as.close();
     } catch (IndexException ex) {
-      ex.printStackTrace();
+      LoggerFactory.getLogger(TestUtils.class).error("Something went wrong", ex);
       Assert.fail();
     }
   }

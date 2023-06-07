@@ -17,7 +17,6 @@ package org.pageseeder.flint.lucene.search;
 
 import org.apache.lucene.index.*;
 import org.apache.lucene.search.*;
-import org.apache.lucene.search.highlight.QueryTermExtractor;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.automaton.CompiledAutomaton;
 import org.pageseeder.flint.lucene.util.Beta;
@@ -46,8 +45,10 @@ public final class Terms {
   /**
    * Compares terms using their text value instead of their field value.
    */
-  private static final Comparator<Term> TEXT_COMPARATOR = new Comparator<Term>()  {
-    /** {@inheritDoc} */
+  private static final Comparator<Term> TEXT_COMPARATOR = new Comparator<>() {
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public int compare(Term t1, Term t2) {
       return t1.text().compareTo(t2.text());
@@ -90,7 +91,7 @@ public final class Terms {
    * @return The corresponding list of terms.
    */
   public static List<Term> terms(List<String> fields, List<String> texts) {
-    List<Term> terms = new ArrayList<Term>();
+    List<Term> terms = new ArrayList<>();
     for (String field : fields) {
       for (String text : texts) {
         terms.add(new Term(field, text));
@@ -110,7 +111,7 @@ public final class Terms {
    * @throws IOException If an error is thrown by the fuzzy term enumeration.
    */
   public static List<String> fuzzy(IndexReader reader, Term term) throws IOException {
-    List<String> values = new ArrayList<String>();
+    List<String> values = new ArrayList<>();
     fuzzy(reader, values, term);
     return values;
   }
@@ -126,7 +127,7 @@ public final class Terms {
    * @throws IOException If an error is thrown by the prefix term enumeration.
    */
   public static List<String> prefix(IndexReader reader, Term term) throws IOException {
-    List<String> terms = new ArrayList<String>();
+    List<String> terms = new ArrayList<>();
     prefix(reader, terms, term);
     return terms;
   }
@@ -249,9 +250,8 @@ public final class Terms {
    *
    * @return the list of field names
    *
-   * @throws IOException should any IO error be reported by the {@link FieldInfos#getIndexedFields(IndexReader)} method.
    */
-  @Beta public static List<String> fields(IndexReader reader) throws IOException {
+  @Beta public static List<String> fields(IndexReader reader) {
     LOGGER.debug("Loading fields");
     return new ArrayList<>(FieldInfos.getIndexedFields(reader));
   }

@@ -48,7 +48,7 @@ public final class FileTreeCrawler implements Runnable {
   private final WatchListener _listener;
 
   /** Maintains the status of this watcher. */
-  private AtomicBoolean running;
+  private final AtomicBoolean running;
 
   private WatchService watchService;
   private ExecutorService watchExecutor;
@@ -77,7 +77,7 @@ public final class FileTreeCrawler implements Runnable {
   }
 
   /**
-   * Starts the watcher service and registers watches in all of the sub-folders of
+   * Starts the watcher service and registers watches in all the sub-folders of
    * the given root folder.
    *
    * <p><b>Important:</b> This method returns immediately, even though the watches
@@ -170,6 +170,7 @@ public final class FileTreeCrawler implements Runnable {
         }
 
       } catch (InterruptedException | ClosedWatchServiceException ex) {
+        Thread.currentThread().interrupt();
         break;
       }
     }
@@ -180,7 +181,7 @@ public final class FileTreeCrawler implements Runnable {
   // ----------------------------------------------------------------------------------------------
 
   /**
-   * Walk the file tree and registers the specified directory and all of its sub-directories
+   * Walk the file tree and registers the specified directory and all of its subdirectories
    * except those who match the list of ignored paths.
    *
    * @param start The directory to start from.
@@ -191,7 +192,7 @@ public final class FileTreeCrawler implements Runnable {
     if (shouldIgnore(start)) return;
     try {
       int before = this._keys.size();
-      Files.walkFileTree(start, new FileVisitor<Path>() {
+      Files.walkFileTree(start, new FileVisitor<>() {
         @Override
         public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) {
           // ignore folder?
@@ -208,12 +209,12 @@ public final class FileTreeCrawler implements Runnable {
         }
 
         @Override
-        public FileVisitResult visitFileFailed(Path file, IOException ex)  {
+        public FileVisitResult visitFileFailed(Path file, IOException ex) {
           return FileVisitResult.CONTINUE;
         }
 
         @Override
-        public FileVisitResult postVisitDirectory(Path dir, IOException ex)  {
+        public FileVisitResult postVisitDirectory(Path dir, IOException ex) {
           return FileVisitResult.CONTINUE;
         }
       });

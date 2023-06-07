@@ -1,6 +1,6 @@
 /*
  * Decompiled with CFR 0_110.
- * 
+ *
  * Could not load the following classes:
  *  org.pageseeder.berlioz.BerliozException
  *  org.pageseeder.berlioz.Beta
@@ -24,7 +24,7 @@ import org.pageseeder.xmlwriter.XMLWriter;
 public final class ClearIndex extends LuceneIndexGenerator {
 
   @Override
-  public void processSingle(IndexMaster index, ContentRequest req, XMLWriter xml) throws BerliozException, IOException {
+  public void processSingle(IndexMaster index, ContentRequest req, XMLWriter xml) throws IOException {
     index.clear();
     xml.openElement("index");
     xml.attribute("status", "clear");
@@ -32,7 +32,7 @@ public final class ClearIndex extends LuceneIndexGenerator {
   }
 
   @Override
-  public void processMultiple(Collection<IndexMaster> indexes, ContentRequest req, XMLWriter xml) throws BerliozException, IOException {
+  public void processMultiple(Collection<IndexMaster> indexes, ContentRequest req, XMLWriter xml) throws IOException {
     xml.openElement("indexes");
     for (IndexMaster index : indexes) {
       index.clear();

@@ -53,11 +53,6 @@ public final class OpenIndexManager {
   private static int maxOpenedIndexes = 100;
 
   /**
-   * Don't check for 30mn
-   */
-  private static long DELAY_BETWEEN_CHECKS = 30 * 60 * 1000;
-
-  /**
    * Last time we checked
    */
   private static long LAST_CHECK = 0;
@@ -80,6 +75,8 @@ public final class OpenIndexManager {
    * opened readers is less than the maximum allowed.
    */
   public static void closeOldReaders() {
+    // Don't check for 30mn
+    long DELAY_BETWEEN_CHECKS = 30 * 60 * 1000;
     if (System.currentTimeMillis() - LAST_CHECK > DELAY_BETWEEN_CHECKS) {
       LAST_CHECK = System.currentTimeMillis();
       while (OPEN_INDEXES.size() > maxOpenedIndexes) {
@@ -119,7 +116,7 @@ public final class OpenIndexManager {
    * @return true if the index is currently in the list of open indexes
    */
   public static boolean isOpen(IndexIO index) {
-    return OPEN_INDEXES.keySet().contains(index.hashCode());
+    return OPEN_INDEXES.containsKey(index.hashCode());
   }
 
   public static int size() {

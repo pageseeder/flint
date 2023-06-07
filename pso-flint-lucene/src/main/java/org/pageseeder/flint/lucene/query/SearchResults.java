@@ -156,11 +156,9 @@ public final class SearchResults implements XMLWritable {
    * @param readers  The ...
    * @param searcher The Lucene searcher.
    *
-   * @throws IndexException if the documents could not be retrieved from the Index
    */
-  public SearchResults(SearchQuery query, TopFieldDocs docs, SearchPaging paging, Map<LuceneIndexIO, IndexReader> readers, IndexSearcher searcher)
-      throws IndexException {
-    this(query, null, docs.scoreDocs, docs.fields, new Long(docs.totalHits.value).intValue(), paging, new SearchReaders(readers), searcher);
+  public SearchResults(SearchQuery query, TopFieldDocs docs, SearchPaging paging, Map<LuceneIndexIO, IndexReader> readers, IndexSearcher searcher) {
+    this(query, null, docs.scoreDocs, docs.fields, (int) docs.totalHits.value, paging, new SearchReaders(readers), searcher);
   }
 
   /**
@@ -172,11 +170,9 @@ public final class SearchResults implements XMLWritable {
    * @param io       The IndexIO object, used to release the searcher when terminated
    * @param searcher The Lucene searcher.
    *
-   * @throws IndexException if the documents could not be retrieved from the Index
    */
-  public SearchResults(SearchQuery query, TopFieldDocs docs, SearchPaging paging, LuceneIndexIO io, IndexSearcher searcher)
-      throws IndexException {
-    this(query, null, docs.scoreDocs, docs.fields, new Long(docs.totalHits.value).intValue(), paging, new SearchReaders(io), searcher);
+  public SearchResults(SearchQuery query, TopFieldDocs docs, SearchPaging paging, LuceneIndexIO io, IndexSearcher searcher) {
+    this(query, null, docs.scoreDocs, docs.fields, (int) docs.totalHits.value, paging, new SearchReaders(io), searcher);
   }
 
   /**
@@ -188,10 +184,8 @@ public final class SearchResults implements XMLWritable {
    * @param io       The IndexIO object, used to release the searcher when terminated
    * @param searcher The Lucene searcher.
    *
-   * @throws IndexException if the documents could not be retrieved from the Index
    */
-  public SearchResults(SearchQuery query, ScoreDoc[] docs, int totalHits, SearchPaging paging, LuceneIndexIO io, IndexSearcher searcher)
-      throws IndexException {
+  public SearchResults(SearchQuery query, ScoreDoc[] docs, int totalHits, SearchPaging paging, LuceneIndexIO io, IndexSearcher searcher) {
     this(query, null, docs, null, totalHits, paging, new SearchReaders(io), searcher);
   }
 
@@ -205,9 +199,9 @@ public final class SearchResults implements XMLWritable {
    * @param readers The IndexIO object, used to release the searcher when terminated
    * @param searcher The Lucene searcher.
    */
-  private SearchResults(SearchQuery query, Analyzer analyzer, ScoreDoc[] hits,
-                        SortField[] sortf, int totalResults,
-                        SearchPaging paging, SearchReaders readers, IndexSearcher searcher) {
+  public SearchResults(SearchQuery query, Analyzer analyzer, ScoreDoc[] hits,
+                       SortField[] sortf, int totalResults,
+                       SearchPaging paging, SearchReaders readers, IndexSearcher searcher) {
     this._query = query;
     this._analyzer = analyzer;
     this._scoredocs = hits;
@@ -324,7 +318,7 @@ public final class SearchResults implements XMLWritable {
     // Iterate over the hits to find the extracts
     for (int i = firsthit - 1; i < lasthit; i++) {
       String score = Float.toString(this._scoredocs[i].score);
-      Document doc = this._searcher.doc(this._scoredocs[i].doc);
+      Document doc = this._searcher.storedFields().document(this._scoredocs[i].doc);
       String extractXML = null;
 
       if (this._query != null && this._analyzer != null) {
@@ -355,11 +349,7 @@ public final class SearchResults implements XMLWritable {
     xml.closeElement();
 
     // close everything
-    try {
-      terminate();
-    } catch (IndexException ex) {
-      throw new IOException("Error when terminating Search Results", ex);
-    }
+    terminate();
   }
 
   public static void documentToXML(Document doc, int timezoneOffset, XMLWriter xml) throws IOException {
@@ -431,7 +421,7 @@ public final class SearchResults implements XMLWritable {
     flintDocumentToXML(doc, null, null, timezoneOffset, xml);
   }
 
-  private static void flintDocumentToXML(FlintDocument doc, String extract, String score, int timezoneOffset, XMLWriter xml) throws IOException {
+  public static void flintDocumentToXML(FlintDocument doc, String extract, String score, int timezoneOffset, XMLWriter xml) throws IOException {
     xml.openElement("result", true);
 
     if (score != null) xml.attribute("score", score);
@@ -527,7 +517,7 @@ public final class SearchResults implements XMLWritable {
     if (this._terminated)
       throw new IndexException("Cannot retrieve documents after termination", new IllegalStateException());
     try {
-      return this._searcher.doc(id);
+      return this._searcher.storedFields().document(id);
     } catch (CorruptIndexException e) {
       LOGGER.error("Failed to retrieve a document because of a corrupted Index", e);
       throw new IndexException("Failed to retrieve a document because of a corrupted Index", e);
@@ -542,23 +532,11 @@ public final class SearchResults implements XMLWritable {
    *
    * <p>Does nothing if the results have already been terminated.
    *
-   * @throws IndexException Will wrap any IO error thrown when trying to release the searcher.
    */
-  public void terminate() throws IndexException {
+  public void terminate() {
     if (this._terminated) return;
     this.readers.release(this._searcher);
     this._terminated = true;
-  }
-
-  /**
-   * Ensure that the searcher is released when finalizing.
-   *
-   * @throws Throwable If thrown by super class or <code>terminate</code> method.
-   */
-  @Override
-  protected void finalize() throws Throwable {
-    if (!this._terminated) terminate();
-    super.finalize();
   }
 
   /**
@@ -675,7 +653,7 @@ public final class SearchResults implements XMLWritable {
     /**
      * The current index for this iterator.
      */
-    private int endIndex;
+    private final int endIndex;
 
     public DocIterator(int start, int end) {
       this.index = start;
@@ -691,14 +669,14 @@ public final class SearchResults implements XMLWritable {
     public Document next() {
       if (!hasNext()) throw new NoSuchElementException();
       try {
-        return this.searcher.doc(this.scoredocs[this.index++].doc);
+        return this.searcher.storedFields().document(this.scoredocs[this.index++].doc);
       } catch (IOException ex) {
         throw new IllegalStateException("Error retrieving document", ex);
       }
     }
 
     /**
-     * @throws UnsupportedOperationException
+     * @throws UnsupportedOperationException as it's not possible
      */
     @Override
     public void remove() {
@@ -720,8 +698,8 @@ public final class SearchResults implements XMLWritable {
       if (this._single != null) {
         this._single.releaseSearcher(searcher);
       }
-      for (LuceneIndexIO io : this._readers.keySet())
-        io.releaseReader(this._readers.get(io));
+      for (Map.Entry<LuceneIndexIO, IndexReader> io : this._readers.entrySet())
+        io.getKey().releaseReader(io.getValue());
     }
   }
 }

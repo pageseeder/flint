@@ -17,52 +17,50 @@ import org.pageseeder.flint.lucene.LuceneIndex;
 import org.pageseeder.flint.lucene.LuceneIndexQueries;
 import org.pageseeder.flint.lucene.utils.TestListener;
 import org.pageseeder.flint.lucene.utils.TestUtils;
+import org.slf4j.LoggerFactory;
 
 import java.io.File;
 
 public class TermParameterTest {
 
-  private static File template  = new File("src/test/resources/template.xsl");
+  private static final File template  = new File("src/test/resources/template.xsl");
 
   private static LuceneIndex index;
   private static IndexManager manager;
-  
+
   @BeforeClass
   public static void init() {
     try {
       index = new LuceneIndex(TermParameterTest.class.getName(), new ByteBuffersDirectory(), new StandardAnalyzer());
       index.setTemplates(TestUtils.TYPE, TestUtils.MEDIA_TYPE, template.toURI());
     } catch (Exception ex) {
-      ex.printStackTrace();
+      LoggerFactory.getLogger(TestUtils.class).error("Something went wrong", ex);
     }
-    manager = new IndexManager(new ContentFetcher() {
-      @Override
-      public Content getContent(IndexJob job) {
-        // delete?
-        if (job.getContentID().startsWith("delete-")) {
-          return new TestUtils.TestContent(job.getContentID().substring(7), null);
-        }
-        // add all documents in one go
-        String xml = "<documents version='5.0'>\n"+
-                       "<document>\n"+
-                         "<field name='"+TestUtils.ID_FIELD+"' tokenize='false'>doc1</field>\n"+
-                         "<field name='term1' tokenize='false'>value1</field>\n"+
-                       "</document>\n"+
-                       "<document>\n"+
-                         "<field name='"+TestUtils.ID_FIELD+"' tokenize='false'>doc2</field>\n"+
-                         "<field name='term1' tokenize='false'>value2</field>\n"+
-                       "</document>\n"+
-                       "<document>\n"+
-                         "<field name='"+TestUtils.ID_FIELD+"' tokenize='false'>doc3</field>\n"+
-                         "<field name='term1' tokenize='false'>value3</field>\n"+
-                       "</document>\n"+
-                       "<document>\n"+
-                         "<field name='"+TestUtils.ID_FIELD+"' tokenize='false'>doc4</field>\n"+
-                         "<field name='term1' tokenize='false'></field>\n"+
-                       "</document>\n"+
-                     "</documents>";
-        return new TestUtils.TestContent(job.getContentID(), xml);
+    manager = new IndexManager(job -> {
+      // delete?
+      if (job.getContentID().startsWith("delete-")) {
+        return new TestUtils.TestContent(job.getContentID().substring(7), null);
       }
+      // add all documents in one go
+      String xml = "<documents version='5.0'>\n"+
+                     "<document>\n"+
+                       "<field name='"+TestUtils.ID_FIELD+"' tokenize='false'>doc1</field>\n"+
+                       "<field name='term1' tokenize='false'>value1</field>\n"+
+                     "</document>\n"+
+                     "<document>\n"+
+                       "<field name='"+TestUtils.ID_FIELD+"' tokenize='false'>doc2</field>\n"+
+                       "<field name='term1' tokenize='false'>value2</field>\n"+
+                     "</document>\n"+
+                     "<document>\n"+
+                       "<field name='"+TestUtils.ID_FIELD+"' tokenize='false'>doc3</field>\n"+
+                       "<field name='term1' tokenize='false'>value3</field>\n"+
+                     "</document>\n"+
+                     "<document>\n"+
+                       "<field name='"+TestUtils.ID_FIELD+"' tokenize='false'>doc4</field>\n"+
+                       "<field name='term1' tokenize='false'></field>\n"+
+                     "</document>\n"+
+                   "</documents>";
+      return new TestUtils.TestContent(job.getContentID(), xml);
     }, new TestListener());
     manager.setDefaultTranslator(new SourceForwarder("xml", "UTF-8"));
     System.out.println("Starting manager!");
@@ -88,7 +86,7 @@ public class TermParameterTest {
       Assert.assertEquals(1, results.getTotalNbOfResults());
       Assert.assertEquals("doc1", results.documents().iterator().next().get(TestUtils.ID_FIELD));
     } catch (Exception ex) {
-      ex.printStackTrace();
+      LoggerFactory.getLogger(TestUtils.class).error("Something went wrong", ex);
       Assert.fail(ex.getMessage());
     }
   }
@@ -101,7 +99,7 @@ public class TermParameterTest {
       Assert.assertEquals(1, results.getTotalNbOfResults());
       Assert.assertEquals("doc4", results.documents().iterator().next().get(TestUtils.ID_FIELD));
     } catch (Exception ex) {
-      ex.printStackTrace();
+      LoggerFactory.getLogger(TestUtils.class).error("Something went wrong", ex);
       Assert.fail(ex.getMessage());
     }
   }

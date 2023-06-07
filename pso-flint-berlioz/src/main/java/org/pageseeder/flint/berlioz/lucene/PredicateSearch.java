@@ -30,12 +30,12 @@ public final class PredicateSearch extends LuceneIndexGenerator {
   private static final Logger LOGGER = LoggerFactory.getLogger(PredicateSearch.class);
 
   @Override
-  public void processMultiple(Collection<IndexMaster> indexes, ContentRequest req, XMLWriter xml) throws BerliozException, IOException {
+  public void processMultiple(Collection<IndexMaster> indexes, ContentRequest req, XMLWriter xml) throws IOException {
     SearchPaging paging = buildPaging(req);
     if (indexes.isEmpty()) return;
     SearchQuery query   = buildQuery(req, indexes.iterator().next().getIndexDefinition(), xml);
     if (query == null) return;
-    ArrayList<Index> theIndexes = new ArrayList<Index>();
+    ArrayList<Index> theIndexes = new ArrayList<>();
     for (IndexMaster index : indexes) {
       theIndexes.add(index.getIndex());
     }
@@ -47,7 +47,7 @@ public final class PredicateSearch extends LuceneIndexGenerator {
   }
 
   @Override
-  public void processSingle(IndexMaster index, ContentRequest req, XMLWriter xml) throws BerliozException, IOException {
+  public void processSingle(IndexMaster index, ContentRequest req, XMLWriter xml) throws IOException {
     SearchPaging paging = buildPaging(req);
     SearchQuery query   = buildQuery(req, index.getIndexDefinition(), xml);
     if (query == null) return;

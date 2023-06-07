@@ -22,6 +22,7 @@ import org.pageseeder.flint.lucene.util.Bucket;
 import org.pageseeder.flint.lucene.util.Dates;
 import org.pageseeder.flint.lucene.utils.TestListener;
 import org.pageseeder.flint.lucene.utils.TestUtils;
+import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.FileFilter;
@@ -35,10 +36,10 @@ import java.util.TimeZone;
 
 public class DateFieldFacetTest {
 
-  private static File template  = new File("src/test/resources/template.xsl");
-  private static File documents = new File("src/test/resources/facets");
-  private static FileFilter filter = new FileFilter() { public boolean accept(File file) { return "datefieldfacet.xml".equals(file.getName()); } };
-  private static File indexRoot = new File("tmp/index");
+  private static final File template  = new File("src/test/resources/template.xsl");
+  private static final File documents = new File("src/test/resources/facets");
+  private static final FileFilter filter = file -> "datefieldfacet.xml".equals(file.getName());
+  private static final File indexRoot = new File("tmp/index");
 
   private static LuceneLocalIndex index;
   private static LocalIndexManager manager;
@@ -55,7 +56,7 @@ public class DateFieldFacetTest {
       index = new LuceneLocalIndex(indexRoot, "datefield", new StandardAnalyzer(), documents);
       index.setTemplate("xml", template.toURI());
     } catch (Exception ex) {
-      ex.printStackTrace();
+      LoggerFactory.getLogger(TestUtils.class).error("Something went wrong", ex);
     }
     manager = LocalIndexManagerFactory.createMultiThreads(new TestListener());
     System.out.println("Starting manager!");
@@ -64,11 +65,7 @@ public class DateFieldFacetTest {
     // wait a bit
     TestUtils.wait(1);
     // prepare base query
-    try {
-      searcher = LuceneIndexQueries.grabSearcher(index);
-    } catch (IndexException ex) {
-      ex.printStackTrace();
-    }
+    searcher = LuceneIndexQueries.grabSearcher(index);
     // set GMT as indexed dates
     format.setTimeZone(TimeZone.getTimeZone("GMT"));
   }
@@ -76,11 +73,7 @@ public class DateFieldFacetTest {
   @AfterClass
   public static void after() {
     // close searcher
-    try {
-      LuceneIndexQueries.release(index, searcher);
-    } catch (IndexException ex) {
-      ex.printStackTrace();
-    }
+    LuceneIndexQueries.release(index, searcher);
     // stop index
     System.out.println("Stopping manager!");
     manager.shutdown();
@@ -90,7 +83,7 @@ public class DateFieldFacetTest {
   @Test
   public void testFacetsNoQuery() throws IndexException, IOException, ParseException {
     DateFieldFacet facet = DateFieldFacet.newFacet("facet1", second_resolution);
-    facet.compute(searcher, null);
+    facet.compute(searcher);
     Assert.assertEquals(7, facet.getTotalTerms());
     Bucket<String> values = facet.getValues();
     Assert.assertEquals(7, values.items().size());
@@ -103,7 +96,7 @@ public class DateFieldFacetTest {
     Assert.assertEquals(1, values.count(""));
     // facets 2
     facet = DateFieldFacet.newFacet("facet2", Resolution.SECOND);
-    facet.compute(searcher, null);
+    facet.compute(searcher);
     Assert.assertEquals(7, facet.getTotalTerms());
     values = facet.getValues();
     Assert.assertEquals(7, values.items().size());
@@ -116,7 +109,7 @@ public class DateFieldFacetTest {
     Assert.assertEquals(1, values.count(""));
     // facets 3
     facet = DateFieldFacet.newFacet("facet3", Resolution.SECOND);
-    facet.compute(searcher, null);
+    facet.compute(searcher);
     Assert.assertEquals(3, facet.getTotalTerms());
     values = facet.getValues();
     Assert.assertEquals(3, values.items().size());

@@ -84,7 +84,7 @@ public final class IndexManager {
   /**
    * The thread manager.
    */
-  private ExecutorService multiThreadExecutor = null;
+  private final ExecutorService multiThreadExecutor;
 
   /**
    * The thread manager.
@@ -248,8 +248,8 @@ public final class IndexManager {
    */
   public void indexBatch(Map<String, ContentType> contents, Index i, Requester r, Priority p) {
     IndexBatch batch = new IndexBatch(i.getIndexID(), contents.size());
-    for (String key : contents.keySet()) {
-      indexJob(IndexJob.newBatchJob(batch, key, contents.get(key), i, p, r, null), false);
+    for (Map.Entry<String, ContentType> entries : contents.entrySet()) {
+      indexJob(IndexJob.newBatchJob(batch, entries.getKey(), entries.getValue(), i, p, r, null), false);
     }
   }
 
@@ -359,9 +359,9 @@ public final class IndexManager {
    * @param index   the index
    * @param content the actual Content to transform
    * @param params  the parameters to add to the translation
-   * 
+   *
    * @return the list of documents produced by the conversion (could be null)
-   * 
+   *
    * @throws IndexException if anything went wrong
    */
   public List<FlintDocument> contentToDocuments(Index index, Content content, Map<String, String> params)
@@ -393,6 +393,7 @@ public final class IndexManager {
       this.multiThreadExecutor.awaitTermination(timeout, TimeUnit.SECONDS);
     } catch (InterruptedException ex) {
       LOGGER.error("Interrupted while shutting down multiple thread", ex);
+      Thread.currentThread().interrupt();
     }
     if (this.singleThreadExecutor != null) {
       this.singleThreadExecutor.shutdownNow();
@@ -400,6 +401,7 @@ public final class IndexManager {
         this.singleThreadExecutor.awaitTermination(timeout, TimeUnit.SECONDS);
       } catch (InterruptedException ex) {
         LOGGER.error("Interrupted while shutting down single thread", ex);
+        Thread.currentThread().interrupt();
       }
     }
     // Close all indexes
@@ -410,19 +412,19 @@ public final class IndexManager {
 
   /**
    * Add the index provided to list
-   * 
+   *
    * @param index the index to add
    */
-  protected static void registerIndex(Index index) {
+  static void registerIndex(Index index) {
     ALL_INDEXES.put(index.getIndexID(), index);
   }
 
   /**
    * Remove the index provided from list
-   * 
+   *
    * @param index the index to remove
    */
-  protected static void deregisterIndex(Index index) {
+  static void deregisterIndex(Index index) {
     ALL_INDEXES.remove(index.getIndexID(), index);
   }
 
@@ -451,9 +453,9 @@ public final class IndexManager {
   }
 
   /**
-   * 
+   *
    * @param job the index job
-   * 
+   *
    * @return the content
    */
   public Content getContent(IndexJob job) {

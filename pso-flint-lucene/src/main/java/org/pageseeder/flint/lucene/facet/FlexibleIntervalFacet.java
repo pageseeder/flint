@@ -198,7 +198,7 @@ public abstract class FlexibleIntervalFacet extends FlexibleFacet<FlexibleInterv
         if (count > 0) {
           // add to map
           Integer ec = intervals.get(r);
-          intervals.put(r, Integer.valueOf(count + (ec == null ? 0 : ec.intValue())));
+          intervals.put(r, count + (ec == null ? 0 : ec));
           // check size to stop computing if too big
           if (this._maxIntervals > 0 && intervals.size() > this._maxIntervals)
             return;
@@ -207,9 +207,9 @@ public abstract class FlexibleIntervalFacet extends FlexibleFacet<FlexibleInterv
       }
       this.totalIntervals = intervals.size();
       // add to bucket
-      Bucket<Interval> b = new Bucket<Interval>(size);
-      for (Interval interval : intervals.keySet()) {
-        b.add(interval, intervals.get(interval));
+      Bucket<Interval> b = new Bucket<>(size);
+      for (Map.Entry<Interval, Integer> interval : intervals.entrySet()) {
+        b.add(interval.getKey(), interval.getValue());
       }
       this.bucket = b;
     }
@@ -231,6 +231,23 @@ public abstract class FlexibleIntervalFacet extends FlexibleFacet<FlexibleInterv
    */
   public void compute(IndexSearcher searcher, Query base, int size) throws IOException {
     compute(searcher, base, null, size);
+  }
+
+  /**
+   * Computes each facet option.
+   *
+   * <p>Same as <code>compute(searcher, base, 10);</code>.
+   *
+   * <p>Defaults to 10.
+   *
+   * @see #compute(IndexSearcher, Query, int)
+   *
+   * @param searcher the index search to use.
+   *
+   * @throws IOException if thrown by the searcher.
+   */
+  public void compute(IndexSearcher searcher) throws IOException {
+    compute(searcher, null, null, DEFAULT_MAX_NUMBER_OF_VALUES);
   }
 
   /**
@@ -293,7 +310,7 @@ public abstract class FlexibleIntervalFacet extends FlexibleFacet<FlexibleInterv
       if (count > 0) {
         // add to map
         Integer ec = intervals.get(interval);
-        intervals.put(interval, Integer.valueOf(count + (ec == null ? 0 : ec.intValue())));
+        intervals.put(interval, count + (ec == null ? 0 : ec));
         // check size to stop computing if too big
         if (this._maxIntervals > 0 && intervals.size() > this._maxIntervals)
           return;
@@ -304,8 +321,8 @@ public abstract class FlexibleIntervalFacet extends FlexibleFacet<FlexibleInterv
     this.totalIntervals = intervals.size();
     // add to bucket
     Bucket<Interval> b = new Bucket<>(size);
-    for (Interval interval : intervals.keySet()) {
-      b.add(interval, intervals.get(interval));
+    for (Map.Entry<Interval, Integer> interval : intervals.entrySet()) {
+      b.add(interval.getKey(), interval.getValue());
     }
     this.bucket = b;
   }
@@ -355,8 +372,8 @@ public abstract class FlexibleIntervalFacet extends FlexibleFacet<FlexibleInterv
   public static class Interval implements Comparable<Interval> {
     private final String _min;
     private final String max;
-    private boolean _includeMin;
-    private boolean _includeMax;
+    private final boolean _includeMin;
+    private final boolean _includeMax;
     private final Resolution _resolution;
     private Interval(String min, boolean withMin, String max, boolean withMax) {
       this(min, withMin, max, withMax, null);

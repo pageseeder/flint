@@ -15,12 +15,10 @@
  */
 package org.pageseeder.flint.ixml;
 
-import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
-import java.net.MalformedURLException;
 import java.net.URL;
 
 import org.xml.sax.EntityResolver;
@@ -49,7 +47,7 @@ public final class FlintEntityResolver implements EntityResolver {
 
   /**
    * The prefix used by Flint for all public identifiers.
-   *
+   * <p>
    * Public identifiers starting with any other prefix than this one or the legacy one will be ignored.
    */
   public static final String PUBLIC_ID_PREFIX = "-//Flint//DTD::Index Documents ";
@@ -101,13 +99,13 @@ public final class FlintEntityResolver implements EntityResolver {
 
   /**
    * Returns the file name for the specified public ID.
-   *
+   * <p>
    * Only "-//Weborganic//DTD::Flint"
    *
    * @param publicId the public identifier.
    * @return The corresponding filename.
    */
-  protected static String toFileName(String publicId) {
+  private static String toFileName(String publicId) {
     if (publicId == null) return null;
     String version = null;
     if (publicId.startsWith(PUBLIC_ID_PREFIX)) {
@@ -148,14 +146,12 @@ public final class FlintEntityResolver implements EntityResolver {
       try {
         URL url = new URL(systemId);
         return url.openStream();
-      } catch (MalformedURLException ex) {
-        throw new SAXException("Unable to resolve entity.", ex);
       } catch (IOException ex) {
         throw new SAXException("Unable to resolve entity.", ex);
       }
     } else {
       try {
-        return new FileInputStream(new File(systemId));
+        return new FileInputStream(systemId);
       } catch (FileNotFoundException ex) {
         throw new SAXException("Unable to resolve entity.", ex);
       }

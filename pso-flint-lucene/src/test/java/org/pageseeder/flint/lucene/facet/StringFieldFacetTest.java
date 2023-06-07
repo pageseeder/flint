@@ -19,6 +19,7 @@ import org.pageseeder.flint.lucene.search.StringTermFilter;
 import org.pageseeder.flint.lucene.util.Bucket;
 import org.pageseeder.flint.lucene.utils.TestListener;
 import org.pageseeder.flint.lucene.utils.TestUtils;
+import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.FileFilter;
@@ -28,10 +29,10 @@ import java.util.List;
 
 public class StringFieldFacetTest {
 
-  private static File template  = new File("src/test/resources/template.xsl");
-  private static File documents = new File("src/test/resources/facets");
-  private static FileFilter filter = new FileFilter() { public boolean accept(File file) { return "stringfieldfacet.xml".equals(file.getName()); } };
-  private static File indexRoot = new File("tmp/index");
+  private static final File template  = new File("src/test/resources/template.xsl");
+  private static final File documents = new File("src/test/resources/facets");
+  private static final FileFilter filter = file -> "stringfieldfacet.xml".equals(file.getName());
+  private static final File indexRoot = new File("tmp/index");
 
   private static LuceneLocalIndex index;
   private static LocalIndexManager manager;
@@ -46,7 +47,7 @@ public class StringFieldFacetTest {
       index = new LuceneLocalIndex(indexRoot, "string", new StandardAnalyzer(), documents);
       index.setTemplate("xml", template.toURI());
     } catch (Exception ex) {
-      ex.printStackTrace();
+      LoggerFactory.getLogger(TestUtils.class).error("Something went wrong", ex);
     }
     manager = LocalIndexManagerFactory.createMultiThreads(new TestListener());
     System.out.println("Starting manager!");
@@ -55,21 +56,13 @@ public class StringFieldFacetTest {
     // wait a bit
     TestUtils.wait(1);
     // prepare base query
-    try {
-      searcher = LuceneIndexQueries.grabSearcher(index);
-    } catch (IndexException ex) {
-      ex.printStackTrace();
-    }
+    searcher = LuceneIndexQueries.grabSearcher(index);
   }
 
   @AfterClass
   public static void after() {
     // close searcher
-    try {
-      LuceneIndexQueries.release(index, searcher);
-    } catch (IndexException ex) {
-      ex.printStackTrace();
-    }
+    LuceneIndexQueries.release(index, searcher);
     // stop index
     System.out.println("Stopping manager!");
     manager.shutdown();
@@ -79,7 +72,7 @@ public class StringFieldFacetTest {
   @Test
   public void testFacetsNoQuery() throws IndexException, IOException {
     StringFieldFacet facet = StringFieldFacet.newFacet("facet1");
-    facet.compute(searcher, null);
+    facet.compute(searcher);
     Assert.assertEquals(6, facet.getTotalTerms());
     Bucket<String> values = facet.getValues();
     Assert.assertEquals(6, values.items().size());
@@ -91,7 +84,7 @@ public class StringFieldFacetTest {
     Assert.assertEquals(1, values.count("value15"));
     // facets 2
     facet = StringFieldFacet.newFacet("facet2");
-    facet.compute(searcher, null);
+    facet.compute(searcher);
     Assert.assertEquals(6, facet.getTotalTerms());
     values = facet.getValues();
     Assert.assertEquals(6, values.items().size());
@@ -103,7 +96,7 @@ public class StringFieldFacetTest {
     Assert.assertEquals(1, values.count("value25"));
     // facets 3
     facet = StringFieldFacet.newFacet("facet3");
-    facet.compute(searcher, null);
+    facet.compute(searcher);
     Assert.assertEquals(2, facet.getTotalTerms());
     values = facet.getValues();
     Assert.assertEquals(2, values.items().size());

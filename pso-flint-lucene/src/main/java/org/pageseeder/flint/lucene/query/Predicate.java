@@ -77,7 +77,7 @@ public final class Predicate implements SearchParameter, XMLWritable {
    *
    * @throws NullPointerException If either argument is <code>null</code>.
    */
-  protected Predicate(Map<String, Float> fields, String predicate) throws NullPointerException {
+  Predicate(Map<String, Float> fields, String predicate) throws NullPointerException {
     if (fields == null) throw new NullPointerException("fields");
     if (predicate == null) throw new NullPointerException("predicate");
     this._fields = fields;
@@ -114,7 +114,7 @@ public final class Predicate implements SearchParameter, XMLWritable {
    */
   public float getBoost(String field) {
     Float boost = this._fields.get(field);
-    return boost != null? boost.floatValue() : 1.0f;
+    return boost != null ? boost : 1.0f;
   }
 
   /**

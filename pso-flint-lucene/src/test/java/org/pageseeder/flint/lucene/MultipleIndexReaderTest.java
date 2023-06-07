@@ -20,6 +20,7 @@ import org.pageseeder.flint.lucene.query.SearchResults;
 import org.pageseeder.flint.lucene.search.Terms;
 import org.pageseeder.flint.lucene.utils.TestListener;
 import org.pageseeder.flint.lucene.utils.TestUtils;
+import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.IOException;
@@ -91,7 +92,7 @@ public class MultipleIndexReaderTest {
       index.setTemplates(TestUtils.TYPE, TestUtils.MEDIA_TYPE, template.toURI());
       indexes.put("index"+nb, index);
     } catch (Exception ex) {
-      ex.printStackTrace();
+      LoggerFactory.getLogger(TestUtils.class).error("Something went wrong", ex);
     }
   }
 
@@ -152,7 +153,7 @@ public class MultipleIndexReaderTest {
   }
 
   private List<Index> randoms() {
-    int nb = Math.round(NB_INDEXES / 3);
+    int nb = Math.round((float) NB_INDEXES / 3);
     Random r = new Random(System.nanoTime());
     List<Index> rands = new ArrayList<>(nb);
     while (rands.size() < nb) {
@@ -192,7 +193,7 @@ public class MultipleIndexReaderTest {
         IndexSearcher searcher = new IndexSearcher(reader);
         for (String field : fields()) {
           StringFieldFacet facet = StringFieldFacet.newFacet(field);
-          facet.compute(searcher, null, 20);
+          facet.compute(searcher, 20);
           Assert.assertEquals(NB_VALUES, facet.getTotalTerms());
         }
         SearchResults results = LuceneIndexQueries.query(indexes, new PredicateSearchQuery(QUERY));
@@ -201,7 +202,7 @@ public class MultipleIndexReaderTest {
         multi.releaseSilently();
         System.out.println("Searched multi index");
       } catch (IndexException | IOException ex) {
-        System.out.println(ex);
+        LoggerFactory.getLogger(TestUtils.class).error("Something went wrong", ex);
       }
       synchronized (searching) {
         searching.decrementAndGet();

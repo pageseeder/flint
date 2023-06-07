@@ -23,6 +23,7 @@ import org.apache.lucene.index.Term;
 import org.pageseeder.berlioz.BerliozException;
 import org.pageseeder.berlioz.content.Cacheable;
 import org.pageseeder.berlioz.content.ContentRequest;
+import org.pageseeder.berlioz.content.ContentStatus;
 import org.pageseeder.berlioz.util.MD5;
 import org.pageseeder.flint.IndexException;
 import org.pageseeder.flint.berlioz.model.IndexMaster;
@@ -54,20 +55,24 @@ public final class LookupPrefixTerms extends LuceneIndexGenerator implements Cac
 
   @Override
   public String getETag(ContentRequest req) {
-    StringBuilder etag = new StringBuilder();
     // Get relevant parameters
-    etag.append(req.getParameter("term", "keyword")).append('%');
-    etag.append(req.getParameter("field", "")).append('%');
-    etag.append(buildIndexEtag(req));
+    String etag = req.getParameter("term", "keyword") + '%' +
+        req.getParameter("field", "") + '%' +
+        buildIndexEtag(req);
     // MD5 of computed etag value
-    return MD5.hash(etag.toString());
+    return MD5.hash(etag);
   }
 
   @Override
   public void processMultiple(Collection<IndexMaster> masters, ContentRequest req, XMLWriter xml) throws BerliozException, IOException {
     // Create a new query object
     String field = req.getParameter("field", "keyword");
-    Term term = new Term(field, req.getParameter("term"));
+    String value = req.getParameter("term", "");
+    if (value.isEmpty()) {
+      req.setStatus(ContentStatus.BAD_REQUEST);
+      return;
+    }
+    Term term = new Term(field, value);
 
     LOGGER.debug("Looking up prefix terms for {}", term);
     xml.openElement("prefix-terms");
@@ -75,14 +80,12 @@ public final class LookupPrefixTerms extends LuceneIndexGenerator implements Cac
     MultipleIndexReader multiReader = buildMultiReader(masters);
     try {
       IndexReader reader = multiReader.grab();
-      Bucket<Term> bucket = new Bucket<Term>(20);
+      Bucket<Term> bucket = new Bucket<>(20);
       Terms.prefix(reader, bucket, term);
       for (Entry<Term> e : bucket.entrySet()) {
         Terms.toXML(xml, e.item(), e.count());
       }
-    } catch (IOException ex) {
-      throw new BerliozException("Exception thrown while fetching fuzzy terms", ex);
-    } catch (IndexException ex) {
+    } catch (IOException | IndexException ex) {
       throw new BerliozException("Exception thrown while fetching fuzzy terms", ex);
     } finally {
       multiReader.releaseSilently();
@@ -97,21 +100,24 @@ public final class LookupPrefixTerms extends LuceneIndexGenerator implements Cac
   public void processSingle(IndexMaster index, ContentRequest req, XMLWriter xml) throws BerliozException, IOException {
     // Create a new query object
     String field = req.getParameter("field", "keyword");
-    Term term = new Term(field, req.getParameter("term"));
+    String value = req.getParameter("term", "");
+    if (value.isEmpty()) {
+      req.setStatus(ContentStatus.BAD_REQUEST);
+      return;
+    }
+    Term term = new Term(field, value);
 
     LOGGER.debug("Looking up prefix terms for {}", term);
     xml.openElement("prefix-terms");
     IndexReader reader = null;
     try {
-      Bucket<Term> bucket = new Bucket<Term>(20);
+      Bucket<Term> bucket = new Bucket<>(20);
       reader = index.grabReader();
       Terms.prefix(reader, bucket, term);
       for (Entry<Term> e : bucket.entrySet()) {
         Terms.toXML(xml, e.item(), e.count());
       }
-    } catch (IOException ex) {
-      throw new BerliozException("Exception thrown while fetching fuzzy terms", ex);
-    } catch (IndexException ex) {
+    } catch (IOException | IndexException ex) {
       throw new BerliozException("Exception thrown while fetching fuzzy terms", ex);
     } finally {
       index.releaseSilently(reader);

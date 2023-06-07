@@ -120,16 +120,16 @@ public class IndexDefinition implements XMLWritable {
   }
 
   public void addAutoSuggest(String name) {
-    addAutoSuggest(name, null);
+    assert name   != null;
+    AutoSuggestDefinition def = new AutoSuggestDefinition(name, null, false, null, null);
+    this._autosuggests.put(name, def);
   }
 
   /**
    * @deprecated suggesters not used anymore
    */
   public void addAutoSuggest(String name, List<String> suggesters) {
-    assert name   != null;
-    AutoSuggestDefinition def = new AutoSuggestDefinition(name, (String) null, false, null, null);
-    this._autosuggests.put(name, def);
+    addAutoSuggest(name);
   }
 
   public void addAutoSuggest(String name, String fields, String terms, String returnFields, String criteriaFields, Map<String, Float> weights) {
@@ -138,8 +138,8 @@ public class IndexDefinition implements XMLWritable {
     assert terms  != null;
 
     addAutoSuggest(name,
-                   fields == null ? null : Arrays.asList(fields.split(",")),
-                   Boolean.valueOf(terms),
+                   fields.isEmpty() ? null : Arrays.asList(fields.split(",")),
+                   Boolean.parseBoolean(terms),
                    returnFields == null ? null : Arrays.asList(returnFields.split(",")),
                    criteriaFields == null ? null : Arrays.asList(criteriaFields.split(",")),
                    weights);
@@ -151,7 +151,7 @@ public class IndexDefinition implements XMLWritable {
    */
   public AutoSuggestDefinition addAutoSuggest(String name, List<String> fields, boolean terms, List<String> returnFields,
                                               List<String> criteriaFields, Map<String, Float> weights, List<String> suggesters) {
-    return addAutoSuggest(name, fields, terms, returnFields, criteriaFields, weights, null);
+    return addAutoSuggest(name, fields, terms, returnFields, criteriaFields, weights);
   }
 
   public AutoSuggestDefinition addAutoSuggest(String name, List<String> fields, boolean terms, List<String> returnFields,
@@ -194,8 +194,7 @@ public class IndexDefinition implements XMLWritable {
       // include
       if (includeFilesRegex != null && !path.matches(includeFilesRegex)) return false;
       // exclude
-      if (excludeFilesRegex != null && path.matches(excludeFilesRegex)) return false;
-      return true;
+      return excludeFilesRegex == null || !path.matches(excludeFilesRegex);
     };
   }
 
@@ -203,25 +202,24 @@ public class IndexDefinition implements XMLWritable {
     // static
     if (staticIndex()) {
       if (other.staticIndex()) return this._indexName.equals(other._indexName);
-      Pattern pattern = Pattern.compile(other._indexName.replaceAll("\\{name\\}", "([\\\\w\\\\-]+)"));
+      Pattern pattern = Pattern.compile(other._indexName.replaceAll("\\{name}", "([\\\\w\\\\-]+)"));
       return pattern.matcher(this._indexName).matches();
     }
     // dynamic
     if (other.staticIndex()) {
-      Pattern pattern = Pattern.compile(this._indexName.replaceAll("\\{name\\}", "([\\\\w\\\\-]+)"));
+      Pattern pattern = Pattern.compile(this._indexName.replaceAll("\\{name}", "([\\\\w\\\\-]+)"));
       return pattern.matcher(other._indexName).matches();
     }
     // both dynamic: first check if one starts with duynamic and the other one ends with it -> clash
     if (other._indexName.startsWith("{name}") && this._indexName.endsWith("{name}")) return true;
     if (this._indexName.startsWith("{name}") && other._indexName.endsWith("{name}")) return true;
     // then turn patterns to string with '*' and match against the other pattern
-    Pattern otherpattern = Pattern.compile(other._indexName.replaceAll("\\{name\\}", "([\\\\*\\\\w\\\\-]+)"));
-    String myStaticPath  = this._indexName.replaceAll("\\{name\\}", "*");
+    Pattern otherpattern = Pattern.compile(other._indexName.replaceAll("\\{name}", "([\\\\*\\\\w\\\\-]+)"));
+    String myStaticPath  = this._indexName.replaceAll("\\{name}", "*");
     if (otherpattern.matcher(myStaticPath).matches()) return true;
-    Pattern mypattern       = Pattern.compile(this._indexName.replaceAll("\\{name\\}", "([\\\\*\\\\w\\\\-]+)"));
-    String otherStaticPath  = other._indexName.replaceAll("\\{name\\}", "*");
-    if (mypattern.matcher(otherStaticPath).matches()) return true;
-    return false;
+    Pattern mypattern       = Pattern.compile(this._indexName.replaceAll("\\{name}", "([\\\\*\\\\w\\\\-]+)"));
+    String otherStaticPath  = other._indexName.replaceAll("\\{name}", "*");
+    return mypattern.matcher(otherStaticPath).matches();
   }
 
   /**
@@ -248,7 +246,7 @@ public class IndexDefinition implements XMLWritable {
     // dynamic name?
     if (staticIndex()) return this._indexName.equals(name);
     // create pattern
-    return name.matches(this._indexName.replaceAll("\\{name\\}", "(.*)"));
+    return name.matches(this._indexName.replaceAll("\\{name}", "(.*)"));
   }
 
   /**
@@ -266,10 +264,10 @@ public class IndexDefinition implements XMLWritable {
       if (onlyOne.exists() && onlyOne.isDirectory()) candidates.add(onlyOne);
     } else {
       // build pattern
-      final Pattern pattern = Pattern.compile(this._path.replaceAll("\\{name\\}", "([\\\\w\\\\-]+)"));
+      final Pattern pattern = Pattern.compile(this._path.replaceAll("\\{name}", "([\\\\w\\\\-]+)"));
       // go through root's descendants
       try {
-        Files.walkFileTree(root.toPath(), new FileVisitor<Path>() {
+        Files.walkFileTree(root.toPath(), new FileVisitor<>() {
           @Override
           public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) {
             String path = org.pageseeder.flint.berlioz.util.Files.path(root, dir.toFile());
@@ -292,12 +290,12 @@ public class IndexDefinition implements XMLWritable {
           }
 
           @Override
-          public FileVisitResult visitFileFailed(Path file, IOException ex)  {
+          public FileVisitResult visitFileFailed(Path file, IOException ex) {
             return FileVisitResult.CONTINUE;
           }
 
           @Override
-          public FileVisitResult postVisitDirectory(Path dir, IOException ex)  {
+          public FileVisitResult postVisitDirectory(Path dir, IOException ex) {
             return FileVisitResult.CONTINUE;
           }
         });
@@ -328,19 +326,19 @@ public class IndexDefinition implements XMLWritable {
    * @return the resolved path
    */
   public String buildContentPath(String name) {
-    // build name bit from name
+    // build name part from name
     // i.e. if indexname=book-{name} and name=book-001 namebit=001
     String nameBit;
     if (staticIndex()) {
       nameBit = name;
     } else {
-      Matcher matcher = Pattern.compile(this._indexName.replaceAll("\\{name\\}", "(.+)")).matcher(name);
+      Matcher matcher = Pattern.compile(this._indexName.replaceAll("\\{name}", "(.+)")).matcher(name);
       if (!matcher.matches())
         throw new IllegalArgumentException("Name provided "+name+": does not match pattern "+this._name);
       nameBit = matcher.group(1);
     }
     // change pattern {name}
-    return this._path.replaceAll("\\{name\\}", nameBit);
+    return this._path.replaceAll("\\{name}", nameBit);
   }
 
   /**
@@ -369,11 +367,11 @@ public class IndexDefinition implements XMLWritable {
       return null;
     }
     // create pattern
-    Matcher matcher = Pattern.compile(this._path.replaceAll("\\{name\\}", "([\\\\w\\\\-]+)") + "(/.+)?").matcher(path);
+    Matcher matcher = Pattern.compile(this._path.replaceAll("\\{name}", "([\\\\w\\\\-]+)") + "(/.+)?").matcher(path);
     if (matcher.matches()) {
       // check exclude
       if (!isExcluded(path, true))
-        return this._indexName.replaceAll("\\{name\\}", matcher.group(1));
+        return this._indexName.replaceAll("\\{name}", matcher.group(1));
     }
     return null;
   }
@@ -426,7 +424,7 @@ public class IndexDefinition implements XMLWritable {
    * @return <code>true</code> if the token is static.
    */
   private boolean staticToken(String token) {
-    return token.indexOf("{name}") == -1;
+    return !token.contains("{name}");
   }
 
   /**
@@ -438,7 +436,7 @@ public class IndexDefinition implements XMLWritable {
     // check exclude
     for (String exclude : IndexDefinition.this._pathExcludes) {
       // static?
-      if (exclude.indexOf("*") == -1) {
+      if (!exclude.contains("*")) {
         if ((path.equals(exclude) && !startsWith) ||
             (path.startsWith(exclude+'/') && startsWith))
           return true;
@@ -500,7 +498,7 @@ public class IndexDefinition implements XMLWritable {
     }
 
     public List<String> getCriteriaFields() {
-      return this._criteriaFields != null ? Collections.unmodifiableList(this._criteriaFields) : Collections.EMPTY_LIST;
+      return this._criteriaFields != null ? Collections.unmodifiableList(this._criteriaFields) : Collections.emptyList();
     }
 
     public boolean useTerms() {

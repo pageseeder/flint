@@ -15,7 +15,7 @@
  */
 package org.pageseeder.flint.lucene.query;
 
-import org.apache.lucene.search.DocValuesFieldExistsQuery;
+import org.apache.lucene.search.FieldExistsQuery;
 import org.apache.lucene.search.Query;
 import org.pageseeder.xmlwriter.XMLWriter;
 
@@ -37,14 +37,14 @@ public final class HasFieldValueParameter implements SearchParameter {
   /**
    * The query.
    */
-  private volatile Query _query;
+  private final Query _query;
 
   /**
    * Creates an empty instance of this class.
    */
   public HasFieldValueParameter(String name) {
     this._field = name;
-    this._query = isEmpty() ? null : new DocValuesFieldExistsQuery(this._field);
+    this._query = isEmpty() ? null : new FieldExistsQuery(this._field);
   }
 
   /**

@@ -7,30 +7,10 @@ import java.io.File;
 import java.io.FileFilter;
 
 public final class FileFilters {
-    private static final FileFilter FOLDERS = new FileFilter(){
-
-        public boolean accept(File d) {
-            return d.isDirectory();
-        }
-    };
-    private static final FileFilter XML = new FileFilter(){
-
-        public boolean accept(File f) {
-            return f.isFile() && f.getName().toLowerCase().endsWith(".xml");
-        }
-    };
-    private static final FileFilter PSML = new FileFilter(){
-
-        public boolean accept(File f) {
-            return f.isFile() && f.getName().toLowerCase().endsWith(".psml");
-        }
-    };
-    private static final FileFilter XSLT = new FileFilter(){
-
-        public boolean accept(File f) {
-            return f.isFile() && f.getName().toLowerCase().endsWith(".xsl");
-        }
-    };
+    private static final FileFilter FOLDERS = File::isDirectory;
+    private static final FileFilter XML = f -> f.isFile() && f.getName().toLowerCase().endsWith(".xml");
+    private static final FileFilter PSML = f -> f.isFile() && f.getName().toLowerCase().endsWith(".psml");
+    private static final FileFilter XSLT = f -> f.isFile() && f.getName().toLowerCase().endsWith(".xsl");
 
     private FileFilters() {
     }

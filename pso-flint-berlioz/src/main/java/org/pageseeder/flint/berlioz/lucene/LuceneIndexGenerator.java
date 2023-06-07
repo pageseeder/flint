@@ -42,7 +42,7 @@ public abstract class LuceneIndexGenerator implements ContentGenerator {
       else
         processSingle(master, req, xml);
     } else {
-      ArrayList<IndexMaster> indexes = new ArrayList<IndexMaster>();
+      ArrayList<IndexMaster> indexes = new ArrayList<>();
       for (String aname : name.split(",")) {
         IndexMaster amaster = FlintConfig.get().getMaster(aname.trim());
         if (amaster == null) continue;

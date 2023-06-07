@@ -15,7 +15,6 @@
  */
 package org.pageseeder.flint.indexing;
 
-import org.pageseeder.flint.catalog.Catalog;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -26,7 +25,7 @@ import java.util.TimeZone;
  * A builder for fields.
  *
  * <p>This class can be used to temporarily hold values required to creates new fields and
- * ensure that the field can be build without errors.
+ * ensure that the field can be built without errors.
  *
  * @author Christophe Lauret
  * @version 10 February 2012
@@ -133,7 +132,7 @@ public final class FlintField {
   private CharSequence _value;
 
   /**
-   * The class of a the number type for a numeric field.
+   * The class of the number type for a numeric field.
    */
   private NumericType _numeric;
 

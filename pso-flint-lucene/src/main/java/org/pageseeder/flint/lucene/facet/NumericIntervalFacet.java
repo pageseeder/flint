@@ -101,7 +101,7 @@ public abstract class NumericIntervalFacet extends FlexibleIntervalFacet {
         }
       }
       this.totalIntervals = 0;
-      Bucket<Interval> bucket = new Bucket<Interval>(size);
+      Bucket<Interval> bucket = new Bucket<>(size);
       DocumentCounter counter = new DocumentCounter();
       for (Interval i : this._intervals) {
         // build query
@@ -129,7 +129,7 @@ public abstract class NumericIntervalFacet extends FlexibleIntervalFacet {
    */
   protected void compute(IndexSearcher searcher, int size) throws IOException {
     this.totalIntervals = 0;
-    Bucket<Interval> bucket = new Bucket<Interval>(size);
+    Bucket<Interval> bucket = new Bucket<>(size);
     DocumentCounter counter = new DocumentCounter();
     for (Interval i : this._intervals) {
       // build query

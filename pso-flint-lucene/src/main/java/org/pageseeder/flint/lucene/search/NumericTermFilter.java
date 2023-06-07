@@ -42,7 +42,7 @@ public class NumericTermFilter extends TermFilter<Number> implements Filter {
   /**
    * A numeric type
    */
-  private NumericType _numeric;
+  private final NumericType _numeric;
 
   /**
    * Creates a new filter from the builder.
@@ -59,7 +59,7 @@ public class NumericTermFilter extends TermFilter<Number> implements Filter {
   @Override
   public Query filterQuery(Query base) {
     // if should, create filter query
-    if (this._terms.values().contains(Occur.SHOULD)) {
+    if (this._terms.containsValue(Occur.SHOULD)) {
       BooleanQuery.Builder filterQuery = new BooleanQuery.Builder();
       for (Number value : this._terms.keySet()) {
         filterQuery.add(numberToQuery(value), this._terms.get(value));

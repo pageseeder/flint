@@ -229,8 +229,8 @@ public abstract class NumericRangeFacet extends FlexibleRangeFacet {
 
     /**
      * Will include min and max.
-     * @param min
-     * @param max
+     * @param min the min value
+     * @param max the max value
      * @return a Builder
      */
     public Builder addRange(Number min, Number max) {

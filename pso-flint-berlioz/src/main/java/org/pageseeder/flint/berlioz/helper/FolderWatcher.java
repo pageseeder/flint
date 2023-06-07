@@ -264,7 +264,7 @@ public class FolderWatcher {
     }
 
     /**
-     * Mark the thread so that is will stop when possible next.
+     * Mark the thread so that it will stop when possible next.
      */
     void stop() {
       this.keepGoing = false;
@@ -297,6 +297,7 @@ public class FolderWatcher {
         } catch (InterruptedException ex) {
           if (!this.keepGoing) break;
           LOGGER.error("Failed to wait 1s in delayed indexer", ex);
+          Thread.currentThread().interrupt();
           break;
         }
         // one requester

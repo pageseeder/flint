@@ -279,7 +279,7 @@ public class IndexJob implements Comparable<IndexJob> {
   }
 
   /**
-   * @return the list of parameters (never null)
+   * @return the map of parameters (never null)
    */
   public Map<String, String> getParameters() {
     return new HashMap<>(this.parameters);

@@ -1,8 +1,0 @@
-<?xml version="1.0"?>
-<documents version="5.0">
-  <document>
-    <field name="test_text_autosuggest">electric guitar</field>
-    <field name="test_multi_color">red</field>
-    <field name="test_multi_color">blue</field>
-  </document>
-</documents>

@@ -1,6 +1,6 @@
 /*
  * Decompiled with CFR 0_110.
- * 
+ *
  * Could not load the following classes:
  *  org.apache.lucene.index.DirectoryReader
  *  org.apache.lucene.index.IndexReader
@@ -19,10 +19,6 @@
  */
 package org.pageseeder.flint.berlioz;
 
-import java.io.File;
-import java.io.IOException;
-import java.util.Collection;
-
 import org.pageseeder.berlioz.BerliozException;
 import org.pageseeder.berlioz.GlobalSettings;
 import org.pageseeder.berlioz.content.Cacheable;
@@ -35,19 +31,23 @@ import org.pageseeder.flint.berlioz.util.Files;
 import org.pageseeder.flint.berlioz.util.GeneratorErrors;
 import org.pageseeder.xmlwriter.XMLWriter;
 
+import java.io.File;
+import java.io.IOException;
+import java.util.Collection;
+
 public final class GetIndexDefinition implements ContentGenerator, Cacheable {
 
   public String getETag(ContentRequest req) {
     IndexDefinition def = FlintConfig.get().getIndexDefinition(req.getParameter("definition"));
     if (def == null) return null;
     StringBuilder etag = new StringBuilder();
-    for (File root : def.findContentRoots(GlobalSettings.getRepository())) {
+    for (File root : def.findContentRoots(GlobalSettings.getAppData())) {
       etag.append(root.getAbsolutePath()).append('%');
     }
     return MD5.hash(etag.toString());
   }
 
-  public void process(ContentRequest req, XMLWriter xml) throws BerliozException, IOException {
+  public void process(ContentRequest req, XMLWriter xml) throws IOException {
     // get definition
     String name = req.getParameter("definition");
     IndexDefinition def = FlintConfig.get().getIndexDefinition(name);
@@ -61,11 +61,11 @@ public final class GetIndexDefinition implements ContentGenerator, Cacheable {
         xml.element("template-reloaded", "true");
       }
       // find roots
-      Collection<File> roots = def.findContentRoots(GlobalSettings.getRepository());
+      Collection<File> roots = def.findContentRoots(GlobalSettings.getAppData());
       xml.openElement("content-folders");
       try {
         for (File root : roots) {
-          String path = '/'+Files.path(GlobalSettings.getRepository(), root);
+          String path = '/'+Files.path(GlobalSettings.getAppData(), root);
           xml.openElement("content-folder");
           xml.attribute("index", def.findIndexName(path));
           xml.attribute("path",  path);

@@ -26,13 +26,13 @@
     <field name="field3" tokenize="false">value30</field>
   </document>
   <document>
-    <field name="field1" tokenize="false">value14</field>
+    <field name="field1" tokenize="false">value12</field>
     <field name="field2" tokenize="false">value24</field>
     <field name="field3" tokenize="false">value30</field>
   </document>
   <document>
-    <field name="field1" tokenize="false">value15</field>
-    <field name="field2" tokenize="false">value25</field>
+    <field name="field1" tokenize="false">value14</field>
+    <field name="field2" tokenize="false">value23</field>
     <field name="field3" tokenize="false">value30</field>
   </document>
 </documents>

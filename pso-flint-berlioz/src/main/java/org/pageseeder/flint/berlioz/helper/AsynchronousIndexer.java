@@ -83,7 +83,7 @@ public class AsynchronousIndexer implements Runnable, XMLWritable, FileFilter {
 
   /**
    * If the index last modified date is used to select which files to index
-   * @param useIndxDate whether or not to use index last modif date
+   * @param useIndxDate whether to use index last modif date
    */
   public void setUseIndexDate(boolean useIndxDate) {
     this.useIndexDate = useIndxDate;
@@ -138,14 +138,9 @@ public class AsynchronousIndexer implements Runnable, XMLWritable, FileFilter {
   }
 
   private Map<String, Long> getLuceneExistingContent(String afolder) {
-    Map<String, Long> existing = new HashMap<String, Long>();
+    Map<String, Long> existing = new HashMap<>();
     IndexReader reader;
-    try {
-      reader = LuceneIndexQueries.grabReader(this._luceneIndex.getIndex());
-    } catch (IndexException ex) {
-      LOGGER.error("Failed to retrieve reader for index {}", this._luceneIndex.getName(), ex);
-      return null;
-    }
+    reader = LuceneIndexQueries.grabReader(this._luceneIndex.getIndex());
     if (reader == null) {
       LOGGER.error("Failed to retrieve a reader for index {}", this._luceneIndex.getName());
       return null;
@@ -211,14 +206,15 @@ public class AsynchronousIndexer implements Runnable, XMLWritable, FileFilter {
       String root = this._luceneIndex.getIndex().getContentLocation().getAbsolutePath();
       int max = 100;
       int current = 0;
-      for (String path : files.keySet()) {
+      for (Map.Entry<String, Action> file : files.entrySet()) {
         xml.openElement("file");
+        String path = file.getKey();
         if (path.startsWith(root)) {
           xml.attribute("path", path.substring(root.length()));
         } else {
           xml.attribute("path", path);
         }
-        xml.attribute("action", files.get(path).name().toLowerCase());
+        xml.attribute("action", file.getValue().name().toLowerCase());
         xml.closeElement();
         if (current++ > max) break;
       }

@@ -47,7 +47,7 @@ public final class SuggestionQuery implements SearchQuery {
   private final Query _condition;
 
   /**
-   * If the main query uses OR or AND between term results.
+   * If the main query uses 'OR' or 'AND' between term results.
    */
   private final boolean _unionTermResults;
 
@@ -57,7 +57,7 @@ public final class SuggestionQuery implements SearchQuery {
   private BooleanQuery query = null;
 
   /**
-   * If there are two many clauses in the query.
+   * If there are too many clauses in the query.
    */
   private boolean tooManyPrefixes = false;
 
@@ -74,7 +74,7 @@ public final class SuggestionQuery implements SearchQuery {
    * Create a new auto-suggest query for the specified list of terms with no condition.
    *
    * @param terms             The list of terms that should be matched.
-   * @param unionTermResults  If the suggest query uses OR or AND between term results.
+   * @param unionTermResults  If the suggest query uses 'OR' or 'AND' between term results.
    */
   public SuggestionQuery(List<Term> terms, boolean unionTermResults) {
     this(terms, null, unionTermResults);
@@ -95,7 +95,7 @@ public final class SuggestionQuery implements SearchQuery {
    *
    * @param terms             The list of terms that should be matched.
    * @param condition         The condition that must be met by all suggested results (may be <code>null</code>).
-   * @param unionTermResults  If the suggest query uses OR or AND between term results.
+   * @param unionTermResults  If the suggest query uses 'OR' or 'AND' between term results.
    */
   public SuggestionQuery(List<Term> terms, Query condition, boolean unionTermResults) {
     this._terms = terms;
@@ -190,8 +190,7 @@ public final class SuggestionQuery implements SearchQuery {
 
   /**
    * Always sort by relevance.
-   *
-   * {@inheritDoc}
+   * <p> {@inheritDoc}
    */
   @Override
   public Sort getSort() {
@@ -213,7 +212,7 @@ public final class SuggestionQuery implements SearchQuery {
           addTermQuery(term, v, builder);
         }
       }
-    } catch (BooleanQuery.TooManyClauses ex) {
+    } catch (IndexSearcher.TooManyClauses ex) {
       this.tooManyPrefixes = true;
     }
     return builder.build();
@@ -230,7 +229,7 @@ public final class SuggestionQuery implements SearchQuery {
         for (String v : values) {
           addTermQuery(only, v, builder);
         }
-      } catch (BooleanQuery.TooManyClauses ex) {
+      } catch (IndexSearcher.TooManyClauses ex) {
         this.tooManyPrefixes = true;
       }
       // if empty, will match nothing, that's ok
@@ -247,7 +246,7 @@ public final class SuggestionQuery implements SearchQuery {
         for (String v : values) {
           addTermQuery(term, v, q);
         }
-      } catch (BooleanQuery.TooManyClauses ex) {
+      } catch (IndexSearcher.TooManyClauses ex) {
         this.tooManyPrefixes = true;
       }
     }
@@ -260,7 +259,7 @@ public final class SuggestionQuery implements SearchQuery {
     return bq.build();
   }
 
-  private void addTermQuery(Term original, String value, BooleanQuery.Builder query) throws BooleanQuery.TooManyClauses {
+  private void addTermQuery(Term original, String value, BooleanQuery.Builder query) throws IndexSearcher.TooManyClauses {
     if (value.equals(original.text())) {
       query.add(new BoostQuery(new TermQuery(original), 2.0f), Occur.SHOULD);
     } else {

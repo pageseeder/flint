@@ -15,20 +15,18 @@
  */
 package org.pageseeder.flint.lucene.util;
 
-import java.io.IOException;
-import java.util.List;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.pageseeder.flint.lucene.search.DocumentCounter;
 import org.pageseeder.flint.lucene.search.Fields;
-import org.pageseeder.flint.lucene.search.Terms;
 import org.pageseeder.xmlwriter.XMLWriter;
 import org.pageseeder.xmlwriter.esc.XMLEscapeUTF8;
+
+import java.io.IOException;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * A collection of utility methods to manipulate documents.
@@ -65,36 +63,6 @@ public final class Documents {
    *
    * @param xml   The XML writer.
    * @param doc   Lucene document to serialise as XML.
-   * @param terms Unused???
-   * @param extractLength
-   *
-   * @throws IOException Any I/O error thrown by the XML writer.
-   */
-  @Beta
-  public static void toXML(XMLWriter xml, Document doc, List<Terms> terms, int extractLength) throws IOException {
-    xml.openElement("document", true);
-    // display the value of each field
-    for (IndexableField f : doc.getFields()) {
-      String value = Fields.toString(f);
-      // TODO: date formatting
-
-      // Unnecessary to return the full value of long fields
-      if (value != null && value.length() < 100) {
-        xml.openElement("field");
-        xml.attribute("name", f.name());
-        xml.writeText(value);
-        xml.closeElement();
-      }
-    }
-    // close 'document'
-    xml.closeElement();
-  }
-
-  /**
-   * Returns the XML for a document.
-   *
-   * @param xml The XML writer.
-   * @param doc Lucene document to serialise as XML.
    *
    * @throws IOException Any I/O error thrown by the XML writer.
    */
@@ -106,7 +74,7 @@ public final class Documents {
       String value = Fields.toString(f);
       // TODO: date formatting
 
-      // unnecessary to return the full value of long fields
+      // Unnecessary to return the full value of long fields
       if (value != null && value.length() < 100) {
         xml.openElement("field");
         xml.attribute("name", f.name());

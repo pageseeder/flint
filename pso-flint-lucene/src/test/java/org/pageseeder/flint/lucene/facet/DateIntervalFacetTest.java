@@ -22,6 +22,7 @@ import org.pageseeder.flint.lucene.search.Filter;
 import org.pageseeder.flint.lucene.util.Bucket;
 import org.pageseeder.flint.lucene.utils.TestListener;
 import org.pageseeder.flint.lucene.utils.TestUtils;
+import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.FileFilter;
@@ -36,10 +37,10 @@ import java.util.TimeZone;
 
 public class DateIntervalFacetTest {
 
-  private static File template  = new File("src/test/resources/template.xsl");
-  private static File documents = new File("src/test/resources/facets");
-  private static FileFilter filter = new FileFilter() { public boolean accept(File file) { return "dateintervalfacet.xml".equals(file.getName()); } };
-  private static File indexRoot = new File("tmp/index");
+  private static final File template  = new File("src/test/resources/template.xsl");
+  private static final File documents = new File("src/test/resources/facets");
+  private static final FileFilter filter = file -> "dateintervalfacet.xml".equals(file.getName());
+  private static final File indexRoot = new File("tmp/index");
 
   private static LuceneLocalIndex index;
   private static LocalIndexManager manager;
@@ -61,7 +62,7 @@ public class DateIntervalFacetTest {
       index = new LuceneLocalIndex(indexRoot, "dateinterval", new StandardAnalyzer(), documents);
       index.setTemplate("xml", template.toURI());
     } catch (Exception ex) {
-      ex.printStackTrace();
+      LoggerFactory.getLogger(TestUtils.class).error("Something went wrong", ex);
     }
     manager = LocalIndexManagerFactory.createMultiThreads(new TestListener());
     System.out.println("Starting manager!");
@@ -70,22 +71,14 @@ public class DateIntervalFacetTest {
     // wait a bit
     TestUtils.wait(1);
     // prepare base query
-    try {
-      searcher = LuceneIndexQueries.grabSearcher(index);
-    } catch (IndexException ex) {
-      ex.printStackTrace();
-    }
+    searcher = LuceneIndexQueries.grabSearcher(index);
     format.setTimeZone(TimeZone.getTimeZone(GMT));
   }
 
   @AfterClass
   public static void after() {
     // close searcher
-    try {
-      LuceneIndexQueries.release(index, searcher);
-    } catch (IndexException ex) {
-      ex.printStackTrace();
-    }
+    LuceneIndexQueries.release(index, searcher);
     // stop index
     System.out.println("Stopping manager!");
     manager.shutdown();
@@ -95,7 +88,7 @@ public class DateIntervalFacetTest {
   @Test
   public void testFacetsNoQuery() throws IndexException, IOException, ParseException {
     DateIntervalFacet facet = new DateIntervalFacet.Builder().name("facet1").resolution(day_resolution).intervalDate(ONE_MONTHS).start(format.parse("2017-05-05")).build();
-    facet.compute(searcher, null);
+    facet.compute(searcher);
     Bucket<Interval> intervals = facet.getValues();
     Assert.assertEquals(6, facet.getTotalIntervals());
     Assert.assertEquals(6, intervals.items().size());
@@ -107,7 +100,7 @@ public class DateIntervalFacetTest {
     Assert.assertEquals(1, intervals.count(Interval.dateInterval(format.parse("2017-05-05"), format.parse("2017-06-05"), day_resolution)));
     facet = new DateIntervalFacet.Builder().name("facet1").resolution(day_resolution).intervalDate(ONE_MONTHS)
         .start(format.parse("2017-02-05")).end(format.parse("2017-05-03")).build();
-    facet.compute(searcher, null);
+    facet.compute(searcher);
     intervals = facet.getValues();
     System.out.println(intervals);
     Assert.assertEquals(3, facet.getTotalIntervals());
@@ -117,7 +110,7 @@ public class DateIntervalFacetTest {
     Assert.assertEquals(1, intervals.count(Interval.dateInterval(format.parse("2017-04-05"), true, format.parse("2017-05-03"), true, day_resolution)));
     // facets 2
     facet = new DateIntervalFacet.Builder().name("facet2").resolution(day_resolution).intervalDate(TWO_MONTHS).start(format.parse("2016-05-24")).build();
-    facet.compute(searcher, null);
+    facet.compute(searcher);
     intervals = facet.getValues();
     Assert.assertEquals(3, facet.getTotalIntervals());
     Assert.assertEquals(3, intervals.items().size());
@@ -126,7 +119,7 @@ public class DateIntervalFacetTest {
     Assert.assertEquals(2, intervals.count(Interval.dateInterval(format.parse("2016-03-24"), format.parse("2016-05-24"), day_resolution)));
     // facets 3
     facet = new DateIntervalFacet.Builder().name("facet3").resolution(day_resolution).intervalDate(SIX_DAYS).start(format.parse("2015-01-10")).build();
-    facet.compute(searcher, null);
+    facet.compute(searcher);
     intervals = facet.getValues();
     Assert.assertEquals(2, facet.getTotalIntervals());
     Assert.assertEquals(2, intervals.items().size());

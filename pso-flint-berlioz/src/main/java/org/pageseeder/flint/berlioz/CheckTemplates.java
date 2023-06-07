@@ -31,19 +31,19 @@ import java.util.Collection;
 @Beta
 public final class CheckTemplates implements ContentGenerator {
 
-  public void process(ContentRequest req, XMLWriter xml) throws BerliozException, IOException {
+  public void process(ContentRequest req, XMLWriter xml) throws IOException {
     FlintConfig config = FlintConfig.get();
     xml.openElement("index-templates");
     Collection<IndexDefinition> indexDefinitions = config.listDefinitions();
     if (indexDefinitions != null) {
       for (IndexDefinition indexDefinition:indexDefinitions) {
-        CheckTemplates.toXML(indexDefinition.getTemplate(), xml);
+        toXML(indexDefinition.getTemplate(), xml);
       }
     }
     xml.closeElement();
   }
 
-  protected static void toXML(File itemplate, XMLWriter xml) throws IOException {
+  private static void toXML(File itemplate, XMLWriter xml) throws IOException {
     xml.openElement("templates");
     xml.attribute("filename", itemplate != null ? itemplate.getName() : "null");
     if (itemplate == null || !itemplate.exists()) {
@@ -68,14 +68,12 @@ public final class CheckTemplates implements ContentGenerator {
     xml.closeElement();
   }
 
-  private static Templates compile(File itemplate) throws IOException, TransformerException {
-    Templates templates;
+  private static void compile(File itemplate) throws IOException, TransformerException {
     try (FileInputStream in = new FileInputStream(itemplate)) {
       StreamSource source = new StreamSource(in);
       source.setSystemId(itemplate.toURI().toString());
       TransformerFactory factory = TransformerFactory.newInstance();
-      templates = factory.newTemplates(source);
+      factory.newTemplates(source);
     }
-    return templates;
   }
 }

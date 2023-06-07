@@ -15,7 +15,7 @@ public class TikaTranslatorFactory implements ContentTranslatorFactory {
   /**
    * XML MIME types supported.
    */
-  protected static final List<String> MIME_TYPES = new ArrayList<String>();
+  protected static final List<String> MIME_TYPES = new ArrayList<>();
 
   static {
     MIME_TYPES.add("pdf");

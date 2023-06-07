@@ -24,7 +24,7 @@ import org.pageseeder.xmlwriter.XMLWriter;
 
 /**
  * Create a range parameter using numeric values.
- *
+ * <p>
  * This is API is still experimental and subject to change in Lucene, any change in Lucene may also
  * be reflected in this API.
  *
@@ -72,8 +72,8 @@ public final class TermRange implements SearchParameter {
    * Creates a new numeric range parameter.
    *
    * @param field        the numeric field to search
-   * @param min          the minimum value in the range (may be <code>null</code>)
-   * @param max          the maximum value in the range (may be <code>null</code>)
+   * @param min          the minimum value in the range (can be <code>null</code>)
+   * @param max          the maximum value in the range (can be <code>null</code>)
    * @param minInclusive <code>true</code> to include values matching the lower limit in the range;
    *                     <code>false</code> to exclude it.
    * @param maxInclusive <code>true</code> to include values matching the upper limit in the range;
@@ -146,7 +146,7 @@ public final class TermRange implements SearchParameter {
 
   /**
    * Generates the <code>Query</code> object corresponding to a numeric range search query.
-   *
+   * <p>
    * Returns a <code>NumericRangeQuery</code> based on the values in this object.
    *
    * @return a <code>NumericRangeQuery</code> or <code>null</code> if empty.
@@ -188,8 +188,8 @@ public final class TermRange implements SearchParameter {
    * Factory that creates a <code>TermRange</code>, that queries a string field.
    *
    * @param field        the numeric field to search
-   * @param min          the minimum value in the range (may be <code>null</code>)
-   * @param max          the maximum value in the range (may be <code>null</code>)
+   * @param min          the minimum value in the range (can be <code>null</code>)
+   * @param max          the maximum value in the range (can be <code>null</code>)
    * @param minInclusive <code>true</code> to include values matching the lower limit in the range;
    *                     <code>false</code> to exclude it.
    * @param maxInclusive <code>true</code> to include values matching the upper limit in the range;

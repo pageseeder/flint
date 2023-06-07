@@ -18,6 +18,7 @@ import org.pageseeder.flint.lucene.LuceneLocalIndex;
 import org.pageseeder.flint.lucene.query.*;
 import org.pageseeder.flint.lucene.utils.TestListener;
 import org.pageseeder.flint.lucene.utils.TestUtils;
+import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.IOException;
@@ -42,7 +43,7 @@ public class QueryTest {
       index = new LuceneLocalIndex(indexRoot, "query", new StandardAnalyzer(), documents);
       index.setTemplate("xml", template.toURI());
     } catch (Exception ex) {
-      ex.printStackTrace();
+      LoggerFactory.getLogger(TestUtils.class).error("Something went wrong", ex);
     }
     manager = LocalIndexManagerFactory.createMultiThreads(new TestListener());
     System.out.println("Starting manager!");
@@ -160,9 +161,8 @@ public class QueryTest {
         String id = Fields.toString(doc.getField("id"));
         Assert.assertTrue("doc1".equals(id) || "doc2".equals(id));
       }
-    } catch (IOException e) {
-      // TODO Auto-generated catch block
-      e.printStackTrace();
+    } catch (IOException ex) {
+      LoggerFactory.getLogger(TestUtils.class).error("Something went wrong", ex);
     } finally {
       LuceneIndexQueries.releaseQuietly(index, reader);
     }

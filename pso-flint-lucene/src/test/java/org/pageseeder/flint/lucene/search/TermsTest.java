@@ -18,6 +18,7 @@ import org.pageseeder.flint.lucene.LuceneLocalIndex;
 import org.pageseeder.flint.lucene.util.Bucket;
 import org.pageseeder.flint.lucene.utils.TestListener;
 import org.pageseeder.flint.lucene.utils.TestUtils;
+import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.IOException;
@@ -43,7 +44,7 @@ public class TermsTest {
       index = new LuceneLocalIndex(indexRoot, "termstest", new StandardAnalyzer(), documents);
       index.setTemplate("xml", template.toURI());
     } catch (Exception ex) {
-      ex.printStackTrace();
+      LoggerFactory.getLogger(TestUtils.class).error("Something went wrong", ex);
     }
     manager = LocalIndexManagerFactory.createMultiThreads(new TestListener());
     System.out.println("Starting manager!");
@@ -63,35 +64,29 @@ public class TermsTest {
   }
 
   @Test
-  public void testFields() throws IndexException {
-    IndexReader reader;
-    try {
-      reader = LuceneIndexQueries.grabReader(index);
-      List<String> fields = Terms.fields(reader);
-      Assert.assertEquals(9, fields.size());
-      Assert.assertTrue(fields.contains("_src"));
-      Assert.assertTrue(fields.contains("_path"));
-      Assert.assertTrue(fields.contains("_lastmodified"));
-      Assert.assertTrue(fields.contains("_creator"));
-      Assert.assertTrue(fields.contains("field1"));
-      Assert.assertTrue(fields.contains("field2"));
-      Assert.assertTrue(fields.contains("fuzzy1"));
-      Assert.assertTrue(fields.contains("prefix1"));
-      Assert.assertTrue(fields.contains("prefix2"));
-      Assert.assertEquals(2, reader.getDocCount("_src"));
-      Assert.assertEquals(2, reader.getDocCount("_path"));
-      Assert.assertEquals(2, reader.getDocCount("_lastmodified"));
-      Assert.assertEquals(2, reader.getDocCount("_creator"));
-      Assert.assertEquals(2, reader.getDocCount("field1"));
-      Assert.assertEquals(2, reader.getDocCount("field2"));
-      Assert.assertEquals(2, reader.getDocCount("fuzzy1"));
-      Assert.assertEquals(2, reader.getDocCount("prefix1"));
-      Assert.assertEquals(2, reader.getDocCount("prefix2"));
-      LuceneIndexQueries.release(index, reader);
-    } catch (IndexException | IOException ex) {
-      ex.printStackTrace();
-      Assert.fail();
-    }
+  public void testFields() throws IOException {
+    IndexReader reader = LuceneIndexQueries.grabReader(index);
+    List<String> fields = Terms.fields(reader);
+    Assert.assertEquals(9, fields.size());
+    Assert.assertTrue(fields.contains("_src"));
+    Assert.assertTrue(fields.contains("_path"));
+    Assert.assertTrue(fields.contains("_lastmodified"));
+    Assert.assertTrue(fields.contains("_creator"));
+    Assert.assertTrue(fields.contains("field1"));
+    Assert.assertTrue(fields.contains("field2"));
+    Assert.assertTrue(fields.contains("fuzzy1"));
+    Assert.assertTrue(fields.contains("prefix1"));
+    Assert.assertTrue(fields.contains("prefix2"));
+    Assert.assertEquals(2, reader.getDocCount("_src"));
+    Assert.assertEquals(2, reader.getDocCount("_path"));
+    Assert.assertEquals(2, reader.getDocCount("_lastmodified"));
+    Assert.assertEquals(2, reader.getDocCount("_creator"));
+    Assert.assertEquals(2, reader.getDocCount("field1"));
+    Assert.assertEquals(2, reader.getDocCount("field2"));
+    Assert.assertEquals(2, reader.getDocCount("fuzzy1"));
+    Assert.assertEquals(2, reader.getDocCount("prefix1"));
+    Assert.assertEquals(2, reader.getDocCount("prefix2"));
+    LuceneIndexQueries.release(index, reader);
   }
 
   @Test
@@ -155,8 +150,8 @@ public class TermsTest {
       Assert.assertEquals(2, reader.getDocCount("prefix1"));
       Assert.assertEquals(2, reader.getDocCount("prefix2"));
       LuceneIndexQueries.release(index, reader);
-    } catch (IndexException | IOException ex) {
-      ex.printStackTrace();
+    } catch (IOException ex) {
+      LoggerFactory.getLogger(TestUtils.class).error("Something went wrong", ex);
       Assert.fail();
     } finally {
       // cleanup
@@ -192,8 +187,8 @@ public class TermsTest {
       Assert.assertTrue(fields.contains("field3"));
       Assert.assertTrue(fields.contains("prefix1"));
       LuceneIndexQueries.release(index, searcher);
-    } catch (IndexException | IOException ex) {
-      ex.printStackTrace();
+    } catch (IOException ex) {
+      LoggerFactory.getLogger(TestUtils.class).error("Something went wrong", ex);
       Assert.fail();
     } finally {
       // cleanup
@@ -209,8 +204,8 @@ public class TermsTest {
       List<String> values = Terms.values(reader, "field1");
       Assert.assertArrayEquals(values.toArray(), new String[] {"value1", "value2", "value3", "value4", "value5", "value6"});
       LuceneIndexQueries.release(index, reader);
-    } catch (IndexException | IOException ex) {
-      ex.printStackTrace();
+    } catch (IOException ex) {
+      LoggerFactory.getLogger(TestUtils.class).error("Something went wrong", ex);
       Assert.fail();
     }
   }
@@ -228,8 +223,8 @@ public class TermsTest {
       Assert.assertEquals(2, reader.docFreq(new Term("field2", "value4")));
       Assert.assertEquals(1, reader.docFreq(new Term("field2", "value5")));
       LuceneIndexQueries.release(index, reader);
-    } catch (IndexException | IOException ex) {
-      ex.printStackTrace();
+    } catch (IOException ex) {
+      LoggerFactory.getLogger(TestUtils.class).error("Something went wrong", ex);
       Assert.fail();
     }
   }
@@ -275,8 +270,8 @@ public class TermsTest {
       } finally {
         LuceneIndexQueries.release(index, reader);
       }
-    } catch (IndexException | IOException ex) {
-      ex.printStackTrace();
+    } catch (IOException ex) {
+      LoggerFactory.getLogger(TestUtils.class).error("Something went wrong", ex);
       Assert.fail();
     } finally {
       // cleanup
@@ -307,8 +302,8 @@ public class TermsTest {
       Assert.assertFalse(values.contains("preten"));
       Assert.assertTrue(values.contains("pretense"));
       Assert.assertTrue(values.contains("pretentious"));
-    } catch (IndexException | IOException ex) {
-      ex.printStackTrace();
+    } catch (IOException ex) {
+      LoggerFactory.getLogger(TestUtils.class).error("Something went wrong", ex);
       Assert.fail();
     } finally {
       LuceneIndexQueries.releaseQuietly(index, reader);
@@ -341,8 +336,8 @@ public class TermsTest {
       Assert.assertTrue(values.contains("clone"));
       Assert.assertTrue(values.contains("glove"));
       LuceneIndexQueries.release(index, reader);
-    } catch (IndexException | IOException ex) {
-      ex.printStackTrace();
+    } catch (IOException ex) {
+      LoggerFactory.getLogger(TestUtils.class).error("Something went wrong", ex);
       Assert.fail();
     }
   }
@@ -358,8 +353,8 @@ public class TermsTest {
       Assert.assertEquals(1, terms.count(new Term("fuzzy1", "clone")));
       Assert.assertEquals(2, terms.count(new Term("fuzzy1", "glove")));
       LuceneIndexQueries.release(index, reader);
-    } catch (IndexException | IOException ex) {
-      ex.printStackTrace();
+    } catch (IOException ex) {
+      LoggerFactory.getLogger(TestUtils.class).error("Something went wrong", ex);
       Assert.fail();
     }
   }

@@ -96,10 +96,11 @@ public final class IndexJobQueue {
         jobs.add(job);
       }
     }
-    if (this._singleThreadQueue != null)
-    for (IndexJob job : this._singleThreadQueue) {
-      if (job.isForRequester(requester)) {
-        jobs.add(job);
+    if (this._singleThreadQueue != null) {
+      for (IndexJob job : this._singleThreadQueue) {
+        if (job.isForRequester(requester)) {
+          jobs.add(job);
+        }
       }
     }
     return jobs;
@@ -108,7 +109,7 @@ public final class IndexJobQueue {
   /**
    * Returns the number of jobs for the specified requester.
    *
-   * <p>Not that some job have have been processed by the time this method returns.
+   * <p>Note that some jobs may have been processed by the time this method returns.
    *
    * @param requester the requester
    *
@@ -122,10 +123,11 @@ public final class IndexJobQueue {
         count++;
       }
     }
-    if (this._singleThreadQueue != null)
-    for (IndexJob job : this._singleThreadQueue) {
-      if (job.isForRequester(requester)) {
-        count++;
+    if (this._singleThreadQueue != null) {
+      for (IndexJob job : this._singleThreadQueue) {
+        if (job.isForRequester(requester)) {
+          count++;
+        }
       }
     }
     return count;
@@ -175,17 +177,18 @@ public final class IndexJobQueue {
         jobs.add(job);
       }
     }
-    if (this._singleThreadQueue != null)
-    for (IndexJob job : this._singleThreadQueue) {
-      if (job.isForIndex(index)) {
-        jobs.add(job);
+    if (this._singleThreadQueue != null) {
+      for (IndexJob job : this._singleThreadQueue) {
+        if (job.isForIndex(index)) {
+          jobs.add(job);
+        }
       }
     }
     return jobs;
   }
 
   /**
-   * <p>Not that some job have have been processed by the time this method returns.
+   * <p>Note that some jobs may have been processed by the time this method returns.
    *
    * @param index the index
    * @return <code>true</code> if there is at least one job for the index provided.
@@ -195,9 +198,10 @@ public final class IndexJobQueue {
       for (IndexJob job : this._queue) {
         if (job.isForIndex(index)) return true;
       }
-      if (this._singleThreadQueue != null)
-      for (IndexJob job : this._singleThreadQueue) {
-        if (job.isForIndex(index)) return true;
+      if (this._singleThreadQueue != null) {
+        for (IndexJob job : this._singleThreadQueue) {
+          if (job.isForIndex(index)) return true;
+        }
       }
     }
     return false;
@@ -206,7 +210,7 @@ public final class IndexJobQueue {
   /**
    * Returns the number of jobs for the specified index provided.
    *
-   * <p>Not that some job have have been processed by the time this method returns.
+   * <p>Note that some jobs may have been processed by the time this method returns.
    *
    * @param index the index
    * @return the number of jobs for the specified provided.
@@ -219,10 +223,11 @@ public final class IndexJobQueue {
         count++;
       }
     }
-    if (this._singleThreadQueue != null)
-    for (IndexJob job : this._singleThreadQueue) {
-      if (job.isForIndex(index)) {
-        count++;
+    if (this._singleThreadQueue != null) {
+      for (IndexJob job : this._singleThreadQueue) {
+        if (job.isForIndex(index)) {
+          count++;
+        }
       }
     }
     return count;
@@ -286,7 +291,7 @@ public final class IndexJobQueue {
   public boolean isSingleThreadEmpty() {
     return this._singleThreadQueue == null || this._singleThreadQueue.isEmpty();
   }
-  
+
   /**
    * clear all queues
    */
@@ -331,7 +336,7 @@ public final class IndexJobQueue {
         }
       }
     } else {
-      // if batch, decrease total except if last job
+      // if a batch, decrease total except if last job
       IndexBatch batch = job.getBatch();
       if (batch != null && batch.getCurrentCount() != batch.getTotalDocuments() - 1)
         batch.remove(1);

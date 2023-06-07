@@ -49,7 +49,7 @@ a[name^=navbar] + table td {padding: 5px; border: none;}
 .NavBarCell1 > a[href]  {padding: 5px 0;}
 .NavBarCell1Rev         {background: #016EBC url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABMAAAAKCAYAAABWiWWfAAAAZ0lEQVQoz2P4//8/A7UwA10Ne95oYPD7zf37IJoiw0AG/P36/j2Q/R9EEzKQKINggJCBWAWflisooBuEbCBInijDHucJCPx8dP78fzwAJA9Sh9cwYgzCZyBZBuEyEG4YqQYhGwgzAwCN617mJGBjBQAAAABJRU5ErkJggg==) no-repeat bottom center}
 .NavBarCell1 a:hover    {background: #016EBC url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABMAAAAKCAYAAABWiWWfAAAAZ0lEQVQoz2P4//8/A7UwA10Ne95oYPD7zf37IJoiw0AG/P36/j2Q/R9EEzKQKINggJCBWAWflisooBuEbCBInijDHucJCPx8dP78fzwAJA9Sh9cwYgzCZyBZBuEyEG4YqQYhGwgzAwCN617mJGBjBQAAAABJRU5ErkJggg==) no-repeat bottom center; text-decoration: none;}
-.NavBarFont1      {color:#def; color: #8bf}
+.NavBarFont1      {color: #8bf}
 .NavBarFont1 b    {font-weight: normal; color: #fff}
 .NavBarFont1Rev   {color:#fff;}
 .NavBarFont1Rev b {font-weight: normal; color:#fff;}

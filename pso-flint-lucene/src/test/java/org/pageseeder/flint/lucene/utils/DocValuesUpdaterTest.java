@@ -8,48 +8,43 @@ import org.junit.Test;
 import org.pageseeder.flint.IndexException;
 import org.pageseeder.flint.IndexManager;
 import org.pageseeder.flint.Requester;
-import org.pageseeder.flint.content.Content;
-import org.pageseeder.flint.content.ContentFetcher;
 import org.pageseeder.flint.content.SourceForwarder;
-import org.pageseeder.flint.indexing.IndexJob;
 import org.pageseeder.flint.indexing.IndexJob.Priority;
 import org.pageseeder.flint.lucene.LuceneIndex;
 import org.pageseeder.flint.lucene.query.NumberParameterTest;
 import org.pageseeder.flint.lucene.query.TermParameterTest;
+import org.slf4j.LoggerFactory;
 
 import java.io.File;
 
 public class DocValuesUpdaterTest {
 
-  private static File template  = new File("src/test/resources/template.xsl");
+  private static final File template  = new File("src/test/resources/template.xsl");
 
   private static LuceneIndex index;
   private static IndexManager manager;
-  
+
   @BeforeClass
   public static void init() {
     try {
       index = new LuceneIndex(TermParameterTest.class.getName(), new ByteBuffersDirectory(), new StandardAnalyzer());
       index.setTemplates(TestUtils.TYPE, TestUtils.MEDIA_TYPE, template.toURI());
     } catch (Exception ex) {
-      ex.printStackTrace();
+      LoggerFactory.getLogger(TestUtils.class).error("Something went wrong", ex);
     }
-    manager = new IndexManager(new ContentFetcher() {
-      @Override
-      public Content getContent(IndexJob job) {
-        // delete?
-        if (job.getContentID().startsWith("delete-")) {
-          return new TestUtils.TestContent(job.getContentID().substring(7), null);
-        }
-        // add all documents in one go
-        String xml = "<documents version='5.0'>\n"+
-                       "<document>\n"+
-                         "<field name='"+TestUtils.ID_FIELD+"' tokenize='false'>doc1</field>\n"+
-                         "<field name='int-field' numeric-type='int' doc-values='sorted'>11</field>\n"+
-                       "</document>\n"+
-                     "</documents>";
-        return new TestUtils.TestContent(job.getContentID(), xml);
+    manager = new IndexManager(job -> {
+      // delete?
+      if (job.getContentID().startsWith("delete-")) {
+        return new TestUtils.TestContent(job.getContentID().substring(7), null);
       }
+      // add all documents in one go
+      String xml = "<documents version='5.0'>\n"+
+                     "<document>\n"+
+                       "<field name='"+TestUtils.ID_FIELD+"' tokenize='false'>doc1</field>\n"+
+                       "<field name='int-field' numeric-type='int' doc-values='sorted'>11</field>\n"+
+                     "</document>\n"+
+                   "</documents>";
+      return new TestUtils.TestContent(job.getContentID(), xml);
     }, new TestListener());
     manager.setDefaultTranslator(new SourceForwarder("xml", "UTF-8"));
     System.out.println("Starting manager!");

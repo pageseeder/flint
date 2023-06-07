@@ -42,7 +42,7 @@ public final class IndexParserFactory extends DefaultHandler {
 
   /**
    * Generate an index document parser instance that can only be used for XSLT transformation.
-   * 
+   *
    * @param catalog the catalog to add the fields to (can be <code>null</code>).
    *
    * @return an index parser instance.
@@ -74,10 +74,7 @@ public final class IndexParserFactory extends DefaultHandler {
       // use this handler
       return new IndexParser(reader);
       // return the document
-    } catch (ParserConfigurationException ex) {
-      LOGGER.error("Error while generating index document parser instance.", ex);
-      throw new IndexException("An error occurred when trying to generate a parser instance.", ex);
-    } catch (SAXException ex) {
+    } catch (ParserConfigurationException | SAXException ex) {
       LOGGER.error("Error while generating index document parser instance.", ex);
       throw new IndexException("An error occurred when trying to generate a parser instance.", ex);
     }

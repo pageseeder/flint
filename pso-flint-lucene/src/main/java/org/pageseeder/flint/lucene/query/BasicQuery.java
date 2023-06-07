@@ -27,6 +27,7 @@ import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.SortField;
+import org.pageseeder.flint.lucene.facet.FlexibleRangeFacet;
 import org.pageseeder.flint.lucene.util.Beta;
 import org.pageseeder.xmlwriter.XMLWriter;
 
@@ -65,7 +66,7 @@ public class BasicQuery<T extends SearchParameter> implements SearchQuery {
    * Constructs a new query.
    *
    * <p>For safety and to ensure that the parameters remain unmodifiable, the specified list should
-   * be unmodifiable. Use the factory method to ensure create create an unmodifiable list.
+   * be unmodifiable. Use the factory method to ensure an unmodifiable list.
    *
    * @param base       The query to use as a base.
    * @param parameters A list of query parameters which can be used on top of the base query.
@@ -77,7 +78,7 @@ public class BasicQuery<T extends SearchParameter> implements SearchQuery {
     if (parameters == null) throw new NullPointerException("parameters");
     this._base = base;
     this._parameters = new HashMap<>();
-    if (parameters != null) for (SearchParameter param : parameters)
+    for (SearchParameter param : parameters)
       this._parameters.put(param, Occur.MUST);
   }
 
@@ -85,7 +86,7 @@ public class BasicQuery<T extends SearchParameter> implements SearchQuery {
    * Constructs a new query.
    *
    * <p>For safety and to ensure that the parameters remain unmodifiable, the specified list should
-   * be unmodifiable. Use the factory method to ensure create create an unmodifiable list.
+   * be unmodifiable. Use the factory method to ensure an unmodifiable list.
    *
    * @param base       The query to use as a base.
    * @param parameters A list of query parameters which can be used on top of the base query.
@@ -100,9 +101,9 @@ public class BasicQuery<T extends SearchParameter> implements SearchQuery {
   }
 
   /**
-   * Returns the query used as as base.
+   * Returns the query used as base.
    *
-   * @return the query used as as base.
+   * @return the query used as base.
    */
   public final T base() {
     return this._base;
@@ -120,7 +121,7 @@ public class BasicQuery<T extends SearchParameter> implements SearchQuery {
   /**
    * Returns the list of additional search parameters associated with this query.
    *
-   * @return the list of additional search parameters associated with this query.
+   * @return the map of additional search parameters associated with this query.
    */
   public final Map<SearchParameter, Occur> parametersMap() {
     return this._parameters;
@@ -232,12 +233,11 @@ public class BasicQuery<T extends SearchParameter> implements SearchQuery {
     if (this.parameters().size() > 0) {
       s.append(" with (");
       boolean first = true;
-      for (SearchParameter p : this._parameters.keySet()) {
+      for (Map.Entry<SearchParameter, Occur> p : this._parameters.entrySet()) {
         if (!first) {
-          Occur oc = this._parameters.get(p);
-          s.append(oc == Occur.MUST ? " and " : oc == Occur.MUST_NOT ? " and not " : " or ");
+          s.append(p.getValue() == Occur.MUST ? " and " : p.getValue() == Occur.MUST_NOT ? " and not " : " or ");
         }
-        s.append(p.toString());
+        s.append(p.getKey().toString());
         first = false;
       }
       s.append(')');
@@ -262,8 +262,8 @@ public class BasicQuery<T extends SearchParameter> implements SearchQuery {
     // Make an AND of all parameters
     BooleanQuery.Builder query = new BooleanQuery.Builder();
     query.add(base.toQuery(), Occur.MUST);
-    for (SearchParameter p : parameters.keySet()) {
-      query.add(p.toQuery(), parameters.get(p));
+    for (Map.Entry<SearchParameter, Occur> parameter : parameters.entrySet()) {
+      query.add(parameter.getKey().toQuery(), parameter.getValue());
     }
     return query.build();
   }
@@ -296,8 +296,7 @@ public class BasicQuery<T extends SearchParameter> implements SearchQuery {
    * @return the corresponding Lucene Query
    */
   public static <X extends SearchParameter> BasicQuery<X> newBasicQuery(X base, List<SearchParameter> parameters) {
-    List<SearchParameter> unmodifiable = Collections.unmodifiableList(new ArrayList<SearchParameter>(parameters));
-    return new BasicQuery<X>(base, unmodifiable);
+    return new BasicQuery<>(base, List.copyOf(parameters));
   }
 
 }

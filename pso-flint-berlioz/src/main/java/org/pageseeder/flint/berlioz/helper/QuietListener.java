@@ -1,6 +1,6 @@
 /*
  * Decompiled with CFR 0_110.
- * 
+ *
  * Could not load the following classes:
  *  org.pageseeder.flint.IndexJob
  *  org.pageseeder.flint.api.IndexListener
@@ -23,7 +23,7 @@ public final class QuietListener implements IndexListener {
   private final Logger _logger;
   private final int _maxBatches;
 
-  private final LinkedList<IndexBatch> _batches = new LinkedList<>();
+  private final ArrayList<IndexBatch> _batches = new ArrayList<>();
 
   public QuietListener(Logger logger) {
     this(logger, MAX_NB_BATCHES);
@@ -52,10 +52,10 @@ public final class QuietListener implements IndexListener {
 
   public void startBatch(IndexBatch batch) {
     this._logger.info("Started indexing documents.");
-    this._batches.addFirst(batch);
+    this._batches.add(0, batch);
     // keep max size
     if (this._batches.size() > this._maxBatches)
-      this._batches.removeLast();
+      this._batches.remove(this._batches.size()-1);
   }
 
   public void endBatch(IndexBatch batch) {

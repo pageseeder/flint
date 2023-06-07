@@ -1,6 +1,6 @@
 /*
  * Decompiled with CFR 0_110.
- * 
+ *
  * Could not load the following classes:
  *  org.apache.lucene.index.Fields
  *  org.apache.lucene.index.IndexReader
@@ -46,7 +46,7 @@ public final class GetIndexTerms extends LuceneIndexGenerator implements Cacheab
   }
 
   @Override
-  public void processSingle(IndexMaster master, ContentRequest req, XMLWriter xml) throws BerliozException, IOException {
+  public void processSingle(IndexMaster master, ContentRequest req, XMLWriter xml) throws IOException {
     String field = req.getParameter(FIELD_PARAMETER);
     if (field == null) {
       xml.emptyElement("terms");
@@ -55,7 +55,7 @@ public final class GetIndexTerms extends LuceneIndexGenerator implements Cacheab
     xml.openElement("terms");
     xml.attribute("field", field);
     xml.attribute("index", master.getName());
-    IndexReader reader = null;
+    IndexReader reader;
     try {
       reader = master.grabReader();
     } catch (IndexException ex) {
@@ -78,7 +78,7 @@ public final class GetIndexTerms extends LuceneIndexGenerator implements Cacheab
   }
 
   @Override
-  public void processMultiple(Collection<IndexMaster> masters, ContentRequest req, XMLWriter xml) throws BerliozException, IOException {
+  public void processMultiple(Collection<IndexMaster> masters, ContentRequest req, XMLWriter xml) throws IOException {
     String field = req.getParameter(FIELD_PARAMETER);
     if (field == null) {
       xml.emptyElement("terms");
@@ -87,7 +87,7 @@ public final class GetIndexTerms extends LuceneIndexGenerator implements Cacheab
     xml.openElement("terms");
     xml.attribute("field", field);
     MultipleIndexReader multiReader = buildMultiReader(masters);
-    IndexReader reader = null;
+    IndexReader reader;
     try {
       reader = multiReader.grab();
     } catch (IndexException ex) {
