@@ -10,7 +10,6 @@ package org.pageseeder.flint.berlioz.helper;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.LinkedList;
 
 import org.pageseeder.flint.indexing.IndexBatch;
 import org.pageseeder.flint.indexing.IndexJob;

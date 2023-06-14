@@ -44,22 +44,22 @@ public final class TermRange implements SearchParameter {
   /**
    * The minimum value, if <code>null</code>, then no lower limit.
    */
-  private String _min;
+  private final String _min;
 
   /**
    * The maximum value, if <code>null</code>, then no upper limit.
    */
-  private String _max;
+  private final String _max;
 
   /**
    * Whether the minimum value should be included; ignored if the minimum value is <code>null</code>
    */
-  private boolean _minInclusive;
+  private final boolean _minInclusive;
 
   /**
    * Whether the maximum value should be included; ignored if the maximum value is <code>null</code>
    */
-  private boolean _maxInclusive;
+  private final boolean _maxInclusive;
 
   /**
    * The actual Lucene query (lazy initialised)

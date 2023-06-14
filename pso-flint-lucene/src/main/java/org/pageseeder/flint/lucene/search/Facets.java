@@ -325,10 +325,9 @@ public final class Facets {
    * @param maxValues  the max number of values to return
    * @param indexes    the indexes to search
    *
-   * @throws IndexException if there was an error reading the indexes or creating the condition query
    * @throws IllegalStateException If one of the indexes is not initialised
    */
-  public static List<FlexibleFieldFacet> getFlexibleFacets(List<String> fields, int maxValues, List<Index> indexes) throws IOException, IndexException {
+  public static List<FlexibleFieldFacet> getFlexibleFacets(List<String> fields, int maxValues, List<Index> indexes) throws IOException {
     // retrieve all searchers and readers
     Map<Index, IndexReader> readers = new HashMap<>();
     // grab a reader for each index
@@ -372,10 +371,9 @@ public final class Facets {
    * @param upTo   the max number of values to return
    * @param query  a predicate to apply on the facet (can be null or empty)
    *
-   * @throws IndexException if there was an error reading the indexes or creating the condition query
    * @throws IllegalStateException If one of the indexes is not initialised
    */
-  public static List<FlexibleFieldFacet> getFlexibleFacets(List<String> fields, int upTo, Query query, List<Index> indexes) throws IOException, IndexException {
+  public static List<FlexibleFieldFacet> getFlexibleFacets(List<String> fields, int upTo, Query query, List<Index> indexes) throws IOException {
     // parameter checks
     if (fields == null || fields.isEmpty() || indexes.isEmpty())
       return Collections.emptyList();
@@ -424,10 +422,9 @@ public final class Facets {
    * @param maxValues  the max number of values to return
    * @param index      the index to search
    *
-   * @throws IndexException if there was an error reading the indexes or creating the condition query
    * @throws IllegalStateException If one of the indexes is not initialised
    */
-  public static List<FlexibleFieldFacet> getFlexibleFacets(List<String> fields, int maxValues, Index index) throws IOException, IndexException {
+  public static List<FlexibleFieldFacet> getFlexibleFacets(List<String> fields, int maxValues, Index index) throws IOException {
     return getFlexibleFacets(fields, maxValues, null, index);
   }
 
@@ -440,10 +437,9 @@ public final class Facets {
    * @param query      the base query, can be null
    * @param index      the index to search
    *
-   * @throws IndexException if there was an error reading the indexes or creating the condition query
    * @throws IllegalStateException If one of the indexes is not initialised
    */
-  public static List<FlexibleFieldFacet> getFlexibleFacets(List<String> fields, int maxValues, Query query, Index index) throws IOException, IndexException {
+  public static List<FlexibleFieldFacet> getFlexibleFacets(List<String> fields, int maxValues, Query query, Index index) throws IOException {
     List<FlexibleFieldFacet> facets = new ArrayList<>();
     Catalog catalog = Catalogs.getCatalog(index.getCatalog());
     // use reader

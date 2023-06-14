@@ -71,6 +71,8 @@ public final class IndexingThread implements Runnable {
    */
   private final boolean _singleThread;
 
+  public static boolean CLOSING_DOWN = false;
+
   /**
    * Simple Constructor.
    *
@@ -94,7 +96,8 @@ public final class IndexingThread implements Runnable {
       try {
         job = this._singleThread ? this._indexQueue.nextSingleThreadJob() : this._indexQueue.nextMultiThreadJob();
       } catch (InterruptedException ex) {
-        this._listener.error(null, "Interrupted indexing: " + ex.getMessage(), ex);
+        if (!CLOSING_DOWN)
+          this._listener.error(null, "Interrupted indexing: " + ex.getMessage(), ex);
         // the thread was shutdown, let's die then
         Thread.currentThread().interrupt();
         return;

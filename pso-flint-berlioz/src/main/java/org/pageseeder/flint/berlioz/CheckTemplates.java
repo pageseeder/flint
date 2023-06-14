@@ -11,7 +11,6 @@
  */
 package org.pageseeder.flint.berlioz;
 
-import org.pageseeder.berlioz.BerliozException;
 import org.pageseeder.berlioz.Beta;
 import org.pageseeder.berlioz.content.ContentGenerator;
 import org.pageseeder.berlioz.content.ContentRequest;
@@ -19,7 +18,6 @@ import org.pageseeder.flint.berlioz.model.FlintConfig;
 import org.pageseeder.flint.berlioz.model.IndexDefinition;
 import org.pageseeder.xmlwriter.XMLWriter;
 
-import javax.xml.transform.Templates;
 import javax.xml.transform.TransformerException;
 import javax.xml.transform.TransformerFactory;
 import javax.xml.transform.stream.StreamSource;

@@ -3,7 +3,6 @@ package org.pageseeder.flint.lucene;
 import org.apache.lucene.document.*;
 import org.apache.lucene.index.IndexOptions;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.NumericUtils;
 import org.pageseeder.flint.catalog.Catalogs;
 import org.pageseeder.flint.indexing.FlintDocument;
 import org.pageseeder.flint.indexing.FlintField;
@@ -74,7 +73,7 @@ public class FlintDocumentConverter {
     } else {
       // normal field then
       fields = toNormalFields(ffield);
-      if (fields != null && !fields.isEmpty()) {
+      if (!fields.isEmpty()) {
         Field main = fields.get(0);
         if (main.fieldType() != null &&
             main.fieldType().indexOptions() != IndexOptions.NONE &&
@@ -90,53 +89,15 @@ public class FlintDocumentConverter {
   // ----------------------------------------------------------------------------------------------
 
   private List<Field> toNormalFields(FlintField ffield) {
-   // construct the field type
     // get value
-    String name = ffield.name();
     String value = ffield.value().toString();
     // compute value, using numeric type
     List<Field> fields = new ArrayList<>();
     if (ffield.numeric() != null) {
-      // get date number if this is a numeric date
-      if (ffield.dateformat() != null) {
-        Number date = Dates.toNumber(toDate(name, value, ffield.dateformat()), LuceneUtils.toResolution(ffield.resolution()));
-        // only int or long possible for dates
-        if (date instanceof Long) {
-          fields.add(new LongPoint(ffield.name(), date.longValue()));
-        } else if (date instanceof Integer) {
-          fields.add(new IntPoint(ffield.name(), date.intValue()));
-        } else {
-          this.warnings.put(ffield.name(),"ignoring field as it has a date format but no date");
-          return null;
-        }
-        fields.add(new StoredField(name, value));
-      } else {
-        try {
-          Field field = null;
-          switch (ffield.numeric()) {
-            case FLOAT:
-              field = new FloatPoint(ffield.name(), Float.parseFloat(value));
-              break;
-            case DOUBLE:
-              field = new DoublePoint(ffield.name(), Double.parseDouble(value));
-              break;
-            case INT:
-              field = new IntPoint(ffield.name(), Integer.parseInt(value));
-              break;
-            case LONG:
-              field = new LongPoint(ffield.name(), Long.parseLong(value));
-              break;
-          }
-          if (field != null) {
-            fields.add(field);
-            fields.add(new StoredField(name, value));
-          }
-        } catch (NumberFormatException ex) {
-          this.warnings.put(ffield.name(),"ignoring number field with invalid value '"+value+"'");
-        }
-      }
+      Field field = toDateOrNumericField(ffield);
+      if (field != null) fields.add(field);
     } else if (ffield.dateformat() != null) {
-      Date date = value.isEmpty() ? null : toDate(name, value, ffield.dateformat());
+      Date date = value.isEmpty() ? null : toDate(ffield.name(), value, ffield.dateformat());
       fields.add(new Field(ffield.name(), date != null ? Dates.toString(date, LuceneUtils.toResolution(ffield.resolution())) : "", toType(ffield)));
     } else {
       fields.add(new Field(ffield.name(), value, toType(ffield)));
@@ -145,77 +106,63 @@ public class FlintDocumentConverter {
   }
 
   private List<Field> toDocValuesFields(FlintField ffield) {
-    String name = ffield.name();
-    String value = ffield.value().toString();
     // check doc values
     List<Field> fields = new ArrayList<>();
     switch (ffield.docValues()) {
       case FORCED_NONE:
         return null;
       case SORTED_NUMERIC:
-        if (ffield.numeric() != null && ffield.dateformat() != null) {
-          Number date = Dates.toNumber(toDate(name, value, ffield.dateformat()), LuceneUtils.toResolution(ffield.resolution()));
-          // only int or long possible for dates
-          if (date instanceof Long) {
-            long l = Long.parseLong(value);
-            fields.add(new LongPoint(name, l));
-            fields.add(new SortedNumericDocValuesField(name, l));
-          } else if (date instanceof Integer) {
-            int i = Integer.parseInt(value);
-            fields.add(new IntPoint(name, i));
-            fields.add(new SortedNumericDocValuesField(name, i));
-          } else {
-            this.warnings.put(ffield.name(),"ignoring field as it has a date format but no date");
-            return null;
-          }
-        } else if (ffield.numeric() != null) {
-          fields.addAll(toSortedNumericFields(ffield));
-        }
-        fields.add(new StoredField(name, value));
+        Field field = toDateOrNumericField(ffield);
+        if (field != null) fields.add(field);
         break;
       case SORTED:
       case SORTED_SET:
-        boolean isSortedSet = ffield.docValues() == FlintField.DocValuesType.SORTED_SET;
+        String name = ffield.name();
+        String value;
+        BytesRef bytes;
         if (ffield.dateformat() != null) {
-          String date = Dates.toString(toDate(name, value, ffield.dateformat()), LuceneUtils.toResolution(ffield.resolution()));
-          if (date == null) date = "";
-          fields.add(new Field(name, date, toType(ffield)));
-          fields.add(isSortedSet ? new SortedSetDocValuesField(name, new BytesRef(date)) : new SortedDocValuesField(name, new BytesRef(date)));
+          String date = Dates.toString(toDate(name, ffield.value().toString(), ffield.dateformat()), LuceneUtils.toResolution(ffield.resolution()));
+          value = date == null ? "" : date;
+          bytes = new BytesRef(value);
         } else {
-          fields.add(new Field(name, value, toType(ffield)));
-          fields.add(isSortedSet ? new SortedSetDocValuesField(name, new BytesRef(ffield.value())) : new SortedDocValuesField(name, new BytesRef(ffield.value())));
+          value = ffield.value().toString();
+          bytes = new BytesRef(ffield.value());
         }
+        // add field and the doc values equivalent
+        fields.add(new Field(name, value, toType(ffield)));
+        fields.add(ffield.docValues() == FlintField.DocValuesType.SORTED_SET ?
+            new SortedSetDocValuesField(name, bytes) :
+            new SortedDocValuesField(name, bytes));
         break;
     }
     return fields;
   }
 
-  private static List<Field> toSortedNumericFields(FlintField ffield) {
+  private Field toDateOrNumericField(FlintField ffield) {
+    // shortcut
+    if (ffield.numeric() == null) return null;
     String name = ffield.name();
-    List<Field> fields = new ArrayList<>();
-    switch (ffield.numeric()) {
-      case DOUBLE:
-        double d = Double.parseDouble(ffield.value().toString());
-        fields.add(new SortedNumericDocValuesField(name, NumericUtils.doubleToSortableLong(d)));
-        fields.add(new DoublePoint(name, d));
-        break;
-      case FLOAT:
-        float f = Float.parseFloat(ffield.value().toString());
-        fields.add(new SortedNumericDocValuesField(name, NumericUtils.floatToSortableInt(f)));
-        fields.add(new FloatPoint(name, f));
-        break;
-      case LONG:
-        long l = Long.parseLong(ffield.value().toString());
-        fields.add(new SortedNumericDocValuesField(name, l));
-        fields.add(new LongPoint(name, l));
-        break;
-      case INT:
-        int i = Integer.parseInt(ffield.value().toString());
-        fields.add(new SortedNumericDocValuesField(name, i));
-        fields.add(new IntPoint(name, i));
-        break;
+    String value = ffield.value().toString();
+    Field.Store stored = ffield.store() ? Field.Store.YES : Field.Store.NO;
+    if (ffield.dateformat() != null) {
+      Number date = Dates.toNumber(toDate(name, value, ffield.dateformat()), LuceneUtils.toResolution(ffield.resolution()));
+      // only int or long possible for dates
+      if (date instanceof Long) return new LongField(name, date.longValue(), stored);
+      if (date instanceof Integer) return new IntField(name, date.intValue(), stored);
+      this.warnings.put(ffield.name(),"ignoring field as it has a date format but no date");
+    } else {
+      try {
+        switch (ffield.numeric()) {
+          case DOUBLE: return new DoubleField(name, Double.parseDouble(value), stored);
+          case FLOAT: return new FloatField(name, Float.parseFloat(value), stored);
+          case LONG: return new LongField(name, Long.parseLong(value), stored);
+          case INT: return new IntField(name, Integer.parseInt(value), stored);
+        }
+      } catch (NumberFormatException ex) {
+        this.warnings.put(ffield.name(),"ignoring number field with invalid value '"+value+"'");
+      }
     }
-    return fields;
+    return null;
   }
   private static FieldType toType(FlintField ffield) {
     FieldType type = new FieldType();

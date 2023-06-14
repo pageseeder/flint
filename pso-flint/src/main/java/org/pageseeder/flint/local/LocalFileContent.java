@@ -21,7 +21,6 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 
-import org.pageseeder.flint.IndexException;
 import org.pageseeder.flint.content.Content;
 import org.pageseeder.flint.content.ContentType;
 import org.pageseeder.flint.content.DeleteRule;

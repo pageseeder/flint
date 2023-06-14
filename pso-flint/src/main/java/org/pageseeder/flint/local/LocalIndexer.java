@@ -53,7 +53,7 @@ public final class LocalIndexer implements FileVisitor<Path> {
   /**
    * Possible action for each file.
    */
-  public enum Action { INSERT, UPDATE, DELETE, IGNORE };
+  public enum Action { INSERT, UPDATE, DELETE, IGNORE }
 
   private final IndexManager _manager;
 

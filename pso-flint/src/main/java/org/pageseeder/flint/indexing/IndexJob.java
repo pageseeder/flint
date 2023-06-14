@@ -36,7 +36,7 @@ public class IndexJob implements Comparable<IndexJob> {
    */
   private static final ContentType CLEAR_CONTENT_TYPE = new ContentType() {
     @Override
-    public String toString() { return "CLEAR"; };
+    public String toString() { return "CLEAR"; }
   };
   private static final String CLEAR_CONTENT_ID = "CLEAR";
 
@@ -55,7 +55,7 @@ public class IndexJob implements Comparable<IndexJob> {
      */
     LOW
 
-  };
+  }
 
   /**
    * The content ID

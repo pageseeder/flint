@@ -19,7 +19,6 @@
 package org.pageseeder.flint.berlioz.lucene;
 
 import org.apache.lucene.search.Query;
-import org.pageseeder.berlioz.BerliozException;
 import org.pageseeder.berlioz.content.Cacheable;
 import org.pageseeder.berlioz.content.ContentRequest;
 import org.pageseeder.berlioz.content.ContentStatus;
@@ -74,14 +73,10 @@ public final class GetFacets extends LuceneIndexGenerator implements Cacheable {
     for (IndexMaster index : indexes) {
       theIndexes.add(index.getIndex());
     }
-    try {
-      List<FlexibleFieldFacet> facetsList = query == null ?
-            Facets.getFlexibleFacets(facets.isEmpty() ? null : Arrays.asList(facets.split(",")), maxNumber, theIndexes) :
-            Facets.getFlexibleFacets(Arrays.asList(facets.split(",")), maxNumber, query, theIndexes);
-      this.outputResults(base, facetsList, xml);
-    } catch (IndexException ex) {
-      LOGGER.warn("Fail to retrieve search result using query: {}", query, ex);
-    }
+    List<FlexibleFieldFacet> facetsList = query == null ?
+          Facets.getFlexibleFacets(facets.isEmpty() ? null : Arrays.asList(facets.split(",")), maxNumber, theIndexes) :
+          Facets.getFlexibleFacets(Arrays.asList(facets.split(",")), maxNumber, query, theIndexes);
+    this.outputResults(base, facetsList, xml);
   }
 
   @Override
@@ -98,12 +93,8 @@ public final class GetFacets extends LuceneIndexGenerator implements Cacheable {
       query = buildQuery(base, index.getIndexDefinition(), req, xml);
       if (query == null) return;
     }
-    try {
-      List<FlexibleFieldFacet> facetsList = Facets.getFlexibleFacets(facets.isEmpty() ? null : Arrays.asList(facets.split(",")), maxNumber, query, index.getIndex());
-      this.outputResults(base, facetsList, xml);
-    } catch (IndexException ex) {
-      LOGGER.warn("Fail to retrieve search result using query: {}", query, ex);
-    }
+    List<FlexibleFieldFacet> facetsList = Facets.getFlexibleFacets(facets.isEmpty() ? null : Arrays.asList(facets.split(",")), maxNumber, query, index.getIndex());
+    this.outputResults(base, facetsList, xml);
   }
 
   public Query buildQuery(String base, IndexDefinition def, ContentRequest req, XMLWriter xml) throws IOException {

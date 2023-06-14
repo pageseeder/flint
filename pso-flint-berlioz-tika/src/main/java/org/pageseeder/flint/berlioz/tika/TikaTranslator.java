@@ -52,7 +52,7 @@ public class TikaTranslator implements ContentTranslator {
     // check for deleted content
     if (content.isDeleted()) return null;
     try {
-      LOGGER.debug("Attempting to translate content {}", content.toString());
+      LOGGER.debug("Attempting to translate content {}", content);
       // include metadata
       Metadata metadata = new Metadata();
       String xmlContent = null;

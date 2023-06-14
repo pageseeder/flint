@@ -17,11 +17,8 @@ package org.pageseeder.flint.lucene.query;
 
 import java.io.IOException;
 
-import org.apache.lucene.index.Term;
 import org.apache.lucene.search.Query;
-import org.apache.lucene.search.WildcardQuery;
 import org.pageseeder.flint.lucene.search.Facet;
-import org.pageseeder.flint.lucene.search.StringTermFilter;
 import org.pageseeder.xmlwriter.XMLWriter;
 
 /**

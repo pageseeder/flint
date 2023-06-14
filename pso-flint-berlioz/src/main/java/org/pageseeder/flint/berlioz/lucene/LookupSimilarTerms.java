@@ -15,9 +15,6 @@
  */
 package org.pageseeder.flint.berlioz.lucene;
 
-import java.io.IOException;
-import java.util.Collection;
-
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
 import org.pageseeder.berlioz.BerliozException;
@@ -34,6 +31,9 @@ import org.pageseeder.flint.lucene.util.Bucket.Entry;
 import org.pageseeder.xmlwriter.XMLWriter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.io.IOException;
+import java.util.Collection;
 
 /**
  * Lookup the similar terms for the specified term.
@@ -91,7 +91,7 @@ public final class LookupSimilarTerms extends LuceneIndexGenerator implements Ca
       for (Entry<Term> e : bucket.entrySet()) {
         Terms.toXML(xml, e.item(), e.count());
       }
-    } catch (IOException | IndexException ex) {
+    } catch (IOException ex) {
       throw new BerliozException("Exception thrown while fetching fuzzy terms", ex);
     } finally {
       index.releaseSilently(reader);

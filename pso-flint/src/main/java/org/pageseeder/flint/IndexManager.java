@@ -387,6 +387,7 @@ public final class IndexManager {
     // empty queue
     this._indexQueue.clear();
     // Interrupt the threads
+    IndexingThread.CLOSING_DOWN = true;
     this.multiThreadExecutor.shutdownNow();
     // wait for finish
     try {
@@ -408,6 +409,8 @@ public final class IndexManager {
     for (Index index : ALL_INDEXES.values()) {
       index.close();
     }
+    // reset flag
+    IndexingThread.CLOSING_DOWN = false;
   }
 
   /**

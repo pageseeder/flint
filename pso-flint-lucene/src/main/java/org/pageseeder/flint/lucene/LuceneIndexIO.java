@@ -23,6 +23,7 @@ import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.SearcherFactory;
 import org.apache.lucene.search.SearcherManager;
+import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.store.LockObtainFailedException;
@@ -84,7 +85,7 @@ public final class LuceneIndexIO implements IndexIO {
     /** The index is closed. */
     CLOSED
 
-  };
+  }
 
   /**
    * State of this index.
@@ -179,9 +180,21 @@ public final class LuceneIndexIO implements IndexIO {
     if (this._writer == null || isClosed() || isState(State.CLOSING)) return;
     startClosing();
     try {
-      this._writer.close();
-      this._searcher.close();
-      this._reader.close();
+      try {
+        this._writer.close();
+      } catch (AlreadyClosedException ex) {
+        // all good then!
+      }
+      try {
+        this._searcher.close();
+      } catch (AlreadyClosedException ex) {
+        // all good then!
+      }
+      try {
+        this._reader.close();
+      } catch (AlreadyClosedException ex) {
+        // all good then!
+      }
       state(State.CLOSED);
       OpenIndexManager.remove(this);
     } catch (final CorruptIndexException ex) {
@@ -201,6 +214,8 @@ public final class LuceneIndexIO implements IndexIO {
       this._reader.maybeRefresh();
       this._searcher.maybeRefresh();
       state(State.CLEAN);
+    } catch (AlreadyClosedException ex) {
+      // must be closing, ignore then
     } catch (Exception ex) {
       LOGGER.error("Failed to reopen Index Searcher because of an I/O error", ex);
     }

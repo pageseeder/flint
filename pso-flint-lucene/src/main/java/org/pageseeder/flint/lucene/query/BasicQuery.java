@@ -27,7 +27,6 @@ import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.SortField;
-import org.pageseeder.flint.lucene.facet.FlexibleRangeFacet;
 import org.pageseeder.flint.lucene.util.Beta;
 import org.pageseeder.xmlwriter.XMLWriter;
 
@@ -243,7 +242,7 @@ public class BasicQuery<T extends SearchParameter> implements SearchQuery {
       s.append(')');
     }
     return s.toString();
-  };
+  }
 
   // private helpers
   // ----------------------------------------------------------------------------------------------

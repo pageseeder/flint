@@ -40,20 +40,20 @@ public final class FlintField {
   /**
    * The default boost value for the term.
    */
-  public static enum NumericType {
-    INT, FLOAT, DOUBLE, LONG;
-  };
-
-  public static enum DocValuesType {
-    NONE, FORCED_NONE, SORTED, SORTED_NUMERIC, SORTED_SET;
+  public enum NumericType {
+    INT, FLOAT, DOUBLE, LONG
   }
 
-  public static enum IndexOptions {
+  public enum DocValuesType {
+    NONE, FORCED_NONE, SORTED, SORTED_NUMERIC, SORTED_SET
+  }
+
+  public enum IndexOptions {
     NONE, DOCS, DOCS_AND_FREQS, DOCS_AND_FREQS_AND_POSITIONS, DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS,
   }
 
-  public static enum Resolution {
-    YEAR, MONTH, DAY, HOUR, MINUTE, SECOND, MILLISECOND;
+  public enum Resolution {
+    YEAR, MONTH, DAY, HOUR, MINUTE, SECOND, MILLISECOND
   }
 
   /**

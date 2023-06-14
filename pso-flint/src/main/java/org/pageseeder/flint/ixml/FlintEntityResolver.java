@@ -142,7 +142,7 @@ public final class FlintEntityResolver implements EntityResolver {
    */
   private InputStream toInputStream(String systemId) throws SAXException {
     // Try to use the system ID then
-    if (systemId.startsWith("http://")) {
+    if (systemId.startsWith("http")) {
       try {
         URL url = new URL(systemId);
         return url.openStream();

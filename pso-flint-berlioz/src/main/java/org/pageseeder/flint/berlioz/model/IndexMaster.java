@@ -211,11 +211,11 @@ public final class IndexMaster {
     return condition;
   }
 
-  public IndexReader grabReader() throws IndexException {
+  public IndexReader grabReader() {
     return LuceneIndexQueries.grabReader(this._index);
   }
 
-  public IndexSearcher grabSearcher() throws IndexException {
+  public IndexSearcher grabSearcher() {
     return LuceneIndexQueries.grabSearcher(this._index);
   }
 
@@ -307,8 +307,6 @@ public final class IndexMaster {
     try {
       reader = grabReader();
       as.build(reader);
-    } catch (IndexException ex) {
-      LOGGER.error("Failed to build autosuggest", ex);
     } finally {
       if (reader != null) releaseSilently(reader);
     }

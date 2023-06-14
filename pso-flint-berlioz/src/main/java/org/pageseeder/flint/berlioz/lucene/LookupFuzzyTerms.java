@@ -113,7 +113,7 @@ public final class LookupFuzzyTerms extends LuceneIndexGenerator implements Cach
       for (Entry<Term> e : bucket.entrySet()) {
         Terms.toXML(xml, e.item(), e.count());
       }
-    } catch (IOException | IndexException ex) {
+    } catch (IOException ex) {
       throw new BerliozException("Exception thrown while fetching fuzzy terms", ex);
     } finally {
       index.releaseSilently(reader);

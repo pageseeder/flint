@@ -19,6 +19,6 @@ public interface WatchListener {
    * @param path The path affected
    * @param kind The kind of event for the file
    */
-  public void received(Path path, WatchEvent.Kind<Path> kind);
+  void received(Path path, WatchEvent.Kind<Path> kind);
 
 }

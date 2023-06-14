@@ -11,7 +11,7 @@ package org.pageseeder.flint.berlioz.lucene;
 
 import java.io.IOException;
 import java.util.Collection;
-import org.pageseeder.berlioz.BerliozException;
+
 import org.pageseeder.berlioz.Beta;
 import org.pageseeder.berlioz.content.ContentRequest;
 import org.pageseeder.flint.berlioz.model.IndexMaster;

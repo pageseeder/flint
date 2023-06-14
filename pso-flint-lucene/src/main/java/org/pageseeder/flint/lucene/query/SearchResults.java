@@ -69,7 +69,7 @@ public final class SearchResults implements XMLWritable {
   /**
    * Types of values formatted in the result.
    */
-  private static enum ValueType {STRING, DATE, DATETIME, LONG, DOUBLE, INT, FLOAT};
+  private enum ValueType {STRING, DATE, DATETIME, LONG, DOUBLE, INT, FLOAT}
 
   /**
    * The maximum length for a field to expand.

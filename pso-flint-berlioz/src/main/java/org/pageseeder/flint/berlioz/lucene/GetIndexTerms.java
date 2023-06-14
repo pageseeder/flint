@@ -25,7 +25,6 @@ import java.util.List;
 
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
-import org.pageseeder.berlioz.BerliozException;
 import org.pageseeder.berlioz.content.Cacheable;
 import org.pageseeder.berlioz.content.ContentRequest;
 import org.pageseeder.berlioz.util.MD5;
@@ -55,14 +54,7 @@ public final class GetIndexTerms extends LuceneIndexGenerator implements Cacheab
     xml.openElement("terms");
     xml.attribute("field", field);
     xml.attribute("index", master.getName());
-    IndexReader reader;
-    try {
-      reader = master.grabReader();
-    } catch (IndexException ex) {
-      xml.attribute("error", "Failed to load reader: " + ex.getMessage());
-      xml.closeElement();
-      return;
-    }
+    IndexReader reader = master.grabReader();
     try {
       List<Term> terms = Terms.terms(reader, field);
       for (Term term : terms) {

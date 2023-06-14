@@ -29,7 +29,6 @@ import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.SortField.Type;
 import org.apache.lucene.search.SortedNumericSortField;
 import org.apache.lucene.search.SortedSetSortField;
-import org.pageseeder.berlioz.BerliozException;
 import org.pageseeder.berlioz.content.ContentRequest;
 import org.pageseeder.flint.Index;
 import org.pageseeder.flint.IndexException;

@@ -2,7 +2,6 @@ package org.pageseeder.flint.berlioz;
 
 import java.io.IOException;
 
-import org.pageseeder.berlioz.BerliozException;
 import org.pageseeder.berlioz.content.ContentGenerator;
 import org.pageseeder.berlioz.content.ContentRequest;
 import org.pageseeder.flint.berlioz.model.FlintConfig;

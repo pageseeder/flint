@@ -12,7 +12,7 @@ public interface AnalyzerFactory {
     /**
      * @deprecated
      */
-    public Analyzer getAnalyzer();
-    public Analyzer getAnalyzer(IndexDefinition definition);
+    Analyzer getAnalyzer();
+    Analyzer getAnalyzer(IndexDefinition definition);
 }
 

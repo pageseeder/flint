@@ -18,17 +18,12 @@
  */
 package org.pageseeder.flint.berlioz.lucene;
 
-import java.io.IOException;
-import java.util.Collection;
-
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
-import org.pageseeder.berlioz.BerliozException;
 import org.pageseeder.berlioz.GlobalSettings;
 import org.pageseeder.berlioz.content.Cacheable;
 import org.pageseeder.berlioz.content.ContentRequest;
 import org.pageseeder.berlioz.util.ISO8601;
-import org.pageseeder.flint.IndexException;
 import org.pageseeder.flint.berlioz.model.FlintConfig;
 import org.pageseeder.flint.berlioz.model.IndexDefinition;
 import org.pageseeder.flint.berlioz.model.IndexMaster;
@@ -37,6 +32,9 @@ import org.pageseeder.flint.lucene.search.Terms;
 import org.pageseeder.xmlwriter.XMLWriter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.io.IOException;
+import java.util.Collection;
 
 /*
  * This class specifies class file version 49.0 but uses Java 6 signatures.  Assumed Java 6.
@@ -68,12 +66,7 @@ public final class GetIndexSummary extends LuceneIndexGenerator implements Cache
     xml.openElement("index");
     xml.attribute("name", index.getIndex().getIndexID());
     xml.attribute("content", '/' + Files.path(GlobalSettings.getAppData(), index.getIndex().getContentLocation()));
-    IndexReader reader = null;
-    try {
-      reader = index.grabReader();
-    } catch (IndexException ex) {
-      xml.attribute("error", "Failed to load reader: " + ex.getMessage());
-    }
+    IndexReader reader = index.grabReader();
     if (reader != null) {
       try (DirectoryReader dreader = DirectoryReader.open(index.getIndex().getIndexDirectory())) {
         long lu = index.getIndex().getIndexIO().getLastTimeUsed();

@@ -3,7 +3,6 @@ package org.pageseeder.flint.berlioz.helper;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.IndexReader;
 import org.pageseeder.berlioz.util.ISO8601;
-import org.pageseeder.flint.IndexException;
 import org.pageseeder.flint.IndexManager;
 import org.pageseeder.flint.berlioz.model.FlintConfig;
 import org.pageseeder.flint.berlioz.model.IndexMaster;

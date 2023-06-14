@@ -21,13 +21,11 @@ package org.pageseeder.flint.berlioz;
 
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
-import org.pageseeder.berlioz.BerliozException;
 import org.pageseeder.berlioz.content.Cacheable;
 import org.pageseeder.berlioz.content.ContentGenerator;
 import org.pageseeder.berlioz.content.ContentRequest;
 import org.pageseeder.berlioz.util.ISO8601;
 import org.pageseeder.berlioz.util.MD5;
-import org.pageseeder.flint.IndexException;
 import org.pageseeder.flint.berlioz.model.FlintConfig;
 import org.pageseeder.flint.berlioz.model.IndexMaster;
 import org.pageseeder.xmlwriter.XMLWriter;
@@ -73,12 +71,7 @@ public final class ListIndexes implements ContentGenerator, Cacheable {
   private void indexToXML(IndexMaster index, XMLWriter xml) throws IOException {
     xml.openElement("index");
     xml.attribute("name", index.getName());
-    IndexReader reader = null;
-    try {
-      reader = index.grabReader();
-    } catch (IndexException ex) {
-      xml.attribute("error", "Failed to load reader: " + ex.getMessage());
-    }
+    IndexReader reader = index.grabReader();
     if (reader != null) {
       try (DirectoryReader dreader = DirectoryReader.open(index.getIndex().getIndexDirectory())) {
         // index details
