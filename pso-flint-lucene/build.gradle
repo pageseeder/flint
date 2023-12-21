@@ -2,21 +2,21 @@ dependencies {
 
   implementation (
     project(':pso-flint'),
-    'org.slf4j:slf4j-api:1.7.36',
-    'org.pageseeder.xmlwriter:pso-xmlwriter:1.0.2',
+    'org.slf4j:slf4j-api:2.0.9',
+    'org.pageseeder.xmlwriter:pso-xmlwriter:1.0.4',
 
-    'org.apache.lucene:lucene-core:9.6.0',
-    'org.apache.lucene:lucene-misc:9.6.0',
-    'org.apache.lucene:lucene-analyzers-common:8.11.2',
-    'org.apache.lucene:lucene-highlighter:9.6.0',
-    'org.apache.lucene:lucene-queryparser:9.6.0',
-    'org.apache.lucene:lucene-suggest:9.6.0'
+    'org.apache.lucene:lucene-core:9.9.1',
+    'org.apache.lucene:lucene-misc:9.9.1',
+    'org.apache.lucene:lucene-analyse-common:9.9.1',
+    'org.apache.lucene:lucene-highlighter:9.9.1',
+    'org.apache.lucene:lucene-queryparser:9.9.1',
+    'org.apache.lucene:lucene-suggest:9.9.1'
 
   )
 
   testImplementation (
     'junit:junit:4.13.2',
-    'org.slf4j:slf4j-simple:1.7.36'
+    'org.slf4j:slf4j-simple:2.0.9'
   )
 
 }
