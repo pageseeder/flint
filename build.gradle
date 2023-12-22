@@ -54,6 +54,6 @@ dependencies {
 }
 
 wrapper {
-  gradleVersion = '7.0'
+  gradleVersion = '8.5'
   distributionType = Wrapper.DistributionType.ALL
 }
