@@ -43,7 +43,7 @@ dependencies {
 
   // runtime
   runtimeOnly (
-    'net.sf.saxon:Saxon-HE:10.8'
+    'net.sf.saxon:Saxon-HE:10.9'
   )
 
   testImplementation (
