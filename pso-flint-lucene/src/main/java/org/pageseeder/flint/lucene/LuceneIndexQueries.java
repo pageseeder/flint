@@ -187,9 +187,13 @@ public final class LuceneIndexQueries {
       Sort sort = query.getSort();
       if (sort == null)
         sort = Sort.INDEXORDER;
+
       // load the scores
-      TopFieldDocs results = searcher.search(lquery, paging.getHitsPerPage() * paging.getPage(), sort, true);
-      return new SearchResults(query, results, paging, readersMap, searcher);
+      TopFieldCollector tfc = TopFieldCollector.create(sort, paging.getHitsPerPage() * paging.getPage(), Integer.MAX_VALUE);
+      searcher.search(lquery, tfc);
+      ScoreDoc[] docs = tfc.topDocs().scoreDocs;
+      TopFieldCollector.populateScores(docs, searcher, lquery);
+      return new SearchResults(query, docs, tfc.getTotalHits(), paging, readersMap, searcher);
     } catch (IOException e) {
       for (Map.Entry<LuceneIndexIO, IndexReader> io : readersMap.entrySet())
         io.getKey().releaseReader(io.getValue());

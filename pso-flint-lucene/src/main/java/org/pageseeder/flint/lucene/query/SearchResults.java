@@ -153,7 +153,7 @@ public final class SearchResults implements XMLWritable {
    * @param query    The search query that was used to produce these results.
    * @param docs     The actual search results from Lucene in TopFieldDocs.
    * @param paging   The paging configuration.
-   * @param readers  The ...
+   * @param readers  The list of readers to be released at the end
    * @param searcher The Lucene searcher.
    *
    */
@@ -187,6 +187,20 @@ public final class SearchResults implements XMLWritable {
    */
   public SearchResults(SearchQuery query, ScoreDoc[] docs, int totalHits, SearchPaging paging, LuceneIndexIO io, IndexSearcher searcher) {
     this(query, null, docs, null, totalHits, paging, new SearchReaders(io), searcher);
+  }
+
+  /**
+   * Creates a new SearchResults.
+   *
+   * @param query    The search query that was used to produce these results.
+   * @param docs     The actual search results from Lucene in ScoreDoc.
+   * @param paging   The paging configuration.
+   * @param readers  The list of readers to be released at the end
+   * @param searcher The Lucene searcher.
+   *
+   */
+  public SearchResults(SearchQuery query, ScoreDoc[] docs, int totalHits, SearchPaging paging, Map<LuceneIndexIO, IndexReader> readers, IndexSearcher searcher) {
+    this(query, null, docs, null, totalHits, paging, new SearchReaders(readers), searcher);
   }
 
   /**
@@ -374,7 +388,7 @@ public final class SearchResults implements XMLWritable {
         else if (number instanceof Double)  type = ValueType.DOUBLE;
         else if (number instanceof Integer) type = ValueType.INT;
         else if (number instanceof Float)   type = ValueType.FLOAT;
-      // format dates using ISO 8601 when possible
+        // format dates using ISO 8601 when possible
       } else if (value != null && value.length() > 0 && f.name().contains("date") && Dates.isLuceneDate(value)) {
         try {
           if (value.length() > 8) {
@@ -439,7 +453,7 @@ public final class SearchResults implements XMLWritable {
         else if (nt == NumericType.DOUBLE) type = ValueType.DOUBLE;
         else if (nt == NumericType.INT)    type = ValueType.INT;
         else if (nt == NumericType.FLOAT)  type = ValueType.FLOAT;
-      // format dates using ISO 8601 when possible
+        // format dates using ISO 8601 when possible
       } else if (value != null && value.length() > 0 && f.name().contains("date") && Dates.isLuceneDate(value)) {
         try {
           if (value.length() > 8) {
