@@ -108,6 +108,11 @@ public final class IndexingThread implements Runnable {
         // the thread was shutdown, let's die then
         return;
       }
+      // should be single?
+      if (!this._singleThread && job.isForSingleThread()) {
+        this._manager.indexSingleThread(job);
+        return;
+      }
       // start of batch?
       if (job.isBatch() && !job.getBatch().isStarted()) {
         job.getBatch().startIndexing();

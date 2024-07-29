@@ -236,7 +236,7 @@ public final class IndexManager {
    */
   public void indexBatch(IndexBatch batch, String contentid, ContentType type, Index i, Requester r, Priority p,
       boolean singleThread, Map<String, String> params) {
-    indexJob(IndexJob.newBatchJob(batch, contentid, type, i, p, r, params), singleThread);
+    indexJob(IndexJob.newBatchJob(batch, contentid, type, i, p, r, params, singleThread), singleThread);
   }
 
   /**
@@ -249,7 +249,7 @@ public final class IndexManager {
   public void indexBatch(Map<String, ContentType> contents, Index i, Requester r, Priority p) {
     IndexBatch batch = new IndexBatch(i.getIndexID(), contents.size());
     for (Map.Entry<String, ContentType> entries : contents.entrySet()) {
-      indexJob(IndexJob.newBatchJob(batch, entries.getKey(), entries.getValue(), i, p, r, null), false);
+      indexJob(IndexJob.newBatchJob(batch, entries.getKey(), entries.getValue(), i, p, r, null, false), false);
     }
   }
 
@@ -279,6 +279,14 @@ public final class IndexManager {
    */
   public void index(String contentid, ContentType type, Index i, Requester r, Priority p, Map<String, String> params) {
     index(contentid, type, i, r, p, false, params);
+  }
+
+  /**
+   * Add a job to the single thread queue
+   * @param job the job to index
+   */
+  public void indexSingleThread(IndexJob job) {
+    this.indexJob(job, true);
   }
 
   /**

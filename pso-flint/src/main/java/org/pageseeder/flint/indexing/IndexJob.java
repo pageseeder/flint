@@ -113,6 +113,11 @@ public class IndexJob implements Comparable<IndexJob> {
   private final Map<String, String> parameters = new HashMap<>();
 
   /**
+   * If this job should be indexed by the single thread (slow queue)
+   */
+  private final boolean forSingleThread;
+
+  /**
    * Private constructor, to build a job, use one of the static methods newAddJob(), newUpdateJob() or newDeleteJob().
    *
    * @param cid     The Content ID
@@ -121,7 +126,8 @@ public class IndexJob implements Comparable<IndexJob> {
    * @param p       The job's priority
    * @param r       the job's requester
    */
-  private IndexJob(IndexBatch b, String cid, ContentType ctype, Index i, Priority p, Requester r, Map<String, String> params) {
+  private IndexJob(IndexBatch b, String cid, ContentType ctype, Index i, Priority p,
+                   Requester r, Map<String, String> params, boolean singleThread) {
     this._contentid = cid;
     this.batch = b;
     this._contenttype = ctype;
@@ -129,6 +135,7 @@ public class IndexJob implements Comparable<IndexJob> {
     this._requester = r;
     this._index = i;
     this._created = System.nanoTime();
+    this.forSingleThread = singleThread;
     this.jobId = this._created + '-' + cid + '-' + ctype + '-' + i.getIndexID() + '-' + r.getRequesterID() + '-' + p.toString();
     if (params != null) this.parameters.putAll(params);
   }
@@ -206,6 +213,13 @@ public class IndexJob implements Comparable<IndexJob> {
   public boolean isForIndex(Index index) {
     if (this._index == index) return true;
     return this._index != null && this._index.getIndexID().equals(index.getIndexID());
+  }
+
+  /**
+   * @return true if this job is for single thread (slow queue)
+   */
+  public boolean isForSingleThread() {
+    return this.forSingleThread;
   }
 
   /**
@@ -316,11 +330,13 @@ public class IndexJob implements Comparable<IndexJob> {
    * @param p         The job's priority
    * @param r         The job's requester
    * @param params    The job's parameters
+   * @param forSingleThread If the job should be for the single thread (slow lane)
    *
    * @return the new job
    */
-  public static IndexJob newBatchJob(IndexBatch b, String contentid, ContentType ctype, Index i, Priority p, Requester r, Map<String, String> params) {
-    return new IndexJob(b, contentid, ctype, i, p, r, params);
+  public static IndexJob newBatchJob(IndexBatch b, String contentid, ContentType ctype, Index i, Priority p,
+                                     Requester r, Map<String, String> params, boolean forSingleThread) {
+    return new IndexJob(b, contentid, ctype, i, p, r, params, forSingleThread);
   }
 
   /**
@@ -336,7 +352,7 @@ public class IndexJob implements Comparable<IndexJob> {
    * @return the new job
    */
   public static IndexJob newJob(String contentid, ContentType ctype, Index i, Priority p, Requester r, Map<String, String> params) {
-    return new IndexJob(null, contentid, ctype, i, p, r, params);
+    return new IndexJob(null, contentid, ctype, i, p, r, params, false);
   }
 
   /**
@@ -349,7 +365,7 @@ public class IndexJob implements Comparable<IndexJob> {
    * @return the new job
    */
   public static IndexJob newClearJob(Index index, Priority priority, Requester requester) {
-    return new IndexJob(null, CLEAR_CONTENT_ID, CLEAR_CONTENT_TYPE, index, priority, requester, null);
+    return new IndexJob(null, CLEAR_CONTENT_ID, CLEAR_CONTENT_TYPE, index, priority, requester, null, false);
   }
 
 }
