@@ -236,7 +236,25 @@ public final class IndexManager {
    */
   public void indexBatch(IndexBatch batch, String contentid, ContentType type, Index i, Requester r, Priority p,
       boolean singleThread, Map<String, String> params) {
-    indexJob(IndexJob.newBatchJob(batch, contentid, type, i, p, r, params, singleThread), singleThread);
+    indexBatch(batch, contentid, type, i, r, p, singleThread, singleThread, params);
+  }
+
+  /**
+   * Add a new batch update job to the indexing queue.
+   *
+   * @param batch         the batch job
+   * @param contentid     the ID of the content
+   * @param type          the type of the content
+   * @param i             the Index to add the Content to
+   * @param r             the Requester calling this method (used for logging)
+   * @param p             the Priority of this job
+   * @param singleThread  if this job goes in the single thread queue
+   * @param forSlowQueue  if this job is destined for the single thread queue
+   * @param params        some parameters
+   */
+  public void indexBatch(IndexBatch batch, String contentid, ContentType type, Index i, Requester r, Priority p,
+                         boolean singleThread, boolean forSlowQueue,Map<String, String> params) {
+    indexJob(IndexJob.newBatchJob(batch, contentid, type, i, p, r, params, forSlowQueue), singleThread);
   }
 
   /**
