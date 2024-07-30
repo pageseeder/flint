@@ -5,12 +5,12 @@ dependencies {
     'org.slf4j:slf4j-api:2.0.9',
     'org.pageseeder.xmlwriter:pso-xmlwriter:1.0.4',
 
-    'org.apache.lucene:lucene-core:9.9.1',
-    'org.apache.lucene:lucene-misc:9.9.1',
-    'org.apache.lucene:lucene-analysis-common:9.9.1',
-    'org.apache.lucene:lucene-highlighter:9.9.1',
-    'org.apache.lucene:lucene-queryparser:9.9.1',
-    'org.apache.lucene:lucene-suggest:9.9.1'
+    'org.apache.lucene:lucene-core:9.11.1',
+    'org.apache.lucene:lucene-misc:9.11.1',
+    'org.apache.lucene:lucene-analysis-common:9.11.1',
+    'org.apache.lucene:lucene-highlighter:9.11.1',
+    'org.apache.lucene:lucene-queryparser:9.11.1',
+    'org.apache.lucene:lucene-suggest:9.11.1'
 
   )
 
