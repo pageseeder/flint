@@ -358,14 +358,15 @@ public class IndexJob implements Comparable<IndexJob> {
   /**
    * Creates a new job to clear the index.
    *
+   * @param batch     A batch (optoinal)
    * @param index     The Index
    * @param priority  The job's priority
    * @param requester The job's requester
    *
    * @return the new job
    */
-  public static IndexJob newClearJob(Index index, Priority priority, Requester requester) {
-    return new IndexJob(null, CLEAR_CONTENT_ID, CLEAR_CONTENT_TYPE, index, priority, requester, null, false);
+  public static IndexJob newClearJob(IndexBatch batch, Index index, Priority priority, Requester requester) {
+    return new IndexJob(batch, CLEAR_CONTENT_ID, CLEAR_CONTENT_TYPE, index, priority, requester, null, false);
   }
 
 }

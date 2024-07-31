@@ -315,10 +315,22 @@ public final class IndexManager {
    * @param priority   the Priority of this job
    */
   public void clear(Index index, Requester requester, Priority priority) {
+    this.clear(null, index, requester, priority);
+  }
+
+  /**
+   * Add a new update job to the indexing queue.
+   *
+   * @param batch      the batch this clear job will be a part of
+   * @param index      the Index to add the Content to
+   * @param requester  the Requester calling this method (used for logging)
+   * @param priority   the Priority of this job
+   */
+  public void clear(IndexBatch batch, Index index, Requester requester, Priority priority) {
     // remove all jobs belonging to this index
     this._indexQueue.clearJobsForIndex(index);
     // add a new job to clear the index
-    indexJob(IndexJob.newClearJob(index, priority, requester), false);
+    indexJob(IndexJob.newClearJob(batch, index, priority, requester), false);
   }
 
   /**
