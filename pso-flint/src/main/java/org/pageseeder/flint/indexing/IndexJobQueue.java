@@ -321,16 +321,20 @@ public final class IndexJobQueue {
     }
 
     // if there is one similar, and this one has higher priority, add this one and remove the old one
-    if (existing == null || (existing.getPriority() == IndexJob.Priority.LOW && job.getPriority() == IndexJob.Priority.HIGH)) {
+    boolean higherPriority = existing != null && existing.getPriority() == IndexJob.Priority.LOW && job.getPriority() == IndexJob.Priority.HIGH;
+    // force job if in multi thread but should go in single thread
+    boolean force = !foundInSingleQueue && job.isForSingleThread();
+
+    if (existing == null || force || higherPriority) {
       if (singleThread && this._singleThreadQueue != null) {
         synchronized (this._singleThreadQueue) {
-          if (existing != null)
+          if (existing != null && !force)
             this.removeExistingJob(job, existing, foundInSingleQueue);
           this._singleThreadQueue.put(job);
         }
       } else {
         synchronized (this._queue) {
-          if (existing != null)
+          if (existing != null && !force)
             this.removeExistingJob(job, existing, foundInSingleQueue);
           this._queue.put(job);
         }
