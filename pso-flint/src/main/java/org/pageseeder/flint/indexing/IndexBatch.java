@@ -9,12 +9,13 @@ public class IndexBatch {
   private boolean      started      = false;
   private int          currentCount = 0;
   private int          cancelCount  = -1;
-  private final long         batchID;
-  private final long         createTime;
+  private final long   batchID;
+  private final long   createTime;
   private long         startTime;
   private long         computeTime;
   private long         indexTime;
   private long         totalTime;
+  private boolean      hasClearJob = false;
 
   public IndexBatch() {
     this(null);
@@ -34,6 +35,15 @@ public class IndexBatch {
     this.totalCount = total;
     this.computeTime = -1;
     this.computed = true;
+  }
+
+  public IndexBatch withClearJob() {
+    this.hasClearJob = true;
+    return this;
+  }
+
+  public boolean hasClearJob() {
+    return this.hasClearJob;
   }
 
   protected synchronized void startIndexing() {

@@ -322,10 +322,12 @@ public final class IndexJobQueue {
 
     // if there is one similar, and this one has higher priority, add this one and remove the old one
     boolean higherPriority = existing != null && existing.getPriority() == IndexJob.Priority.LOW && job.getPriority() == IndexJob.Priority.HIGH;
-    // force job if in multi thread but should go in single thread
-    boolean force = !foundInSingleQueue && job.isForSingleThread();
+    // force job if in a batch with a clear job
+    boolean force = job.isBatch() && job.getBatch().hasClearJob();
+    // don't remove existing if in batch with a clear job
+    boolean existingHasPriority = existing != null && existing.isBatch() && existing.getBatch().hasClearJob();
 
-    if (existing == null || force || higherPriority) {
+    if (!existingHasPriority && (existing == null || force || higherPriority)) {
       if (singleThread && this._singleThreadQueue != null) {
         synchronized (this._singleThreadQueue) {
           if (existing != null && !force)
