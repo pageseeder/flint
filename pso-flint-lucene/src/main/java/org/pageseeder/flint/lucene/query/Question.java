@@ -78,6 +78,11 @@ public final class Question implements SearchParameter, XMLWritable {
    */
   private Query _query = null;
 
+  /**
+   * If the query is empty
+   */
+  private boolean _emptyQuery = false;
+
   // Constructors
   // ==============================================================================================
 
@@ -147,7 +152,7 @@ public final class Question implements SearchParameter, XMLWritable {
    */
   @Override
   public boolean isEmpty() {
-    return this._question.isEmpty() || this._fields.isEmpty();
+    return this._emptyQuery || this._question.isEmpty() || this._fields.isEmpty();
   }
 
   /**
@@ -160,13 +165,17 @@ public final class Question implements SearchParameter, XMLWritable {
    */
   private void compute(Analyzer analyzer, Catalog catalog) {
     BooleanQuery.Builder query = new BooleanQuery.Builder();
+    boolean valid = false;
     if (this._supportOperators) {
       for (Entry<String, Float> e : this._fields.entrySet()) {
         Query q = catalog != null && !catalog.isTokenized(e.getKey()) && Queries.hasNoOperators(this._question) ?
             Queries.termQuery(e.getKey(), this._question, this._supportWildcards) :
             Queries.parseToQuery(e.getKey(), this._question, analyzer, this._defaultOperatorOR, this._supportWildcards);
-        if (e.getValue() != 1f) q = new BoostQuery(q, e.getValue());
-        query.add(q, Occur.SHOULD);
+        if (q != null) {
+          if (e.getValue() != 1f) q = new BoostQuery(q, e.getValue());
+          query.add(q, Occur.SHOULD);
+          valid = true;
+        }
       }
     } else {
       Occur with = this._defaultOperatorOR ? Occur.SHOULD : Occur.MUST;
@@ -174,22 +183,35 @@ public final class Question implements SearchParameter, XMLWritable {
       for (Entry<String, Float> e : this._fields.entrySet()) {
         boolean analyzed = catalog == null || catalog.isTokenized(e.getKey());
         BooleanQuery.Builder fieldQuery = new BooleanQuery.Builder();
+        boolean subvalid = false;
         for (String value : values) {
           if (!analyzed) {
             Query q = Queries.termQuery(e.getKey(), value, this._supportWildcards);
             if (e.getValue() != 1f) q = new BoostQuery(q, e.getValue());
             fieldQuery.add(q, with);
+            subvalid = true;
           } else {
             for(Query q : Queries.toTermOrPhraseQueries(e.getKey(), value, this._supportWildcards, analyzer)) {
-              if (e.getValue() != 1f) q = new BoostQuery(q, e.getValue());
-              fieldQuery.add(q, with);
+              if (q != null) {
+                if (e.getValue() != 1f) q = new BoostQuery(q, e.getValue());
+                fieldQuery.add(q, with);
+                subvalid = true;
+              }
             }
           }
         }
-        query.add(fieldQuery.build(), Occur.SHOULD);
+        if (subvalid) {
+          query.add(fieldQuery.build(), Occur.SHOULD);
+          valid = true;
+        }
       }
     }
-    this._query = query.build();
+    if (valid) {
+      this._query = query.build();
+    } else {
+      this._emptyQuery = true;
+      this._query = null;
+    }
   }
 
   /**
@@ -199,24 +221,40 @@ public final class Question implements SearchParameter, XMLWritable {
    * <p>This method ignores any Lucene specific syntax by removing it from the input string.
    */
   private void compute() {
+    boolean valid = false;
     BooleanQuery.Builder query = new BooleanQuery.Builder();
     if (this._supportOperators) {
       for (Entry<String, Float> e : this._fields.entrySet()) {
         Query q = Queries.parseToQuery(e.getKey(), this._question, null, false, this._supportWildcards);
-        query.add(new BoostQuery(q, e.getValue()), Occur.SHOULD);
+        if (q != null) {
+          query.add(new BoostQuery(q, e.getValue()), Occur.SHOULD);
+          valid = true;
+        }
       }
     } else {
       List<String> values = Fields.toValues(this._question);
       for (Entry<String, Float> e : this._fields.entrySet()) {
+        boolean subvalid = false;
         BooleanQuery.Builder sub = new BooleanQuery.Builder();
         for (String value : values) {
           Query q = Queries.toTermOrPhraseQuery(e.getKey(), value, this._supportWildcards);
-          sub.add(new BoostQuery(q, e.getValue()), Occur.SHOULD);
+          if (q != null) {
+            sub.add(new BoostQuery(q, e.getValue()), Occur.SHOULD);
+            subvalid = true;
+          }
         }
-        query.add(sub.build(), Occur.SHOULD);
+        if (subvalid) {
+          query.add(sub.build(), Occur.SHOULD);
+          valid = true;
+        }
       }
     }
-    this._query = query.build();
+    if (valid) {
+      this._query = query.build();
+    } else {
+      this._emptyQuery = true;
+      this._query = null;
+    }
   }
 
   /**
