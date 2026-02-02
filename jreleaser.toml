@@ -1,0 +1,36 @@
+[project]
+name = "flint"
+description = "Lucene library"
+
+tags = ["lucene", "pageseeder", "java"]
+authors = ["Carlos Samuel", "Christophe Lauret", "Jean-Baptiste Reure"]
+license = "Apache-2.0"
+vendor = "Allette Systems"
+
+# Organization info
+[project.links]
+homepage = "https://github.com/pageseeder/flint"
+license = "https://www.apache.org/licenses/LICENSE-2.0.txt"
+
+# Java-specific configuration
+[project.languages.java]
+groupId = "org.pageseeder"
+
+# Git configuration
+[release.github]
+owner = "pageseeder"
+name = "flint"
+username = "pageseeder"
+branch = "main"
+
+# Signing configuration
+[signing]
+active = "ALWAYS"
+armored = true
+mode = "FILE"
+
+# Maven deployment configuration
+[deploy.maven.mavenCentral.sonatype]
+active = "ALWAYS"
+url = "https://central.sonatype.com/api/v1/publisher"
+stagingRepositories = ["build/staging-deploy"]

@@ -1,0 +1,28 @@
+[versions]
+berlioz = "0.12.6"
+lucene = "9.11.1"
+slf4j = "2.0.5"
+tika = "2.9.1"
+xmlwriter = "1.0.3"
+
+[libraries]
+berlioz = { module = "org.pageseeder.berlioz:pso-berlioz", version.ref = "berlioz" }
+
+lucene-core = { module = "org.apache.lucene:lucene-core", version.ref = "lucene" }
+lucene-queryparser = { module = "org.apache.lucene:lucene-queryparser", version.ref = "lucene" }
+lucene-analysis-common = { module = "org.apache.lucene:lucene-analysis-common", version.ref = "lucene" }
+lucene-misc = { module = "org.apache.lucene:lucene-misc", version.ref = "lucene" }
+lucene-highlighter = { module = "org.apache.lucene:lucene-highlighter", version.ref = "lucene" }
+lucene-suggest = { module = "org.apache.lucene:lucene-suggest", version.ref = "lucene" }
+
+tika-core = { module = "org.apache.tika:tika-core", version.ref = "tika" }
+tika-parsers = { module = "org.apache.tika:tika-parsers-standard-package", version.ref = "tika" }
+
+junit = { module = "junit:junit", version = "4.13.2" }
+saxon = { module = "net.sf.saxon:Saxon-HE", version = "12.9" }
+servlet-api = { module = "javax.servlet:javax.servlet-api", version = "3.1.0" }
+slf4j-api = { module = "org.slf4j:slf4j-api", version.ref = "slf4j" }
+xmlwriter = { module = "org.pageseeder.xmlwriter:pso-xmlwriter", version.ref = "xmlwriter" }
+
+[plugins]
+jreleaser = { id = "org.jreleaser", version = "1.18.0" }
