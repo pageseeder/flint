@@ -39,16 +39,18 @@ import java.lang.reflect.InvocationTargetException;
 import java.util.*;
 
 /**
- * Flint config in berlioz config: <flint> <watcher [watch="true|false"]
- * [root="/psml/content"] [max-folders="1000"] /> <threads [number="10"]
- * [priority="5"] /> <index types="default,books,schools,products">
- * <default name="default" path="/psml/content/" />
- * <books name="book-{name}" path="/psml/content/book/{name}" template=
- * "book.xsl"/>
- * <schools name="school" path="/psml/content/schools" template="school.xsl"/>
- * <products name="product" path="/psml/content/products"
- * [template="products.xsl"]/> </index> </flint>
- *
+ * Flint config in berlioz config: <code>
+ *   &lt;flint&gt;
+ *     &lt;watcher [watch="true|false"] [root="/psml/content"] [max-folders="1000"] /&gt;
+ *     &lt;threads [number="10"] [priority="5"] /&gt;
+ *     &lt;index types="default,books,schools,products"&gt;
+ *       &lt;default name="default" path="/psml/content/" /&gt;
+ *       &lt;books name="book-{name}" path="/psml/content/book/{name}" template="book.xsl"/&gt;
+ *       &lt;schools name="school" path="/psml/content/schools" template="school.xsl"/&gt;
+ *       &lt;products name="product" path="/psml/content/products" [template="products.xsl"]/&gt;
+ *     &lt;/index&gt;
+ *   &lt;/flint&gt;
+ * </code>
  * @author jbreure
  *
  */

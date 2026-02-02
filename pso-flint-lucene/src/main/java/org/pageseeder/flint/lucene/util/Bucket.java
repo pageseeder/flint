@@ -65,7 +65,7 @@ import java.util.TreeSet;
    *
    * @param capacity The capacity of this bucket.
    *
-   * @throws IllegalArgumentException If the capacity is < 0.
+   * @throws IllegalArgumentException If the capacity is &lt; 0.
    */
   public Bucket(int capacity) throws IllegalArgumentException {
    this._capacity = capacity;
@@ -80,7 +80,7 @@ import java.util.TreeSet;
    * @param acceptZero <code>true</code> to accept item counts equal to zero;
    *                   <code>false</code> to only accept item counts greater than zero.
    *
-   * @throws IllegalArgumentException If the capacity is < 0.
+   * @throws IllegalArgumentException If the capacity is &lt; 0.
    */
   public Bucket(int capacity, boolean acceptZero) throws IllegalArgumentException {
    this._capacity = capacity;

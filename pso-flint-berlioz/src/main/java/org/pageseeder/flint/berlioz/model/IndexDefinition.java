@@ -344,7 +344,7 @@ public class IndexDefinition implements XMLWritable {
   /**
    * Extract an index name from a full path if the path matches this definition's path.
    * For example:
-   *  def name      def path          file path             -->   extracted name
+   *  def name      def path          file path             --&gt;   extracted name
    *  myindex       /a/b/c            /a/b/c/d/e/f                myindex
    *  myindex       /a/b/c            /a/b/d/e                    null
    *  {name}        /a/{name}         /a/b/c/d/e/f                b

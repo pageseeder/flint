@@ -1,5 +1,3 @@
-import org.jreleaser.model.Active
-import org.jreleaser.model.Signing
 import java.time.Instant
 
 plugins {
@@ -9,6 +7,7 @@ plugins {
 }
 
 val theVersion = File("$rootDir/version.txt").readText(Charsets.UTF_8).trim()
+val gitName = "flint"
 
 // Global version
 version = theVersion
@@ -49,6 +48,7 @@ subprojects {
     toolchain {
       languageVersion.set(JavaLanguageVersion.of(11))
     }
+    withJavadocJar()
     withSourcesJar()
   }
 
@@ -68,15 +68,33 @@ subprojects {
   }
 
   extensions.configure<PublishingExtension>("publishing") {
+    // Add the staging deploy repository
+    repositories {
+      maven {
+        url = rootProject.layout.buildDirectory.dir("staging-deploy").get().asFile.toURI()
+      }
+    }
     publications {
       create<MavenPublication>("mavenJava") {
         from(components["java"])
         pom {
           name.set(project.name)
           description.set(project.description)
+          url.set("https://github.com/weborganic/flint")
           organization {
             name.set("Allette Systems")
             url.set("https://www.allette.com.au")
+          }
+          licenses {
+            license {
+              name.set("The Apache Software License, Version 2.0")
+              url.set("https://www.apache.org/licenses/LICENSE-2.0.txt")
+            }
+          }
+          scm {
+            url.set("git@github.com:pageseeder/${gitName}.git")
+            connection.set("scm:git:git@github.com:pageseeder/${gitName}.git")
+            developerConnection.set("scm:git:git@github.com:pageseeder/${gitName}.git")
           }
           developers {
             developer {

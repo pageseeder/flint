@@ -98,11 +98,11 @@ public final class Fields {
    *
    * <p>See examples below:
    * <pre>
-   * |Big|             => [Big]
-   * |Big bang|        => [Big, bang]
-   * |   Big   bang |  => [Big, bang]
-   * |The "Big bang"|  => [The, "Big bang"]
-   * |The "Big bang|   => [The, "Big, bang]
+   * |Big|             =&gt; [Big]
+   * |Big bang|        =&gt; [Big, bang]
+   * |   Big   bang |  =&gt; [Big, bang]
+   * |The "Big bang"|  =&gt; [The, "Big bang"]
+   * |The "Big bang|   =&gt; [The, "Big, bang]
    * </pre>
    *
    * <p>Note: this class does not exclude terms which could be considered stop words by the index.

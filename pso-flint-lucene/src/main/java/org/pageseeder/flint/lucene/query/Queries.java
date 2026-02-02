@@ -253,18 +253,18 @@ public final class Queries {
    * <p>Supported operators are <code>AND</code> and <code>OR</code>, parentheses are also handled.
    *
    * <p>The examples below show the resulting query as a Lucene predicate from the text specified using "field" as the field name:
-   * <pre>
-   * |Big|             => field:Big
-   * |Big Bang|        => field:Big field:Bang
-   * |   Big   bang |  => field:Big field:Bang
-   * |"Big Bang"|      => field:"Big Bang"
-   * |Big AND Bang|    => +field:Big +field:Bang
-   * |Big OR Bang|     => field:Big field:Bang
-   * |"Big AND Bang"|  => field:"Big AND Bang"
-   * |First "Big Bang"|  => field:First field:"Big bang"
-   * |First "Big Bang|   => field:First field:"Big field:Bang
-   * |First AND (Big Bang)|  => +field:First +(field:Big field:Bang)
-   * </pre>
+   * <code>
+   * |Big|             =&gt; field:Big
+   * |Big Bang|        =&gt; field:Big field:Bang
+   * |   Big   bang |  =&gt; field:Big field:Bang
+   * |"Big Bang"|      =&gt; field:"Big Bang"
+   * |Big AND Bang|    =&gt; +field:Big +field:Bang
+   * |Big OR Bang|     =&gt; field:Big field:Bang
+   * |"Big AND Bang"|  =&gt; field:"Big AND Bang"
+   * |First "Big Bang"|  =&gt; field:First field:"Big bang"
+   * |First "Big Bang|   =&gt; field:First field:"Big field:Bang
+   * |First AND (Big Bang)|  =&gt; +field:First +(field:Big field:Bang)
+   * </code>
    *
    * @param field     the field to construct the terms.
    * @param text      the text to construct the query from.
@@ -283,16 +283,16 @@ public final class Queries {
    *
    * <p>The examples below show the resulting query as a Lucene predicate from the text specified using "field" as the field name:
    * <pre>
-   * |Big|             => field:Big
-   * |Big Bang|        => field:Big field:Bang
-   * |   Big   bang |  => field:Big field:Bang
-   * |"Big Bang"|      => field:"Big Bang"
-   * |Big AND Bang|    => +field:Big +field:Bang
-   * |Big OR Bang|     => field:Big field:Bang
-   * |"Big AND Bang"|  => field:"Big AND Bang"
-   * |First "Big Bang"|  => field:First field:"Big bang"
-   * |First "Big Bang|   => field:First field:"Big field:Bang
-   * |First AND (Big Bang)|  => +field:First +(field:Big field:Bang)
+   * |Big|             =&gt; field:Big
+   * |Big Bang|        =&gt; field:Big field:Bang
+   * |   Big   bang |  =&gt; field:Big field:Bang
+   * |"Big Bang"|      =&gt; field:"Big Bang"
+   * |Big AND Bang|    =&gt; +field:Big +field:Bang
+   * |Big OR Bang|     =&gt; field:Big field:Bang
+   * |"Big AND Bang"|  =&gt; field:"Big AND Bang"
+   * |First "Big Bang"|  =&gt; field:First field:"Big bang"
+   * |First "Big Bang|   =&gt; field:First field:"Big field:Bang
+   * |First AND (Big Bang)|  =&gt; +field:First +(field:Big field:Bang)
    * </pre>
    *
    * @param field     the field to construct the terms.
@@ -313,16 +313,16 @@ public final class Queries {
    *
    * <p>The examples below show the resulting query as a Lucene predicate from the text specified using "field" as the field name:
    * <pre>
-   * |Big|             => field:Big
-   * |Big Bang|        => field:Big field:Bang
-   * |   Big   bang |  => field:Big field:Bang
-   * |"Big Bang"|      => field:"Big Bang"
-   * |Big AND Bang|    => +field:Big +field:Bang
-   * |Big OR Bang|     => field:Big field:Bang
-   * |"Big AND Bang"|  => field:"Big AND Bang"
-   * |First "Big Bang"|  => field:First field:"Big bang"
-   * |First "Big Bang|   => field:First field:"Big field:Bang
-   * |First AND (Big Bang)|  => +field:First +(field:Big field:Bang)
+   * |Big|             =&gt; field:Big
+   * |Big Bang|        =&gt; field:Big field:Bang
+   * |   Big   bang |  =&gt; field:Big field:Bang
+   * |"Big Bang"|      =&gt; field:"Big Bang"
+   * |Big AND Bang|    =&gt; +field:Big +field:Bang
+   * |Big OR Bang|     =&gt; field:Big field:Bang
+   * |"Big AND Bang"|  =&gt; field:"Big AND Bang"
+   * |First "Big Bang"|  =&gt; field:First field:"Big bang"
+   * |First "Big Bang|   =&gt; field:First field:"Big field:Bang
+   * |First AND (Big Bang)|  =&gt; +field:First +(field:Big field:Bang)
    * </pre>
    *
    * @param field     the field to construct the terms.

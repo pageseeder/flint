@@ -694,7 +694,7 @@ public final class FlintField {
   /**
    * Returns the date format to use, allowing recycling.
    *
-   * <p>Set the current date format to <code>null<code> if the format is <code>null</code>.
+   * <p>Set the current date format to <code>null</code> if the format is <code>null</code>.
    *
    * <p>Otherwise retrieve from map or create an instance if it has never been created.
    *
