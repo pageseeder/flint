@@ -118,14 +118,28 @@ public final class IndexManager {
   /**
    * Simple Constructor.
    *
+   * @param cf       the Content Fetcher used to retrieve the content to index.
+   * @param listener an object used to record events
+   * @param nbThreads the number of indexing threads
+   * @param withSingleThread If there should only be a single thread
+   */
+  public IndexManager(ContentFetcher cf, IndexListener listener, int nbThreads, boolean withSingleThread) {
+    this(cf, listener, NB_INDEXING_THREADS, false, 0);
+  }
+
+  /**
+   * Simple Constructor.
+   *
    * @param cf        the Content Fetcher used to retrieve the content to index.
    * @param listener  an object used to record events
    * @param nbThreads the number of indexing threads
+   * @param withSingleThread If there should only be a single thread
+   * @param debounceThreshold the debounce threshold in ms (if &lt;= 0 then there is no debounce mechanism)
    */
-  public IndexManager(ContentFetcher cf, IndexListener listener, int nbThreads, boolean withSingleThread) {
+  public IndexManager(ContentFetcher cf, IndexListener listener, int nbThreads, boolean withSingleThread, int debounceThreshold) {
     this._fetcher = cf;
     this._listener = listener;
-    this._indexQueue = new IndexJobQueue(withSingleThread);
+    this._indexQueue = new IndexJobQueue(withSingleThread, debounceThreshold);
     // Register default XML factory
     this.translatorFactories = new ConcurrentHashMap<>(16, 0.8f, 2);
     registerTranslatorFactory(new FlintTranslatorFactory());

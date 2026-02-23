@@ -20,6 +20,7 @@ import org.pageseeder.flint.Requester;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.DelayQueue;
 import java.util.concurrent.PriorityBlockingQueue;
 
 /**
@@ -41,6 +42,12 @@ public final class IndexJobQueue {
    */
   private final PriorityBlockingQueue<IndexJob> _queue;
 
+
+  /**
+   * The actual queue.
+   */
+  private final DelayQueue<IndexJob> _debounceQueue;
+
   /**
    * The single thread queue.
    */
@@ -51,9 +58,14 @@ public final class IndexJobQueue {
    *
    * @param withSingleThreadQueue if there's only one queue
    */
-  public IndexJobQueue(boolean withSingleThreadQueue) {
+  public IndexJobQueue(boolean withSingleThreadQueue, int debounceThreshold) {
     this._queue = new PriorityBlockingQueue<>();
     this._singleThreadQueue = withSingleThreadQueue ? new PriorityBlockingQueue<>() : null;
+    if (debounceThreshold <= 0) {
+      this._debounceQueue = null;
+    } else {
+      this._debounceQueue = new DelayQueue<>();
+    }
   }
 
   // public external methods
@@ -96,6 +108,13 @@ public final class IndexJobQueue {
         jobs.add(job);
       }
     }
+    if (this._debounceQueue != null) {
+      for (IndexJob job : this._debounceQueue) {
+        if (job.isForRequester(requester)) {
+          jobs.add(job);
+        }
+      }
+    }
     if (this._singleThreadQueue != null) {
       for (IndexJob job : this._singleThreadQueue) {
         if (job.isForRequester(requester)) {
@@ -123,6 +142,13 @@ public final class IndexJobQueue {
         count++;
       }
     }
+    if (this._debounceQueue != null) {
+      for (IndexJob job : this._debounceQueue) {
+        if (job.isForRequester(requester)) {
+          count++;
+        }
+      }
+    }
     if (this._singleThreadQueue != null) {
       for (IndexJob job : this._singleThreadQueue) {
         if (job.isForRequester(requester)) {
@@ -141,6 +167,15 @@ public final class IndexJobQueue {
   public void clearJobsForIndex(Index index) {
     if (index == null) return;
     List<IndexJob> jobs = new ArrayList<>();
+    if (this._debounceQueue != null) {
+      for (IndexJob job : this._debounceQueue) {
+        if (job.isForIndex(index)) {
+          jobs.add(job);
+        }
+      }
+      this._debounceQueue.removeAll(jobs);
+    }
+    jobs.clear();
     for (IndexJob job : this._queue) {
       if (job.isForIndex(index)) {
         jobs.add(job);
@@ -177,6 +212,13 @@ public final class IndexJobQueue {
         jobs.add(job);
       }
     }
+    if (this._debounceQueue != null) {
+      for (IndexJob job : this._debounceQueue) {
+        if (job.isForIndex(index)) {
+          jobs.add(job);
+        }
+      }
+    }
     if (this._singleThreadQueue != null) {
       for (IndexJob job : this._singleThreadQueue) {
         if (job.isForIndex(index)) {
@@ -197,6 +239,11 @@ public final class IndexJobQueue {
     if (index != null) {
       for (IndexJob job : this._queue) {
         if (job.isForIndex(index)) return true;
+      }
+      if (this._debounceQueue != null) {
+        for (IndexJob job : this._debounceQueue) {
+          if (job.isForIndex(index)) return true;
+        }
       }
       if (this._singleThreadQueue != null) {
         for (IndexJob job : this._singleThreadQueue) {
@@ -223,6 +270,13 @@ public final class IndexJobQueue {
         count++;
       }
     }
+    if (this._debounceQueue != null) {
+      for (IndexJob job : this._debounceQueue) {
+        if (job.isForIndex(index)) {
+          count++;
+        }
+      }
+    }
     if (this._singleThreadQueue != null) {
       for (IndexJob job : this._singleThreadQueue) {
         if (job.isForIndex(index)) {
@@ -245,6 +299,8 @@ public final class IndexJobQueue {
    */
   public List<IndexJob> getAllJobs() {
     ArrayList<IndexJob> list = new ArrayList<>(this._queue);
+    if (this._debounceQueue != null)
+      list.addAll(this._debounceQueue);
     if (this._singleThreadQueue != null)
       list.addAll(this._singleThreadQueue);
     return list;
@@ -297,8 +353,8 @@ public final class IndexJobQueue {
    */
   public void clear() {
     this._queue.clear();
-    if (this._singleThreadQueue != null)
-      this._singleThreadQueue.clear();
+    if (this._debounceQueue != null) this._debounceQueue.clear();
+    if (this._singleThreadQueue != null) this._singleThreadQueue.clear();
   }
 
   // -----------------------------------------------------------------------
