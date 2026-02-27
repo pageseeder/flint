@@ -49,7 +49,7 @@ public class DebounceIndexerTest {
 
   public void initDebounce() {
     if (listener == null) listener = new TestListener();
-    manager = LocalIndexManagerFactory.createMultiThreads(5, listener, Collections.singletonList("xml"), delayBetweenIndexing + 50);
+    manager = LocalIndexManagerFactory.createMultiThreads(5, listener, Collections.singletonList("xml"), delayBetweenIndexing + 100);
     System.out.println("Starting debounce manager!");
     if (!indexRoot.exists()) indexRoot.mkdir();
     // clean up previous test's data

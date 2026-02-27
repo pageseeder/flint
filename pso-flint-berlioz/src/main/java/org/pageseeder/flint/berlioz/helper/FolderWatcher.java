@@ -54,7 +54,7 @@ public class FolderWatcher {
     this._root = root;
     if (indexingDelay > 0) {
       this._delayedIndexer = new DelayedIndexer(indexingDelay);
-      this._indexThread = Executors.newSingleThreadExecutor();
+      this._indexThread = Executors.newSingleThreadExecutor(r -> new Thread(r, "flint-folder-watcher"));
     } else {
       this._delayedIndexer = null;
       this._indexThread = null;

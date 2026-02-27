@@ -62,6 +62,12 @@ public final class IndexJobQueue {
    * Single-thread scheduler is enough: we only schedule "enqueue this job later" tasks.
    */
   private final ScheduledExecutorService _debounceScheduler;
+
+  /**
+   * Internal state flag
+   */
+  private volatile boolean isShutdown = false;
+
   /**
    * Simple Constructor.
    *
@@ -74,7 +80,7 @@ public final class IndexJobQueue {
 
     if (debounceThresholdInMs > 0) {
       ScheduledThreadPoolExecutor exec = new ScheduledThreadPoolExecutor(1, r -> {
-        Thread t = new Thread(r, "indexjob-debounce");
+        Thread t = new Thread(r, "flint-debounce-indexing");
         t.setDaemon(true);
         return t;
       });
@@ -333,7 +339,7 @@ public final class IndexJobQueue {
   }
 
   /**
-   * clear all queues
+   * clear all queues (single thread, multi-thread and debounce)
    */
   public void clear() {
     this._queue.clear();
@@ -350,15 +356,37 @@ public final class IndexJobQueue {
 
   /**
    * Call when you're done with this queue to release the debounce scheduler thread.
+   * This will flush all debounced jobs into the main queues so indexing can finish.
    */
   public void shutdown() {
+    // don't accept new jobs
+    this.isShutdown = true;
     if (this._debounceScheduler != null) {
-      // cancel pending tasks and clear state
-      for (PendingDebounce p : this._debounced.values()) {
-        if (p.future != null) p.future.cancel(false);
+
+      // Cancel scheduled tasks but keep pending jobs
+      List<PendingDebounce> pending = new ArrayList<>(this._debounced.values());
+      for (PendingDebounce p : pending) {
+        ScheduledFuture<?> f = p.future;
+        if (f != null) f.cancel(false);
       }
+      // Clear debounce map so scheduled tasks won't enqueue
       this._debounced.clear();
-      this._debounceScheduler.shutdownNow();
+
+      // Add pending jobs immediately
+      for (PendingDebounce p : pending) {
+        enqueueWithoutDebounce(p.job, p.singleThreadTarget);
+      }
+
+      // Stop the scheduler and wait briefly
+      this._debounceScheduler.shutdown();
+      try {
+        if (!this._debounceScheduler.awaitTermination(5, TimeUnit.SECONDS)) {
+          this._debounceScheduler.shutdownNow();
+        }
+      } catch (InterruptedException e) {
+        Thread.currentThread().interrupt();
+        this._debounceScheduler.shutdownNow();
+      }
     }
   }
 
@@ -367,18 +395,19 @@ public final class IndexJobQueue {
   // -----------------------------------------------------------------------
 
   private void addJob(IndexJob job, boolean singleThread) {
-    if (job == null) return;
+    if (job == null || this.isShutdown) return;
 
     // Debounce
     if (this._debounceScheduler != null) {
       JobKey key = JobKey.from(job);
 
       this._debounced.compute(key, (k, existing) -> {
+        // cancel existing one
         if (existing != null && existing.future != null) {
           existing.future.cancel(false);
         }
+        // add a new fresh one
         PendingDebounce fresh = new PendingDebounce(job, singleThread);
-
         fresh.future = this._debounceScheduler.schedule(() -> {
           // Ensure we only enqueue the latest pending for this key
           PendingDebounce current = this._debounced.get(k);

@@ -3,6 +3,7 @@
  */
 package org.pageseeder.flint.berlioz.helper;
 
+import org.pageseeder.flint.IndexManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -87,7 +88,7 @@ public final class FileTreeCrawler implements Runnable {
    */
   void start() throws IOException {
     this.watchService = FileSystems.getDefault().newWatchService();
-    this.watchExecutor = Executors.newSingleThreadExecutor();
+    this.watchExecutor = Executors.newSingleThreadExecutor(r -> new Thread(r, "flint-file-watcher"));
     this.watchExecutor.execute(this);
   }
 
