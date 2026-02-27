@@ -60,22 +60,23 @@ public class ParallelIndexerTest {
   public void testIndexing2() {
     testIndexing(2);
   }
-/*  @Test
-  public void testIndexing3() throws IndexException {
+  @Test
+  public void testIndexing3() {
     testIndexing(3);
   }
   @Test
-  public void testIndexing4() throws IndexException {
+  public void testIndexing4() {
     testIndexing(4);
   }
   @Test
-  public void testIndexing5() throws IndexException {
+  public void testIndexing5() {
     testIndexing(5);
-  }*/
+  }
 
   private void testIndexing(int nb) {
     System.out.println("Indexing "+nb+" start");
     init();
+    Assert.assertNotNull(index);
     manager.indexNewContent(index, indexing);
     // wait a bit
     int DELAY = 2;

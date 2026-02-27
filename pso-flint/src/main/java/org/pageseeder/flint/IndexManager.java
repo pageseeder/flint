@@ -438,6 +438,7 @@ public final class IndexManager {
   public void stop(long timeout) {
     // empty queue
     this._indexQueue.clear();
+    this._indexQueue.shutdown();
     // Interrupt the threads
     IndexingThread.CLOSING_DOWN = true;
     this.multiThreadExecutor.shutdownNow();

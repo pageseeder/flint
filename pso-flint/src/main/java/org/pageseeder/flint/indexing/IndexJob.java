@@ -19,10 +19,10 @@ import org.pageseeder.flint.Index;
 import org.pageseeder.flint.Requester;
 import org.pageseeder.flint.content.ContentType;
 
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.Delayed;
-import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 /**
  * A job to run by the IndexManager.
@@ -32,7 +32,7 @@ import java.util.concurrent.TimeUnit;
  * @author Jean-Baptiste Reure
  * @version 26 February 2010
  */
-public class IndexJob implements Comparable<Delayed>, Delayed {
+public class IndexJob implements Comparable<IndexJob> {
   /**
    * Pseudo-type to indicate that the index needs to be cleared.
    */
@@ -105,11 +105,6 @@ public class IndexJob implements Comparable<Delayed>, Delayed {
   private final IndexBatch batch;
 
   /**
-   * Used for debounce mechanism
-   */
-  private final long debounceDelay;
-
-  /**
    * Internal flag to know if the job succeeded.
    */
   private boolean success = false;
@@ -118,6 +113,11 @@ public class IndexJob implements Comparable<Delayed>, Delayed {
    * The parameters.
    */
   private final Map<String, String> parameters = new HashMap<>();
+
+  /**
+   * A unique key for params, only created if needed
+   */
+  private String paramsKey = null;
 
   /**
    * If this job should be indexed by the single thread (slow queue)
@@ -134,7 +134,7 @@ public class IndexJob implements Comparable<Delayed>, Delayed {
    * @param r       the job's requester
    */
   private IndexJob(IndexBatch b, String cid, ContentType ctype, Index i, Priority p,
-                   Requester r, Map<String, String> params, boolean singleThread, long debounceThreshold) {
+                   Requester r, Map<String, String> params, boolean singleThread) {
     this._contentid = cid;
     this.batch = b;
     this._contenttype = ctype;
@@ -143,36 +143,9 @@ public class IndexJob implements Comparable<Delayed>, Delayed {
     this._index = i;
     this._created = System.nanoTime();
     this.forSingleThread = singleThread;
-    this.debounceDelay = debounceThreshold;
     this.jobId = this._created + '-' + cid + '-' + ctype + '-' + i.getIndexID() + '-' + r.getRequesterID() + '-' + p.toString();
     if (params != null) this.parameters.putAll(params);
   }
-
-  @Override
-  public long getDelay(TimeUnit unit) {
-    return unit.toMillis(this.debounceDelay);
-  }
-
-  @Override
-  public int compareTo(Delayed o) {
-    if (o instanceof IndexJob) return this.compareTo((IndexJob) o);
-    return 1;
-  }
-
-  /**
-   * Compare this job to another job.
-   *
-   * <p>Used to order the jobs by priority in the waiting queue.
-   *
-   * @param job The job to compare to.
-   * @return 0 if both jobs have the same priority;
-   *         -1 if this job's priority is HIGH;
-   *         1 if this job's priority is LOW;
-   * /
-  @Override
-  public int compareTo(IndexJob job) {
-    return this._priority == job._priority? Long.compare(this._created, job._created) : this._priority == Priority.HIGH ? -1 : 1;
-  }*/
 
   /**
    * Return this job's ID.
@@ -257,6 +230,21 @@ public class IndexJob implements Comparable<Delayed>, Delayed {
   }
 
   /**
+   * Compare this job to another job.
+   *
+   * <p>Used to order the jobs by priority in the waiting queue.
+   *
+   * @param job The job to compare to.
+   * @return 0 if both jobs have the same priority;
+   *         -1 if this job's priority is HIGH;
+   *         1 if this job's priority is LOW;
+   */
+  @Override
+  public int compareTo(IndexJob job) {
+    return this._priority == job._priority? Long.compare(this._created, job._created) : this._priority == Priority.HIGH ? -1 : 1;
+  }
+
+  /**
    * Used to find similar job:
    *  - same content id
    *  - same content type
@@ -319,6 +307,17 @@ public class IndexJob implements Comparable<Delayed>, Delayed {
   }
 
   /**
+   * @return a unique key for the parameters (can be used to compare with other jobs)
+   */
+  public String getParamsKey() {
+    if (paramsKey == null) {
+      this.paramsKey = this.parameters.entrySet().stream().sorted(Map.Entry.comparingByKey())
+        .map(e -> e.getKey() + "=" + e.getValue()).collect(Collectors.joining("&"));
+    }
+    return paramsKey;
+  }
+
+  /**
    * Returns a string with each class attribute value - useful when debugging and logging.
    */
   @Override
@@ -355,7 +354,7 @@ public class IndexJob implements Comparable<Delayed>, Delayed {
    */
   public static IndexJob newBatchJob(IndexBatch b, String contentid, ContentType ctype, Index i, Priority p,
                                      Requester r, Map<String, String> params, boolean forSingleThread) {
-    return new IndexJob(b, contentid, ctype, i, p, r, params, forSingleThread, 0);
+    return new IndexJob(b, contentid, ctype, i, p, r, params, forSingleThread);
   }
 
   /**
@@ -371,25 +370,7 @@ public class IndexJob implements Comparable<Delayed>, Delayed {
    * @return the new job
    */
   public static IndexJob newJob(String contentid, ContentType ctype, Index i, Priority p, Requester r, Map<String, String> params) {
-    return new IndexJob(null, contentid, ctype, i, p, r, params, false, 0);
-  }
-
-  /**
-   * Used to build a new job.
-   *
-   * @param contentid The Content ID
-   * @param ctype     The Content type
-   * @param i         The Index
-   * @param p         The job's priority
-   * @param r         The job's requester
-   * @param params    The job's parameters
-   * @param debounceDelayMs The debounce delay in ms (if 0 no debounce)
-   *
-   * @return the new job
-   */
-  public static IndexJob newJob(String contentid, ContentType ctype, Index i, Priority p,
-                                Requester r, Map<String, String> params, long debounceDelayMs) {
-    return new IndexJob(null, contentid, ctype, i, p, r, params, false, debounceDelayMs);
+    return new IndexJob(null, contentid, ctype, i, p, r, params, false);
   }
 
   /**
@@ -403,7 +384,7 @@ public class IndexJob implements Comparable<Delayed>, Delayed {
    * @return the new job
    */
   public static IndexJob newClearJob(IndexBatch batch, Index index, Priority priority, Requester requester) {
-    return new IndexJob(batch, CLEAR_CONTENT_ID, CLEAR_CONTENT_TYPE, index, priority, requester, null, false, 0);
+    return new IndexJob(batch, CLEAR_CONTENT_ID, CLEAR_CONTENT_TYPE, index, priority, requester, null, false);
   }
 
 }
