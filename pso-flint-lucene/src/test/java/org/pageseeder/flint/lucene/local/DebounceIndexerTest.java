@@ -49,7 +49,7 @@ public class DebounceIndexerTest {
 
   public void initDebounce() {
     if (listener == null) listener = new TestListener();
-    manager = LocalIndexManagerFactory.createMultiThreads(5, listener, Collections.singletonList("xml"), delayBetweenIndexing + 100);
+    manager = LocalIndexManagerFactory.createMultiThreads(5, listener, Collections.singletonList("xml"), delayBetweenIndexing + 200);
     System.out.println("Starting debounce manager!");
     if (!indexRoot.exists()) indexRoot.mkdir();
     // clean up previous test's data
@@ -88,7 +88,7 @@ public class DebounceIndexerTest {
     TestUtils.wait(DELAY);
     IndexReader reader = LuceneIndexQueries.grabReader(indexNormal);
     Assert.assertEquals(30, reader.numDocs());
-    Assert.assertEquals(listener.getJobsCount(), nbFiles * 3);
+    Assert.assertEquals(nbFiles * 3, listener.getJobsCount());
     LuceneIndexQueries.release(indexNormal, reader);
   }
 
