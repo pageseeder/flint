@@ -176,8 +176,13 @@ public class IndexJob implements Comparable<IndexJob> {
     return this._index.getCatalog();
   }
 
+  /**
+   * @return high if this priority or the batch's priority is high, low otherwise
+   */
   public Priority getPriority() {
-    return this._priority;
+    if (this._priority == Priority.HIGH || (this.batch != null && this.batch.getPriority() == Priority.HIGH))
+      return Priority.HIGH;
+    return Priority.LOW;
   }
 
   /**
