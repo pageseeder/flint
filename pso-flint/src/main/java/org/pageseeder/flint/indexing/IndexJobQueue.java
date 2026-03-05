@@ -17,6 +17,7 @@ package org.pageseeder.flint.indexing;
 
 import org.pageseeder.flint.Index;
 import org.pageseeder.flint.Requester;
+import org.pageseeder.flint.content.ContentType;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -405,6 +406,7 @@ public final class IndexJobQueue {
         // cancel existing one
         if (existing != null && existing.future != null) {
           existing.future.cancel(false);
+          this.removedJob(existing.job);
         }
         // add a new fresh one
         PendingDebounce fresh = new PendingDebounce(job, singleThread);
@@ -450,35 +452,29 @@ public final class IndexJobQueue {
     boolean existingHasPriority = existing != null && existing.isBatch() && existing.getBatch().hasClearJob();
 
     if (!existingHasPriority && (existing == null || force || higherPriority)) {
-      if (singleThread && this._singleThreadQueue != null) {
-        synchronized (this._singleThreadQueue) {
-          if (existing != null && !force)
-            this.removeExistingJob(job, existing, foundInSingleQueue);
-          this._singleThreadQueue.put(job);
-        }
-      } else {
-        synchronized (this._queue) {
-          if (existing != null && !force)
-            this.removeExistingJob(job, existing, foundInSingleQueue);
-          this._queue.put(job);
-        }
+      if (existing != null && !force) {
+        this.removedJob(existing);
+        if (foundInSingleQueue) synchronized (this._singleThreadQueue) { this._singleThreadQueue.remove(existing); }
+        else synchronized (this._queue) { this._queue.remove(existing); }
+      }
+      if (singleThread && this._singleThreadQueue != null) synchronized (this._singleThreadQueue) {
+        this._singleThreadQueue.put(job);
+      } else synchronized (this._queue) {
+        this._queue.put(job);
       }
     } else {
-      // if a batch, decrease total except if last job
-      IndexBatch batch = job.getBatch();
-      if (batch != null && batch.getCurrentCount() != batch.getTotalDocuments() - 1)
-        batch.remove(1);
+      this.removedJob(job);
     }
   }
 
-  private void removeExistingJob(IndexJob job, IndexJob existing, boolean foundInSingleQueue) {
+  /**
+   * Adjust batch counts for the job.
+   */
+  private void removedJob(IndexJob job) {
     // don't remove last job of batch
-    IndexBatch batch = existing.getBatch();
+    IndexBatch batch = job.getBatch();
     if (batch != null && batch.getCurrentCount() != batch.getTotalDocuments() - 1)
       batch.remove(1);
-    // remove from queue
-    if (foundInSingleQueue) this._singleThreadQueue.remove(existing);
-    else this._queue.remove(existing);
   }
 
   // -----------------------------------------------------------------------
@@ -498,41 +494,28 @@ public final class IndexJobQueue {
 
   private static final class JobKey {
     private final String contentId;
-    private final Object contentType; // ContentType equality semantics are already used in IndexJob#isSimilar
+    private final ContentType contentType;
     private final String indexId;
     private final String parameters;
 
     private final IndexJob.Priority priority;
 
-    private final boolean isBatch;
-    private final String batchId;
-
-    private JobKey(String contentId,
-                   Object contentType,
-                   String indexId,
-                   String parameters,
-                   IndexJob.Priority priority,
-                   boolean isBatch,
-                   String batchId) {
+    private JobKey(String contentId, ContentType contentType,
+                   String indexId, String parameters, IndexJob.Priority priority) {
       this.contentId = contentId;
       this.contentType = contentType;
       this.indexId = indexId;
       this.parameters = parameters;
       this.priority = priority;
-      this.isBatch = isBatch;
-      this.batchId = batchId;
     }
 
     static JobKey from(IndexJob job) {
-      IndexBatch b = job.getBatch();
       return new JobKey(
           job.getContentID(),
           job.getContentType(),
           job.getIndex().getIndexID(),
           job.getParamsKey(),
-          job.getPriority(),
-          job.isBatch(),
-          b == null ? null : b.getID()
+          job.getPriority()
       );
     }
 
@@ -541,9 +524,7 @@ public final class IndexJobQueue {
       if (this == o) return true;
       if (!(o instanceof JobKey)) return false;
       JobKey other = (JobKey) o;
-      return this.isBatch == other.isBatch
-          && Objects.equals(this.batchId, other.batchId)
-          && Objects.equals(this.contentId, other.contentId)
+      return Objects.equals(this.contentId, other.contentId)
           && Objects.equals(this.contentType, other.contentType)
           && Objects.equals(this.indexId, other.indexId)
           && Objects.equals(this.parameters, other.parameters)
@@ -557,9 +538,7 @@ public final class IndexJobQueue {
           this.contentType,
           this.indexId,
           this.parameters,
-          this.priority,
-          this.isBatch,
-          this.batchId
+          this.priority
       );
     }
   }
