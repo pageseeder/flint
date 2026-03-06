@@ -246,7 +246,7 @@ public class IndexJob implements Comparable<IndexJob> {
    */
   @Override
   public int compareTo(IndexJob job) {
-    return this._priority == job._priority? Long.compare(this._created, job._created) : this._priority == Priority.HIGH ? -1 : 1;
+    return this.getPriority() == job.getPriority() ? Long.compare(this._created, job._created) : getPriority() == Priority.HIGH ? -1 : 1;
   }
 
   /**
