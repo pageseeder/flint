@@ -124,7 +124,7 @@ public final class IndexManager {
    * @param withSingleThread If there should only be a single thread
    */
   public IndexManager(ContentFetcher cf, IndexListener listener, int nbThreads, boolean withSingleThread) {
-    this(cf, listener, NB_INDEXING_THREADS, false, 0);
+    this(cf, listener, nbThreads, withSingleThread, 0);
   }
 
   /**
@@ -436,10 +436,10 @@ public final class IndexManager {
    * @param timeout in seconds for each queue
    */
   public void stop(long timeout) {
+    IndexingThread.CLOSING_DOWN = true;
     // refuse new jobs and flush debounced jobs into main queue
     this._indexQueue.shutdown();
     // Interrupt the threads
-    IndexingThread.CLOSING_DOWN = true;
     this.multiThreadExecutor.shutdown();
     // wait for finish
     try {

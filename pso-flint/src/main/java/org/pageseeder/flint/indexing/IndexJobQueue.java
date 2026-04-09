@@ -291,7 +291,11 @@ public final class IndexJobQueue {
    * @throws InterruptedException if the thread was interrupted when waiting for the next job
    */
   public IndexJob nextMultiThreadJob() throws InterruptedException {
-    return this._queue.take();
+    while (!this.isShutdown) {
+      IndexJob job = this._queue.poll(500, TimeUnit.MILLISECONDS);
+      if (job != null) return job;
+    }
+    return null;
   }
 
   /**
@@ -304,7 +308,11 @@ public final class IndexJobQueue {
 
   public IndexJob nextSingleThreadJob() throws InterruptedException {
     if (this._singleThreadQueue == null) return null;
-    return this._singleThreadQueue.take();
+    while (!this.isShutdown) {
+      IndexJob job = this._singleThreadQueue.poll(500, TimeUnit.MILLISECONDS);
+      if (job != null) return job;
+    }
+    return null;
   }
 
   /**
