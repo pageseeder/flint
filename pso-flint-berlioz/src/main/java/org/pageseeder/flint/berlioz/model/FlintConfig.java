@@ -183,9 +183,9 @@ public class FlintConfig {
   public boolean deleteMaster(String name) {
     String key = name == null ? DEFAULT_INDEX_NAME : name;
     if (this.indexes.containsKey(key)) {
-      // close index
+      // close index and all autosuggest
       IndexMaster master = this.indexes.remove(key);
-      master.getIndex().close();
+      master.close();
       // remove files
       File root = new File(this._directory, key);
       if (root.exists() && root.isDirectory()) {
