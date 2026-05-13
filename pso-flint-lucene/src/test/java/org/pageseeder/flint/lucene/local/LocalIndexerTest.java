@@ -5,7 +5,6 @@ import org.apache.lucene.index.IndexReader;
 import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.Test;
-import org.pageseeder.flint.IndexException;
 import org.pageseeder.flint.local.LocalIndexManager;
 import org.pageseeder.flint.local.LocalIndexManagerFactory;
 import org.pageseeder.flint.lucene.LuceneIndexQueries;
@@ -18,17 +17,22 @@ import java.io.File;
 
 public class LocalIndexerTest {
 
-  private static File template     = new File("src/test/resources/template.xsl");
-  private static File templatePSML = new File("src/test/resources/psml-template.xsl");
-  private static File indexing     = new File("src/test/resources/indexing");
-  private static File indexRoot1   = new File("tmp/index1");
-  private static File indexRoot2   = new File("tmp/index2");
+  private static final File template = new File("src/test/resources/template.xsl");
+  private static final File indexing = new File("src/test/resources/indexing");
+  private static final File indexRoot1 = new File("tmp/index1");
+  private static final File indexRoot2 = new File("tmp/index2");
 
-  private static int DELAY = 2;
+  private static final int DELAY = 2;
   private static LuceneLocalIndex index1;
   private static LuceneLocalIndex index2;
   private static LocalIndexManager manager;
 
+  public void init() {
+    if (manager == null) {
+      manager = LocalIndexManagerFactory.createMultiThreads(5, new TestListener());
+      System.out.println("Starting manager!");
+    }
+  }
 //  @Before
   public void init1() {
     if (!indexRoot1.exists()) indexRoot1.mkdir();
@@ -38,12 +42,9 @@ public class LocalIndexerTest {
     try {
       index1 = new LuceneLocalIndex(indexRoot1, "local", new StandardAnalyzer(), indexing);
       index1.setTemplate("xml", template.toURI());
-      index1.setTemplate("psml", templatePSML.toURI());
     } catch (Exception ex) {
       LoggerFactory.getLogger(TestUtils.class).error("Something went wrong", ex);
     }
-    manager = LocalIndexManagerFactory.createMultiThreads(5, new TestListener());
-    System.out.println("Starting manager!");
   }
   public void init2() {
     if (!indexRoot2.exists()) indexRoot2.mkdir();
@@ -53,21 +54,10 @@ public class LocalIndexerTest {
     try {
       index2 = new LuceneLocalIndex(indexRoot2, "local", new StandardAnalyzer(), indexing);
       index2.setTemplate("xml", template.toURI());
-      index2.setTemplate("psml", templatePSML.toURI());
     } catch (Exception ex) {
       LoggerFactory.getLogger(TestUtils.class).error("Something went wrong", ex);
     }
   }
-
-//  @After
-//  public void after() {
-//     // stop index
-//    System.out.println("Clearing index!");
-//    manager.clear(index);
-//    // wait a bit
-//    TestUtils.wait(1);
-//    System.out.println("-----------------------------------");
-//  }
 
   @AfterClass
   public static void after() {
@@ -77,34 +67,28 @@ public class LocalIndexerTest {
     System.out.println("-----------------------------------");
   }
 
-  /**
-   * @throws IndexException
-   */
   @Test
-  public void testIndexing1() throws IndexException {
+  public void testIndexing1() {
     init1();
+    init();
     manager.indexNewContent(index1, indexing);
     // wait a bit
     TestUtils.wait(DELAY);
-    IndexReader reader;
-    reader = LuceneIndexQueries.grabReader(index1);
+    IndexReader reader = LuceneIndexQueries.grabReader(index1);
     Assert.assertEquals(30, reader.numDocs());
     LuceneIndexQueries.release(index1, reader);
   }
 
-  /**
-   * @throws IndexException
-   */
   @Test
-  public void testIndexing2() throws IndexException {
+  public void testIndexing2() {
     init2();
+    init();
     for (File f : indexing.listFiles()) {
       manager.indexFile(index2, f);
     }
     // wait a bit
     TestUtils.wait(DELAY);
-    IndexReader reader;
-    reader = LuceneIndexQueries.grabReader(index2);
+    IndexReader reader = LuceneIndexQueries.grabReader(index2);
     Assert.assertEquals(30, reader.numDocs());
     LuceneIndexQueries.release(index2, reader);
   }

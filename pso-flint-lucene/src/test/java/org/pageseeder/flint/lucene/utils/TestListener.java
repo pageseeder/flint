@@ -6,6 +6,12 @@ import org.pageseeder.flint.indexing.IndexListener;
 
 public class TestListener implements IndexListener {
 
+  private int countJobs = 0;
+
+  public void resetCount() {
+    this.countJobs = 0;
+  }
+
   @Override
   public void startBatch(IndexBatch batch) {
     /*System.out.println("Starting batch job");*/
@@ -18,7 +24,7 @@ public class TestListener implements IndexListener {
 
   @Override
   public void startJob(IndexJob job) {
-    /*System.out.println("Starting job for "+job.getContentID());*/
+    this.countJobs++;
   }
 
   @Override
@@ -35,6 +41,10 @@ public class TestListener implements IndexListener {
   @Override
   public void endJob(IndexJob job) {
     /*System.out.println("Ending job for "+job.getContentID());*/
+  }
+
+  public int getJobsCount() {
+    return countJobs;
   }
 
 }

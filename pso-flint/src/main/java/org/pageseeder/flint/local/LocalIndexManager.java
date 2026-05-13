@@ -29,6 +29,11 @@ public class LocalIndexManager {
     this.manager.setDefaultTranslator(new SourceForwarder(extensions, "UTF-8"));
   }
 
+  protected LocalIndexManager(IndexListener listener, int threads, boolean single, List<String> extensions, int debounceDelayInMs) {
+    this.manager = new IndexManager(new LocalFileContentFetcher(), listener, threads, single, debounceDelayInMs);
+    this.manager.setDefaultTranslator(new SourceForwarder(extensions, "UTF-8"));
+  }
+
   public void clear(LocalIndex index) {
     this.manager.clear(index, new Requester("Clearing index"), Priority.LOW);
   }

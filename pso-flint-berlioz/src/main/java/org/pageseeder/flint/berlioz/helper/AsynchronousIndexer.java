@@ -24,6 +24,8 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class AsynchronousIndexer implements Runnable, XMLWritable, FileFilter {
 
@@ -48,7 +50,13 @@ public class AsynchronousIndexer implements Runnable, XMLWritable, FileFilter {
 
   private boolean useIndexDate = true;
 
-  private final static ExecutorService threads = Executors.newCachedThreadPool();
+  private final static ExecutorService threads = Executors.newCachedThreadPool(new ThreadFactory() {
+    private final AtomicInteger count = new AtomicInteger(1);
+    @Override
+    public Thread newThread(Runnable r) {
+      return new Thread(r, "flint-async-indexer-"+count.getAndIncrement());
+    }
+  });
 
   private final static Map<String, AsynchronousIndexer> indexers = new ConcurrentHashMap<>();
 

@@ -118,14 +118,28 @@ public final class IndexManager {
   /**
    * Simple Constructor.
    *
+   * @param cf       the Content Fetcher used to retrieve the content to index.
+   * @param listener an object used to record events
+   * @param nbThreads the number of indexing threads
+   * @param withSingleThread If there should only be a single thread
+   */
+  public IndexManager(ContentFetcher cf, IndexListener listener, int nbThreads, boolean withSingleThread) {
+    this(cf, listener, nbThreads, withSingleThread, 0);
+  }
+
+  /**
+   * Simple Constructor.
+   *
    * @param cf        the Content Fetcher used to retrieve the content to index.
    * @param listener  an object used to record events
    * @param nbThreads the number of indexing threads
+   * @param withSingleThread If there should only be a single thread
+   * @param debounceThreshold the debounce threshold in ms (if &lt;= 0 then there is no debounce mechanism)
    */
-  public IndexManager(ContentFetcher cf, IndexListener listener, int nbThreads, boolean withSingleThread) {
+  public IndexManager(ContentFetcher cf, IndexListener listener, int nbThreads, boolean withSingleThread, int debounceThreshold) {
     this._fetcher = cf;
     this._listener = listener;
-    this._indexQueue = new IndexJobQueue(withSingleThread);
+    this._indexQueue = new IndexJobQueue(withSingleThread, debounceThreshold);
     // Register default XML factory
     this.translatorFactories = new ConcurrentHashMap<>(16, 0.8f, 2);
     registerTranslatorFactory(new FlintTranslatorFactory());
@@ -135,7 +149,7 @@ public final class IndexManager {
 
       @Override
       public Thread newThread(Runnable r) {
-        Thread t = new Thread(r, "indexing-p" + IndexManager.this.threadPriority + "-t" + this.threadCount++);
+        Thread t = new Thread(r, "flint-indexing-p" + IndexManager.this.threadPriority + "-t" + this.threadCount++);
         t.setPriority(IndexManager.this.threadPriority);
         return t;
       }
@@ -143,7 +157,7 @@ public final class IndexManager {
     // create separate single thread if needed
     if (withSingleThread) {
       this.singleThreadExecutor = Executors.newSingleThreadExecutor(r -> {
-        Thread t = new Thread(r, "indexing-p" + IndexManager.this.threadPriority + "-single");
+        Thread t = new Thread(r, "flint-indexing-p" + IndexManager.this.threadPriority + "-single");
         t.setPriority(IndexManager.this.threadPriority);
         return t;
       });
@@ -422,27 +436,33 @@ public final class IndexManager {
    * @param timeout in seconds for each queue
    */
   public void stop(long timeout) {
-    // empty queue
-    this._indexQueue.clear();
-    // Interrupt the threads
     IndexingThread.CLOSING_DOWN = true;
-    this.multiThreadExecutor.shutdownNow();
+    // refuse new jobs and flush debounced jobs into main queue
+    this._indexQueue.shutdown();
+    // Interrupt the threads
+    this.multiThreadExecutor.shutdown();
     // wait for finish
     try {
-      this.multiThreadExecutor.awaitTermination(timeout, TimeUnit.SECONDS);
+      if (!this.multiThreadExecutor.awaitTermination(timeout, TimeUnit.SECONDS)) {
+        this.multiThreadExecutor.shutdownNow();
+      }
     } catch (InterruptedException ex) {
       LOGGER.error("Interrupted while shutting down multiple thread", ex);
       Thread.currentThread().interrupt();
     }
     if (this.singleThreadExecutor != null) {
-      this.singleThreadExecutor.shutdownNow();
+      this.singleThreadExecutor.shutdown();
       try {
-        this.singleThreadExecutor.awaitTermination(timeout, TimeUnit.SECONDS);
+        if (!this.singleThreadExecutor.awaitTermination(timeout, TimeUnit.SECONDS)) {
+          this.singleThreadExecutor.shutdownNow();
+        }
       } catch (InterruptedException ex) {
         LOGGER.error("Interrupted while shutting down single thread", ex);
         Thread.currentThread().interrupt();
       }
     }
+    // clear indexing queue
+    this._indexQueue.clear();
     // Close all indexes
     for (Index index : ALL_INDEXES.values()) {
       index.close();

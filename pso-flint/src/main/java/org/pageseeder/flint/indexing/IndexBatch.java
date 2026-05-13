@@ -16,25 +16,36 @@ public class IndexBatch {
   private long         indexTime;
   private long         totalTime;
   private boolean      hasClearJob = false;
+  private final IndexJob.Priority priority;
 
   public IndexBatch() {
     this(null);
   }
 
   public IndexBatch(String idx) {
+    this(idx, IndexJob.Priority.LOW);
+  }
+
+  public IndexBatch(String idx, IndexJob.Priority priority) {
     this.batchID = System.nanoTime();
     this.createTime = System.currentTimeMillis();
     this.index = idx;
     this.totalCount = 0;
+    this.priority = priority;
   }
 
   public IndexBatch(String idx, int total) {
+    this(idx, total, IndexJob.Priority.LOW);
+  }
+
+  public IndexBatch(String idx, int total, IndexJob.Priority priority) {
     this.batchID = System.nanoTime();
     this.createTime = System.currentTimeMillis();
     this.index = idx;
     this.totalCount = total;
     this.computeTime = -1;
     this.computed = true;
+    this.priority = priority;
   }
 
   public IndexBatch withClearJob() {
@@ -44,6 +55,10 @@ public class IndexBatch {
 
   public boolean hasClearJob() {
     return this.hasClearJob;
+  }
+
+  public IndexJob.Priority getPriority() {
+    return priority;
   }
 
   protected synchronized void startIndexing() {

@@ -183,9 +183,9 @@ public class FlintConfig {
   public boolean deleteMaster(String name) {
     String key = name == null ? DEFAULT_INDEX_NAME : name;
     if (this.indexes.containsKey(key)) {
-      // close index
+      // close index and all autosuggest
       IndexMaster master = this.indexes.remove(key);
-      master.getIndex().close();
+      master.close();
       // remove files
       File root = new File(this._directory, key);
       if (root.exists() && root.isDirectory()) {
@@ -221,8 +221,9 @@ public class FlintConfig {
     if (!this._extensions.contains("psml")) LOGGER.warn("PSML should be in the list of supported extensions");
     int nbThreads = GlobalSettings.get("flint.threads.number", 10);
     int threadPriority = GlobalSettings.get("flint.threads.priority", 5);
+    int debounceDelay = GlobalSettings.get("flint.debounce", 0);
     this.listener = new QuietListener(LOGGER);
-    this.manager = new IndexManager(new LocalFileContentFetcher(), this.listener, nbThreads, false);
+    this.manager = new IndexManager(new LocalFileContentFetcher(), this.listener, nbThreads, false, debounceDelay);
     this.manager.setThreadPriority(threadPriority);
     createTranslatorFactories();
     // watch is on?

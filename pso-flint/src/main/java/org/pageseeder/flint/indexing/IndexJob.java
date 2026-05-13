@@ -19,8 +19,10 @@ import org.pageseeder.flint.Index;
 import org.pageseeder.flint.Requester;
 import org.pageseeder.flint.content.ContentType;
 
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 /**
  * A job to run by the IndexManager.
@@ -113,6 +115,11 @@ public class IndexJob implements Comparable<IndexJob> {
   private final Map<String, String> parameters = new HashMap<>();
 
   /**
+   * A unique key for params, only created if needed
+   */
+  private String paramsKey = null;
+
+  /**
    * If this job should be indexed by the single thread (slow queue)
    */
   private final boolean forSingleThread;
@@ -169,8 +176,13 @@ public class IndexJob implements Comparable<IndexJob> {
     return this._index.getCatalog();
   }
 
+  /**
+   * @return high if this priority or the batch's priority is high, low otherwise
+   */
   public Priority getPriority() {
-    return this._priority;
+    if (this._priority == Priority.HIGH || (this.batch != null && this.batch.getPriority() == Priority.HIGH))
+      return Priority.HIGH;
+    return Priority.LOW;
   }
 
   /**
@@ -234,7 +246,7 @@ public class IndexJob implements Comparable<IndexJob> {
    */
   @Override
   public int compareTo(IndexJob job) {
-    return this._priority == job._priority? Long.compare(this._created, job._created) : this._priority == Priority.HIGH ? -1 : 1;
+    return this.getPriority() == job.getPriority() ? Long.compare(this._created, job._created) : getPriority() == Priority.HIGH ? -1 : 1;
   }
 
   /**
@@ -297,6 +309,17 @@ public class IndexJob implements Comparable<IndexJob> {
    */
   public Map<String, String> getParameters() {
     return new HashMap<>(this.parameters);
+  }
+
+  /**
+   * @return a unique key for the parameters (can be used to compare with other jobs)
+   */
+  public String getParamsKey() {
+    if (paramsKey == null) {
+      this.paramsKey = this.parameters.entrySet().stream().sorted(Map.Entry.comparingByKey())
+        .map(e -> e.getKey() + "=" + e.getValue()).collect(Collectors.joining("&"));
+    }
+    return paramsKey;
   }
 
   /**

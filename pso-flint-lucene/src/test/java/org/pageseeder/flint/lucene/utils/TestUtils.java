@@ -20,8 +20,12 @@ import java.util.concurrent.TimeUnit;
 public class TestUtils {
 
   public static void wait(int time) {
+    waitMs(time * 1000);
+  }
+
+  public static void waitMs(int timeMs) {
     try {
-      Thread.sleep(time * 1000);
+      Thread.sleep(timeMs);
     } catch (InterruptedException ex) {
       LoggerFactory.getLogger(TestUtils.class).error("Something went wrong", ex);
       Thread.currentThread().interrupt();

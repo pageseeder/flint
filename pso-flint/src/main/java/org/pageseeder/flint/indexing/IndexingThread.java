@@ -104,7 +104,8 @@ public final class IndexingThread implements Runnable {
       }
       // We've got a job to handle?
       if (job == null) {
-        this._listener.error(null, "Found a null job in indexing queue.", null);
+        if (!CLOSING_DOWN)
+          this._listener.error(null, "Found a null job in indexing queue.", null);
         // the thread was shutdown, let's die then
         return;
       }

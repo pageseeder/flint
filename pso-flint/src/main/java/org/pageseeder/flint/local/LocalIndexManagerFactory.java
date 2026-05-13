@@ -33,7 +33,11 @@ public class LocalIndexManagerFactory {
   }
 
   public static LocalIndexManager createMultiThreads(int threads, IndexListener listener, List<String> extensions) {
-    return new LocalIndexManager(listener, threads, false, extensions);
+    return create(listener, threads, false, extensions);
+  }
+
+  public static LocalIndexManager createMultiThreads(int threads, IndexListener listener, List<String> extensions, int debounceDelayInMs) {
+    return create(listener, threads, false, extensions, debounceDelayInMs);
   }
 
   /*
@@ -52,11 +56,23 @@ public class LocalIndexManagerFactory {
     return create(listener, 1, false, extensions);
   }
 
+  public static LocalIndexManager createSingleThread(IndexListener listener, List<String> extensions, int debounceDelayInMs) {
+    return create(listener, 1, false, extensions, debounceDelayInMs);
+  }
+
   /*
    * Generic
    */
 
   public static LocalIndexManager create(IndexListener listener, int threads, boolean single, List<String> extensions) {
-    return new LocalIndexManager(listener, threads, single, extensions);
+    return create(listener, threads, single, extensions, 0);
+  }
+
+  /*
+   * Generic
+   */
+
+  public static LocalIndexManager create(IndexListener listener, int threads, boolean single, List<String> extensions, int debounceDelayInMs) {
+    return new LocalIndexManager(listener, threads, single, extensions, debounceDelayInMs);
   }
 }

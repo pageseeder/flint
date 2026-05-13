@@ -17,10 +17,13 @@ package org.pageseeder.flint.indexing;
 
 import org.pageseeder.flint.Index;
 import org.pageseeder.flint.Requester;
+import org.pageseeder.flint.content.ContentType;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.PriorityBlockingQueue;
+import java.util.Objects;
+import java.util.concurrent.*;
+import java.util.stream.Collectors;
 
 /**
  * The queue containing index jobs.
@@ -47,13 +50,46 @@ public final class IndexJobQueue {
   private final PriorityBlockingQueue<IndexJob> _singleThreadQueue;
 
   /**
+   * The debounce delay in ms
+   */
+  private final int _debounceThresholdInMs;
+
+  /**
+   * Debounce state (only used when _debounceThresholdInMs > 0).
+   */
+  private final ConcurrentHashMap<JobKey, PendingDebounce> _debounced = new ConcurrentHashMap<>();
+
+  /**
+   * Single-thread scheduler is enough: we only schedule "enqueue this job later" tasks.
+   */
+  private final ScheduledExecutorService _debounceScheduler;
+
+  /**
+   * Internal state flag
+   */
+  private volatile boolean isShutdown = false;
+
+  /**
    * Simple Constructor.
    *
    * @param withSingleThreadQueue if there's only one queue
    */
-  public IndexJobQueue(boolean withSingleThreadQueue) {
+  public IndexJobQueue(boolean withSingleThreadQueue, int debounceThresholdInMs) {
     this._queue = new PriorityBlockingQueue<>();
     this._singleThreadQueue = withSingleThreadQueue ? new PriorityBlockingQueue<>() : null;
+    this._debounceThresholdInMs = debounceThresholdInMs;
+
+    if (debounceThresholdInMs > 0) {
+      ScheduledThreadPoolExecutor exec = new ScheduledThreadPoolExecutor(1, r -> {
+        Thread t = new Thread(r, "flint-debounce-indexing");
+        t.setDaemon(true);
+        return t;
+      });
+      exec.setRemoveOnCancelPolicy(true);
+      this._debounceScheduler = exec;
+    } else {
+      this._debounceScheduler = null;
+    }
   }
 
   // public external methods
@@ -90,18 +126,15 @@ public final class IndexJobQueue {
    */
   public List<IndexJob> getJobsForRequester(Requester requester) {
     if (requester == null) return getAllJobs();
-    List<IndexJob> jobs = new ArrayList<>();
-    for (IndexJob job : this._queue) {
-      if (job.isForRequester(requester)) {
-        jobs.add(job);
-      }
+    List<IndexJob> jobs = this._queue.stream().filter(job -> job.isForRequester(requester)).collect(Collectors.toList());
+    if (this._debounceScheduler != null) {
+      jobs.addAll(this._debounced.values().stream()
+        .filter(pendingDebounce -> pendingDebounce.job.isForRequester(requester))
+        .map(pendingDebounce -> pendingDebounce.job)
+        .collect(Collectors.toList()));
     }
     if (this._singleThreadQueue != null) {
-      for (IndexJob job : this._singleThreadQueue) {
-        if (job.isForRequester(requester)) {
-          jobs.add(job);
-        }
-      }
+      jobs.addAll(this._singleThreadQueue.stream().filter(job -> job.isForRequester(requester)).collect(Collectors.toList()));
     }
     return jobs;
   }
@@ -117,18 +150,13 @@ public final class IndexJobQueue {
    */
   public int countJobsForRequester(Requester requester) {
     if (requester == null) return this._queue.size();
-    int count = 0;
-    for (IndexJob job : this._queue) {
-      if (job.isForRequester(requester)) {
-        count++;
-      }
+    int count = (int) this._queue.stream().filter(job -> job.isForRequester(requester)).count();
+    if (this._debounceScheduler != null) {
+      count += (int) this._debounced.values().stream()
+        .filter(pendingDebounce -> pendingDebounce.job.isForRequester(requester)).count();
     }
     if (this._singleThreadQueue != null) {
-      for (IndexJob job : this._singleThreadQueue) {
-        if (job.isForRequester(requester)) {
-          count++;
-        }
-      }
+      count += (int) this._singleThreadQueue.stream().filter(job -> job.isForRequester(requester)).count();
     }
     return count;
   }
@@ -140,20 +168,24 @@ public final class IndexJobQueue {
    */
   public void clearJobsForIndex(Index index) {
     if (index == null) return;
-    List<IndexJob> jobs = new ArrayList<>();
-    for (IndexJob job : this._queue) {
-      if (job.isForIndex(index)) {
-        jobs.add(job);
-      }
+
+    // Cancel/remove debounced jobs for the index
+    if (this._debounceScheduler != null) {
+      this._debounced.entrySet().removeIf(e -> {
+        PendingDebounce p = e.getValue();
+        IndexJob j = p.job;
+        if (j != null && j.isForIndex(index)) {
+          ScheduledFuture<?> f = p.future;
+          if (f != null) f.cancel(false);
+          return true;
+        }
+        return false;
+      });
     }
+    List<IndexJob> jobs = this._queue.stream().filter(job -> job.isForIndex(index)).collect(Collectors.toList());
     this._queue.removeAll(jobs);
     if (this._singleThreadQueue != null) {
-      jobs.clear();
-      for (IndexJob job : this._singleThreadQueue) {
-        if (job.isForIndex(index)) {
-          jobs.add(job);
-        }
-      }
+      jobs = this._singleThreadQueue.stream().filter(job -> job.isForIndex(index)).collect(Collectors.toList());
       this._singleThreadQueue.removeAll(jobs);
     }
   }
@@ -171,18 +203,15 @@ public final class IndexJobQueue {
    */
   public List<IndexJob> getJobsForIndex(Index index) {
     if (index == null) return getAllJobs();
-    List<IndexJob> jobs = new ArrayList<>();
-    for (IndexJob job : this._queue) {
-      if (job.isForIndex(index)) {
-        jobs.add(job);
-      }
+    List<IndexJob> jobs = this._queue.stream().filter(job -> job.isForIndex(index)).collect(Collectors.toList());
+    if (this._debounceScheduler != null) {
+      jobs.addAll(this._debounced.values().stream()
+          .filter(pendingDebounce -> pendingDebounce.job.isForIndex(index))
+          .map(pendingDebounce -> pendingDebounce.job)
+          .collect(Collectors.toList()));
     }
     if (this._singleThreadQueue != null) {
-      for (IndexJob job : this._singleThreadQueue) {
-        if (job.isForIndex(index)) {
-          jobs.add(job);
-        }
-      }
+      jobs.addAll(this._singleThreadQueue.stream().filter(job -> job.isForIndex(index)).collect(Collectors.toList()));
     }
     return jobs;
   }
@@ -195,13 +224,15 @@ public final class IndexJobQueue {
    */
   public boolean hasJobsForIndex(Index index) {
     if (index != null) {
-      for (IndexJob job : this._queue) {
-        if (job.isForIndex(index)) return true;
+      if (this._queue.stream().anyMatch(job -> job.isForIndex(index)))
+        return true;
+      if (this._debounceScheduler != null) {
+        if (this._debounced.values().stream()
+            .anyMatch(pendingDebounce -> pendingDebounce.job.isForIndex(index)))
+          return true;
       }
       if (this._singleThreadQueue != null) {
-        for (IndexJob job : this._singleThreadQueue) {
-          if (job.isForIndex(index)) return true;
-        }
+        return this._singleThreadQueue.stream().anyMatch(job -> job.isForIndex(index));
       }
     }
     return false;
@@ -217,18 +248,14 @@ public final class IndexJobQueue {
    */
   public int countJobsForIndex(Index index) {
     if (index == null) return this._queue.size();
-    int count = 0;
-    for (IndexJob job : this._queue) {
-      if (job.isForIndex(index)) {
-        count++;
-      }
+
+    int count = (int) this._queue.stream().filter(job -> job.isForIndex(index)).count();
+    if (this._debounceScheduler != null) {
+      count += (int) this._debounced.values().stream()
+        .filter(pendingDebounce -> pendingDebounce.job.isForIndex(index)).count();
     }
     if (this._singleThreadQueue != null) {
-      for (IndexJob job : this._singleThreadQueue) {
-        if (job.isForIndex(index)) {
-          count++;
-        }
-      }
+      count += (int) this._singleThreadQueue.stream().filter(job -> job.isForIndex(index)).count();
     }
     return count;
   }
@@ -245,6 +272,12 @@ public final class IndexJobQueue {
    */
   public List<IndexJob> getAllJobs() {
     ArrayList<IndexJob> list = new ArrayList<>(this._queue);
+    if (this._debounceScheduler != null) {
+      list.addAll(this._debounced.values().stream()
+          .map(p -> p.job)
+          .filter(Objects::nonNull)
+          .collect(Collectors.toList()));
+    }
     if (this._singleThreadQueue != null)
       list.addAll(this._singleThreadQueue);
     return list;
@@ -258,7 +291,11 @@ public final class IndexJobQueue {
    * @throws InterruptedException if the thread was interrupted when waiting for the next job
    */
   public IndexJob nextMultiThreadJob() throws InterruptedException {
-    return this._queue.take();
+    while (!this.isShutdown) {
+      IndexJob job = this._queue.poll(500, TimeUnit.MILLISECONDS);
+      if (job != null) return job;
+    }
+    return null;
   }
 
   /**
@@ -268,8 +305,14 @@ public final class IndexJobQueue {
    *
    * @throws InterruptedException if the thread was interrupted when waiting for the next job
    */
+
   public IndexJob nextSingleThreadJob() throws InterruptedException {
-    return this._singleThreadQueue != null ? this._singleThreadQueue.take() : null;
+    if (this._singleThreadQueue == null) return null;
+    while (!this.isShutdown) {
+      IndexJob job = this._singleThreadQueue.poll(500, TimeUnit.MILLISECONDS);
+      if (job != null) return job;
+    }
+    return null;
   }
 
   /**
@@ -279,7 +322,13 @@ public final class IndexJobQueue {
    *         <code>false</code> otherwise.
    */
   public boolean isMultiThreadsEmpty() {
-    return this._queue.isEmpty();
+    if (!this._queue.isEmpty()) return false;
+    // check for debouncing jobs
+    if (this._debounceScheduler != null) {
+      // allmatch is true for empty lists
+      return this._debounced.values().stream().allMatch(pending -> pending.singleThreadTarget);
+    }
+    return true;
   }
 
   /**
@@ -289,16 +338,65 @@ public final class IndexJobQueue {
    *         <code>false</code> otherwise.
    */
   public boolean isSingleThreadEmpty() {
-    return this._singleThreadQueue == null || this._singleThreadQueue.isEmpty();
+    if (this._singleThreadQueue == null) return true;
+    if (!this._singleThreadQueue.isEmpty()) return false;
+    // check for debouncing jobs
+    if (this._debounceScheduler != null) {
+      return this._debounced.values().stream().noneMatch(pending -> pending.singleThreadTarget);
+    }
+    return true;
   }
 
   /**
-   * clear all queues
+   * clear all queues (single thread, multi-thread and debounce)
    */
   public void clear() {
     this._queue.clear();
-    if (this._singleThreadQueue != null)
-      this._singleThreadQueue.clear();
+
+    if (this._singleThreadQueue != null) this._singleThreadQueue.clear();
+
+    if (this._debounceScheduler != null) {
+      for (PendingDebounce p : this._debounced.values()) {
+        if (p.future != null) p.future.cancel(false);
+      }
+      this._debounced.clear();
+    }
+  }
+
+  /**
+   * Call when you're done with this queue to release the debounce scheduler thread.
+   * This will flush all debounced jobs into the main queues so indexing can finish.
+   */
+  public void shutdown() {
+    // don't accept new jobs
+    this.isShutdown = true;
+    if (this._debounceScheduler != null) {
+
+      // Cancel scheduled tasks but keep pending jobs
+      List<PendingDebounce> pending = new ArrayList<>(this._debounced.values());
+      for (PendingDebounce p : pending) {
+        ScheduledFuture<?> f = p.future;
+        if (f != null) f.cancel(false);
+      }
+      // Clear debounce map so scheduled tasks won't enqueue
+      this._debounced.clear();
+
+      // Add pending jobs immediately
+      for (PendingDebounce p : pending) {
+        enqueueWithoutDebounce(p.job, p.singleThreadTarget);
+      }
+
+      // Stop the scheduler and wait briefly
+      this._debounceScheduler.shutdown();
+      try {
+        if (!this._debounceScheduler.awaitTermination(5, TimeUnit.SECONDS)) {
+          this._debounceScheduler.shutdownNow();
+        }
+      } catch (InterruptedException e) {
+        Thread.currentThread().interrupt();
+        this._debounceScheduler.shutdownNow();
+      }
+    }
   }
 
   // -----------------------------------------------------------------------
@@ -306,6 +404,40 @@ public final class IndexJobQueue {
   // -----------------------------------------------------------------------
 
   private void addJob(IndexJob job, boolean singleThread) {
+    if (job == null || this.isShutdown) return;
+
+    // Debounce
+    if (this._debounceScheduler != null) {
+      JobKey key = JobKey.from(job);
+
+      this._debounced.compute(key, (k, existing) -> {
+        // cancel existing one
+        if (existing != null && existing.future != null) {
+          existing.future.cancel(false);
+          this.removedJob(existing.job);
+        }
+        // add a new fresh one
+        PendingDebounce fresh = new PendingDebounce(job, singleThread);
+        fresh.future = this._debounceScheduler.schedule(() -> {
+          // Ensure we only enqueue the latest pending for this key
+          PendingDebounce current = this._debounced.get(k);
+          if (current != null && current == fresh) {
+            this._debounced.remove(k, fresh);
+            enqueueWithoutDebounce(fresh.job, fresh.singleThreadTarget);
+          }
+        }, this._debounceThresholdInMs, TimeUnit.MILLISECONDS);
+
+        return fresh;
+      });
+
+      return;
+    }
+
+    // No debounce: enqueue immediately
+    enqueueWithoutDebounce(job, singleThread);
+  }
+
+  private void enqueueWithoutDebounce(IndexJob job, boolean singleThread) {
     // check if similar job already there
     IndexJob existing;
     synchronized (this._queue) {
@@ -328,35 +460,94 @@ public final class IndexJobQueue {
     boolean existingHasPriority = existing != null && existing.isBatch() && existing.getBatch().hasClearJob();
 
     if (!existingHasPriority && (existing == null || force || higherPriority)) {
-      if (singleThread && this._singleThreadQueue != null) {
-        synchronized (this._singleThreadQueue) {
-          if (existing != null && !force)
-            this.removeExistingJob(job, existing, foundInSingleQueue);
-          this._singleThreadQueue.put(job);
-        }
-      } else {
-        synchronized (this._queue) {
-          if (existing != null && !force)
-            this.removeExistingJob(job, existing, foundInSingleQueue);
-          this._queue.put(job);
-        }
+      if (existing != null && !force) {
+        this.removedJob(existing);
+        if (foundInSingleQueue) synchronized (this._singleThreadQueue) { this._singleThreadQueue.remove(existing); }
+        else synchronized (this._queue) { this._queue.remove(existing); }
+      }
+      if (singleThread && this._singleThreadQueue != null) synchronized (this._singleThreadQueue) {
+        this._singleThreadQueue.put(job);
+      } else synchronized (this._queue) {
+        this._queue.put(job);
       }
     } else {
-      // if a batch, decrease total except if last job
-      IndexBatch batch = job.getBatch();
-      if (batch != null && batch.getCurrentCount() != batch.getTotalDocuments() - 1)
-        batch.remove(1);
+      this.removedJob(job);
     }
   }
 
-  private void removeExistingJob(IndexJob job, IndexJob existing, boolean foundInSingleQueue) {
+  /**
+   * Adjust batch counts for the job.
+   */
+  private void removedJob(IndexJob job) {
     // don't remove last job of batch
-    IndexBatch batch = existing.getBatch();
+    IndexBatch batch = job.getBatch();
     if (batch != null && batch.getCurrentCount() != batch.getTotalDocuments() - 1)
       batch.remove(1);
-    // remove from queue
-    if (foundInSingleQueue) this._singleThreadQueue.remove(existing);
-    else this._queue.remove(existing);
   }
 
+  // -----------------------------------------------------------------------
+  // debounce helper types
+  // -----------------------------------------------------------------------
+
+  private static final class PendingDebounce {
+    final IndexJob job;
+    final boolean singleThreadTarget;
+    volatile ScheduledFuture<?> future;
+
+    private PendingDebounce(IndexJob job, boolean singleThreadTarget) {
+      this.job = job;
+      this.singleThreadTarget = singleThreadTarget;
+    }
+  }
+
+  private static final class JobKey {
+    private final String contentId;
+    private final ContentType contentType;
+    private final String indexId;
+    private final String parameters;
+
+    private final IndexJob.Priority priority;
+
+    private JobKey(String contentId, ContentType contentType,
+                   String indexId, String parameters, IndexJob.Priority priority) {
+      this.contentId = contentId;
+      this.contentType = contentType;
+      this.indexId = indexId;
+      this.parameters = parameters;
+      this.priority = priority;
+    }
+
+    static JobKey from(IndexJob job) {
+      return new JobKey(
+          job.getContentID(),
+          job.getContentType(),
+          job.getIndex().getIndexID(),
+          job.getParamsKey(),
+          job.getPriority()
+      );
+    }
+
+    @Override
+    public boolean equals(Object o) {
+      if (this == o) return true;
+      if (!(o instanceof JobKey)) return false;
+      JobKey other = (JobKey) o;
+      return Objects.equals(this.contentId, other.contentId)
+          && Objects.equals(this.contentType, other.contentType)
+          && Objects.equals(this.indexId, other.indexId)
+          && Objects.equals(this.parameters, other.parameters)
+          && this.priority == other.priority;
+    }
+
+    @Override
+    public int hashCode() {
+      return Objects.hash(
+          this.contentId,
+          this.contentType,
+          this.indexId,
+          this.parameters,
+          this.priority
+      );
+    }
+  }
 }
