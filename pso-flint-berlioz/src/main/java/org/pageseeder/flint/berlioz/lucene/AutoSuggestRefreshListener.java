@@ -46,7 +46,7 @@ public class AutoSuggestRefreshListener implements IndexCompletionListener {
         for(String autosuggestName:indexDefinition.listAutoSuggestNames()) {
           AutoSuggest autoSuggest = index.getAutoSuggest(autosuggestName);
           LOGGER.info("Auto suggest {} found", autosuggestName);
-          LOGGER.info("Auto suggest version: {}", autoSuggest.getLastBuilt());
+          LOGGER.info("Auto suggest version: {}", autoSuggest != null ? autoSuggest.getLastBuilt() : "");
         }
 
       } catch (InterruptedException e) {
