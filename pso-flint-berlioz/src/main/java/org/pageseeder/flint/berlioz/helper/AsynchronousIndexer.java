@@ -7,6 +7,7 @@ import org.pageseeder.flint.IndexManager;
 import org.pageseeder.flint.berlioz.model.FlintConfig;
 import org.pageseeder.flint.berlioz.model.IndexMaster;
 import org.pageseeder.flint.berlioz.util.Files;
+import org.pageseeder.flint.indexing.IndexBatch;
 import org.pageseeder.flint.local.LocalIndexer;
 import org.pageseeder.flint.local.LocalIndexer.Action;
 import org.pageseeder.flint.lucene.LuceneIndexQueries;
@@ -18,9 +19,7 @@ import org.slf4j.LoggerFactory;
 import java.io.File;
 import java.io.FileFilter;
 import java.io.IOException;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -139,9 +138,10 @@ public class AsynchronousIndexer implements Runnable, XMLWritable, FileFilter {
     this.indexer.setFileFilter(this);
     this.indexer.setUseIndexDate(this.useIndexDate);
     this.indexer.indexFolder(root, existing);
-
+    IndexBatch batch = this.indexer.getBatch();
     // mark as finished
     this.done = true;
+    notifyListeners();
   }
 
   private Map<String, Long> getLuceneExistingContent(String afolder) {
@@ -194,6 +194,31 @@ public class AsynchronousIndexer implements Runnable, XMLWritable, FileFilter {
     }
     // last check is date
     return this.modifiedAfter == null || file.lastModified() > this.modifiedAfter.getTime();
+  }
+
+  /**
+   * Notifies all registered listeners that file scanning is complete.
+   * This call is dispatched to a separate thread to ensure that the
+   * AsynchronousIndexer can release its resources and report a 'done'
+   * status to the UI immediately, without waiting for heavy
+   * post-processing tasks.
+   */
+  private void notifyListeners() {
+    final IndexBatch batch = this.indexer != null ? this.indexer.getBatch() : null;
+    final String indexName = this._luceneIndex.getName();
+    // Spawn a new thread so we don't block the AsynchronousIndexer
+    new Thread(() -> {
+      for (IndexCompletionListener listener : this._luceneIndex.getIndexDefinition().getPostIndexingListeners()) {
+        try {
+          // IMPORTANT: The listener implementation should handle the 'waiting'
+          // for the batch inside its own logic.
+          LOGGER.debug("Calling listener {} for {}", listener.getClass().getName(), indexName);
+          listener.onIndexingCompleted(indexName, batch);
+        } catch (Exception e) {
+          LOGGER.error("Error in post-indexing listener for {}", indexName, e);
+        }
+      }
+    }, "Post-Indexing-Handler-" + indexName).start();
   }
 
   @Override

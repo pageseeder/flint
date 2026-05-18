@@ -23,6 +23,7 @@ import org.pageseeder.flint.IndexException;
 import org.pageseeder.flint.IndexManager;
 import org.pageseeder.flint.IndexOpenException;
 import org.pageseeder.flint.berlioz.helper.FolderWatcher;
+import org.pageseeder.flint.berlioz.helper.IndexCompletionListener;
 import org.pageseeder.flint.berlioz.helper.QuietListener;
 import org.pageseeder.flint.berlioz.model.IndexDefinition.InvalidIndexDefinitionException;
 import org.pageseeder.flint.catalog.Catalogs;
@@ -273,6 +274,7 @@ public class FlintConfig {
       def.setIndexingFilesRegex(regexInclude, regexExclude);
       // autosuggests
       loadAutoSuggests(def);
+      loadPostIndexingListeners(def);
       this.indexConfigs.put(type, def);
     }
   }
@@ -440,6 +442,20 @@ public class FlintConfig {
         } else {
           LOGGER.warn("Ignoring invalid autosuggest definition for {}: fields {}, terms {}, result fields {}",
               autosuggest, null, terms, rfields);
+        }
+      }
+    }
+  }
+
+  private void loadPostIndexingListeners(IndexDefinition def) {
+    String postIndexingListenersClasses = GlobalSettings.get( "flint.index." + def.getName() + ".post-indexing.listeners");
+    if (postIndexingListenersClasses != null) {
+      String [] listenerClasses = postIndexingListenersClasses.split(",");
+      for (String listener : listenerClasses) {
+        try {
+          def.addPostIndexingListener((IndexCompletionListener) Class.forName(listener).getDeclaredConstructor().newInstance());
+        } catch (ClassNotFoundException | NoSuchMethodException | InvocationTargetException | InstantiationException | IllegalAccessException ex) {
+          LOGGER.error("Ignoring post-indexing listener for {}: {}", def.getName(), listener, ex);
         }
       }
     }

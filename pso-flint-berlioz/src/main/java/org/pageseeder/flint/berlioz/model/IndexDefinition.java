@@ -1,5 +1,6 @@
 package org.pageseeder.flint.berlioz.model;
 
+import org.pageseeder.flint.berlioz.helper.IndexCompletionListener;
 import org.pageseeder.xmlwriter.XMLWritable;
 import org.pageseeder.xmlwriter.XMLWriter;
 import org.slf4j.Logger;
@@ -78,6 +79,18 @@ public class IndexDefinition implements XMLWritable {
    * autosuggests
    */
   private final Map<String, AutoSuggestDefinition> _autosuggests = new HashMap<>();
+
+  /**
+   * A list of observers to be notified when the indexing process is complete.
+   *
+   * <p>Because indexing in Flint is a two-stage asynchronous process—where this
+   * indexer scans files and the {@code IndexManager} worker threads perform the
+   * actual Lucene writes—listeners are used to bridge the gap between
+   * "submission finished" and "data committed".</p>
+   *
+   * @see IndexCompletionListener
+   */
+  private final List<IndexCompletionListener> _postIndexinglistener = new ArrayList<>();
 
   /**
    * @param name      the index name
@@ -163,6 +176,21 @@ public class IndexDefinition implements XMLWritable {
     return asd;
   }
 
+  /**
+   * Registers a listener to be notified once the indexing task has finished
+   * submitting all jobs to the {@code IndexManager}.
+   *
+   * <p>The listener will receive the current {@code IndexBatch}, allowing it
+   * to monitor the background worker threads and trigger post-processing tasks
+   * (such as Spellcheck or Autosuggest dictionary updates) only after the
+   * Lucene index has been fully updated.</p>
+   *
+   * @param listener the completion listener to add
+   */
+  public void addPostIndexingListener(IndexCompletionListener listener) {
+    this._postIndexinglistener.add(listener);
+  }
+
   public void setIndexingFilesRegex(final String regexInclude, final String regexExclude) {
     this.includeFilesRegex = regexInclude;
     this.excludeFilesRegex = regexExclude;
@@ -234,6 +262,13 @@ public class IndexDefinition implements XMLWritable {
    */
   public File getTemplate() {
     return this._template;
+  }
+
+  /**
+   * Returns post indexing listeners for a new AsynchronousIndexer.
+   */
+  public List<IndexCompletionListener> getPostIndexingListeners() {
+    return this._postIndexinglistener;
   }
 
   /**
