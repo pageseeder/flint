@@ -54,14 +54,5 @@ public class AutoSuggestRefreshListener implements IndexCompletionListener {
         return;
       }
     }
-
-    // 2. Perform the logic (Autosuggest / Spellcheck)
-    // Since we are in a separate thread now, this can take as long as needed.
-    buildDictionary(indexName);
-  }
-
-  private void buildDictionary(String indexName) {
-    // Your Lucene 9 Dictionary/Suggest logic here
-    LOGGER.info("Starting dictionary build for index: {}", indexName);
   }
 }
