@@ -50,8 +50,8 @@ public class AutoSuggestRefreshListener implements IndexCompletionListener {
         }
 
       } catch (InterruptedException e) {
+        LOGGER.error("Failed to refresh AutoSuggest: {}", e.getMessage());
         Thread.currentThread().interrupt();
-        return;
       }
     }
   }
