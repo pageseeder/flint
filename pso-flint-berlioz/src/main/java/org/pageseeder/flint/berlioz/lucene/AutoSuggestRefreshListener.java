@@ -35,23 +35,13 @@ public class AutoSuggestRefreshListener implements IndexCompletionListener {
   public void onIndexingCompleted(String indexName, IndexBatch batch) {
     // 1. Wait for the asynchronous Flint IndexManager workers to finish
     if (batch != null) {
-      try {
-        LOGGER.info("Dictionary listener waiting for batch {} to complete...", indexName);
-        while (!batch.isFinished()) {
-          Thread.sleep(1000); // Check every second
-          LOGGER.info("Still indexing {}...", indexName);
-        }
-        IndexMaster index = FlintConfig.get().getMaster(indexName.trim());
-        IndexDefinition indexDefinition = FlintConfig.get().getIndexDefinitionFromIndexName(indexName);
-        for(String autosuggestName:indexDefinition.listAutoSuggestNames()) {
-          AutoSuggest autoSuggest = index.getAutoSuggest(autosuggestName);
-          LOGGER.info("Auto suggest {} found", autosuggestName);
-          LOGGER.info("Auto suggest version: {}", autoSuggest != null ? autoSuggest.getLastBuilt() : "");
-        }
-
-      } catch (InterruptedException e) {
-        LOGGER.error("Failed to refresh AutoSuggest: {}", e.getMessage());
-        Thread.currentThread().interrupt();
+      LOGGER.info("Start Autosuggest refresh for {}", indexName);
+      IndexMaster index = FlintConfig.get().getMaster(indexName.trim());
+      IndexDefinition indexDefinition = FlintConfig.get().getIndexDefinitionFromIndexName(indexName);
+      for (String autosuggestName : indexDefinition.listAutoSuggestNames()) {
+        AutoSuggest autoSuggest = index.getAutoSuggest(autosuggestName);
+        LOGGER.info("Auto suggest {} found", autosuggestName);
+        LOGGER.info("Auto suggest version: {}", autoSuggest != null ? autoSuggest.getLastBuilt() : "");
       }
     }
   }
