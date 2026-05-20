@@ -90,7 +90,7 @@ public class IndexDefinition implements XMLWritable {
    *
    * @see IndexCompletionListener
    */
-  private final List<IndexCompletionListener> _postIndexinglistener = new ArrayList<>();
+  private final List<IndexCompletionListener> _postIndexingListeners = new ArrayList<>();
 
   /**
    * @param name      the index name
@@ -188,7 +188,7 @@ public class IndexDefinition implements XMLWritable {
    * @param listener the completion listener to add
    */
   public void addPostIndexingListener(IndexCompletionListener listener) {
-    this._postIndexinglistener.add(listener);
+    this._postIndexingListeners.add(listener);
   }
 
   public void setIndexingFilesRegex(final String regexInclude, final String regexExclude) {
@@ -268,7 +268,7 @@ public class IndexDefinition implements XMLWritable {
    * Returns post indexing listeners for a new AsynchronousIndexer.
    */
   public List<IndexCompletionListener> getPostIndexingListeners() {
-    return this._postIndexinglistener;
+    return this._postIndexingListeners;
   }
 
   /**
