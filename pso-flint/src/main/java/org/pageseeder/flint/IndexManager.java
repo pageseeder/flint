@@ -436,39 +436,48 @@ public final class IndexManager {
    * @param timeout in seconds for each queue
    */
   public void stop(long timeout) {
+    boolean interrupted = false;
     IndexingThread.CLOSING_DOWN = true;
     // refuse new jobs and flush debounced jobs into main queue
     this._indexQueue.shutdown();
     // Interrupt the threads
     this.multiThreadExecutor.shutdown();
-    // wait for finish
     try {
-      if (!this.multiThreadExecutor.awaitTermination(timeout, TimeUnit.SECONDS)) {
-        this.multiThreadExecutor.shutdownNow();
-      }
-    } catch (InterruptedException ex) {
-      LOGGER.error("Interrupted while shutting down multiple thread", ex);
-      Thread.currentThread().interrupt();
-    }
-    if (this.singleThreadExecutor != null) {
-      this.singleThreadExecutor.shutdown();
+      // wait for finish
       try {
-        if (!this.singleThreadExecutor.awaitTermination(timeout, TimeUnit.SECONDS)) {
-          this.singleThreadExecutor.shutdownNow();
+        if (!this.multiThreadExecutor.awaitTermination(timeout, TimeUnit.SECONDS)) {
+          this.multiThreadExecutor.shutdownNow();
         }
       } catch (InterruptedException ex) {
-        LOGGER.error("Interrupted while shutting down single thread", ex);
+        interrupted = true;
+        this.multiThreadExecutor.shutdownNow();
+      }
+      if (this.singleThreadExecutor != null) {
+        this.singleThreadExecutor.shutdown();
+        try {
+          if (!this.singleThreadExecutor.awaitTermination(timeout, TimeUnit.SECONDS)) {
+            this.singleThreadExecutor.shutdownNow();
+          }
+        } catch (InterruptedException ex) {
+          interrupted = true;
+          this.singleThreadExecutor.shutdownNow();
+        }
+      }
+      // clear indexing queue
+      this._indexQueue.clear();
+      // Close all indexes
+      for (Index index : ALL_INDEXES.values()) {
+        index.close();
+      }
+
+    } finally {
+      // reset flag
+      IndexingThread.CLOSING_DOWN = false;
+
+      if (interrupted) {
         Thread.currentThread().interrupt();
       }
     }
-    // clear indexing queue
-    this._indexQueue.clear();
-    // Close all indexes
-    for (Index index : ALL_INDEXES.values()) {
-      index.close();
-    }
-    // reset flag
-    IndexingThread.CLOSING_DOWN = false;
   }
 
   /**
@@ -532,15 +541,31 @@ public final class IndexManager {
    */
   private void indexJob(IndexJob job, boolean singleThread) {
     if (singleThread && this.singleThreadExecutor != null) {
+      if (this.singleThreadExecutor.isShutdown() || this.singleThreadExecutor.isTerminated()) {
+        LOGGER.debug("Ignoring index job because the single-thread indexing executor is shutting down");
+        return;
+      }
       // add job to queue
       this._indexQueue.addSingleThreadJob(job);
-      // start thread to index it
-      this.singleThreadExecutor.execute(new IndexingThread(this, this._listener, this._indexQueue, true));
+      try {
+        // start thread to index it
+        this.singleThreadExecutor.execute(new IndexingThread(this, this._listener, this._indexQueue, true));
+      } catch (RejectedExecutionException ex) {
+        LOGGER.debug("Index job rejected because the single-thread indexing executor is shutting down", ex);
+      }
     } else {
+      if (this.multiThreadExecutor.isShutdown() || this.multiThreadExecutor.isTerminated()) {
+        LOGGER.debug("Ignoring index job because the multi-thread indexing executor is shutting down");
+        return;
+      }
       // add job to queue
       this._indexQueue.addMultiThreadJob(job);
-      // start thread to index it
-      this.multiThreadExecutor.execute(new IndexingThread(this, this._listener, this._indexQueue, false));
+      try {
+        // start thread to index it
+        this.multiThreadExecutor.execute(new IndexingThread(this, this._listener, this._indexQueue, false));
+      } catch (RejectedExecutionException ex) {
+        LOGGER.debug("Index job rejected because the multi-thread indexing executor is shutting down", ex);
+      }
     }
   }
 

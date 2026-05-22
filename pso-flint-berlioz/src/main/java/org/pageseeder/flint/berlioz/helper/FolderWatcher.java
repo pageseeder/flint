@@ -250,7 +250,7 @@ public class FolderWatcher {
   private static class DelayedIndexer implements Runnable {
 
     /** if the thread has been stopped */
-    private boolean keepGoing = true;
+    private volatile boolean keepGoing = true;
     /** the indexing delay (in seconds) */
     private final int _delay;
     /** the list of delayed files */
@@ -268,6 +268,7 @@ public class FolderWatcher {
      */
     void stop() {
       this.keepGoing = false;
+      Thread.currentThread().interrupt();
     }
 
     /**
@@ -276,6 +277,7 @@ public class FolderWatcher {
      * @param path  the file
      */
     public void index(LuceneLocalIndex index, String path) {
+      if (!this.keepGoing) return;
       Pair<String, LuceneLocalIndex> key = new Pair<>(path, index);
       synchronized (this._delayedLuceneIndexing) {
         AtomicInteger delay = this._delayedLuceneIndexing.get(key);
@@ -300,6 +302,7 @@ public class FolderWatcher {
           Thread.currentThread().interrupt();
           break;
         }
+        if (!this.keepGoing) break;
         // one requester
         Requester req = new Requester("Berlioz File Watcher Delayed Indexer");
         // lucene indexes first

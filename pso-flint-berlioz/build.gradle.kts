@@ -10,4 +10,5 @@ dependencies {
 
   compileOnly(libs.servlet.api)
 
+  testRuntimeOnly(libs.slf4j.simple)
 }

@@ -309,12 +309,12 @@ public class FlintConfig {
     // stop watcher if there is one
     if (this.watcher != null)
       this.watcher.stop();
+    // stop everything
+    this.manager.stop();
     // shutdown all indexes
     for (IndexMaster index : this.indexes.values()) {
       index.close();
     }
-    // stop everything
-    this.manager.stop();
   }
 
   public final File getRootDirectory() {
