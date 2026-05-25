@@ -1,0 +1,9 @@
+<?xml version="1.0"?>
+<global>
+  <flint>
+    <watcher delay="5" root="/content" />
+    <index types="default" extensions="xml">
+      <default name="default" path="/content" template="template.xsl" />
+    </index>
+  </flint>
+</global>
