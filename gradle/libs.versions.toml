@@ -4,6 +4,7 @@ lucene = "9.11.1"
 slf4j = "2.0.5"
 tika = "2.9.1"
 xmlwriter = "1.0.3"
+sonarqube = "7.3.0.8198"
 
 [libraries]
 berlioz = { module = "org.pageseeder.berlioz:pso-berlioz", version.ref = "berlioz" }
@@ -27,3 +28,4 @@ xmlwriter = { module = "org.pageseeder.xmlwriter:pso-xmlwriter", version.ref = "
 
 [plugins]
 jreleaser = { id = "org.jreleaser", version = "1.18.0" }
+sonarqube = { id = "org.sonarqube", version.ref = "sonarqube" }
