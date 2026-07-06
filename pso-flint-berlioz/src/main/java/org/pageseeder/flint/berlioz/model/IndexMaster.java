@@ -1,5 +1,6 @@
 package org.pageseeder.flint.berlioz.model;
 
+import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.queryparser.classic.ParseException;
 import org.apache.lucene.queryparser.classic.QueryParser;
@@ -303,12 +304,18 @@ public final class IndexMaster {
             .criteria(criteria);
     // build it
     org.pageseeder.flint.lucene.search.AutoSuggest as = aBuilder.build();
-    IndexReader reader = null;
-    try {
-      reader = grabReader();
+    // Open a dedicated, read-only snapshot of the index directory for this
+    // building process. We use a dedicated DirectoryReader instead of the
+    // shared IndexManager reader to decouple the building process from the
+    // main application's lifecycle. This prevents 'AlreadyClosedException'
+    // errors that occur if the index is refreshed or modified while the
+    // autosuggest structure is being built.
+    Directory dir = this._index.getIndexDirectory();
+    LOGGER.info("Autosuggest {}", name);
+    try (IndexReader reader = DirectoryReader.open(dir)){
       as.build(reader);
     } finally {
-      if (reader != null) releaseSilently(reader);
+      LOGGER.info("finalized");
     }
     // store it in cache
     this._autosuggests.put(name, as);
