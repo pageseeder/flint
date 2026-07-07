@@ -41,6 +41,7 @@ subprojects {
     implementation(rootProject.libs.slf4j.api)
     runtimeOnly(rootProject.libs.saxon)
     testImplementation(rootProject.libs.junit)
+    testRuntimeOnly (rootProject.libs.junit.vintage.engine)
   }
 
   // Enforce Java 11
