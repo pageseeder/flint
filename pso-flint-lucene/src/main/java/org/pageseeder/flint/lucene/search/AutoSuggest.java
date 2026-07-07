@@ -173,64 +173,68 @@ public class AutoSuggest {
   private boolean addEntries(LeafReaderContext context, Set<String> fieldsToLoad) throws IOException {
     boolean buildit = false;
     // check for leaves
-    try (LeafReader subReader = context.reader()) {
-      List<LeafReaderContext> leaves = subReader.leaves();
-      if (leaves != null && !leaves.isEmpty()) {
-        if (leaves.size() > 1 || leaves.get(0) != context) {
-          for (LeafReaderContext ctxt : leaves) {
-            if (addEntries(ctxt, fieldsToLoad)) {
-              buildit = true;
-            }
+    // We do not use try-with-resources on the subReader here because it is a child of the parent IndexReader (the
+    // 'reader' parameter in build()).
+    // Closing a leaf reader while the parent is still active invalidates the entire reader hierarchy, which would
+    // trigger an 'AlreadyClosedException'.
+    // The parent DirectoryReader is responsible for the lifecycle and closure of all its leaf segments.
+    LeafReader subReader = context.reader();
+    List<LeafReaderContext> leaves = subReader.leaves();
+    if (leaves != null && !leaves.isEmpty()) {
+      if (leaves.size() > 1 || leaves.get(0) != context) {
+        for (LeafReaderContext ctxt : leaves) {
+          if (addEntries(ctxt, fieldsToLoad)) {
+            buildit = true;
           }
-          return buildit;
+        }
+        return buildit;
+      }
+    }
+    // go through our docs then
+    Bits live = subReader.getLiveDocs();
+    for (int i = 0; i < subReader.maxDoc(); i++) {
+      if (live != null && !live.get(i)) continue;
+      Document doc = subReader.storedFields().document(i, fieldsToLoad);
+      // load criteria values
+      Set<BytesRef> contexts = null;
+      if (this._withField != null) {
+        String[] with = doc.getValues(this._withField);
+        if (with != null) {
+          contexts = new HashSet<>();
+          for (String w : with) {
+            contexts.add(new BytesRef(w));
+          }
         }
       }
-      // go through our docs then
-      Bits live = subReader.getLiveDocs();
-      for (int i = 0; i < subReader.maxDoc(); i++) {
-        if (live != null && !live.get(i)) continue;
-        Document doc = subReader.storedFields().document(i, fieldsToLoad);
-        // load criteria values
-        Set<BytesRef> contexts = null;
-        if (this._withField != null) {
-          String[] with = doc.getValues(this._withField);
-          if (with != null) {
-            contexts = new HashSet<>();
-            for (String w : with) {
-              contexts.add(new BytesRef(w));
-            }
-          }
+      // find doc weight
+      float weightF = 0;
+      for (Entry<String, Float> aweight : this._weights.entrySet()) {
+        String val = doc.get(aweight.getKey());
+        try {
+          // default value is 1 if missing
+          weightF += aweight.getValue() * (val == null ? 1 : Float.parseFloat(val));
+        } catch (NumberFormatException ex) {
+          LOGGER.error("Failed to compute weight as field {} is not a number! ({})", aweight.getKey(), val);
         }
-        // find doc weight
-        float weightF = 0;
-        for (Entry<String, Float> aweight : this._weights.entrySet()) {
-          String val = doc.get(aweight.getKey());
-          try {
-            // default value is 1 if missing
-            weightF += aweight.getValue() * (val == null ? 1 : Float.parseFloat(val));
-          } catch (NumberFormatException ex) {
-            LOGGER.error("Failed to compute weight as field {} is not a number! ({})", aweight.getKey(), val);
-          }
-        }
-        // mutiply by 100 to turn to long (2 decimal precision)
-        long weight = weightF == 0 ? 100 : (long) (weightF * 100);
-        // create payload
-        byte[] serialized = serialize(this._resultFields, doc);
-        BytesRef payload = serialized == null ? null : new BytesRef(serialized);
-        for (String field : this._searchFields) {
-          String[] texts = doc.getValues(field);
-          if (texts != null) {
-            for (String text : texts) {
-              try {
-                this.suggester.add(new BytesRef(text), contexts, weight, payload);
-              } catch (Exception ex) {
-                LOGGER.error("Failed to add text for field {} to autosuggest {}", field, this._name);
-              }
-              buildit = true;
+      }
+      // mutiply by 100 to turn to long (2 decimal precision)
+      long weight = weightF == 0 ? 100 : (long) (weightF * 100);
+      // create payload
+      byte[] serialized = serialize(this._resultFields, doc);
+      BytesRef payload = serialized == null ? null : new BytesRef(serialized);
+      for (String field : this._searchFields) {
+        String[] texts = doc.getValues(field);
+        if (texts != null) {
+          for (String text : texts) {
+            try {
+              this.suggester.add(new BytesRef(text), contexts, weight, payload);
+            } catch (Exception ex) {
+              LOGGER.error("Failed to add text for field {} to autosuggest {}", field, this._name);
             }
-          } else {
-            LOGGER.error("Failed to load values for field {} in autosuggest {}", field, this._name);
+            buildit = true;
           }
+        } else {
+          LOGGER.error("Failed to load values for field {} in autosuggest {}", field, this._name);
         }
       }
     }
