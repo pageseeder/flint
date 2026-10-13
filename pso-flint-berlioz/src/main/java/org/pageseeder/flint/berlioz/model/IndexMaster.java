@@ -275,6 +275,26 @@ public final class IndexMaster {
     }
   }
 
+  /**
+   * Closes all the autosuggests of this index and clears the cache, without
+   * building or deleting anything.
+   *
+   * <p>Unlike {@link #getAutoSuggest(String)}, this never triggers a build. The
+   * autosuggest folders are kept on disk. A later call to
+   * {@code getAutoSuggest} creates a new instance if the index is not empty.
+   * Closed instances are removed from the cache so a closed suggester is never
+   * returned.
+   *
+   * <p>This closes <strong>all</strong> the autosuggests of this index, including
+   * those defined in the index definition, not only one.
+   */
+  public void closeAutoSuggests() {
+    synchronized (this._autosuggests) { // same lock as getAutoSuggest
+      for (AutoSuggest a : this._autosuggests.values()) a.close();
+      this._autosuggests.clear();
+    }
+  }
+
   public void generateContent(File f, Writer out) throws IndexException, IOException {
     // create content
     LocalFileContent content = new LocalFileContent(f, null);
