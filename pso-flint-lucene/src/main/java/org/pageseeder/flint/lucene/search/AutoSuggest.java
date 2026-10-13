@@ -44,6 +44,15 @@ public class AutoSuggest {
 
   private long lastBuilt = -1;
 
+  /**
+   * Version of the index reader used for the last build, or -1 if never built.
+   *
+   * <p>Used instead of timestamps to detect a changed index. An NRT reader's
+   * version only changes when the index is refreshed, so it is not affected by
+   * the gap between a write and the next commit.
+   */
+  private volatile long builtVersion = -1;
+
   private AutoSuggest(String name, Index index, Directory dir, Analyzer indexAnalyzer, Analyzer searchAnalyzer, boolean useTerms, int minChars) throws IndexException {
     this._name = name;
     this._index = index;
@@ -109,6 +118,10 @@ public class AutoSuggest {
     return this.lastBuilt;
   }
 
+  /**
+   * @deprecated use the method isCurrentFor
+   * @return true if current
+   */
   public boolean isCurrent() {
     return this._index.getIndexIO().getLastTimeUsed() < this.lastBuilt;
   }
@@ -120,6 +133,25 @@ public class AutoSuggest {
    */
   public boolean isCurrent(IndexManager mgr) {
     return this.isCurrent();
+  }
+
+  /**
+   * Indicates whether this suggester was built from the same index state as the
+   * given reader.
+   *
+   * <p>Unlike {@link #isCurrent()}, which compares timestamps, this compares the
+   * {@link DirectoryReader#getVersion() version} of the reader used for the last
+   * build with the version of the given reader. It returns <code>false</code> if
+   * the suggester was never built or if the reader is not a
+   * {@link DirectoryReader}.
+   *
+   * @param reader the reader representing the current state of the index
+   *
+   * @return <code>true</code> if the index has not changed since the last build
+   */
+  public boolean isCurrentFor(IndexReader reader) {
+    return reader instanceof DirectoryReader
+        && this.builtVersion == ((DirectoryReader) reader).getVersion();
   }
 
   public void build(IndexReader reader) {
@@ -153,6 +185,12 @@ public class AutoSuggest {
         if (buildit) {
           this.suggester.refresh();
           this.lastBuilt = System.currentTimeMillis();
+        }
+
+        // Record the version even if nothing was added.
+        // Otherwise, an empty index is seen as "never built" and is rebuilt on every request.
+        if (reader instanceof DirectoryReader) {
+          this.builtVersion = ((DirectoryReader) reader).getVersion();
         }
       } catch (IOException | IllegalStateException ex) {
         LOGGER.error("Failed to build dictionary for autosuggest {}", this._name, ex);
