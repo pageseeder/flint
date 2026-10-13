@@ -7,6 +7,8 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.index.*;
 import org.apache.lucene.search.suggest.Lookup.LookupResult;
 import org.apache.lucene.search.suggest.analyzing.AnalyzingInfixSuggester;
+import org.apache.lucene.store.ByteArrayDataInput;
+import org.apache.lucene.store.ByteBuffersDataOutput;
 import org.apache.lucene.store.ByteBuffersDirectory;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.Bits;
@@ -258,8 +260,8 @@ public class AutoSuggest {
       // mutiply by 100 to turn to long (2 decimal precision)
       long weight = weightF == 0 ? 100 : (long) (weightF * 100);
       // create payload
-      byte[] serialized = serialize(this._resultFields, doc);
-      BytesRef payload = serialized == null ? null : new BytesRef(serialized);
+      // compact payload instead of Java serialization (see encode)
+      BytesRef payload = encode(this._resultFields, doc);
       for (String field : this._searchFields) {
         String[] texts = doc.getValues(field);
         if (texts != null) {
@@ -280,44 +282,54 @@ public class AutoSuggest {
   }
 
   /**
-   * Serialize the fields provided into a payload for a suggester entry.
+   * Encodes the given fields of a document as the payload of a suggestion.
    *
-   * @param fields  list of fields to load from the document
-   * @param doc     the document
+   * <p>Format: VInt field count, then for each field: the name, a VInt value
+   * count, and the values (all as Lucene strings). This replaces Java
+   * serialization, which allocated several objects per document and wrote class
+   * descriptors into every payload.
    *
-   * @return the payload as a byte array
+   * @param fields the fields to include
+   * @param doc    the document to read the values from
+   *
+   * @return the payload, or <code>null</code> if there are no fields
+   *
+   * @throws IOException if writing the payload failed
    */
-  private static byte[] serialize(Collection<String> fields, Document doc) {
+  private static BytesRef encode(Collection<String> fields, Document doc) throws IOException {
     if (fields.isEmpty()) return null;
-    // build map
-    Map<String, String[]> result = new HashMap<>();
-    for (String field : fields) {
-      String[] values = doc.getValues(field);
-      if (values != null) result.put(field, values);
+    ByteBuffersDataOutput out = new ByteBuffersDataOutput();
+    out.writeVInt(fields.size());
+    for (String f : fields) {
+      String[] vals = doc.getValues(f);
+      out.writeString(f);
+      out.writeVInt(vals.length);
+      for (String v : vals) out.writeString(v);
     }
-    // serialize it
-    ByteArrayOutputStream bos = new ByteArrayOutputStream();
-    try {
-      ObjectOutputStream out = new ObjectOutputStream(bos);
-      out.writeObject(result);
-      out.close();
-    } catch (IOException ex) {
-      // all internal so shouldn't happen
-      LOGGER.error("Failed to build payload", ex);
-      return null;
-    }
-    return bos.toByteArray();
+    return new BytesRef(out.toArrayCopy());
   }
 
-  @SuppressWarnings("unchecked")
-  private Map<String, String[]> deserialize(byte[] bytes) throws IOException {
-    ByteArrayInputStream bis = new ByteArrayInputStream(bytes);
-    ObjectInputStream in = new ObjectInputStream(bis);
-    try {
-      return (Map<String, String[]>) in.readObject();
-    } catch (ClassNotFoundException ex) {
-      throw new IOException("Class not found when deserializing", ex);
+  /**
+   * Decodes a payload written by {@link #encode(Collection, Document)}.
+   *
+   * <p>Honours the offset and length of the {@link BytesRef}. The previous
+   * implementation used the whole backing array, which is wrong when the
+   * reference is a slice of a larger array.
+   *
+   * @param ref the payload
+   *
+   * @return the field values by field name
+   */
+  private static Map<String, String[]> decode(BytesRef ref) throws IOException {
+    ByteArrayDataInput in = new ByteArrayDataInput(ref.bytes, ref.offset, ref.length);
+    Map<String, String[]> map = new HashMap<>();
+    for (int n = in.readVInt(); n > 0; n--) {
+      String f = in.readString();
+      String[] vals = new String[in.readVInt()];
+      for (int k = 0; k < vals.length; k++) vals[k] = in.readString();
+      map.put(f, vals);
     }
+    return map;
   }
 
   public List<Suggestion> suggest(String text) {
@@ -364,7 +376,8 @@ public class AutoSuggest {
         suggestion.weight = result.value;
         if (result.payload != null) {
           try {
-            suggestion.document = deserialize(result.payload.bytes);
+            //decode honours offset/length (see decode)
+            suggestion.document = decode(result.payload);
           } catch (IOException ex) {
             LOGGER.error("Failed to deserialize suggestion payload", ex);
           }
