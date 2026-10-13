@@ -232,9 +232,13 @@ public class AutoSuggest {
     }
     // go through our docs then
     Bits live = subReader.getLiveDocs();
+    // PERF: get the StoredFields once per segment. In Lucene 9.5+, storedFields() returns a new reader on every call,
+    // with no cache of the decompressed block, so calling it per document decompressed the same block again for
+    // almost every document (the main source of byte[]/int[] allocation).
+    StoredFields stored = subReader.storedFields();
     for (int i = 0; i < subReader.maxDoc(); i++) {
       if (live != null && !live.get(i)) continue;
-      Document doc = subReader.storedFields().document(i, fieldsToLoad);
+      Document doc = stored.document(i, fieldsToLoad);
       // load criteria values
       Set<BytesRef> contexts = null;
       if (this._withField != null) {
@@ -484,14 +488,14 @@ public class AutoSuggest {
       if (!(obj instanceof Suggestion)) return false;
       Suggestion s = (Suggestion) obj;
       return this.text.equals(s.text) &&
-             this.highlight.equals(s.highlight) &&
-             ((this.document == null && s.document == null) || (this.document!= null && this.document.equals(s.document)));
+          this.highlight.equals(s.highlight) &&
+          ((this.document == null && s.document == null) || (this.document!= null && this.document.equals(s.document)));
     }
     @Override
     public int hashCode() {
       return this.text.hashCode() * 3 +
-             this.highlight.hashCode() * 11 +
-             (this.document != null ? 17 * this.document.hashCode() : 0);
+          this.highlight.hashCode() * 11 +
+          (this.document != null ? 17 * this.document.hashCode() : 0);
     }
     @Override
     public String toString() {
