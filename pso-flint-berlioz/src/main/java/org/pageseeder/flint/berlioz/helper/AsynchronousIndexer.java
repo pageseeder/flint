@@ -7,6 +7,7 @@ import org.pageseeder.flint.IndexManager;
 import org.pageseeder.flint.berlioz.model.FlintConfig;
 import org.pageseeder.flint.berlioz.model.IndexMaster;
 import org.pageseeder.flint.berlioz.util.Files;
+import org.pageseeder.flint.indexing.IndexBatch;
 import org.pageseeder.flint.local.LocalIndexer;
 import org.pageseeder.flint.local.LocalIndexer.Action;
 import org.pageseeder.flint.lucene.LuceneIndexQueries;
@@ -18,9 +19,7 @@ import org.slf4j.LoggerFactory;
 import java.io.File;
 import java.io.FileFilter;
 import java.io.IOException;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -33,6 +32,9 @@ public class AsynchronousIndexer implements Runnable, XMLWritable, FileFilter {
    * private logger
    */
   private static final Logger LOGGER = LoggerFactory.getLogger(AsynchronousIndexer.class);
+
+  // Circuit-breaker threshold prevents application background threads from spinning forever
+  private static final int MAX_WAIT_ATTEMPTS = 300; // 5 minutes max timeout window
 
   private final IndexMaster _luceneIndex;
 
@@ -139,9 +141,10 @@ public class AsynchronousIndexer implements Runnable, XMLWritable, FileFilter {
     this.indexer.setFileFilter(this);
     this.indexer.setUseIndexDate(this.useIndexDate);
     this.indexer.indexFolder(root, existing);
-
+    IndexBatch batch = this.indexer.getBatch();
     // mark as finished
     this.done = true;
+    notifyListeners();
   }
 
   private Map<String, Long> getLuceneExistingContent(String afolder) {
@@ -194,6 +197,64 @@ public class AsynchronousIndexer implements Runnable, XMLWritable, FileFilter {
     }
     // last check is date
     return this.modifiedAfter == null || file.lastModified() > this.modifiedAfter.getTime();
+  }
+
+  /**
+   * Notifies all registered post-indexing listeners that file processing is complete.
+   * <p>
+   * This method runs asynchronously to avoid blocking the main indexing pipeline or UI layers.
+   * It introduces a safety circuit breaker that polls the underlying {@link IndexBatch}
+   * status, gracefully aborting with a critical error if disk-writing blocks for longer
+   * than 5 minutes. To maintain clean log metrics, status updates are throttled to 10-second intervals.
+   * </p>
+   */
+  private void notifyListeners() {
+    final IndexBatch batch = this.indexer != null ? this.indexer.getBatch() : null;
+    final String indexName = this._luceneIndex.getName();
+
+    List<IndexCompletionListener> listeners = this._luceneIndex.getIndexDefinition().getPostIndexingListeners();
+    if (listeners == null || listeners.isEmpty()) {
+      return;
+    }
+
+    // Dispatch to an isolated background thread context to process the wait-and-notify pipeline
+    new Thread(() -> {
+      try {
+        if (batch != null) {
+          int attempts = 0;
+
+          while (!batch.isFinished()) {
+            // CIRCUIT BREAKER PROTECTION: Protects system from zombie threads if Lucene blocks
+            if (attempts >= MAX_WAIT_ATTEMPTS) {
+              LOGGER.error("CRITICAL TIMEOUT: Index batch processing for '{}' exceeded maximum allowed wait period. Aborting lifecycle listener hook execution to prevent worker hang.", indexName);
+              return;
+            }
+
+            Thread.sleep(1000); // Check every second
+            attempts++;
+
+            // LOG THROTTLING: Log processing states incrementally (every 10s) instead of flooding standard log outputs
+            if (attempts % 10 == 0) {
+              LOGGER.info("Still waiting for Flint background index execution queue tasks for '{}' (Elapsed: {}s)...", indexName, attempts);
+            }
+          }
+        }
+
+        // The batch is completely safe and finalized; notify our clean, decoupled listeners
+        for (IndexCompletionListener listener : listeners) {
+          try {
+            LOGGER.debug("Calling listener {} for {}", listener.getClass().getName(), indexName);
+            listener.onIndexingCompleted(indexName, batch);
+          } catch (Exception e) {
+            LOGGER.error("Error in post-indexing listener {} for {}", listener.getClass().getName(), indexName, e);
+          }
+        }
+
+      } catch (InterruptedException e) {
+        LOGGER.error("Post-indexing notification thread was interrupted for {}", indexName, e);
+        Thread.currentThread().interrupt(); // Cleanly restore interrupted status for the runtime thread
+      }
+    }, "Post-Indexing-Coordinator-" + indexName).start();
   }
 
   @Override

@@ -3,6 +3,7 @@ import java.time.Instant
 plugins {
   id("stable-versions") apply false
   alias(libs.plugins.jreleaser)
+  alias(libs.plugins.sonarqube)
   war
 }
 
@@ -33,12 +34,14 @@ subprojects {
   apply(plugin = "java-library")
   apply(plugin = "stable-versions")
   apply(plugin = "maven-publish")
+  apply(plugin = "jacoco")
 
   dependencies {
     implementation(rootProject.libs.xmlwriter)
     implementation(rootProject.libs.slf4j.api)
     runtimeOnly(rootProject.libs.saxon)
     testImplementation(rootProject.libs.junit)
+    testRuntimeOnly (rootProject.libs.junit.vintage.engine)
   }
 
   // Enforce Java 11
@@ -65,6 +68,19 @@ subprojects {
         "Build-Jdk" to System.getProperty("java.version")
       )
     }
+  }
+
+  tasks.named<JacocoReport>("jacocoTestReport") {
+    dependsOn(tasks.named("test"))
+    reports {
+      xml.required.set(true)
+      html.required.set(false)
+    }
+  }
+
+  tasks.named<Test>("test") {
+    useJUnitPlatform()
+    finalizedBy(tasks.named("jacocoTestReport"))
   }
 
   extensions.configure<PublishingExtension>("publishing") {
@@ -138,5 +154,17 @@ jreleaser {
         }
       }
     }
+  }
+}
+
+sonarqube {
+  properties {
+    property("sonar.host.url", "https://sonarcloud.io")
+    property("sonar.organization", "pageseeder")
+    property("sonar.projectKey", "pageseeder_flint")
+    property("sonar.token", providers.gradleProperty("sonarcloud.login").getOrElse(""))
+    property("sonar.coverage.jacoco.xmlReportPaths",
+      subprojects.joinToString(",") { "${it.layout.buildDirectory.get()}/reports/jacoco/test/jacocoTestReport.xml" }
+    )
   }
 }
