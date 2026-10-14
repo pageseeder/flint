@@ -148,47 +148,86 @@ public final class IndexMaster {
     return getAutoSuggest(fields, terms, min, resultFields, new ArrayList<>(), weights);
   }
 
-  public org.pageseeder.flint.lucene.search.AutoSuggest getAutoSuggest(List<String> fields, boolean terms, int min, List<String> resultFields, List<String> criteriaFields, Map<String, Float> weights) {
+  /**
+   * Returns the autosuggest for these settings, building it only if needed.
+   *
+   * <p>The suggester is built when it does not exist yet, or when the index has
+   * changed since the last build (see {@link AutoSuggest#isCurrentFor(IndexReader)}).
+   * It is never built from an empty index: in that case the existing suggester
+   * is returned, which may be <code>null</code>. Callers must handle a
+   * <code>null</code> result.
+   *
+   * <p>The shared (pooled) reader is held for the whole call and released in a
+   * <code>finally</code> block, so it cannot be closed during the build.
+   *
+   * @return the suggester, or <code>null</code> if none exists and none could be
+   *         built (empty index, unavailable reader or build failure)
+   */
+  public org.pageseeder.flint.lucene.search.AutoSuggest getAutoSuggest(List<String> fields, boolean terms, int min,
+                                                                       List<String> resultFields, List<String> criteriaFields, Map<String, Float> weights) {
     String name = createAutoSuggestTempName(fields, terms, min, resultFields);
-    // block the list of suggesters so another thread doesn't try to create the same one
-    synchronized (this._autosuggests) {
-      org.pageseeder.flint.lucene.search.AutoSuggest existing = this._autosuggests.get(name);
-      // create?
-      if (existing == null || !existing.isCurrent()) {
-        try {
-          if (existing != null) clearAutoSuggest(name, existing);
-          return createAutoSuggest(name, terms, fields, min, resultFields, criteriaFields, weights);
-        } catch (IndexException | IOException ex) {
-          LOGGER.error("Failed to create autosuggest {}", name, ex);
-          return null;
-        }
+    // Pooled reader: ref-counted, includes NRT changes, safe to share
+    IndexReader reader = grabReader();
+    if (reader == null) return this._autosuggests.get(name); // index not available
+    try {
+      // block the list of suggesters so another thread doesn't try to create the same one
+      synchronized (this._autosuggests) {
+        AutoSuggest existing = this._autosuggests.get(name);
+        // Index unchanged since the last build: reuse it
+        if (existing != null && existing.isCurrentFor(reader)) return existing;
+        // Empty index (deleted, newly created or mid-reindex): don't build now.
+        // The post-indexing coordinator builds it once documents exist.
+        if (reader.numDocs() == 0) return existing; // may be null
+        if (existing != null) clearAutoSuggest(name, existing);
+        return createAutoSuggest(name, terms, fields, min, resultFields, criteriaFields, weights, reader);
       }
-      return existing;
+    } catch (IndexException | IOException ex) {
+      LOGGER.error("Failed to create autosuggest {}", name, ex);
+      return null;
+    } finally {
+      releaseSilently(reader);
     }
   }
 
+  /**
+   * Returns the autosuggest defined in the index definition with this name,
+   * building it only if needed.
+   *
+   * <p>Same rules as
+   * {@link #getAutoSuggest(List, boolean, int, List, List, Map)}: it is rebuilt
+   * only when the index version changed, and never from an empty index.
+   *
+   * @param name the name of the autosuggest in the index definition
+   *
+   * @return the suggester, or <code>null</code> if the definition does not
+   *         exist, the index is empty and nothing was built yet, or the build failed
+   */
   public org.pageseeder.flint.lucene.search.AutoSuggest getAutoSuggest(String name) {
-    // block the list of suggesters so another thread doesn't try to create the same one
-    synchronized (this._autosuggests) {
-      org.pageseeder.flint.lucene.search.AutoSuggest existing = this._autosuggests.get(name);
-      // create?
-      if (existing == null || !existing.isCurrent()) {
+    IndexReader reader = grabReader();
+    if (reader == null) return this._autosuggests.get(name); // index not available
+    try {
+      synchronized (this._autosuggests) {
+        AutoSuggest existing = this._autosuggests.get(name);
+        // Index unchanged since the last build: reuse it
+        if (existing != null && existing.isCurrentFor(reader)) return existing;
+        // Empty index: don't build (see the other overload)
+        if (reader.numDocs() == 0) return existing; // may be null
+        // We need to (re)build, so we need the definition
         IndexDefinition.AutoSuggestDefinition asd = this._def.getAutoSuggest(name);
-        if (asd != null) {
-          try {
-            if (existing != null) clearAutoSuggest(name, existing);
-            return createAutoSuggest(name, asd.useTerms(), asd.getSearchFields(),
-                asd.minChars(), asd.getResultFields(), asd.getCriteriaFields(), asd.getWeights());
-          } catch (IndexException | IOException ex) {
-            LOGGER.error("Failed to create autosuggest {}", name, ex);
-            return null;
-          }
-        } else {
+        if (asd == null) {
           LOGGER.error("Failed to find autosuggest definition with name {}", name);
           return null;
         }
+        if (existing != null) clearAutoSuggest(name, existing);
+        return createAutoSuggest(name, asd.useTerms(), asd.getSearchFields(),
+            asd.minChars(), asd.getResultFields(), asd.getCriteriaFields(),
+            asd.getWeights(), reader);
       }
-      return existing;
+    } catch (IndexException | IOException ex) {
+      LOGGER.error("Failed to create autosuggest {}", name, ex);
+      return null;
+    } finally {
+      releaseSilently(reader);
     }
   }
 
@@ -235,6 +274,27 @@ public final class IndexMaster {
       clearAutoSuggest(autosuggest.getKey(), autosuggest.getValue());
     }
   }
+
+  /**
+   * Closes all the autosuggests of this index and clears the cache, without
+   * building or deleting anything.
+   *
+   * <p>Unlike {@link #getAutoSuggest(String)}, this never triggers a build. The
+   * autosuggest folders are kept on disk. A later call to
+   * {@code getAutoSuggest} creates a new instance if the index is not empty.
+   * Closed instances are removed from the cache so a closed suggester is never
+   * returned.
+   *
+   * <p>This closes <strong>all</strong> the autosuggests of this index, including
+   * those defined in the index definition, not only one.
+   */
+  public void closeAutoSuggests() {
+    synchronized (this._autosuggests) { // same lock as getAutoSuggest
+      for (AutoSuggest a : this._autosuggests.values()) a.close();
+      this._autosuggests.clear();
+    }
+  }
+
   public void generateContent(File f, Writer out) throws IndexException, IOException {
     // create content
     LocalFileContent content = new LocalFileContent(f, null);
@@ -282,8 +342,19 @@ public final class IndexMaster {
     return MD5.hash(name.toString()).toLowerCase();
   }
 
+  /**
+   * Creates the autosuggest and builds it from the given reader.
+   *
+   * <p>The reader is provided by the caller (the pooled reader) rather than
+   * opened here. A dedicated {@link DirectoryReader#open(Directory)} only sees the
+   * last commit and re-opens every segment on every build, which creates a lot
+   * of garbage. The caller owns the reader and must release it.
+   *
+   * @param reader the reader to build from; not closed by this method
+   */
   private org.pageseeder.flint.lucene.search.AutoSuggest createAutoSuggest(String name, boolean terms, Collection<String> fields,
-      int min, Collection<String> resultFields, List<String> criteriaFields, Map<String, Float> weights) throws IndexException, IOException {
+      int min, Collection<String> resultFields, List<String> criteriaFields, Map<String, Float> weights,
+      IndexReader reader) throws IndexException, IOException {
     // build name
     String autosuggestIndexName = this._name+"_"+name+"_autosuggest";
     // create folder
@@ -304,16 +375,14 @@ public final class IndexMaster {
             .criteria(criteria);
     // build it
     org.pageseeder.flint.lucene.search.AutoSuggest as = aBuilder.build();
-    // Open a dedicated, read-only snapshot of the index directory for this
-    // building process. We use a dedicated DirectoryReader instead of the
-    // shared IndexManager reader to decouple the building process from the
-    // main application's lifecycle. This prevents 'AlreadyClosedException'
-    // errors that occur if the index is refreshed or modified while the
-    // autosuggest structure is being built.
-    Directory dir = this._index.getIndexDirectory();
-    LOGGER.info("Autosuggest {}", name);
-    try (IndexReader reader = DirectoryReader.open(dir)){
+    try {
+      long t0 = System.nanoTime();
+      long ver = (reader instanceof DirectoryReader) ? ((DirectoryReader) reader).getVersion() : -1;
+      // Diagnostic: shows which thread builds, from which index state, and for how long
+      LOGGER.info("Autosuggest {} build start: thread={} readerVersion={} numDocs={}",
+          name, Thread.currentThread().getName(), ver, reader.numDocs());
       as.build(reader);
+      LOGGER.info("Autosuggest {} finalized: {} ms", name, (System.nanoTime() - t0) / 1_000_000);
     } finally {
       LOGGER.info("finalized");
     }

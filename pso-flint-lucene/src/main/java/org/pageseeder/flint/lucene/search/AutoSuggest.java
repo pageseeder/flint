@@ -7,6 +7,8 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.index.*;
 import org.apache.lucene.search.suggest.Lookup.LookupResult;
 import org.apache.lucene.search.suggest.analyzing.AnalyzingInfixSuggester;
+import org.apache.lucene.store.ByteArrayDataInput;
+import org.apache.lucene.store.ByteBuffersDataOutput;
 import org.apache.lucene.store.ByteBuffersDirectory;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.Bits;
@@ -43,6 +45,15 @@ public class AutoSuggest {
   private final Map<String, Float> _weights = new HashMap<>();
 
   private long lastBuilt = -1;
+
+  /**
+   * Version of the index reader used for the last build, or -1 if never built.
+   *
+   * <p>Used instead of timestamps to detect a changed index. An NRT reader's
+   * version only changes when the index is refreshed, so it is not affected by
+   * the gap between a write and the next commit.
+   */
+  private volatile long builtVersion = -1;
 
   private AutoSuggest(String name, Index index, Directory dir, Analyzer indexAnalyzer, Analyzer searchAnalyzer, boolean useTerms, int minChars) throws IndexException {
     this._name = name;
@@ -109,6 +120,10 @@ public class AutoSuggest {
     return this.lastBuilt;
   }
 
+  /**
+   * @deprecated use the method isCurrentFor
+   * @return true if current
+   */
   public boolean isCurrent() {
     return this._index.getIndexIO().getLastTimeUsed() < this.lastBuilt;
   }
@@ -120,6 +135,25 @@ public class AutoSuggest {
    */
   public boolean isCurrent(IndexManager mgr) {
     return this.isCurrent();
+  }
+
+  /**
+   * Indicates whether this suggester was built from the same index state as the
+   * given reader.
+   *
+   * <p>Unlike {@link #isCurrent()}, which compares timestamps, this compares the
+   * {@link DirectoryReader#getVersion() version} of the reader used for the last
+   * build with the version of the given reader. It returns <code>false</code> if
+   * the suggester was never built or if the reader is not a
+   * {@link DirectoryReader}.
+   *
+   * @param reader the reader representing the current state of the index
+   *
+   * @return <code>true</code> if the index has not changed since the last build
+   */
+  public boolean isCurrentFor(IndexReader reader) {
+    return reader instanceof DirectoryReader
+        && this.builtVersion == ((DirectoryReader) reader).getVersion();
   }
 
   public void build(IndexReader reader) {
@@ -153,6 +187,12 @@ public class AutoSuggest {
         if (buildit) {
           this.suggester.refresh();
           this.lastBuilt = System.currentTimeMillis();
+        }
+
+        // Record the version even if nothing was added.
+        // Otherwise, an empty index is seen as "never built" and is rebuilt on every request.
+        if (reader instanceof DirectoryReader) {
+          this.builtVersion = ((DirectoryReader) reader).getVersion();
         }
       } catch (IOException | IllegalStateException ex) {
         LOGGER.error("Failed to build dictionary for autosuggest {}", this._name, ex);
@@ -192,9 +232,13 @@ public class AutoSuggest {
     }
     // go through our docs then
     Bits live = subReader.getLiveDocs();
+    // PERF: get the StoredFields once per segment. In Lucene 9.5+, storedFields() returns a new reader on every call,
+    // with no cache of the decompressed block, so calling it per document decompressed the same block again for
+    // almost every document (the main source of byte[]/int[] allocation).
+    StoredFields stored = subReader.storedFields();
     for (int i = 0; i < subReader.maxDoc(); i++) {
       if (live != null && !live.get(i)) continue;
-      Document doc = subReader.storedFields().document(i, fieldsToLoad);
+      Document doc = stored.document(i, fieldsToLoad);
       // load criteria values
       Set<BytesRef> contexts = null;
       if (this._withField != null) {
@@ -220,8 +264,8 @@ public class AutoSuggest {
       // mutiply by 100 to turn to long (2 decimal precision)
       long weight = weightF == 0 ? 100 : (long) (weightF * 100);
       // create payload
-      byte[] serialized = serialize(this._resultFields, doc);
-      BytesRef payload = serialized == null ? null : new BytesRef(serialized);
+      // compact payload instead of Java serialization (see encode)
+      BytesRef payload = encode(this._resultFields, doc);
       for (String field : this._searchFields) {
         String[] texts = doc.getValues(field);
         if (texts != null) {
@@ -242,44 +286,54 @@ public class AutoSuggest {
   }
 
   /**
-   * Serialize the fields provided into a payload for a suggester entry.
+   * Encodes the given fields of a document as the payload of a suggestion.
    *
-   * @param fields  list of fields to load from the document
-   * @param doc     the document
+   * <p>Format: VInt field count, then for each field: the name, a VInt value
+   * count, and the values (all as Lucene strings). This replaces Java
+   * serialization, which allocated several objects per document and wrote class
+   * descriptors into every payload.
    *
-   * @return the payload as a byte array
+   * @param fields the fields to include
+   * @param doc    the document to read the values from
+   *
+   * @return the payload, or <code>null</code> if there are no fields
+   *
+   * @throws IOException if writing the payload failed
    */
-  private static byte[] serialize(Collection<String> fields, Document doc) {
+  private static BytesRef encode(Collection<String> fields, Document doc) throws IOException {
     if (fields.isEmpty()) return null;
-    // build map
-    Map<String, String[]> result = new HashMap<>();
-    for (String field : fields) {
-      String[] values = doc.getValues(field);
-      if (values != null) result.put(field, values);
+    ByteBuffersDataOutput out = new ByteBuffersDataOutput();
+    out.writeVInt(fields.size());
+    for (String f : fields) {
+      String[] vals = doc.getValues(f);
+      out.writeString(f);
+      out.writeVInt(vals.length);
+      for (String v : vals) out.writeString(v);
     }
-    // serialize it
-    ByteArrayOutputStream bos = new ByteArrayOutputStream();
-    try {
-      ObjectOutputStream out = new ObjectOutputStream(bos);
-      out.writeObject(result);
-      out.close();
-    } catch (IOException ex) {
-      // all internal so shouldn't happen
-      LOGGER.error("Failed to build payload", ex);
-      return null;
-    }
-    return bos.toByteArray();
+    return new BytesRef(out.toArrayCopy());
   }
 
-  @SuppressWarnings("unchecked")
-  private Map<String, String[]> deserialize(byte[] bytes) throws IOException {
-    ByteArrayInputStream bis = new ByteArrayInputStream(bytes);
-    ObjectInputStream in = new ObjectInputStream(bis);
-    try {
-      return (Map<String, String[]>) in.readObject();
-    } catch (ClassNotFoundException ex) {
-      throw new IOException("Class not found when deserializing", ex);
+  /**
+   * Decodes a payload written by {@link #encode(Collection, Document)}.
+   *
+   * <p>Honours the offset and length of the {@link BytesRef}. The previous
+   * implementation used the whole backing array, which is wrong when the
+   * reference is a slice of a larger array.
+   *
+   * @param ref the payload
+   *
+   * @return the field values by field name
+   */
+  private static Map<String, String[]> decode(BytesRef ref) throws IOException {
+    ByteArrayDataInput in = new ByteArrayDataInput(ref.bytes, ref.offset, ref.length);
+    Map<String, String[]> map = new HashMap<>();
+    for (int n = in.readVInt(); n > 0; n--) {
+      String f = in.readString();
+      String[] vals = new String[in.readVInt()];
+      for (int k = 0; k < vals.length; k++) vals[k] = in.readString();
+      map.put(f, vals);
     }
+    return map;
   }
 
   public List<Suggestion> suggest(String text) {
@@ -326,7 +380,8 @@ public class AutoSuggest {
         suggestion.weight = result.value;
         if (result.payload != null) {
           try {
-            suggestion.document = deserialize(result.payload.bytes);
+            //decode honours offset/length (see decode)
+            suggestion.document = decode(result.payload);
           } catch (IOException ex) {
             LOGGER.error("Failed to deserialize suggestion payload", ex);
           }
@@ -433,14 +488,14 @@ public class AutoSuggest {
       if (!(obj instanceof Suggestion)) return false;
       Suggestion s = (Suggestion) obj;
       return this.text.equals(s.text) &&
-             this.highlight.equals(s.highlight) &&
-             ((this.document == null && s.document == null) || (this.document!= null && this.document.equals(s.document)));
+          this.highlight.equals(s.highlight) &&
+          ((this.document == null && s.document == null) || (this.document!= null && this.document.equals(s.document)));
     }
     @Override
     public int hashCode() {
       return this.text.hashCode() * 3 +
-             this.highlight.hashCode() * 11 +
-             (this.document != null ? 17 * this.document.hashCode() : 0);
+          this.highlight.hashCode() * 11 +
+          (this.document != null ? 17 * this.document.hashCode() : 0);
     }
     @Override
     public String toString() {
